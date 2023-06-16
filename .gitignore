@@ -396,3 +396,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Macbook shit
+.DS_Store
+
+# For xcode and build
+build/
