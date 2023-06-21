@@ -8,22 +8,22 @@
 #include "hanoi.hpp"
 
 hanoi::hanoi(){
-    EN_createproject(&ph);
-    inpFilename = "";
-}
-
-hanoi::hanoi(std::string inpFile){
-    EN_createproject(&ph);
-    inpFilename = inpFile;
-    
-    int ec = EN_open(ph, inpFilename.c_str(), "", "");
-    if (ec>100)
-        printf("File not found\n");
+    // Empty constructor.
+    // EPANET project is not initialized
+    ph = nullptr;
+    phStatus = false;
 }
 
 hanoi::~hanoi(){
+}
+
+void hanoi::clear(){
     // do I need to close before delete? or is it unnecessary?
-    EN_deleteproject(ph);
+    printf("deleting hanoi\n");
+    if (phStatus == true){
+        EN_deleteproject(ph);
+        phStatus = false;
+    }
 }
 
 void hanoi::set_inpFile(std::string inpFile){
@@ -33,6 +33,8 @@ void hanoi::set_inpFile(std::string inpFile){
 
 
 void hanoi::init(){
+    EN_createproject(&ph);
+    phStatus = true;
     
     int error = EN_open(ph, inpFilename.c_str(), "", "");
     if (error>100)
@@ -41,7 +43,7 @@ void hanoi::init(){
     return;
 }
 
-std::vector<double> hanoi::evaluate(){
+std::vector<double> hanoi::evaluate() const{
     // check it can be done
     
     // Simulation
@@ -57,17 +59,24 @@ std::vector<double> hanoi::evaluate(){
     if (error>100)
         throw std::runtime_error("Hydraulics not initialised.");
     
-    int nNodes;
-    error = EN_getcount(ph, EN_NODECOUNT, &nNodes);
-    
+    // Run hydraulics
     long t{0};
     error = EN_runH(ph, &t);
     if (error>100)
         throw std::runtime_error("Simulation failed.");
     
-    std::vector<double> nodesPres(nNodes,0);
-    for (int nodeIdx = 0; nodeIdx<nNodes; ++nodeIdx) {
-        error = EN_getnodevalue(ph, nodeIdx, EN_PRESSURE, &nodesPres[nodeIdx]);
+    // Save data, it's easy, pressure of all junctions, i.e., nodes from id 2 to 32
+    // since ids are only simple numbers I transform them directly from int to string
+    int nJun = 31;
+    int juncIdx{0};
+    std::string juncFakeName;
+    std::vector<double> nodesPres(31,0);
+    for (int i = 0; i<nJun; ++i) {
+        juncFakeName = std::to_string(i+2);
+        
+        error = EN_getlinkindex(ph, juncFakeName.c_str(), &juncIdx);
+        
+        error = EN_getnodevalue(ph, juncIdx, EN_PRESSURE, &nodesPres[i]);
     }
     
     error = EN_closeH(ph);

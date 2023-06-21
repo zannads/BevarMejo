@@ -7,46 +7,56 @@ descr: Main file for the optimization of the Hanoi problem.
 
 using namespace pagmo;
 
-int main()
-{   
-
-    model_hanoi mH = model_hanoi();
-    std::vector<double> prova {4.};
-    std::cout <<"Fitness: " <<mH.fitness(prova)[0] <<std::endl;
+int main(int argc, char* argv[])
+{
+    // Let's parse the input of the program
+    if (argc < 2){
+        std::cout << "You need to pass a SettingsFile" <<std::endl;
+        return 1;
+    }
+    // Check existance of the file
+    // from XML to structs with the data
     
-    try {
-        //Construct a pagmo::problem for Hanoi model 
-        //problem p{ problem_NET1{} };
-        //unsigned int seed = 3;
-
-        // Instantiate Optimization Algorithm 
-        //algorithm algo{ nsga2(1000) };
-        //algo.set_seed(seed);
-
-        // Instantiate population 
-        //population pop{ p, 24, seed };
+    //Construct a pagmo::problem for Hanoi model
+    problem p{ model_hanoi{} };
+    
+    // Get a pointer to the internal copy of the UDP from the Pagmo::problem.
+    model_hanoi* mh_ptr = p.extract<model_hanoi>();
+    
+    // Initialize the internal copy of the UDP.
+    mh_ptr->upload_settings("FakeFilename.xml");
+    
+    // example: load seed number from settingsfile
+    unsigned int seed = 3u;
+    unsigned int nfe = 100u;
+    unsigned int report_nfe = 1000u;
+    pop_size_t pop_size = 100u;
+    
+    // check I don't do mistakes
+    if (report_nfe == 0){
+        report_nfe = nfe;
     }
-    catch( const std::exception& e ){
-        std::cout <<"Error setting up the problem." <<std::endl;
-        std::cout << e.what() <<std::endl;
-        std::cout <<"ABORT" <<std::endl;
+    
+    // optional stuff retrived from settingsfile but that I will keep constant
+    double cr{0.9}, eta_c{15.}, m{1./34.}, eta_m{7.};
+    
+    // Instantiate Optimization Algorithm
+    algorithm algo{ nsga2(report_nfe, cr, eta_c, m, eta_m, seed) };
 
-        return 0;
+    // Instantiate population
+    population pop{ p, pop_size, seed };
+    
+    // Evolve
+    for(unsigned int i = 0; i*report_nfe<nfe; ++i){
+        // Pop
+        pop = algo.evolve(pop);
+        // Save pop
     }
-
-    try {
-        // Evolve 
-        //pop = algo.evolve(pop);
-        
-    }
-    catch (const std::exception& e)
-    {
-        std::cout <<"Error during optimization." <<std::endl;
-        std::cout << e.what() <<std::endl;
-        std::cout <<"ABORT" <<std::endl;
-
-        return 0;
-    }
+    
+    std::cout <<pop <<std::endl;
+    
+    // save pop
+    mh_ptr->clear();
     
     return 0;
 }

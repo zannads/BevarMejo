@@ -31,7 +31,7 @@ IF(LINUX)
 				)
 ENDIF(LINUX)
 
-add_library(modelHanoi "model_hanoi.cpp" )
+add_library(modelHanoi "model_hanoi.cpp" "hanoi.cpp")
 
 target_link_libraries(modelHanoi PUBLIC Pagmo::pagmo epanet)
 
