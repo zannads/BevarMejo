@@ -32,7 +32,7 @@ IF(LINUX)
 ENDIF(LINUX)
 
 # PUGIXML library
-set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml-1.13/src" CACHE PATH "Path to the rootfolder of PUGIXML")
+set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")
 
 add_library(modelHanoi "model_hanoi.cpp" "hanoi.cpp" "${PUGIXML_ROOT}/pugixml.cpp")
 
