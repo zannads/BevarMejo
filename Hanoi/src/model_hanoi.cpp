@@ -11,13 +11,29 @@ model_hanoi::model_hanoi(){
 }
 
 void model_hanoi::upload_settings(std::string settingsFile){
+    // Load the file and check
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file(settingsFile.c_str());
+        
+        if (result.status != pugi::status_ok){
+            throw std::runtime_error(result.description());
+        }
+        
+    boost::filesystem::path rootDataFolder{doc.child("rootDataFolder").child_value()};
+    
+    boost::filesystem::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
+    inpFile = rootDataFolder/inpFile;
+    
+    boost::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
+    avDiams = rootDataFolder/avDiams;
+    
     // Let's assume I read the settingsFile and I create the following variables
-    std::string adFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/available_diams.txt";
-    std::string inpFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/hanoi.inp";
+    //std::string adFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/available_diams.txt";
+    //std::string inpFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/hanoi.inp";
     
-    load_availDiam(adFile);
+    load_availDiam(avDiams.c_str());
     
-    Hanoi.set_inpFile(inpFile);
+    Hanoi.set_inpFile(inpFile.c_str());
     
     Hanoi.init();
 }
@@ -150,14 +166,15 @@ double model_hanoi::minPressure(vector<double>& pressures) const{
     return cumPress;
 }
 
-void model_hanoi::load_availDiam(std::string& filename){
+void model_hanoi::load_availDiam(const char* filename){
     ifstream fs(filename);
-    string sJunk = "";
-    
     if (!fs.is_open()) {
-            std::cerr << "Failed to open the file: " << filename << std::endl;
+        string errorMessage{"Failed to open the file: "};
+        errorMessage.append(filename);
+        throw std::runtime_error( errorMessage );
     }
     
+    string sJunk = "";
     //Look for the <#DATA> key
     while (sJunk != "#DATA")
     {

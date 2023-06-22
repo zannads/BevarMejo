@@ -11,7 +11,6 @@ hanoi::hanoi(){
     // Empty constructor.
     // EPANET project is not initialized
     ph = nullptr;
-    phStatus = false;
 }
 
 hanoi::~hanoi(){
@@ -20,13 +19,10 @@ hanoi::~hanoi(){
 void hanoi::clear(){
     // do I need to close before delete? or is it unnecessary?
     printf("deleting hanoi\n");
-    if (phStatus == true){
-        EN_deleteproject(ph);
-        phStatus = false;
-    }
+    EN_deleteproject(ph);
 }
 
-void hanoi::set_inpFile(std::string inpFile){
+void hanoi::set_inpFile(const char* inpFile){
     inpFilename = inpFile;
     return;
 }
@@ -34,9 +30,8 @@ void hanoi::set_inpFile(std::string inpFile){
 
 void hanoi::init(){
     EN_createproject(&ph);
-    phStatus = true;
     
-    int error = EN_open(ph, inpFilename.c_str(), "", "");
+    int error = EN_open(ph, inpFilename, "", "");
     if (error>100)
         printf("File not found\n");
     

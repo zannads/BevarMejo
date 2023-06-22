@@ -31,7 +31,10 @@ IF(LINUX)
 				)
 ENDIF(LINUX)
 
-add_library(modelHanoi "model_hanoi.cpp" "hanoi.cpp")
+# PUGIXML library
+set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml-1.13/src" CACHE PATH "Path to the rootfolder of PUGIXML")
+
+add_library(modelHanoi "model_hanoi.cpp" "hanoi.cpp" "${PUGIXML_ROOT}/pugixml.cpp")
 
 target_link_libraries(modelHanoi PUBLIC Pagmo::pagmo epanet)
 
@@ -42,4 +45,5 @@ target_include_directories(modelHanoi PUBLIC
 							"${CMAKE_CURRENT_SOURCE_DIR}"
 							"${PROJECT_SOURCE_DIR}/Hanoi/include"
 							"${EPANET_ROOT}/include"
+							"${PUGIXML_ROOT}"
 )

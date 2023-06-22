@@ -4,6 +4,8 @@
 
 # Look for an installation of pagmo in the system.
 find_package(Pagmo REQUIRED)
+# Search for Boost filesystem library which is used everywhere
+find_package(Boost REQUIRED COMPONENTS filesystem)
 
 add_subdirectory(src)
 
@@ -16,7 +18,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Add tests and install targets if needed.
-target_link_libraries(hanoiOptimization PUBLIC Pagmo::pagmo modelHanoi)
+target_link_libraries(hanoiOptimization PRIVATE Pagmo::pagmo Boost::boost Boost::filesystem modelHanoi)
 
 target_include_directories(hanoiOptimization PUBLIC
                           "${PROJECT_BINARY_DIR}"

@@ -6,6 +6,13 @@ descr: Main file for the optimization of the Hanoi problem.
 #include "main_hanoi.h"
 
 using namespace pagmo;
+using namespace boost::filesystem;
+
+struct nsga2p{
+    int a;
+    int b;
+    const char* rootDataFolder;
+};
 
 int main(int argc, char* argv[])
 {
@@ -14,8 +21,14 @@ int main(int argc, char* argv[])
         std::cout << "You need to pass a SettingsFile" <<std::endl;
         return 1;
     }
-    // Check existance of the file
-    // from XML to structs with the data
+    path settingsFile(argv[1]);
+    
+    if (!exists(settingsFile) || !is_regular_file(settingsFile)){
+        std::cout << "SettingsFile not existing or not a file (e.g., a directory)!" <<std::endl;
+        return 1;
+    }
+    
+    //auto progSettings = bevarmejo::from_XML_to_settingsStruct(settingsFile.string(), nsga2p{});
     
     //Construct a pagmo::problem for Hanoi model
     problem p{ model_hanoi{} };
@@ -24,12 +37,12 @@ int main(int argc, char* argv[])
     model_hanoi* mh_ptr = p.extract<model_hanoi>();
     
     // Initialize the internal copy of the UDP.
-    mh_ptr->upload_settings("FakeFilename.xml");
+    mh_ptr->upload_settings(settingsFile.string());
     
     // example: load seed number from settingsfile
     unsigned int seed = 3u;
     unsigned int nfe = 100u;
-    unsigned int report_nfe = 1000u;
+    unsigned int report_nfe = 100u;
     pop_size_t pop_size = 100u;
     
     // check I don't do mistakes
@@ -53,7 +66,15 @@ int main(int argc, char* argv[])
         // Save pop
     }
     
-    std::cout <<pop <<std::endl;
+    std::fstream fs;
+    
+    fs.open("final.txt", std::fstream::in );
+    
+    std::cout << fs.is_open() <<std::endl;
+   
+    fs << pop;
+    
+    fs.close();
     
     // save pop
     mh_ptr->clear();

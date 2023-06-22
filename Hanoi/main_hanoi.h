@@ -6,8 +6,11 @@ Author: DennisZ
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
+#include <fstream>
 #include <utility>
 #include <vector>
+
+#include <boost/filesystem.hpp>
 
 #include <pagmo/problem.hpp>
 #include <pagmo/types.hpp>

@@ -14,6 +14,10 @@ descr: Model of the Hanoi problem, header file.
 #include <iostream>
 #include <numeric>
 
+#include "pugixml.hpp"
+
+#include <boost/filesystem.hpp>
+
 #include "hanoi.hpp"
 
 class model_hanoi{
@@ -66,7 +70,7 @@ protected:
     
     
     // Ad-hoc function to load the file containing the av_diams.
-    void load_availDiam(std::string& filename);
+    void load_availDiam(const char * filename);
 };
 
 #endif /* hanoi_hpp */
