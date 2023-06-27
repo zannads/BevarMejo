@@ -18,7 +18,7 @@ hanoi::~hanoi(){
 
 void hanoi::clear(){
     // do I need to close before delete? or is it unnecessary?
-    printf("deleting hanoi\n");
+    //printf("deleting hanoi\n");
     EN_deleteproject(ph);
 }
 
@@ -34,6 +34,8 @@ void hanoi::init(){
     int error = EN_open(ph, inpFilename, "", "");
     if (error>100)
         printf("File not found\n");
+    
+    EN_setreport(ph, "MESSAGES NO");
     
     return;
 }
