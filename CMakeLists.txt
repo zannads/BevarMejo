@@ -17,13 +17,24 @@ endif()
 #         `cmake .. -DVCPKG_ROOT=/path/to/vcpkg`
 #     3. set the enviromental variable VCPKG_ROOT = /path/to/vcpkg // see how to do it base on your OS
 #         `cmake ..` 
-set( VCPKG_ROOT "$ENV{VCPKG_ROOT}" CACHE PATH "Path to the rootfolder to vcpkg")
+IF(DEFINED ENV{VCPKG_ROOT})
+  set( VCPKG_ROOT ENV{VCPKG_ROOT} CACHE PATH "Path to the rootfolder to vcpkg")
+  message(STATUS "VCPKG_ROOT env found, using ${VCPKG_ROOT}")
+ELSE()
+  set( VCPKG_ROOT "../vcpkg" CACHE PATH "Path to the rootfolder to vcpkg")
+  message(STATUS "VCPKG_ROOT env NOT found, using ${VCPKG_ROOT}")
+ENDIF()
 set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" )    #FILEPATH "Full path to the file Vcpkg"
 set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 	   CACHE FILEPATH "Vcpkg toolchain file")
 
 project ("BèvarMéjo")
 
+# Look for an installation of pagmo in the system.
+find_package(Pagmo REQUIRED)
+
+# Include my library
+add_subdirectory ("lib")
 
 # Include sub-projects.
 add_subdirectory ("Hanoi")

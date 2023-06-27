@@ -6,47 +6,90 @@ descr: Main file for the optimization of the Hanoi problem.
 #include "main_hanoi.h"
 
 using namespace pagmo;
+using namespace std::filesystem;
 
-int main()
-{   
-
-    model_hanoi mH = model_hanoi();
-    std::vector<double> prova {4.};
-    std::cout <<"Fitness: " <<mH.fitness(prova)[0] <<std::endl;
+struct nsga2p{
+    unsigned int seed = 3u;
+    unsigned int nfe = 100u;
+    unsigned int report_nfe = 100u;
+    pop_size_t pop_size = 100u;
+    double cr{0.9}, eta_c{15.}, m{1./34.}, eta_m{7.};
     
-    try {
-        //Construct a pagmo::problem for Hanoi model 
-        //problem p{ problem_NET1{} };
-        //unsigned int seed = 3;
+    std::string rootDataFolder;
+};
 
-        // Instantiate Optimization Algorithm 
-        //algorithm algo{ nsga2(1000) };
-        //algo.set_seed(seed);
+nsga2p quickUploadSettings(const char* settingsFile){
+    
+    // Load the file and check
+    pugi::xml_document doc;
+    pugi::xml_parse_result result = doc.load_file(settingsFile);
+    
+    nsga2p settingsNsga;
 
-        // Instantiate population 
-        //population pop{ p, 24, seed };
+    settingsNsga.seed = doc.child("optProblem").child("optAlgorithm").attribute("seed").as_uint();
+    
+    settingsNsga.nfe = doc.child("optProblem").child("optAlgorithm").attribute("nfe").as_uint();
+    
+    settingsNsga.report_nfe = doc.child("optProblem").child("optAlgorithm").attribute("report_nfe").as_uint();
+    
+    // check I don't do mistakes
+    if (settingsNsga.report_nfe == 0){
+        settingsNsga.report_nfe = settingsNsga.nfe;
     }
-    catch( const std::exception& e ){
-        std::cout <<"Error setting up the problem." <<std::endl;
-        std::cout << e.what() <<std::endl;
-        std::cout <<"ABORT" <<std::endl;
+    
+    settingsNsga.rootDataFolder = doc.child("rootDataFolder").child_value();
+    
+    return settingsNsga;
+}
 
-        return 0;
+int main(int argc, char* argv[])
+{
+    // Let's parse the input of the program
+    if (argc < 2){
+        std::cout << "You need to pass a SettingsFile" <<std::endl;
+        return 1;
     }
+    path settingsFile(argv[1]);
+    
+    if (!exists(settingsFile) || !is_regular_file(settingsFile)){
+        std::cout << "SettingsFile not existing or not a file (e.g., a directory)!" <<std::endl;
+        return 1;
+    }
+    
+    //auto progSettings = bevarmejo::from_XML_to_settingsStruct(settingsFile.string(), nsga2p{});
+    
+    //Construct a pagmo::problem for Hanoi model
+    problem p{ model_hanoi{} };
+    
+    // Get a pointer to the internal copy of the UDP from the Pagmo::problem.
+    model_hanoi* mh_ptr = p.extract<model_hanoi>();
+    
+    // Initialize the internal copy of the UDP.
+    mh_ptr->upload_settings(settingsFile.string());
+    
+    nsga2p settingsNsga = quickUploadSettings(settingsFile.c_str());
+    
+    // Instantiate Optimization Algorithm
+    algorithm algo{ nsga2(settingsNsga.report_nfe, settingsNsga.cr, settingsNsga.eta_c, settingsNsga.m, settingsNsga.eta_m, settingsNsga.seed) };
 
-    try {
-        // Evolve 
-        //pop = algo.evolve(pop);
-        
+    // Instantiate population
+    population pop{ p, settingsNsga.pop_size, settingsNsga.seed };
+    
+    // Evolve
+    for(unsigned int i = 0; i*settingsNsga.report_nfe<settingsNsga.nfe; ++i){
+        // Pop
+        pop = algo.evolve(pop);
+        // Save pop
     }
-    catch (const std::exception& e)
-    {
-        std::cout <<"Error during optimization." <<std::endl;
-        std::cout << e.what() <<std::endl;
-        std::cout <<"ABORT" <<std::endl;
-
-        return 0;
-    }
+    
+    // save pop
+    path outFilename {settingsNsga.rootDataFolder};
+    outFilename /= "output/hanoi_nsga2_";
+    outFilename += std::to_string(settingsNsga.seed);
+    outFilename += ".out";
+    
+    beme::saveFinalPopulation(outFilename, pop);
+    mh_ptr->clear();
     
     return 0;
 }
