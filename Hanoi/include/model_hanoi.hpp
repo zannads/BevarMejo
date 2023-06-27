@@ -13,10 +13,9 @@ descr: Model of the Hanoi problem, header file.
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <filesystem>
 
 #include "pugixml.hpp"
-
-#include <boost/filesystem.hpp>
 
 #include "hanoi.hpp"
 

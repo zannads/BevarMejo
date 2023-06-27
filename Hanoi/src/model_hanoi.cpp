@@ -19,12 +19,12 @@ void model_hanoi::upload_settings(std::string settingsFile){
             throw std::runtime_error(result.description());
         }
         
-    boost::filesystem::path rootDataFolder{doc.child("rootDataFolder").child_value()};
+    std::filesystem::path rootDataFolder{doc.child("rootDataFolder").child_value()};
     
-    boost::filesystem::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
+    std::filesystem::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
     inpFile = rootDataFolder/inpFile;
     
-    boost::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
+    std::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
     avDiams = rootDataFolder/avDiams;
     
     // Let's assume I read the settingsFile and I create the following variables

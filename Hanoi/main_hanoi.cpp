@@ -6,7 +6,7 @@ descr: Main file for the optimization of the Hanoi problem.
 #include "main_hanoi.h"
 
 using namespace pagmo;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
 struct nsga2p{
     unsigned int seed = 3u;
@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
     }
     
     // save pop
-    std::filesystem::path outFilename {settingsNsga.rootDataFolder};
+    path outFilename {settingsNsga.rootDataFolder};
     outFilename /= "output/hanoi_nsga2_";
     outFilename += std::to_string(settingsNsga.seed);
     outFilename += ".out";
