@@ -30,8 +30,11 @@ set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 
 project ("BèvarMéjo")
 
+# Look for an installation of pagmo in the system.
+find_package(Pagmo REQUIRED)
+
 # Include my library
-#add_subdirectory ("lib")
+add_subdirectory ("lib")
 
 # Include sub-projects.
 add_subdirectory ("Hanoi")

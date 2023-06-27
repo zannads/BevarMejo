@@ -18,4 +18,8 @@ Author: DennisZ
 #include <pagmo/algorithm.hpp>
 #include <pagmo/algorithms/nsga2.hpp>
 
+#include "pugixml.hpp"
+
+#include "logger/populationsHandler.hpp"
+
 #include "model_hanoi.hpp"
