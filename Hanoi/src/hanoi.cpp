@@ -31,7 +31,7 @@ void hanoi::set_inpFile(const char* inpFile){
 void hanoi::init(){
     EN_createproject(&ph);
     
-    int error = EN_open(ph, inpFilename, "", "");
+    int error = EN_open(ph, inpFilename.c_str(), "", "");
     if (error>100)
         printf("File not found\n");
     
@@ -71,7 +71,7 @@ std::vector<double> hanoi::evaluate() const{
     for (int i = 0; i<nJun; ++i) {
         juncFakeName = std::to_string(i+2);
         
-        error = EN_getlinkindex(ph, juncFakeName.c_str(), &juncIdx);
+        error = EN_getnodeindex(ph, juncFakeName.c_str(), &juncIdx);
         
         error = EN_getnodevalue(ph, juncIdx, EN_PRESSURE, &nodesPres[i]);
     }

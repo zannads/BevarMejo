@@ -27,10 +27,6 @@ void model_hanoi::upload_settings(std::string settingsFile){
     std::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
     avDiams = rootDataFolder/avDiams;
     
-    // Let's assume I read the settingsFile and I create the following variables
-    //std::string adFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/available_diams.txt";
-    //std::string inpFile ="/Users/denniszanutto/data/BevarMejoData/HanoiTest/hanoi.inp";
-    
     load_availDiam(avDiams.c_str());
     
     Hanoi.set_inpFile(inpFile.c_str());
@@ -87,11 +83,6 @@ void model_hanoi::applySolution(const std::vector<double>& dv) const{
 
     int error;
     
-   /* int nLinks;
-    error = EN_getcount(Hanoi.ph, EN_LINKCOUNT, &nLinks);
-    if (error > 100)
-        throw std::runtime_error("Number of links not retrieved.");
-    */
     int linkIdx;
     // since ids are only simple numbers I trnasfomr them directly from int to string
     string linkFakeName;
@@ -105,7 +96,7 @@ void model_hanoi::applySolution(const std::vector<double>& dv) const{
             throw std::runtime_error("Diam not set.");
         
         
-        error = EN_setlinkvalue(Hanoi.ph, linkIdx, EN_DIAMETER, av_diams[dv[i]].first);
+        error = EN_setlinkvalue(Hanoi.ph, linkIdx, EN_DIAMETER, av_diams[dv[i]].millimeters);
         if (error > 100)
             throw std::runtime_error("Diam not set.");
     }
@@ -123,7 +114,7 @@ double model_hanoi::cost() const{
     if (error > 100)
         throw std::runtime_error("Number of links not retrieved.");
     
-    double totalcost{0.}, diam{0.}, leng{0.};
+    double totalcost{0.}, diam_mm{0.}, leng_m{0.};
     
     // Per each link, if it is a pipe add to total cost
     
@@ -142,12 +133,22 @@ double model_hanoi::cost() const{
             throw std::runtime_error("Link's type not retrieved.");
         
         if (linkType == EN_PIPE){
-            // Get diameter and length
-            error = EN_getlinkvalue(Hanoi.ph, linkIdx, EN_DIAMETER, &diam);
-            error = EN_getlinkvalue(Hanoi.ph, linkIdx, EN_LENGTH, &leng);
+            // Get diameter and length (in millimeter and in meters)
+            error = EN_getlinkvalue(Hanoi.ph, linkIdx, EN_DIAMETER, &diam_mm);
+            error = EN_getlinkvalue(Hanoi.ph, linkIdx, EN_LENGTH, &leng_m);
+            
+            double diam_cost{0.};
+            std::vector<double>::size_type i = av_diams.size();
+            while( i ){
+                --i;
+                if( diam_mm == av_diams[i].millimeters ){
+                    diam_cost = av_diams[i].inches_cost;
+                    i = 0;
+                }
+            }
             
             // Compute
-            totalcost += pow(diam, 1.5)*leng;
+            totalcost += diam_cost*leng_m;
         }
     }
     totalcost *= 1.1;
@@ -183,10 +184,11 @@ void model_hanoi::load_availDiam(const char* filename){
     int rows;
     fs >> rows;
     
-    pair<double, double> tempData{0., 0.};
+    diamData tempData{0., 0., 0.};
     for (int i=0; i<rows; ++i){
-        fs >> tempData.first;
-        fs >> tempData.second;
+        fs >> tempData.inches;
+        fs >> tempData.millimeters;
+        fs >> tempData.inches_cost;
         av_diams.push_back(tempData);
     }
     
