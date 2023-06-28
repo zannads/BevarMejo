@@ -38,7 +38,7 @@ public:
 protected:
     
     // Path to the inp file from which the project will be uploaded.
-    const char* inpFilename;
+    std::string inpFilename;
 };
 
 #endif /* hanoi_hpp */

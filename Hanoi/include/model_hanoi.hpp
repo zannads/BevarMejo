@@ -19,6 +19,12 @@ descr: Model of the Hanoi problem, header file.
 
 #include "hanoi.hpp"
 
+struct diamData{
+    double inches;
+    double millimeters;
+    double inches_cost;
+};
+
 class model_hanoi{
 public:
 	model_hanoi();
@@ -55,8 +61,7 @@ protected:
     hanoi Hanoi;
     
     // Variable containing the available diameters for the decision variable
-    std::vector<std::pair<double, double>> av_diams;
-    
+    std::vector<diamData> av_diams;
     
     // Objective function
     double cost() const;
