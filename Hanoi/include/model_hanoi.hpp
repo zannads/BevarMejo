@@ -3,8 +3,8 @@ Author: DennisZ
 descr: Model of the Hanoi problem, header file. 
 ----------------------*/
 
-#ifndef model_hanoi_hpp
-#define model_hanoi_hpp
+#ifndef hanoi_model_hanoi_hpp
+#define hanoi_model_hanoi_hpp
 
 
 #include <utility>
@@ -14,10 +14,13 @@ descr: Model of the Hanoi problem, header file.
 #include <iostream>
 #include <numeric>
 #include <filesystem>
+#include <memory>
 
 #include "pugixml.hpp"
 
 #include "hanoi.hpp"
+
+namespace bevarmejo {
 
 struct diamData{
     double inches;
@@ -25,43 +28,49 @@ struct diamData{
     double inches_cost;
 };
 
-class model_hanoi{
+class ModelHanoi{
 public:
-	model_hanoi();
-    // ~model_hanoi(); for now nothing specific to destory in here
+    ModelHanoi();
     
-	// Other public functions for the optimization algorithm:
-	// Number of objective functions
+    ModelHanoi(std::string settings_file);
+    
+    ModelHanoi(const ModelHanoi &src);
+    
+    ModelHanoi(ModelHanoi &&src);
+    
+    //~ModelHanoi();// for now nothing specific to destory in here
+    
+    // Other public functions for the optimization algorithm:
+    // Number of objective functions
     std::vector<double>::size_type get_nobj() const;
-
+    
     // Number of equality constraints
     std::vector<double>::size_type get_nec() const;
-
+    
     // Number of INequality constraints
     std::vector<double>::size_type get_nic() const;
-
-    // Number of integer decision variables 
+    
+    // Number of integer decision variables
     std::vector<double>::size_type get_nix() const;
-
+    
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
     
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.
     std::vector<double> fitness(const std::vector<double>& dv) const;
-
+    
     // Implementation of the box bounds.
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
     
     // Initialize the object on which it is called.
     void upload_settings(std::string settingsFile);
-    void clear();
     
 protected:
     // Variable containing the EPANET handler(s) and all the related network information.
-    hanoi Hanoi;
+    std::shared_ptr<bevarmejo::Hanoi> _hanoi_;
     
     // Variable containing the available diameters for the decision variable
-    std::vector<diamData> av_diams;
+    std::vector<diamData> _av_diams_;
     
     // Objective function
     double cost() const;
@@ -74,7 +83,9 @@ protected:
     
     
     // Ad-hoc function to load the file containing the av_diams.
-    void load_availDiam(const char * filename);
+    void load_availDiam(std::string filename);
 };
 
-#endif /* hanoi_hpp */
+} /* namespace bevarmejo */
+
+#endif /* hanoi_model_hanoi_hpp */
