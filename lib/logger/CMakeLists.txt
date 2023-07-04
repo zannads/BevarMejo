@@ -2,11 +2,11 @@
 # project specific logic here.
 #
 
-add_library(logger "populationsHandler.cpp" )
+add_library(bemelib_logger "populationsHandler.cpp" "populationsHandler.hpp")
 
-target_link_libraries(logger PUBLIC Pagmo::pagmo)
+target_link_libraries(bemelib_logger PUBLIC Pagmo::pagmo)
 
-target_include_directories(logger PUBLIC
+target_include_directories(bemelib_logger PUBLIC
                             "${PROJECT_BINARY_DIR}"
                             "${PROJECT_SOURCE_DIR}"
 )

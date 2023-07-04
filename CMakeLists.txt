@@ -18,7 +18,7 @@ endif()
 #     3. set the enviromental variable VCPKG_ROOT = /path/to/vcpkg // see how to do it base on your OS
 #         `cmake ..` 
 IF(DEFINED ENV{VCPKG_ROOT})
-  set( VCPKG_ROOT ENV{VCPKG_ROOT} CACHE PATH "Path to the rootfolder to vcpkg")
+  set( VCPKG_ROOT "$ENV{VCPKG_ROOT}" CACHE PATH "Path to the rootfolder to vcpkg")
   message(STATUS "VCPKG_ROOT env found, using ${VCPKG_ROOT}")
 ELSE()
   set( VCPKG_ROOT "../vcpkg" CACHE PATH "Path to the rootfolder to vcpkg")
@@ -28,10 +28,48 @@ set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ) 
 set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 	   CACHE FILEPATH "Vcpkg toolchain file")
 
+
 project ("BèvarMéjo")
+
+#Set the path to the EPANET folder and library
+#The path to the folder can be set in 2 ways:
+#     1. pass a flag at the first cmake invocation
+#         `cmake .. -DEPANET_ROOT=/path/to/EPANET`
+#     3. set the enviromental variable EPANET_ROOT = /path/to/EPANET // see how to do it base on your OS
+#         `cmake ..` 
+IF(DEFINED ENV{EPANET_ROOT})
+  set( EPANET_ROOT "$ENV{EPANET_ROOT}" CACHE PATH "Path to the rootfolder to EPANET")
+  message(STATUS "EPANET_ROOT env found, using ${EPANET_ROOT}")
+ELSE()
+  set( EPANET_ROOT "${PROJECT_SOURCE_DIR}/../EPANET" CACHE PATH "Path to the rootfolder to EPANET")
+  message(STATUS "EPANET_ROOT env NOT found, using ${EPANET_ROOT}")
+ENDIF()
 
 # Look for an installation of pagmo in the system.
 find_package(Pagmo REQUIRED)
+
+# "Look" for an installation of EPANET in the system.
+IF(WIN32)
+  add_library(epanet SHARED IMPORTED )
+  set_target_properties(epanet PROPERTIES
+            IMPORTED_LOCATION "${EPANET_ROOT}/build/bin/Release/epanet2.dll"
+            IMPORTED_IMPLIB "${EPANET_ROOT}/build/lib/Release/epanet2.lib"
+            )
+ENDIF(WIN32)
+
+IF(APPLE)
+  add_library(epanet SHARED IMPORTED)
+  set_target_properties(epanet PROPERTIES
+             IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
+             )
+ENDIF(APPLE)
+
+IF(LINUX)
+  add_library(epanet SHARED IMPORTED)
+  set_target_properties(epanet PROPERTIES
+        IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.so"
+        )
+ENDIF(LINUX)
 
 # Include my library
 add_subdirectory ("lib")

@@ -13,7 +13,7 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Add tests and install targets if needed.
-target_link_libraries(hanoiOptimization PRIVATE Pagmo::pagmo logger modelHanoi)
+target_link_libraries(hanoiOptimization PRIVATE Pagmo::pagmo bemelib_logger modelHanoi)
 
 target_include_directories(hanoiOptimization PUBLIC
                           "${PROJECT_BINARY_DIR}"
