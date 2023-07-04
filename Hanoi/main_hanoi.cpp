@@ -88,8 +88,7 @@ int main(int argc, char* argv[])
     outFilename += std::to_string(settingsNsga.seed);
     outFilename += ".out";
     
-    beme::saveFinalPopulation(outFilename, pop);
-    mh_ptr->clear();
+    bevarmejo::saveFinalPopulation(outFilename, pop);
     
     return 0;
 }

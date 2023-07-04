@@ -18,7 +18,7 @@
 
 #include <pagmo/population.hpp>
 
-namespace beme {
+namespace bevarmejo {
 
 template<typename T>
 void writeParamCouple(std::ofstream& ofs,  const char*  paramName, T paramValue){
