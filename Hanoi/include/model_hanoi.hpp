@@ -61,10 +61,7 @@ public:
     
     // Implementation of the box bounds.
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
-    
-    // Initialize the object on which it is called.
-    void upload_settings(std::string settingsFile);
-    
+     
 protected:
     // Variable containing the EPANET handler(s) and all the related network information.
     std::shared_ptr<bevarmejo::Hanoi> _hanoi_;

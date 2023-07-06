@@ -45,28 +45,6 @@ _av_diams_(std::move(src._av_diams_)) {};
     std::cout <<"deleting MOdelHAnoi" <<std::endl;
 }*/
 
-void ModelHanoi::upload_settings(std::string settingsFile){
-    // Load the file and check
-    pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(settingsFile.c_str());
-    
-    if (result.status != pugi::status_ok){
-        throw std::runtime_error(result.description());
-    }
-    
-    std::filesystem::path rootDataFolder{doc.child("rootDataFolder").child_value()};
-    
-    std::filesystem::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
-    inpFile = rootDataFolder/inpFile;
-    
-    std::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
-    avDiams = rootDataFolder/avDiams;
-    
-    load_availDiam(avDiams.c_str());
-    
-    _hanoi_->set_inpfile( inpFile.string() );
-}
-
 // Number of objective functions
 std::vector<double>::size_type ModelHanoi::get_nobj() const{
     return 2;
