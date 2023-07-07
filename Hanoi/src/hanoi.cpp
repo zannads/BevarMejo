@@ -5,60 +5,38 @@
 //  Created by Dennis Zanutto on 09/06/23.
 //
 
+
+#include <stdio.h>
+#include <string>
+#include <vector>
+
+#include "epanet2_2.h"
+
+#include "bevarmejo/water_distribution_system.hpp"
+
 #include "hanoi.hpp"
 
-hanoi::hanoi(){
-    // Empty constructor.
-    // EPANET project is not initialized
-    ph = nullptr;
-}
+namespace bevarmejo {
 
-hanoi::~hanoi(){
-}
-
-void hanoi::clear(){
-    // do I need to close before delete? or is it unnecessary?
-    //printf("deleting hanoi\n");
-    EN_deleteproject(ph);
-}
-
-void hanoi::set_inpFile(const char* inpFile){
-    inpFilename = inpFile;
-    return;
-}
-
-
-void hanoi::init(){
-    EN_createproject(&ph);
-    
-    int error = EN_open(ph, inpFilename.c_str(), "", "");
-    if (error>100)
-        printf("File not found\n");
-    
-    EN_setreport(ph, "MESSAGES NO");
-    
-    return;
-}
-
-std::vector<double> hanoi::evaluate() const{
+std::vector<double> Hanoi::evaluate() const{
     // check it can be done
     
     // Simulation
     
     // Open the Hydraulic engine
-    int error = EN_openH(ph);
+    int error = EN_openH(ph_);
     if (error>100)
         throw std::runtime_error("Hydraulics not opened.");
     
     // Initialize the Hydraulic engine
     // Don't save hydraulics, Re-initialize flows
-    error = EN_initH(ph, EN_INITFLOW);
+    error = EN_initH(ph_, EN_INITFLOW);
     if (error>100)
         throw std::runtime_error("Hydraulics not initialised.");
     
     // Run hydraulics
     long t{0};
-    error = EN_runH(ph, &t);
+    error = EN_runH(ph_, &t);
     if (error>100)
         throw std::runtime_error("Simulation failed.");
     
@@ -71,12 +49,14 @@ std::vector<double> hanoi::evaluate() const{
     for (int i = 0; i<nJun; ++i) {
         juncFakeName = std::to_string(i+2);
         
-        error = EN_getnodeindex(ph, juncFakeName.c_str(), &juncIdx);
+        error = EN_getnodeindex(ph_, juncFakeName.c_str(), &juncIdx);
         
-        error = EN_getnodevalue(ph, juncIdx, EN_PRESSURE, &nodesPres[i]);
+        error = EN_getnodevalue(ph_, juncIdx, EN_PRESSURE, &nodesPres[i]);
     }
     
-    error = EN_closeH(ph);
+    error = EN_closeH(ph_);
     
     return nodesPres;
 }
+
+} /* namespace bevarmejo */
