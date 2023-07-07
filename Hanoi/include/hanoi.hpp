@@ -5,13 +5,13 @@
 //  Created by Dennis Zanutto on 09/06/23.
 //
 
-#ifndef hanoi__hanoi_hpp
-#define hanoi__hanoi_hpp
+#ifndef HANOI__HANOI_HPP
+#define HANOI__HANOI_HPP
 
 #include <stdio.h>
 #include <vector>
 
-#include "classes/water_distribution_system.hpp"
+#include "bevarmejo/water_distribution_system.hpp"
 
 namespace bevarmejo {
 class Hanoi : public bevarmejo::WaterDistributionSystem {
@@ -22,4 +22,4 @@ public:
 };
 
 } /* namespace bevarmejo */
-#endif /* hanoi__hanoi_hpp */
+#endif /* HANOI__HANOI_HPP */

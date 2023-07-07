@@ -5,13 +5,16 @@
 //  Created by Dennis Zanutto on 09/06/23.
 //
 
-#include "hanoi.hpp"
 
 #include <stdio.h>
 #include <string>
 #include <vector>
 
 #include "epanet2_2.h"
+
+#include "bevarmejo/water_distribution_system.hpp"
+
+#include "hanoi.hpp"
 
 namespace bevarmejo {
 

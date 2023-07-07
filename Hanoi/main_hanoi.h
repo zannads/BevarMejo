@@ -19,6 +19,4 @@ Author: DennisZ
 
 #include "pugixml.hpp"
 
-#include "logger/populationsHandler.hpp"
-
 #include "model_hanoi.hpp"

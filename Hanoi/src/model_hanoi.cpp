@@ -3,23 +3,30 @@ Author: DennisZ
 descr: Model of the Hanoi problem.
 ----------------------*/
 
+
+#include <fstream>
 #include <iostream>
+#include <filesystem>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "pugixml.hpp"
+
 #include "bevarmejo/io.hpp"
 
 #include "model_hanoi.hpp"
 
+namespace fsys = std::filesystem;
 namespace bevarmejo {
 
 ModelHanoi::ModelHanoi(){
     // Initialize an empty object.
 }
 
-ModelHanoi::ModelHanoi(std::string settings_file){
+ModelHanoi::ModelHanoi(fsys::path settings_file){
     // Load the file and check
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(settings_file.c_str());
@@ -28,12 +35,12 @@ ModelHanoi::ModelHanoi(std::string settings_file){
         throw std::runtime_error(result.description());
     }
     
-    std::filesystem::path rootDataFolder{doc.child("rootDataFolder").child_value()};
+    fsys::path rootDataFolder{doc.child("rootDataFolder").child_value()};
     
-    std::filesystem::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
+    fsys::path inpFile{doc.child("optProblem").child("hanoi").child("inpFile").child_value()};
     inpFile = rootDataFolder/inpFile;
     
-    std::filesystem::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
+    fsys::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
     avDiams = rootDataFolder/avDiams;
     
     load_availDiam(avDiams.c_str());

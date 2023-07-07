@@ -3,23 +3,18 @@ Author: DennisZ
 descr: Model of the Hanoi problem, header file. 
 ----------------------*/
 
-#ifndef hanoi_model_hanoi_hpp
-#define hanoi_model_hanoi_hpp
+#ifndef HANOI_MODEL_HANOI_HPP
+#define HANOI_MODEL_HANOI_HPP
 
-
-#include <utility>
-#include <vector>
-#include <cmath>
-#include <fstream>
 #include <iostream>
-#include <numeric>
 #include <filesystem>
 #include <memory>
-
-#include "pugixml.hpp"
+#include <utility>
+#include <vector>
 
 #include "hanoi.hpp"
 
+namespace fsys = std::filesystem;
 namespace bevarmejo {
 
 struct diamData{
@@ -32,7 +27,7 @@ class ModelHanoi{
 public:
     ModelHanoi();
     
-    ModelHanoi(std::string settings_file);
+    ModelHanoi(fsys::path settings_file);
     
     ModelHanoi(const ModelHanoi &src);
     
@@ -88,4 +83,4 @@ protected:
 
 } /* namespace bevarmejo */
 
-#endif /* hanoi_model_hanoi_hpp */
+#endif /* HANOI_MODEL_HANOI_HPP */

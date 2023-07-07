@@ -5,7 +5,13 @@ descr: Main file for the optimization of the Hanoi problem.
 
 #include "main_hanoi.h"
 
+#include <iostream>
 #include <utility>
+
+#include "pagmo/io.hpp"
+
+#include "bevarmejo/experiment.hpp"
+#include "bevarmejo/io.hpp"
 
 using namespace pagmo;
 
@@ -45,24 +51,14 @@ nsga2p quickUploadSettings(const char* settingsFile){
 
 int main(int argc, char* argv[])
 {
-    // Let's parse the input of the program
-    if (argc < 2){
-        std::cout << "You need to pass a SettingsFile" <<std::endl;
-        return 1;
-    }
-    std::filesystem::path settingsFile(argv[1]);
-    
-    if (!exists(settingsFile) || !is_regular_file(settingsFile)){
-        std::cout << "SettingsFile not existing or not a file (e.g., a directory)!" <<std::endl;
-        return 1;
-    }
-    
-    //auto progSettings = bevarmejo::from_XML_to_settingsStruct(settingsFile.string(), nsga2p{});
+    // check the number of inputs, the first one after -p should be the path to folder, the name for now I leave standard value
+    std::filesystem::path experiment_folder(argv[2]);
+    bevarmejo::Experiment experiment(experiment_folder);
     
     //Construct a pagmo::problem for Hanoi model
-    problem p{ std::move(bevarmejo::ModelHanoi(settingsFile.string())) };
+    problem p{ bevarmejo::ModelHanoi(experiment.settings_file()) };
     
-    nsga2p settingsNsga = quickUploadSettings(settingsFile.c_str());
+    nsga2p settingsNsga = quickUploadSettings(experiment.settings_file().c_str());
     
     // Instantiate Optimization Algorithm
     algorithm algo{ nsga2(settingsNsga.report_nfe, settingsNsga.cr, settingsNsga.eta_c, settingsNsga.m, settingsNsga.eta_m, settingsNsga.seed) };
@@ -77,13 +73,7 @@ int main(int argc, char* argv[])
         // Save pop
     }
     
-    // save pop
-    std::filesystem::path outFilename {settingsNsga.rootDataFolder};
-    outFilename /= "output/hanoi_nsga2_";
-    outFilename += std::to_string(settingsNsga.seed);
-    outFilename += ".out";
-    
-    bevarmejo::saveFinalPopulation(outFilename, pop);
+    experiment.save_final_result(pop, algo);
     
     return 0;
 }
