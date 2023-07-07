@@ -55,6 +55,9 @@ public:
     
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
     
+    //
+    std::string get_extra_info() const;
+    
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.
     std::vector<double> fitness(const std::vector<double>& dv) const;

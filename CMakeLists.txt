@@ -72,6 +72,7 @@ IF(LINUX)
 ENDIF(LINUX)
 
 # Include my library
+add_subdirectory("bevarmejolib")
 add_subdirectory ("lib")
 
 # Include sub-projects.

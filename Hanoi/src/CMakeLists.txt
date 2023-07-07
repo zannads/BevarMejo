@@ -9,7 +9,7 @@ ENDIF()
 
 add_library(modelHanoi "model_hanoi.cpp" "hanoi.cpp" "${PUGIXML_ROOT}/pugixml.cpp")
 
-target_link_libraries(modelHanoi PUBLIC Pagmo::pagmo epanet bemelib_classes)
+target_link_libraries(modelHanoi PUBLIC Pagmo::pagmo epanet bemelib_classes bemelib)
 
 target_include_directories(modelHanoi PUBLIC 
 							Pagmo::pagmo
@@ -17,4 +17,5 @@ target_include_directories(modelHanoi PUBLIC
 							"${EPANET_ROOT}/include"
 							"${PUGIXML_ROOT}"
 							"${PROJECT_SOURCE_DIR}/lib"
+							"${PROJECT_SOURCE_DIR}/bevarmejolib/include"
 )

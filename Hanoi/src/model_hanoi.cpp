@@ -3,6 +3,14 @@ Author: DennisZ
 descr: Model of the Hanoi problem.
 ----------------------*/
 
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "bevarmejo/io.hpp"
+
 #include "model_hanoi.hpp"
 
 namespace bevarmejo {
@@ -64,6 +72,19 @@ std::vector<double>::size_type ModelHanoi::get_nic() const{
 std::vector<double>::size_type ModelHanoi::get_nix() const{
     //TODO
     return 34;
+}
+
+std::string ModelHanoi::get_extra_info() const{
+    std::ostringstream oss;
+    
+    bevarmejo::stream_param(oss, "\tGlobal dimension: ", get_bounds().first.size());
+    bevarmejo::stream_param(oss, "\tFitness dimension: ", get_nobj()+get_nec()+get_nic());
+    bevarmejo::stream_param(oss, "\tNumber of objectives: ", get_nobj());
+    bevarmejo::stream_param(oss, "\tNumber of equality c: ", get_nec());
+    bevarmejo::stream_param(oss, "\tLower bounds: ", get_bounds().first);
+    bevarmejo::stream_param(oss, "\tUpper bounds: ", get_bounds().second);
+    
+    return oss.str();
 }
 
 // Implementation of the objective function.
