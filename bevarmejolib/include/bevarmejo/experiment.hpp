@@ -74,10 +74,10 @@ public:
     fsys::path settings_file();
     fsys::path output_file();
 
-    pugi::xml_node& algorithm_settings() const;
+    pugi::xml_node algorithm_settings() const;
     // TODO: overload for multiple algorithms
 
-    pugi::xml_node& model_settings() const;
+    pugi::xml_node model_settings() const;
     // TODO :overload for multiple models
 };
 }

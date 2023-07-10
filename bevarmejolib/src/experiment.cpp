@@ -174,17 +174,17 @@ fsys::path Experiment::output_file()
     output_filename += ".out";
     return output_filename;
 }
-pugi::xml_node& Experiment::algorithm_settings() const
+pugi::xml_node Experiment::algorithm_settings() const
 {
-    pugi::xml_node& algorithm_settings_node = _settings_.child("optProblem").child("optAlgorithm").first_child();
+    pugi::xml_node algorithm_settings_node = _settings_.child("optProblem").child("optAlgorithm").first_child();
     if (algorithm_settings_node.empty())
 		throw std::runtime_error("\nNo algorithm settings found in the settings file\n");
     return algorithm_settings_node;
 }
 
-pugi::xml_node& Experiment::model_settings() const
+pugi::xml_node Experiment::model_settings() const
 {
-    pugi::xml_node& model_settings_node = _settings_.child("optProblem").child("systemModel").first_child();
+    pugi::xml_node model_settings_node = _settings_.child("optProblem").child("systemModel").first_child();
     if (model_settings_node.empty())
         throw std::runtime_error("\nNo model settings found in the settings file\n");
 	return model_settings_node;
