@@ -3,7 +3,7 @@ Author: DennisZ
 descr: Model of the Hanoi problem.
 ----------------------*/
 
-
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -50,10 +50,51 @@ ModelHanoi::ModelHanoi(fsys::path settings_file){
     _hanoi_->init();
 }
 
+ModelHanoi::ModelHanoi(fsys::path settings_file, fsys::path av_diams_file) {
+    load_availDiam(av_diams_file.string());
+
+    _hanoi_ = std::make_shared<bevarmejo::Hanoi>();
+    _hanoi_->set_inpfile( settings_file.string() ); 
+    _hanoi_->init();
+}
+
+ModelHanoi::ModelHanoi(fsys::path input_directory, pugi::xml_node settings)
+{
+    assert(settings != nullptr);
+    // Only 2 things to upload: inpFile and avDiams
+    fsys::path avd_filename{settings.child_value("avDiams")}; //relative
+    avd_filename = input_directory/avd_filename;
+    load_availDiam(avd_filename.string());
+	
+    fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
+    inp_filename = input_directory/inp_filename;
+	
+	_hanoi_ = std::make_shared<bevarmejo::Hanoi>();
+	_hanoi_->set_inpfile(inp_filename.string() );
+	_hanoi_->init();
+}
+
 ModelHanoi::ModelHanoi(const ModelHanoi &src) : _hanoi_(src._hanoi_), _av_diams_(src._av_diams_) {};
 
-ModelHanoi::ModelHanoi(ModelHanoi &&src) : _hanoi_(std::move(src._hanoi_)),
-_av_diams_(std::move(src._av_diams_)) {};
+ModelHanoi::ModelHanoi(ModelHanoi &&src) noexcept
+    : _hanoi_(std::move(src._hanoi_)),
+_av_diams_(std::move(src._av_diams_)) {}
+
+ModelHanoi& ModelHanoi::operator=(const ModelHanoi& src) {
+    if (this != &src) {
+        ModelHanoi tmp(src);
+		std::swap(_hanoi_, tmp._hanoi_);
+        std::swap(_av_diams_, tmp._av_diams_);
+	}
+    
+	return *this;
+}
+
+ModelHanoi& ModelHanoi::operator=(ModelHanoi&& src) noexcept {
+    _hanoi_ = std::move(src._hanoi_);
+	_av_diams_ = std::move(src._av_diams_);
+	return *this;
+}
 
 
 /*ModelHanoi::~ModelHanoi(){

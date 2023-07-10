@@ -12,6 +12,8 @@ descr: Model of the Hanoi problem, header file.
 #include <utility>
 #include <vector>
 
+#include "pugixml.hpp"
+
 #include "hanoi.hpp"
 
 namespace fsys = std::filesystem;
@@ -28,10 +30,18 @@ public:
     ModelHanoi();
     
     ModelHanoi(fsys::path settings_file);
+
+    ModelHanoi(fsys::path settings_file, fsys::path av_diams_file); 
+
+    ModelHanoi(fsys::path input_directory, pugi::xml_node settings);
     
     ModelHanoi(const ModelHanoi &src);
     
-    ModelHanoi(ModelHanoi &&src);
+    ModelHanoi(ModelHanoi &&src) noexcept;
+
+    ModelHanoi& operator=(const ModelHanoi &src);
+
+    ModelHanoi& operator=(ModelHanoi &&src) noexcept;
     
     //~ModelHanoi();// for now nothing specific to destory in here
     

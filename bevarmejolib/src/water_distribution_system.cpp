@@ -8,7 +8,6 @@
 #include "water_distribution_system.hpp"
 
 #include <assert.h>
-//#include <filesystem>
 #include <iostream>
 #include <stdio.h>
 #include <stdexcept>
@@ -38,7 +37,7 @@ WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem &
     init();
 }
 
-WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src){
+WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src) noexcept{
     _inp_filename_ = std::move(src._inp_filename_);
 
     ph_ = src.ph_;
@@ -55,7 +54,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistribut
     return *this;
 }
 
-WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSystem &&rhs) {
+WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSystem &&rhs) noexcept {
     ph_ = rhs.ph_;
     rhs.ph_ = nullptr;
     
@@ -97,6 +96,4 @@ std::string WaterDistributionSystem::get_inpfile() const{
     return _inp_filename_;
 }
 
-}
-
-#include "epanet2_2.h"
+} /* namespace bevarmejo */

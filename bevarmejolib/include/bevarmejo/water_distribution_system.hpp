@@ -5,11 +5,10 @@
 //  Created by Dennis Zanutto on 04/07/23.
 //
 
-#ifndef lib_classes__water_distribution_system_hpp
-#define lib_classes__water_distribution_system_hpp
+#ifndef BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
+#define BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <stdio.h>
-//#include <filesystem>
 #include <string>
 
 #include "epanet2_2.h"
@@ -37,19 +36,19 @@ public:
     
     // Constructor from .inp file
     WaterDistributionSystem(std::string inp_filename);
-    
+ 
     // Copy constructor
     // this is not actually a copy constructor but rather a reinitialization one.
     WaterDistributionSystem(const WaterDistributionSystem &src);
     
     // Move constructor
-    WaterDistributionSystem(WaterDistributionSystem &&src);
+    WaterDistributionSystem(WaterDistributionSystem &&src) noexcept;
     
     // Copy Assignement operator
     WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs);
     
     // Move Assignement operator
-    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs);
+    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept;
     
     ~WaterDistributionSystem();
     
@@ -67,4 +66,4 @@ public:
 
 } /* namespace bevarmejo */
 
-#endif /* lib_classes__water_distribution_system_hpp */
+#endif /* BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP */
