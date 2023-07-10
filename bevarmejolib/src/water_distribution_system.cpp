@@ -60,6 +60,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSys
     rhs.ph_ = nullptr;
     
     _inp_filename_ = std::move(rhs._inp_filename_);
+    return *this;
 }
 
 WaterDistributionSystem::~WaterDistributionSystem(){

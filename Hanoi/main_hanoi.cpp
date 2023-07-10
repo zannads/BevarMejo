@@ -6,6 +6,8 @@ descr: Main file for the optimization of the Hanoi problem.
 #include "main_hanoi.h"
 
 #include <iostream>
+#include <string>
+#include <filesystem>
 #include <utility>
 
 #include "pagmo/io.hpp"
@@ -25,11 +27,11 @@ struct nsga2p{
     std::string rootDataFolder;
 };
 
-nsga2p quickUploadSettings(const char* settingsFile){
+nsga2p quickUploadSettings(std::string settingsFile){
     
     // Load the file and check
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(settingsFile);
+    pugi::xml_parse_result result = doc.load_file(settingsFile.c_str());
     
     nsga2p settingsNsga;
 
@@ -58,7 +60,7 @@ int main(int argc, char* argv[])
     //Construct a pagmo::problem for Hanoi model
     problem p{ bevarmejo::ModelHanoi(experiment.settings_file()) };
     
-    nsga2p settingsNsga = quickUploadSettings(experiment.settings_file().c_str());
+    nsga2p settingsNsga = quickUploadSettings(experiment.settings_file().string());
     
     // Instantiate Optimization Algorithm
     algorithm algo{ nsga2(settingsNsga.report_nfe, settingsNsga.cr, settingsNsga.eta_c, settingsNsga.m, settingsNsga.eta_m, settingsNsga.seed) };

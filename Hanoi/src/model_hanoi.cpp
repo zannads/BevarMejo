@@ -43,7 +43,7 @@ ModelHanoi::ModelHanoi(fsys::path settings_file){
     fsys::path avDiams{doc.child("optProblem").child("modelHanoi").child("avDiams").child_value()};
     avDiams = rootDataFolder/avDiams;
     
-    load_availDiam(avDiams.c_str());
+    load_availDiam(avDiams.string());
     
     _hanoi_ = std::make_shared<bevarmejo::Hanoi>();
     _hanoi_->set_inpfile( inpFile.string() );
