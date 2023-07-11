@@ -144,6 +144,8 @@ std::vector<double> ModelHanoi::fitness(const std::vector<double>& dv) const{
     
     // Run the simulation
     std::vector<double> nodePressures = _hanoi_->evaluate();
+    // auto results = _hanoi_->run_hydraulics(); you should use it like this
+    // and check it is not empty (sol failed)
     
     // Get the result of the functions defined on it
     fit[0] = cost();

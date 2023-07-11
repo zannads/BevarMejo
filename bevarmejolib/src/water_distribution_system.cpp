@@ -5,8 +5,6 @@
 //  Created by Dennis Zanutto on 04/07/23.
 //
 
-#include "water_distribution_system.hpp"
-
 #include <assert.h>
 #include <iostream>
 #include <stdio.h>
@@ -15,6 +13,8 @@
 #include <utility>
 
 #include "epanet2_2.h"
+
+#include "water_distribution_system.hpp"
 
 namespace bevarmejo {
 WaterDistributionSystem::WaterDistributionSystem(){
@@ -94,6 +94,121 @@ void WaterDistributionSystem::set_inpfile(const std::string inp_filename){
 
 std::string WaterDistributionSystem::get_inpfile() const{
     return _inp_filename_;
+}
+
+std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydraulics() const
+{
+    // Empty 3d vector of results
+    std::vector<std::vector<std::vector<double>>> results;
+
+    int errorcode = EN_openH(ph_);
+    if (errorcode >= 100)
+        return results;
+
+    errorcode = EN_initH(ph_, 10);
+    if (errorcode >= 100)
+		return results;
+
+    // if the inp file is correct these errors should be always 0
+    long h_step;
+    errorcode = EN_gettimeparam(ph_, EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long r_step;
+    errorcode = EN_gettimeparam(ph_, EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+    long horizon;
+    errorcode = EN_gettimeparam(ph_, EN_DURATION, &horizon);
+	assert(errorcode < 100);
+
+    long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
+
+    // here I should build the the 3 objects a priori 
+    // in the future with subnetworks I could remove this complex data retrival
+    int n_nodes;
+    errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
+	assert(errorcode < 100);
+
+    int n_links;
+    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
+    assert(errorcode < 100);
+
+    int n_pumps{ 0 };
+    for (int i = 1; i <= n_links; ++i) {
+		int link_type;
+		errorcode = EN_getlinktype(ph_, i, &link_type);
+		assert(errorcode < 100);
+		if (link_type == EN_PUMP)
+			n_pumps++;
+	}
+
+    std::vector<std::vector<double>> pressures(n_reports, std::vector<double>(n_nodes));
+    std::vector<std::vector<double>> flows    (n_reports, std::vector<double>(n_links));
+    std::vector<std::vector<double>> energies (n_reports, std::vector<double>(n_pumps, 0.));
+
+
+    bool solution_has_failed = false;
+    bool scheduled; // is the current time a reporting time?
+    long t{ 0 }; // current time
+    long delta_t{ 0 }; // real hydraulic time step
+    unsigned int i{ 0 }; // index of the current report
+
+    do {
+        errorcode = EN_runH(ph_, &t);
+        if (errorcode >= 100) {
+            solution_has_failed = true;
+            break;
+        }
+
+        errorcode = EN_nextH(ph_, &delta_t);
+        assert(errorcode < 100);
+
+        // if the current time is a reporting time, I save all the results
+        scheduled = (t % r_step == 0);
+        if (scheduled) {
+            // save pressures and flows
+            for (int j = 1; j <= n_nodes; ++j) {
+				errorcode = EN_getnodevalue(ph_, j, EN_PRESSURE, &pressures[i][j - 1]);
+				assert(errorcode < 100);
+			}
+            for (int j = 1; j <= n_links; ++j) {
+                errorcode = EN_getlinkvalue(ph_, j, EN_FLOW, &flows[i][j - 1]);
+                assert(errorcode < 100);
+            }
+        }
+        
+        // always add energy
+        if (n_pumps > 0) {
+        for (int j = 1; j <= n_links; ++j) {
+			int link_type;
+			errorcode = EN_getlinktype(ph_, j, &link_type);
+			assert(errorcode < 100);
+			if (link_type == EN_PUMP) {
+                double instant_energy;
+				errorcode = EN_getlinkvalue(ph_, j, EN_ENERGY, &instant_energy);
+				assert(errorcode < 100);
+
+            energies[i][j - 1] += instant_energy*delta_t;
+			}
+		}
+		}
+        
+        // get ready for the next step
+        t += delta_t;
+        ++i; 
+    } while (delta_t > 0);
+
+    errorcode = EN_closeH(ph_);
+    assert(errorcode < 100);
+
+    if (solution_has_failed)
+		return results;
+
+    // if the solution is correct, I return the whole results
+    results.push_back(pressures);
+    results.push_back(flows);
+    results.push_back(energies);
+
+    return results;
 }
 
 } /* namespace bevarmejo */

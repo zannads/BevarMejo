@@ -45,7 +45,8 @@ int main(int argc, char* argv[])
         pop = algo.evolve(pop);
         // Save pop (maybe in the future)
     }
-    
+    // Save final result and end time
+	experiment.finished();
     experiment.save_final_result(pop, algo);
     
     return 0;

@@ -1,6 +1,6 @@
 //
 //  water_distribution_system.hpp
-//  hanoiOptimization
+//  bevarmejo cpp library
 //
 //  Created by Dennis Zanutto on 04/07/23.
 //
@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 #include "epanet2_2.h"
 
@@ -60,8 +61,12 @@ public:
     void set_inpfile(const std::string inp_filename);
     std::string get_inpfile() const;
     
-    //Run and stuff
-    
+    //Run, the output has a fixed format: pressure at all nodes, flow in all links,
+    // energy at all pumps. Each one of these is a matrix with the following dimensions:
+    // 1st dimension: time
+    // 2nd dimension: node/link/pump
+    // if something fails , it returns an empty vector.
+    std::vector<std::vector<std::vector<double>>> run_hydraulics() const;
 };
 
 } /* namespace bevarmejo */
