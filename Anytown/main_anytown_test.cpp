@@ -27,11 +27,13 @@ int main(int argc, char* argv[])
     //                                -s seed
     std::filesystem::path experiment_folder(argv[2]);
     unsigned int seed = std::stoi(argv[4]);
-
+    
     // Create an experiment object to handle results and settings
     bevarmejo::Experiment experiment(experiment_folder, seed);
     experiment.set_name("anytown_nsga2");
 
+    bevarmejo::ModelAnytown ma(experiment.input_dir(), experiment.model_settings());
+    /*
     // Construct a pagmo::problem for ANYTOWN model
     pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };
 
@@ -52,6 +54,6 @@ int main(int argc, char* argv[])
     // Save final result and end time
     experiment.finished();
     experiment.save_final_result(pop, algo);
-
+    */
     return 0;
 }

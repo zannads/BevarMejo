@@ -16,6 +16,7 @@
 #include "pugixml.hpp"
 
 #include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/subnetwork.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
@@ -23,7 +24,7 @@ namespace bevarmejo {
 	class ModelAnytown {
 	public: 
 		ModelAnytown() = default;
-		ModelAnytown(const fsys::path& input_directory, pugi::xml_node settings);
+		ModelAnytown(fsys::path input_directory, pugi::xml_node settings);
 
 		// Try to have copy and move constructor automatically created
 
@@ -56,6 +57,7 @@ namespace bevarmejo {
         /* Anytonw specific data */
         std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
 
+        std::vector<Subnetwork> _subnetworks_;
 
         /* Anytown specific functions */
 
