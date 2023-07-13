@@ -8,11 +8,14 @@
 #ifndef BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
 #define BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
 
+#include <filesystem>
 #include <stdio.h>
 #include <string>
 #include <vector>
 
 #include "epanet2_2.h"
+
+#include "subnetwork.hpp"
 
 namespace bevarmejo {
 
@@ -26,6 +29,8 @@ public:
 protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
+    // Subnetworks of IDs
+    std::vector<Subnetwork> _subnetworks_;
     
 public:
     
@@ -67,6 +72,9 @@ public:
     // 2nd dimension: node/link/pump
     // if something fails , it returns an empty vector.
     std::vector<std::vector<std::vector<double>>> run_hydraulics() const;
+
+    // add a subnetwork to the list of subnetworks from path to file
+    void add_subnetwork(const std::filesystem::path& subnetwork_filename);
 };
 
 } /* namespace bevarmejo */

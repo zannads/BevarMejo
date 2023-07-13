@@ -37,6 +37,8 @@ namespace bevarmejo {
 			throw std::runtime_error(oss.str());
 		}
 
+		_name_ = subnetwork_filename.stem().string();
+
 		// call internal function to load subnetwork
 		_load_subnetwork(ifs);
 	}
@@ -44,12 +46,12 @@ namespace bevarmejo {
 	void Subnetwork::_load_subnetwork(std::istream& is)
 	{
 		auto info = read_g_p_table(is, "#TYPE");
-		_en_object_type_ = info.data[0]; // should check if it is a valid type
+		_en_object_type_ = info.data[0]; // TODO: should check if it is a valid type
 
 
 		info = read_g_p_table(is, "#DATA");
 		for (auto& row : info.data) {
-			en_gp_object en_object; 
+			en_couple en_object;
 			en_object.id = row[0];
 			_subnetwork_list_.push_back(en_object);
 		}

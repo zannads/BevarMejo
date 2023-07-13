@@ -6,6 +6,7 @@
 //
 
 #include <assert.h>
+#include <filesystem>
 #include <iostream>
 #include <stdio.h>
 #include <stdexcept>
@@ -35,6 +36,8 @@ WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem &
     _inp_filename_ = src._inp_filename_;
     
     init();
+
+    _subnetworks_ = src._subnetworks_;
 }
 
 WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src) noexcept{
@@ -42,6 +45,8 @@ WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src) 
 
     ph_ = src.ph_;
     src.ph_ = nullptr;
+
+    _subnetworks_ = std::move(src._subnetworks_);
 }
 
 WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
@@ -50,6 +55,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistribut
         ph_ = temp.ph_;
         temp.ph_ = nullptr;
         std::swap(_inp_filename_, temp._inp_filename_);
+        std::swap(_subnetworks_, temp._subnetworks_);
     }
     return *this;
 }
@@ -59,6 +65,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSys
     rhs.ph_ = nullptr;
     
     _inp_filename_ = std::move(rhs._inp_filename_);
+    _subnetworks_ = std::move(rhs._subnetworks_);
     return *this;
 }
 
@@ -209,6 +216,11 @@ std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydra
     results.push_back(energies);
 
     return results;
+}
+
+void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
+    // simply a wrapper as all chekc operations are done inside the class
+    _subnetworks_.push_back(Subnetwork(subnetwork_filename));
 }
 
 } /* namespace bevarmejo */

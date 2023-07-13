@@ -34,7 +34,14 @@ namespace bevarmejo {
 			fsys::path subnet_filename{subnet.child_value()};
 			subnet_filename = input_directory / subnet_filename;
 
-			_subnetworks_.push_back(Subnetwork(subnet_filename.string()));
+			try
+			{
+				_anytown_->add_subnetwork(subnet_filename);
+			}
+			catch (const std::exception& ex)
+			{
+				std::cout << ex.what();
+			}
 		}
 	}
 

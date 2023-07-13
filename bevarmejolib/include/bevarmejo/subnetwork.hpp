@@ -16,7 +16,7 @@
 #include "epanet2_2.h"
 
 namespace bevarmejo {
-	struct en_gp_object {
+	struct en_couple {
 		std::string id;
 		int index{ 0 };
 	};
@@ -38,8 +38,9 @@ namespace bevarmejo {
 
 		/* Members */
 	private:
-		std::string _en_object_type_;
-		std::vector<en_gp_object> _subnetwork_list_;
+		std::string _name_;
+		std::string _en_object_type_; // TODO: transform in EN_struct compliant enum
+		std::vector<en_couple> _subnetwork_list_;
 		std::string _comment_;
 
 		/* Methods */
@@ -49,7 +50,7 @@ namespace bevarmejo {
 		void _load_subnetwork(std::istream& is);
 
 	public:
-		void fill_subnetwork_list(EN_Project ph); //TODO: implement
+		void fill_subnetwork_list(EN_Project ph); //TODO: implement whole logic for filling subnetwork list
 
 	private:
 		bool _is_mapped() const;

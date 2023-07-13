@@ -16,7 +16,6 @@
 #include "pugixml.hpp"
 
 #include "bevarmejo/water_distribution_system.hpp"
-#include "bevarmejo/subnetwork.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
@@ -56,8 +55,6 @@ namespace bevarmejo {
     private: 
         /* Anytonw specific data */
         std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
-
-        std::vector<Subnetwork> _subnetworks_;
 
         /* Anytown specific functions */
 
