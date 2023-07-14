@@ -39,14 +39,22 @@ namespace bevarmejo {
 
 		_name_ = subnetwork_filename.stem().string();
 
-		// call internal function to load subnetwork
-		_load_subnetwork(ifs);
+		try {
+			// call internal function to load subnetwork
+			_load_subnetwork(ifs);
+		}
+		catch (const std::exception& e) {
+			std::ostringstream oss;
+			oss << "Error while loading subnetwork " << subnetwork_filename << std::endl;
+			oss << e.what() << std::endl;
+			throw std::runtime_error(oss.str());
+		}
 	}
 
 	void Subnetwork::_load_subnetwork(std::istream& is)
 	{
 		auto info = read_g_p_table(is, "#TYPE");
-		_en_object_type_ = info.data[0]; // TODO: should check if it is a valid type
+		_en_object_type_ = _is_en_object_type_valid(info.data[0]);
 
 
 		info = read_g_p_table(is, "#DATA");
@@ -76,6 +84,36 @@ namespace bevarmejo {
 		// TODO: if two elements have the same index, I should not trust the mapping
 
 		return is_mapped;
+	}
+
+	int Subnetwork::_is_en_object_type_valid(const std::string& en_object_type) const
+	{
+		int en_object_type_int = 0;
+		if (en_object_type == "EN_NODE") {
+			en_object_type_int = EN_NODE;
+		}
+		else if (en_object_type == "EN_LINK") {
+			en_object_type_int = EN_LINK;
+		}
+		else if (en_object_type == "EN_TIMEPAT") {
+			en_object_type_int = EN_TIMEPAT;
+		}
+		else if (en_object_type == "EN_CURVE") {
+			en_object_type_int = EN_CURVE;
+		}
+		else if (en_object_type == "EN_CONTROL") {
+			en_object_type_int = EN_CONTROL;
+		}
+		else if (en_object_type == "EN_RULE") {
+			en_object_type_int = EN_RULE;
+		}
+		else {
+			std::ostringstream oss;
+			oss << "Invalid EN object type: " << en_object_type << std::endl;
+			throw std::runtime_error(oss.str());
+		}
+
+		return en_object_type_int;
 	}
 
 } /* namespace bevarmejo */

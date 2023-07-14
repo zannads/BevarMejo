@@ -39,7 +39,7 @@ namespace bevarmejo {
 		/* Members */
 	private:
 		std::string _name_;
-		std::string _en_object_type_; // TODO: transform in EN_struct compliant enum
+		int _en_object_type_;
 		std::vector<en_couple> _subnetwork_list_;
 		std::string _comment_;
 
@@ -54,6 +54,7 @@ namespace bevarmejo {
 
 	private:
 		bool _is_mapped() const;
+		int _is_en_object_type_valid(const std::string& en_object_type) const;
 
 	}; /* class Subnetwork */
 
