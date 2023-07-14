@@ -15,6 +15,8 @@
 
 #include "epanet2_2.h"
 
+#include "io.hpp"
+
 #include "subnetwork.hpp"
 
 namespace bevarmejo {

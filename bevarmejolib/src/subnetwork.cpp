@@ -53,18 +53,19 @@ namespace bevarmejo {
 
 	void Subnetwork::_load_subnetwork(std::istream& is)
 	{
-		auto info = read_g_p_table(is, "#TYPE");
+		NMatrix<std::string> info; 
+		info.load(is, "#TYPE");
 		_en_object_type_ = _is_en_object_type_valid(info.data[0]);
 
 
-		info = read_g_p_table(is, "#DATA");
+		info.load(is, "#DATA");
 		for (auto& row : info.data) {
 			en_couple en_object;
 			en_object.id = row[0];
 			_subnetwork_list_.push_back(en_object);
 		}
 
-		info = read_g_p_table(is, "#COMMENT");
+		info.load(is, "#COMMENT");
 		_comment_ = info.data[0]; 
 
 		return;	
