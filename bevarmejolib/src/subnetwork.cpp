@@ -53,38 +53,18 @@ namespace bevarmejo {
 
 	void Subnetwork::_load_subnetwork(std::istream& is)
 	{
-		NMatrix<std::string> info; 
-		info.load(is, "#TYPE");
-		_en_object_type_ = _is_en_object_type_valid(info.data[0]);
+		std::size_t dimensions = load_dimensions(is, "#TYPE"); 
+		std::string en_object_type;
+		stream_in(is, en_object_type);
+		_en_object_type_ = _is_en_object_type_valid(en_object_type);
 
+		dimensions = load_dimensions(is, "#DATA");
+		std::vector<std::string> subnetwork_list(dimensions);
+		stream_in(is, subnetwork_list);
+		_subnetwork_list_ = subnetwork_list;
 
-		info.load(is, "#DATA");
-		for (auto& row : info.data) {
-			en_couple en_object;
-			en_object.id = row[0];
-			_subnetwork_list_.push_back(en_object);
-		}
-
-		info.load(is, "#COMMENT");
-		_comment_ = info.data[0]; 
-
-		return;	
-	}
-
-	bool Subnetwork::_is_mapped() const
-	{
-		// if at least one element is zero, the subnetwork is not mapped
-		bool is_mapped = true;
-		for (auto& en_object : _subnetwork_list_) {
-			if (en_object.index == 0) {
-				is_mapped = false;
-				return is_mapped;
-			}
-		}
-
-		// TODO: if two elements have the same index, I should not trust the mapping
-
-		return is_mapped;
+		dimensions = load_dimensions(is, "#COMMENT");
+		stream_in(is, _comment_);
 	}
 
 	int Subnetwork::_is_en_object_type_valid(const std::string& en_object_type) const

@@ -229,6 +229,35 @@ inline void stream_param(std::ostream &os, const std::string& param_name, const 
     detail::stream_output(os, param_name, " : ", param_value, "\n");
 }
 
+/* LOAD dimensions from TAG
+* Special type of stream input for tag */
+inline std::size_t load_dimensions(std::istream& is, const std::string_view tag) {
+    std::size_t dimensions;
+
+    std::string line;
+    while (getline(is, line) && line.find(tag) != std::string::npos );;
+
+    // If I'm here either it has finished or it has found it
+    if (is.eof()) {
+        std::ostringstream oss;
+        oss << "Tag " << tag << " not found." << std::endl;
+        throw std::runtime_error(oss.str());
+    }
+
+    // If I'm here, I have found the tag
+    std::istringstream iss(line);
+    // consume the tag
+    stream_in(iss, line);
+    // the size is: 
+    stream_in(iss, dimensions);
+
+    // When I don't write anything, the dimensions is 0, but I mean it to be 1
+    dimensions = dimensions == 0 ? 1 : dimensions;
+    
+    return dimensions;
+}
+
+
 } /* namespace bevarmejo */
 
 #endif /* BEVARMEJOLIB_IO_HPP */
