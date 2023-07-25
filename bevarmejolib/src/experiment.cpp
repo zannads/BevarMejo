@@ -96,26 +96,23 @@ void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &alg
     std::cout <<"\nWriting results on:\n\t" << output_file().string() << std::endl;
     
     // 0. write the header (system and experiment info)
-    stream_param(ofs, "Experiment:", get_name());
-    stream_param(ofs, get_extra_info(), "");
+    stream_param(ofs, "Experiment", get_name());
+    stream_out(ofs, get_extra_info());
     
     // 1. Algorithm
-    stream_param(ofs, "Algorithm: ", algo.get_name());
-    stream_param(ofs, "", algo.get_extra_info());
-    ofs <<std::endl;
+    stream_param(ofs, "Algorithm", algo.get_name());
+    stream_out(ofs, algo.get_extra_info(), '\n', '\n');
     
     // 2. Model Problem
-    stream_param(ofs, "Problem name: ", pop.get_problem().get_name());
-    stream_param(ofs, "", pop.get_problem().get_extra_info());
-    
-    ofs <<std::endl;
+    stream_param(ofs, "Problem name", pop.get_problem().get_name());
+    stream_out(ofs, pop.get_problem().get_extra_info(), '\n', '\n');
     
     // 3. Population
-    stream_param(ofs, "Population:", "");
-    stream_param(ofs, "\tFitness evaluations: ", pop.get_problem().get_fevals());
+    stream_out(ofs, "Population\n");
+    stream_param(ofs, "\tFitness evaluations", pop.get_problem().get_fevals());
     auto last_individual = pop.size();
-    stream_param(ofs, "\tPopulation size:\t ", last_individual);
-    stream_param(ofs, "\tSeed:\t\t\t\t ", pop.get_seed());
+    stream_param(ofs, "\tPopulation size", last_individual);
+    stream_param(ofs, "\tSeed", pop.get_seed());
     
     auto population_ids = pop.get_ID();
     auto pop_dvs        = pop.get_x();
@@ -123,10 +120,10 @@ void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &alg
     
     //stream_param(ofs, "List of individuals: ", "");
     for (auto individual = 0u; individual<last_individual; ++individual){
-        stream_param(ofs, "#", individual);
-        stream_param(ofs, "\tID: ", population_ids[individual]);
-        stream_param(ofs, "\tDecision vector: ", pop_dvs[individual]);
-        stream_param(ofs, "\tFitness vector: ", pop_fitnesses[individual]);
+        stream_out(ofs, "#", individual, '\n');
+        stream_param(ofs, "\tID", population_ids[individual]);
+        stream_param(ofs, "\tDecision vector", pop_dvs[individual]);
+        stream_param(ofs, "\tFitness vector", pop_fitnesses[individual]);
     }
 }
 
@@ -137,17 +134,15 @@ void Experiment::set_name(std::string name)
 
 /* Setters and getters */
 std::string Experiment::get_name(){
-    std::ostringstream oss;
-    oss << _name_;
-    return oss.str();
+    return _name_;
 }
 
 std::string Experiment::get_extra_info(){
     // TODO extend
     std::ostringstream oss;
-    oss << _user_custom_info_ <<'\n';
-    stream_param(oss, "\tOptimisation begun: ", ctime(&_start_time_));
-    stream_param(oss, "\tOptimisation ended: ", ctime(&_end_time_  ));
+    stream_out(oss, _user_custom_info_, '\n');
+    stream_param(oss, "\tOptimisation begun", ctime(&_start_time_));
+    stream_param(oss, "\tOptimisation ended", ctime(&_end_time_  ));
     return oss.str();
 }
 
