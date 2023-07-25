@@ -57,7 +57,7 @@ inline void stream_input_single_range(std::istream& is, It begin, const It end,
 
     // Now I am in the best position to start parsing. 
     // I will parse until the stream ends
-    while(begin!= end) {
+    while(begin!= end && is ) {
         // Parse the first element
         stream_input(is, *begin);
         
@@ -162,6 +162,12 @@ inline void stream_input(std::istream& is, std::vector<U> &v) {
     stream_input_single_range(is, v.begin(), v.end(), "[", ",", "]" );
 }
 
+// temporary solution for vector of strings (needed for IDs)
+template <>
+inline void stream_input(std::istream& is, std::vector<std::string>& v) {
+	stream_input_single_range(is, v.begin(), v.end(), " ", "\n", "\n" );
+}
+
 template <class U>
 inline void stream_output(std::ostream &os, const std::vector<U> &v) {
     stream_output_single_range(os, v.begin(), v.end(), "[", ", ", "]" );
@@ -232,29 +238,28 @@ inline void stream_param(std::ostream &os, const std::string& param_name, const 
 /* LOAD dimensions from TAG
 * Special type of stream input for tag */
 inline std::size_t load_dimensions(std::istream& is, const std::string_view tag) {
-    std::size_t dimensions;
+    std::size_t dimensions = 0;
 
     std::string line;
-    while (getline(is, line) && line.find(tag) != std::string::npos );;
+    while( getline(is, line) ) {
+        if (line.find(tag) != std::string::npos) {
+            std::istringstream iss(line);
+            // consume the tag
+            stream_in(iss, line);
+            // the size is: 
+            stream_in(iss, dimensions);
 
-    // If I'm here either it has finished or it has found it
-    if (is.eof()) {
-        std::ostringstream oss;
-        oss << "Tag " << tag << " not found." << std::endl;
-        throw std::runtime_error(oss.str());
+            // When I don't write anything, the dimensions is 0, but I mean it to be 1
+            dimensions = dimensions == 0 ? 1 : dimensions;
+
+            return dimensions;
+		}
     }
 
-    // If I'm here, I have found the tag
-    std::istringstream iss(line);
-    // consume the tag
-    stream_in(iss, line);
-    // the size is: 
-    stream_in(iss, dimensions);
-
-    // When I don't write anything, the dimensions is 0, but I mean it to be 1
-    dimensions = dimensions == 0 ? 1 : dimensions;
-    
-    return dimensions;
+    // If I'm here either it has finished the file
+    std::ostringstream oss;
+    oss << "Tag " << tag << " not found." << std::endl;
+    throw std::runtime_error(oss.str());
 }
 
 
