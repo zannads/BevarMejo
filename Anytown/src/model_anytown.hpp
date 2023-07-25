@@ -20,6 +20,22 @@
 namespace fsys = std::filesystem;
 namespace bevarmejo {
 
+    struct pipes_alt_costs {
+        unsigned int diameter;
+        double new_cost;
+        double dup_city;
+        double dup_residential;
+        double clean_city;
+        double clean_residential;        
+    }; 
+    std::istream& operator >> (std::istream& is, pipes_alt_costs& pac);
+
+    struct tanks_costs {
+        double volume;
+        double cost;
+    };
+    std::istream& operator >> (std::istream& is, tanks_costs& tc);
+
 	class ModelAnytown {
 	public: 
 		ModelAnytown() = default;
@@ -55,6 +71,10 @@ namespace bevarmejo {
     private: 
         /* Anytonw specific data */
         std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
+
+        std::vector<pipes_alt_costs> _pipes_alt_costs_;
+
+        std::vector<tanks_costs> _tanks_costs_;
 
         /* Anytown specific functions */
 
