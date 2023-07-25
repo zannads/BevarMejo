@@ -403,3 +403,7 @@ FodyWeavers.xsd
 # For xcode and build
 build/
 /CMakeSettings.json
+buildXCode/
+
+# For vscode 
+.vscode/
