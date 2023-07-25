@@ -20,6 +20,14 @@ namespace bevarmejo {
 
 namespace detail {
 
+/* Arithmetic symbols that indicate the presence of a number other than a digit:
+* ^: maximum
+* ~: minimum
+* +: positive number
+* -: negative number
+*/
+constexpr std::string_view arithmetic_symbols = "^~+-"; 
+
 /* BASIC TYPES stream
 * For basic types, if the type we pass doesn't have a >> operator
 * a compile-error will appear
@@ -29,6 +37,36 @@ namespace detail {
 
 template <typename T>
 inline void stream_input(std::istream& is, T& value) {
+    while (!is.eof() 
+        && !std::isdigit(is.peek()) 
+        && arithmetic_symbols.find(is.peek()) == std::string_view::npos) {
+
+		is.ignore();
+	}
+    if (is.eof())
+		return;
+
+    if (is.peek() == '^') {
+        is.ignore();
+        value = std::numeric_limits<T>::max();
+    } else if (is.peek() == '~') {
+        is.ignore();
+		value = std::numeric_limits<T>::min();
+    }
+    else if (is.peek() == '+') {
+		is.ignore();
+		is >> value;
+    }
+    else if (is.peek() == '-') {
+		is >> value;
+    }
+    else if (std::isdigit(is.peek())) {
+		is >> value;
+	}
+}
+
+template <>
+inline void stream_input(std::istream& is, std::string& value) {
     is >> value;
 }
 
