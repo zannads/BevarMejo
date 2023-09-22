@@ -96,7 +96,63 @@ namespace bevarmejo {
 		stream_in(tanks_file, _tanks_costs_);
 	}
 
+    std::vector<double>::size_type ModelAnytown::get_nobj() const {
+		// Cost and reliability
+        return n_obj;
+    }
 
+    std::vector<double>::size_type ModelAnytown::get_nec() const {
+		// NO equality constraints
+        return n_ec;
+    }
+
+    std::vector<double>::size_type ModelAnytown::get_nic() const {
+		// NO inequality constraints
+        return n_ic;
+    }
+
+    std::vector<double>::size_type ModelAnytown::get_nix() const {
+		// For now they are all integers. //Tanks will be added in the future
+        return n_ix;
+    }
+
+    std::string ModelAnytown::get_extra_info() const {
+        return std::string("\tVersion 1.1");
+    }
+
+    std::pair<std::vector<double>, std::vector<double>> ModelAnytown::get_bounds() const {
+		// Structure of the decision variables
+		// [35 pipes x [action, prc], 6 pipes x [prc], 24 hours x [npr] ] 
+		// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
+		// prc: 10 options in pipe_rehab_cost -> 0 - 9 
+		// npr: 4 options indicate the number of pumps running -> 0 - 3
+		//TODO: add tanks and risers.
+
+		std::vector<double> lb(n_dv);
+		std::vector<double> ub(n_dv);
+
+		// 35 pipes x [action, prc]
+		for (std::size_t i = 0; i < 35; ++i) {
+			lb[i*2] = 0;
+			ub[i*2] = 2;
+			lb[i*2 + 1] = 0;
+			ub[i*2 + 1] = 9;
+		}
+
+		// 6 pipes x [prc]
+		for (std::size_t i = 0; i < 6; ++i) {
+			lb[70 + i] = 0;
+			ub[70 + i] = 9;
+		}
+
+		// 24 hours x [npr]
+		for (std::size_t i = 0; i < 24; ++i) {
+			lb[76 + i] = 0;
+			ub[76 + i] = 3;
+		}
+
+		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
+    }
 
 	
 
