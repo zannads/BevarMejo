@@ -11,7 +11,9 @@
 #include <stdio.h>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "epanet2_2.h"
 
@@ -229,7 +231,7 @@ std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydra
 
 void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
     // simply a wrapper as all chekc operations are done inside the class
-    _subnetworks_.push_back(Subnetwork(subnetwork_filename));
+    _subnetworks_.insert(Subnetwork(subnetwork_filename));
 }
 
 } /* namespace bevarmejo */

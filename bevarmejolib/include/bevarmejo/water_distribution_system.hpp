@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <stdio.h>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "epanet2_2.h"
@@ -32,7 +33,7 @@ protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
     // Subnetworks of IDs
-    std::vector<Subnetwork> _subnetworks_;
+    std::unordered_set<Subnetwork> _subnetworks_;
     
 public:
     
