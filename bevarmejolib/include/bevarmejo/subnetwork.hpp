@@ -51,7 +51,9 @@ namespace bevarmejo {
 		void load_subnetwork(std::filesystem::path subnetwork_filename);
 
 		/* Getters */
-		std::string name() const { return _name_; }
+		std::string name() const;
+		std::vector<std::string> subnetwork_list() const; // return full list
+		std::string at(const int index) const; // return element at index from the list
 
 	private: 
 		void _load_subnetwork(std::istream& is);

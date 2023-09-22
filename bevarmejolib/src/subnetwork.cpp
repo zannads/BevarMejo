@@ -51,6 +51,12 @@ namespace bevarmejo {
 		}
 	}
 
+	/* Getters */
+	std::string Subnetwork::name() const { return _name_; }
+	std::vector<std::string> Subnetwork::subnetwork_list() const { return _subnetwork_list_; }
+	std::string Subnetwork::at(const int index) const { return _subnetwork_list_.at(index); }
+
+
 	void Subnetwork::_load_subnetwork(std::istream& is)
 	{
 		std::size_t dimensions = load_dimensions(is, "#TYPE"); 

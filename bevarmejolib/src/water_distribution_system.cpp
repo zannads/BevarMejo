@@ -234,4 +234,10 @@ void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnet
     _subnetworks_.insert(Subnetwork(subnetwork_filename));
 }
 
+bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string &name) const
+{
+    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    return *subnet_it;
+}
+
 } /* namespace bevarmejo */
