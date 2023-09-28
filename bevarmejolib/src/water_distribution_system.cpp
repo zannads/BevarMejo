@@ -240,4 +240,15 @@ bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string 
     return *subnet_it;
 }
 
+std::string WaterDistributionSystem::get_node_id(int index) const {
+    char* node_id = new char[EN_MAXID];
+    int errorcode = EN_getnodeid(ph_, index, node_id);
+    assert(errorcode <= 100);
+    
+    std::string node_id_str(node_id);
+    delete[] node_id;
+
+    return node_id_str;
+}
+
 } /* namespace bevarmejo */

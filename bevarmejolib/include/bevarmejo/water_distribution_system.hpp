@@ -79,6 +79,10 @@ public:
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);
     bevarmejo::Subnetwork get_subnetwork(const std::string& name) const;
+
+    // Wrappers for linees-of-code consuming EPANET functions
+    std::string get_node_id(int index) const;
+
 };
 
 } /* namespace bevarmejo */
