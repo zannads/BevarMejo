@@ -233,10 +233,11 @@ namespace bevarmejo {
 					assert(errorcode <= 100);
 					
 					// change the new pipe properties:
-					// 1. diameter =  dv[i*2+1]
+					// 1. diameter =  row dv[i*2+1] column diameter of _pipes_alt_costs_
 					// 2. roughness = coeff_HV_new
 					// 3. length  = value of link_idx
-					errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_DIAMETER, dv[i*2+1]);
+					double diameter = _pipes_alt_costs_.at(dv[i*2+1]).diameter;
+					errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_DIAMETER, diameter);
 					assert(errorcode <= 100);
 					// errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_ROUGHNESS, coeff_HW_new);
 					// assert(errorcode <= 100);
