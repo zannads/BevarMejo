@@ -120,6 +120,52 @@ namespace bevarmejo {
         return std::string("\tVersion 1.1");
     }
 
+    std::vector<double> ModelAnytown::fitness(const std::vector<double> &dv) const {
+
+		// things to do 
+		// 1. EPS 
+		//      apply dv to the network
+		// 		run EPS as it is
+		// 		check energy consumption
+		// 		check pressure for reliability
+		// 		check min pressure constraint
+		// 		check tanks complete emptying and filling
+		// 2. instantenous peak flow
+		// 		apply changes wrt EPS
+		//      	not running anymore for 24h but instantenous 
+		// 			the multiplier is different 
+		//		check min pressure constraint 
+		// 3. fire flow conditions 
+		// 		apply changes wrt IPF
+		//			runs for 2h 
+		//			the multiplier is different
+		//			add the emitters and then remove them and repeat for the next condition
+		// 		check min pressure constraint 
+
+
+		// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
+		// This doesn't allow parallelization and I don't allow for tank insertion. 
+		// For duplicate pipes they will have name Dxx where xx is the original pipe name.
+		// For cleaned pipes I write on a vector the original HW coefficients and then I reset them.
+		// For new pipes and pumps (dv from 71 onwards) I don't need to reset them as they are always overwritten.
+
+		// 1. EPS
+		std::vector<double> old_HW_coeffs;
+		old_HW_coeffs = apply_dv(_anytown_, dv);
+
+		auto res = _anytown_->run_hydraulics();
+		if (res.empty()) {
+			// something went wrong
+			// TODO: handle this error
+		}
+
+		reset_dv( _anytown_, dv, old_HW_coeffs);
+
+		// Compute OF on res. 
+
+        return std::vector<double>(n_fit, 0);
+    }
+
     std::pair<std::vector<double>, std::vector<double>> ModelAnytown::get_bounds() const {
 		// Structure of the decision variables
 		// [35 pipes x [action, prc], 6 pipes x [prc], 24 hours x [npr] ] 
@@ -154,6 +200,103 @@ namespace bevarmejo {
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
     }
 
+    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv) const
+    {
+		std::vector<double> old_HW_coeffs;
+		// 1. existing pipes
+		for (std::size_t i = 0; i < 35; ++i) {
+			// if dv[i*2] == 0 do nothing
+			if (dv[i*2] != 0 ){
+				// retrieve the link ID
+				std::string link_id = anytown->get_subnetwork("existing_pipes").at(i); 
+				// now the index associated with the link ID
+				int link_idx = 0;
+				int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
+				assert(errorcode <= 100);
+
+				if (dv[i*2] == 1) { // duplicate
+					// new name is Dxx where xx is the original pipe name
+					std::string new_link_id = "D" + link_id;
+					int new_link_idx = 0;
+
+					// retrieve the old property of the already existing pipe
+					int out_node1_idx = 0;
+					int out_node2_idx = 0;
+					errorcode = EN_getlinknodes(anytown->ph_, link_idx, &out_node1_idx, &out_node2_idx);
+					assert(errorcode <= 100);
+
+					std::string out_node1_id = anytown->get_node_id(out_node1_idx);
+					std::string out_node2_id = anytown->get_node_id(out_node2_idx);
+					
+					// create the new pipe
+					errorcode = EN_addlink(anytown->ph_, new_link_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &new_link_idx);
+					assert(errorcode <= 100);
+					
+					// change the new pipe properties:
+					// 1. diameter =  dv[i*2+1]
+					// 2. roughness = coeff_HV_new
+					// 3. length  = value of link_idx
+					errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_DIAMETER, dv[i*2+1]);
+					assert(errorcode <= 100);
+					// errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_ROUGHNESS, coeff_HW_new);
+					// assert(errorcode <= 100);
+					double link_length = 0.0;
+					errorcode = EN_getlinkvalue(anytown->ph_, link_idx, EN_LENGTH, &link_length);
+					assert(errorcode <= 100);
+					errorcode = EN_setlinkvalue(anytown->ph_, new_link_idx, EN_LENGTH, link_length);
+					assert(errorcode <= 100);
+				}
+				else if (dv[i*2] == 2) { // clean
+					// retrieve the old HW coefficients
+					double link_roughness = 0.0;
+					errorcode = EN_getlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, &link_roughness);
+					old_HW_coeffs.push_back(link_roughness);
+				
+					// set the new HW coefficients
+					errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, coeff_HW_cleaned);	
+					assert(errorcode <= 100); 
+				}
+			}
+		}
+        return old_HW_coeffs;
+    }
+
+    void ModelAnytown::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv, const std::vector<double> &old_HW_coeffs) const {
+		// Do the opposite operations of apply_dv 
+		std::vector<const double>::iterator old_HW_coeffs_iter = old_HW_coeffs.begin();
+
+		// 1. existing pipes
+		for (std::size_t i = 0; i <35; ++i ) {
+			// if dv[i*2] == 0 do nothing
+			if (dv[i*2] != 0) {
+				// retrieve the link ID
+				std::string link_id = anytown->get_subnetwork("existing_pipes").at(i);
+				// now the index associated with the link ID
+				int link_idx = 0;
+				int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
+				assert(errorcode <= 100);
+
+				if (dv[i*2] == 1) { // remove duplicate
+					// duplicate pipe has been named Dxx where xx is the original pipe name
+					std::string new_link_id = "D" + link_id;
+					int new_link_idx = 0; 
+					errorcode = EN_getlinkindex(anytown->ph_, new_link_id.c_str(), &new_link_idx);
+					assert(errorcode <= 100);
+
+					// remove the new pipe
+					errorcode = EN_deletelink(anytown->ph_, new_link_idx, EN_UNCONDITIONAL);
+					assert(errorcode <= 100);
+				}
+				else if (dv[i*2] == 2) { // reset clean
+					// re set the HW coefficients
+					errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, *old_HW_coeffs_iter);
+					assert(errorcode <= 100);
+
+					old_HW_coeffs_iter++;
+				}
+			}
+		}
 	
+	}
 
 } /* namespace bevarmejo */
