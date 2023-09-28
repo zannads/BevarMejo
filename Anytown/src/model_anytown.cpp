@@ -272,12 +272,23 @@ namespace bevarmejo {
 			// change the new pipe properties:
 			// diameter =  row dv[70+i] column diameter of _pipes_alt_costs_
 			double diameter = _pipes_alt_costs_.at(dv[70+i]).diameter;
-			errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
+			errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
 		}
 
 		// 3. pumps
+		auto patterns = decompose_pump_pattern(dv.begin() + 76, dv.end());
+		for (std::size_t i = 0; i < patterns.size(); ++i) {
+			// I know pump patterns IDs are from 2, 3, and 4
+			int pump_idx = i + 2;
+			std::string pump_id = std::to_string(pump_idx);
+			int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
+			assert(errorcode <= 100);
 
+			// set the pattern
+			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
+			assert(errorcode <= 100);
+		}
 
         return old_HW_coeffs;
     }
@@ -334,5 +345,30 @@ namespace bevarmejo {
 		}
 	
 	}
+
+    std::vector<std::vector<double>> ModelAnytown::decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const {
+        // I know it sould be 3 pumps and 24 values but I do it generically as an exercise :)
+		auto iter = begin;
+		std::size_t n_periods = 0;
+		int n_pumps = 0; 
+		while (iter != end) {
+			// The number of pumps is the max that I find in the vector
+			if (*iter > n_pumps) {
+				n_pumps = *iter;
+			}
+			iter++;
+			n_periods++;
+		}
+		
+		std::vector<std::vector<double>> patterns (n_pumps, std::vector<double>(n_periods, 0.0));
+		for (std::size_t period = 0; period < n_periods; ++period) {
+			for (std::size_t pump = 0; pump < *begin; ++pump) {
+				patterns[pump][period] = 1.0;
+				begin++;
+			}
+		}
+
+		return patterns;
+    }
 
 } /* namespace bevarmejo */

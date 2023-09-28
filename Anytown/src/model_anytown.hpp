@@ -120,9 +120,10 @@ namespace bevarmejo {
         double cost(const std::vector<double>& dv, const std::vector<std::vector<double>>& energy) const;
         double reliablity(const std::vector<double>& pressures) const;
 
+        /* Helper functions */
         std::vector<double> apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
         void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
-
+        std::vector<std::vector<double>> decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const;
 
 	}; /* class ModelAnytown*/
  
