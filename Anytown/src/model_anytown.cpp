@@ -259,6 +259,26 @@ namespace bevarmejo {
 				}
 			}
 		}
+
+		// 2. new pipes
+		for (std::size_t i = 0; i < 6; ++i) {
+			// retrieve the link ID from the subnetwork
+			std::string link_id = anytown->get_subnetwork("new_pipes").at(i);
+			// now the index associated with the link ID
+			int link_idx = 0;
+			int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
+			assert(errorcode <= 100);
+
+			// change the new pipe properties:
+			// diameter =  row dv[70+i] column diameter of _pipes_alt_costs_
+			double diameter = _pipes_alt_costs_.at(dv[70+i]).diameter;
+			errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
+			assert(errorcode <= 100);
+		}
+
+		// 3. pumps
+
+
         return old_HW_coeffs;
     }
 
@@ -296,6 +316,21 @@ namespace bevarmejo {
 					old_HW_coeffs_iter++;
 				}
 			}
+		}
+
+		// 2. new pipes
+		for (std::size_t i = 0; i < 6; ++i) {
+			// retrieve the link ID from the subnetwork
+			std::string link_id = anytown->get_subnetwork("new_pipes").at(i);
+			// now the index associated with the link ID
+			int link_idx = 0;
+			int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
+			assert(errorcode <= 100);
+
+			// change the new pipe properties:
+			double diameter = _nonexisting_pipe_diam_ft;
+			errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
+			assert(errorcode <= 100);
 		}
 	
 	}

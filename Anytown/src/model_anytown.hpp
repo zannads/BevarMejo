@@ -75,6 +75,7 @@ namespace bevarmejo {
     };
     std::istream& operator >> (std::istream& is, tanks_costs& tc);
 
+    constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
     // Here the problem is actually construted.
 	class ModelAnytown {
