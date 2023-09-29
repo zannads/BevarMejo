@@ -162,8 +162,11 @@ namespace bevarmejo {
 		reset_dv( _anytown_, dv, old_HW_coeffs);
 
 		// Compute OF on res. 
+		std::vector<double> fitv(n_fit, 0);
+		fitv[0] = cost(dv, res[3]);
+		fitv[1] = reliablity(res[0][0]); // HOW do I manage it thourgh time and throuhg nodes?
 
-        return std::vector<double>(n_fit, 0);
+        return fitv;
     }
 
     std::pair<std::vector<double>, std::vector<double>> ModelAnytown::get_bounds() const {
@@ -198,6 +201,17 @@ namespace bevarmejo {
 		}
 
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
+    }
+
+    double ModelAnytown::cost(const std::vector<double> &dv, const std::vector<std::vector<double>> &energy) const {
+	
+		return 0.0;
+    }
+
+    double ModelAnytown::reliablity(const std::vector<double> &pressures) const {
+        
+		
+		return 0.0;
     }
 
     std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv) const
