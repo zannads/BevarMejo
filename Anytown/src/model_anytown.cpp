@@ -247,6 +247,12 @@ namespace bevarmejo {
 					design_cost += pipe_alt_costs.clean_residential;
 			}
 		}
+		// 6 pipes x [prc]
+		for (std::size_t i = 0; i < 6; ++i) {
+			// dv[i] is the row of the _pipes_alt_costs_ table
+			auto pipe_alt_costs = _pipes_alt_costs_.at(dv[70+i]);
+			design_cost += pipe_alt_costs.new_cost;
+		}
 	
 		return 0.0;
     }
