@@ -51,6 +51,8 @@ namespace bevarmejo {
 		}
 	}
 
+	std::size_t Subnetwork::size() const { return _subnetwork_list_.size(); }
+
 	/* Getters */
 	std::string Subnetwork::name() const { return _name_; }
 	std::vector<std::string> Subnetwork::subnetwork_list() const { return _subnetwork_list_; }

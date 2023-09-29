@@ -237,7 +237,25 @@ void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnet
 bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string &name) const
 {
     auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    if (subnet_it == _subnetworks_.end())
+        throw std::runtime_error("Subnetwork not found");
     return *subnet_it;
+}
+
+bool WaterDistributionSystem::is_in_subnetork(const std::string &name, const std::string &id) const {
+    bool found = false;
+    
+    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    if (subnet_it == _subnetworks_.end())
+        throw std::runtime_error("Subnetwork not found");
+    for (std::size_t i = 0; i < subnet_it->size(); ++i){
+        if (subnet_it->at(i) == id){
+            found = true;
+            break;
+        }
+    }
+
+    return found;
 }
 
 std::string WaterDistributionSystem::get_node_id(int index) const {

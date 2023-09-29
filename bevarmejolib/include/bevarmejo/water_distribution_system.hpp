@@ -78,7 +78,10 @@ public:
 
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);
+    // get back a subnework from the list of subnetworks
     bevarmejo::Subnetwork get_subnetwork(const std::string& name) const;
+    // tell me if an ID is part of this subnetwork
+    bool is_in_subnetork(const std::string& name, const std::string& id) const;
 
     // Wrappers for linees-of-code consuming EPANET functions
     std::string get_node_id(int index) const;
