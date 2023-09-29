@@ -204,6 +204,49 @@ namespace bevarmejo {
     }
 
     double ModelAnytown::cost(const std::vector<double> &dv, const std::vector<std::vector<double>> &energy) const {
+        double design_cost = 0.0;
+		// 35 pipes x [action, prc]
+		for (std::size_t i = 0; i < 35; ++i) {
+			if (dv[i*2] == 0)
+				continue;
+
+			std::string link_id = _anytown_->get_subnetwork("existing_pipes").at(i);
+			bool city = _anytown_->is_in_subnetork("city_pipes", link_id);
+			// I assume is in the residential as they are mutually exclusive
+
+			if (dv[i*2] == 1) { // duplicate
+				auto  pipe_alt_costs = _pipes_alt_costs_.at(dv[i*2+1]);
+				if (city) 
+					design_cost += pipe_alt_costs.dup_city;
+				else
+					design_cost += pipe_alt_costs.dup_residential;
+			}
+			else if (dv[i*2] == 2) { // clean
+				// I can't use dv[i*2+1] to get the costs, but Ihave to search for the diameter
+				
+				// retrieve the link index
+				int link_idx = 0;
+				int errorcode = EN_getlinkindex(_anytown_->ph_, link_id.c_str(), &link_idx);
+				assert(errorcode <= 100);
+
+				// retrieve the link diameter
+				double link_diameter = 0.0;
+				errorcode = EN_getlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, &link_diameter);
+				assert(errorcode <= 100);
+				
+				// found which row of the table _pipe_alt_costs_ starting from the diameter 
+				std::size_t row = 0;
+				while (row < _pipes_alt_costs_.size()-1 && _pipes_alt_costs_.at(row).diameter != link_diameter) 
+					++row;
+				
+				// IF I haven't found it until the last I put the most expensive one (i.e., the last)
+				auto pipe_alt_costs = _pipes_alt_costs_.at(row);
+				if (city)
+					design_cost += pipe_alt_costs.clean_city;
+				else
+					design_cost += pipe_alt_costs.clean_residential;
+			}
+		}
 	
 		return 0.0;
     }
