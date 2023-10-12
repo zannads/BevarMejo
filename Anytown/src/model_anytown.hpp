@@ -118,7 +118,7 @@ namespace bevarmejo {
 
         /* Anytown specific functions */
         double cost(const std::vector<double>& dv, const std::vector<std::vector<double>>& energy) const;
-        double reliablity(const std::vector<double>& pressures) const;
+        double resilience_index(const std::vector<double>& pressures, const std::vector<double>& flows) const;
 
         /* Helper functions */
         std::vector<double> apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;

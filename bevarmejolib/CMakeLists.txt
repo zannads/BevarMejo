@@ -14,7 +14,14 @@ ENDIF()
 #file(GLOB BEMELIB_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} src/*.cpp)
 #add_library(bemelib ${BEMELIB_SOURCES})
 
-add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" "src/experiment.cpp" "include/bevarmejo/experiment.hpp" "${PUGIXML_ROOT}/pugixml.cpp" "src/water_distribution_system.cpp" "include/bevarmejo/water_distribution_system.hpp" "src/subnetwork.cpp" "include/bevarmejo/subnetwork.hpp")
+add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
+                    "src/experiment.cpp" "include/bevarmejo/experiment.hpp" 
+                    "${PUGIXML_ROOT}/pugixml.cpp" 
+                    "src/water_distribution_system.cpp" "include/bevarmejo/water_distribution_system.hpp" 
+                    "src/subnetwork.cpp" "include/bevarmejo/subnetwork.hpp"
+                    "src/resilience_index.cpp" "include/bevarmejo/resilience_index.hpp"
+                    "include/bevarmejo/constants.hpp")
+            
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(bemelib PUBLIC Pagmo::pagmo)
