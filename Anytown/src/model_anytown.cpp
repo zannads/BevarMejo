@@ -163,7 +163,7 @@ namespace bevarmejo {
 
 		// Compute OF on res. 
 		std::vector<double> fitv(n_fit, 0);
-		fitv[0] = cost(dv, res[3]);
+		fitv[0] = cost(dv, res[2]);
 		fitv[1] = reliablity(res[0][0]); // HOW do I manage it thourgh time and throuhg nodes?
 
         return fitv;
@@ -253,8 +253,19 @@ namespace bevarmejo {
 			auto pipe_alt_costs = _pipes_alt_costs_.at(dv[70+i]);
 			design_cost += pipe_alt_costs.new_cost;
 		}
-	
-		return 0.0;
+		// energy from pumps 
+		double total_energy_Wh = 0.0;
+		for (auto& hour : energy) {
+			for (auto& pump_energy : hour) {
+				total_energy_Wh += pump_energy;
+			}
+		}
+		double energy_cost = total_energy_Wh * energy_cost_kWh / 1000;
+		double npv_energy_cost = energy_cost * pow(1 + discount_rate, amortization_years);
+
+		// TODO: tanks costs
+
+		return design_cost + npv_energy_cost;
     }
 
     double ModelAnytown::reliablity(const std::vector<double> &pressures) const {

@@ -50,7 +50,7 @@ namespace bevarmejo {
     constexpr double coeff_HW_new = 130.0;
     
     constexpr double energy_cost_kWh = 0.12; // dollars per kWh
-    constexpr double interest_rate = 0.12; // 12% per year
+    constexpr double discount_rate = 0.12; // 12% per year
     constexpr double amortization_years = 20.0; // 20 years
     
     constexpr double riser_length_ft = 101.0;
