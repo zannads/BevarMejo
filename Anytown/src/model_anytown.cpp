@@ -170,6 +170,7 @@ namespace bevarmejo {
 		std::vector<double> fitv(n_fit, 0);
 		fitv[0] = cost(dv, res[2]);
 		std::vector<double> hourly_Ir(res[0].size(), 0.0);
+		std::vector<bool> min_pressure_constraint(res[0].size(), false);
 		for (std::size_t t = 0; t<res[0].size(); ++t) {
 			// compute the resilience index for each hour
 			// temporary work-around
@@ -179,6 +180,9 @@ namespace bevarmejo {
 			// TODO: translate min pressure psi in head 
 			// TODO: convert units in metric system
 			hourly_Ir[t] += bevarmejo::resilience_index(network_results, bevarmejo::min_pressure_psi);
+
+			// TODO: convert units in metric system 
+			min_pressure_constraint[t] = bevarmejo::minimum_pressure_satisfied(network_results.head_at_dnodes, bevarmejo::min_pressure_psi);
 		}
 		// average through the day Index of resilience
 		fitv[1] = std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
