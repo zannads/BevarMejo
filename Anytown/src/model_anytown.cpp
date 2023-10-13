@@ -129,12 +129,12 @@ namespace bevarmejo {
 
 		// things to do 
 		// 1. EPS 
-		//      apply dv to the network
-		// 		run EPS as it is
-		// 		check energy consumption
-		// 		check pressure for reliability
-		// 		check min pressure constraint
-		// 		check tanks complete emptying and filling
+		//   [x]   apply dv to the network
+		// 	 [x]	run EPS as it is
+		// 	 [x]	check energy consumption
+		// 	 [x]	check pressure for reliability
+		// 	 [ ]	check min pressure constraint
+		// 	 [ ]	check tanks complete emptying and filling
 		// 2. instantenous peak flow
 		// 		apply changes wrt EPS
 		//      	not running anymore for 24h but instantenous 
@@ -176,7 +176,9 @@ namespace bevarmejo {
 			// convert from vector of vector of vector to resilience index struct
 			auto network_results = this->convert_to_netdata_4_Ir(res[0][t], res[1][t], res[2][t], "possible_tank_locations", "possible_tank_locations");
 			//netdata_4_Ir network_results{{1},{1},{0},{2},{1},{0}};
-			hourly_Ir[t] += bevarmejo::resilience_index(network_results);
+			// TODO: translate min pressure psi in head 
+			// TODO: convert units in metric system
+			hourly_Ir[t] += bevarmejo::resilience_index(network_results, bevarmejo::min_pressure_psi);
 		}
 		// average through the day Index of resilience
 		fitv[1] = std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
@@ -398,7 +400,6 @@ namespace bevarmejo {
 				const std::string& dnodes_subnet_name, const std::string& res_subnet_name) const
     {
 		bevarmejo::netdata_4_Ir network_data{std::vector<double>(_anytown_->get_subnetwork(dnodes_subnet_name).size(),0.0),
-								std::vector<double>(_anytown_->get_subnetwork(dnodes_subnet_name).size(),0.0),
 								std::vector<double>(_anytown_->get_subnetwork(dnodes_subnet_name).size(),0.0),
 								std::vector<double>(_anytown_->get_subnetwork(res_subnet_name).size(),0.0),
 								std::vector<double>(_anytown_->get_subnetwork(res_subnet_name).size(),0.0),
