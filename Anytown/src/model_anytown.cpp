@@ -378,8 +378,12 @@ namespace bevarmejo {
 		for (std::size_t period = 0; period < n_periods; ++period) {
 			for (std::size_t pump = 0; pump < *begin; ++pump) {
 				patterns[pump][period] = 1.0;
-				begin++;
 			}
+			begin++;
+		}
+
+		return patterns;
+    }
 		}
 
 		return patterns;
