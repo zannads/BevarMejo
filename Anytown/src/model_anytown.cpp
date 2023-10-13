@@ -163,7 +163,7 @@ namespace bevarmejo {
 
 		// Compute OF on res. 
 		std::vector<double> fitv(n_fit, 0);
-		fitv[0] = cost(dv, res[3]);
+		fitv[0] = cost(dv, res[2]);
 		fitv[1] = reliablity(res[0][0]); // HOW do I manage it thourgh time and throuhg nodes?
 
         return fitv;
@@ -204,8 +204,68 @@ namespace bevarmejo {
     }
 
     double ModelAnytown::cost(const std::vector<double> &dv, const std::vector<std::vector<double>> &energy) const {
-	
-		return 0.0;
+        double design_cost = 0.0;
+		// 35 pipes x [action, prc]
+		for (std::size_t i = 0; i < 35; ++i) {
+			if (dv[i*2] == 0)
+				continue;
+
+			std::string link_id = _anytown_->get_subnetwork("existing_pipes").at(i);
+			bool city = _anytown_->is_in_subnetork("city_pipes", link_id);
+			// I assume is in the residential as they are mutually exclusive
+
+			if (dv[i*2] == 1) { // duplicate
+				auto  pipe_alt_costs = _pipes_alt_costs_.at(dv[i*2+1]);
+				if (city) 
+					design_cost += pipe_alt_costs.dup_city;
+				else
+					design_cost += pipe_alt_costs.dup_residential;
+			}
+			else if (dv[i*2] == 2) { // clean
+				// I can't use dv[i*2+1] to get the costs, but Ihave to search for the diameter
+				
+				// retrieve the link index
+				int link_idx = 0;
+				int errorcode = EN_getlinkindex(_anytown_->ph_, link_id.c_str(), &link_idx);
+				assert(errorcode <= 100);
+
+				// retrieve the link diameter
+				double link_diameter = 0.0;
+				errorcode = EN_getlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, &link_diameter);
+				assert(errorcode <= 100);
+				
+				// found which row of the table _pipe_alt_costs_ starting from the diameter 
+				std::size_t row = 0;
+				while (row < _pipes_alt_costs_.size()-1 && _pipes_alt_costs_.at(row).diameter != link_diameter) 
+					++row;
+				
+				// IF I haven't found it until the last I put the most expensive one (i.e., the last)
+				auto pipe_alt_costs = _pipes_alt_costs_.at(row);
+				if (city)
+					design_cost += pipe_alt_costs.clean_city;
+				else
+					design_cost += pipe_alt_costs.clean_residential;
+			}
+		}
+		// 6 pipes x [prc]
+		for (std::size_t i = 0; i < 6; ++i) {
+			// dv[i] is the row of the _pipes_alt_costs_ table
+			auto pipe_alt_costs = _pipes_alt_costs_.at(dv[70+i]);
+			design_cost += pipe_alt_costs.new_cost;
+		}
+		// energy from pumps 
+		double total_energy_Wh = 0.0;
+		for (auto& hour : energy) {
+			for (auto& pump_energy : hour) {
+				total_energy_Wh += pump_energy;
+			}
+		}
+		double energy_cost = total_energy_Wh * energy_cost_kWh / 1000;
+		double npv_energy_cost = energy_cost * pow(1 + discount_rate, amortization_years);
+
+		// TODO: tanks costs
+
+		return design_cost + npv_energy_cost;
     }
 
     double ModelAnytown::reliablity(const std::vector<double> &pressures) const {
