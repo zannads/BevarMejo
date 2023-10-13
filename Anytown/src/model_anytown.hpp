@@ -16,6 +16,7 @@
 #include "pugixml.hpp"
 
 #include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/resilience_index.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
@@ -109,6 +110,12 @@ namespace bevarmejo {
 
         // Implementation of the box bounds.
         std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
+
+
+/* temp helper functions until I fix the runHydraulics data extraction */
+        bevarmejo::netdata_4_Ir convert_to_netdata_4_Ir(
+            const std::vector<double>& pressures, const std::vector<double>& flows, const std::vector<double>& energies, 
+            const std::string& dnodes_subnet_name, const std::string& res_subnet_name) const;
 
     private: 
         /* Anytonw specific data */

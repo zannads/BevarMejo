@@ -12,7 +12,7 @@
 #include <vector>
 
 namespace bevarmejo {
-// Define the MyStruct struct
+// Define the struct that contains the data needed to calculate the resilience index
 struct netdata_4_Ir {
     std::vector<double> flow_at_dnodes;
     std::vector<double> head_at_dnodes;
