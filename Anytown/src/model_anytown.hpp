@@ -16,6 +16,7 @@
 #include "pugixml.hpp"
 
 #include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/resilience_index.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
@@ -50,7 +51,7 @@ namespace bevarmejo {
     constexpr double coeff_HW_new = 130.0;
     
     constexpr double energy_cost_kWh = 0.12; // dollars per kWh
-    constexpr double interest_rate = 0.12; // 12% per year
+    constexpr double discount_rate = 0.12; // 12% per year
     constexpr double amortization_years = 20.0; // 20 years
     
     constexpr double riser_length_ft = 101.0;
@@ -75,6 +76,7 @@ namespace bevarmejo {
     };
     std::istream& operator >> (std::istream& is, tanks_costs& tc);
 
+    constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
     // Here the problem is actually construted.
 	class ModelAnytown {
@@ -109,6 +111,12 @@ namespace bevarmejo {
         // Implementation of the box bounds.
         std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
+
+/* temp helper functions until I fix the runHydraulics data extraction */
+        bevarmejo::netdata_4_Ir convert_to_netdata_4_Ir(
+            const std::vector<double>& pressures, const std::vector<double>& flows, const std::vector<double>& energies, 
+            const std::string& dnodes_subnet_name, const std::string& res_subnet_name) const;
+
     private: 
         /* Anytonw specific data */
         std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
@@ -117,11 +125,12 @@ namespace bevarmejo {
 
         /* Anytown specific functions */
         double cost(const std::vector<double>& dv, const std::vector<std::vector<double>>& energy) const;
-        double reliablity(const std::vector<double>& pressures) const;
+        double resilience_index(const std::vector<double>& pressures, const std::vector<double>& flows) const;
 
+        /* Helper functions */
         std::vector<double> apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
         void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
-
+        std::vector<std::vector<double>> decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const;
 
 	}; /* class ModelAnytown*/
  

@@ -49,6 +49,7 @@ namespace bevarmejo {
 		/* Methods */
 	public: 
 		void load_subnetwork(std::filesystem::path subnetwork_filename);
+		std::size_t size() const;
 
 		/* Getters */
 		std::string name() const;
