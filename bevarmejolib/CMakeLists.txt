@@ -20,7 +20,8 @@ add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
                     "src/water_distribution_system.cpp" "include/bevarmejo/water_distribution_system.hpp" 
                     "src/subnetwork.cpp" "include/bevarmejo/subnetwork.hpp"
                     "src/resilience_index.cpp" "include/bevarmejo/resilience_index.hpp"
-                    "include/bevarmejo/constants.hpp")
+                    "include/bevarmejo/constants.hpp"
+                    "include/bevarmejo/econometric_functions.hpp")
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
 
