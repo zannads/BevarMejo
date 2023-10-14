@@ -287,7 +287,7 @@ namespace bevarmejo {
 				total_energy_Wh_perDay += pump_energy;
 			}
 		}
-		double yearly_energy_cost = total_energy_Wh_perDay * energy_cost_kWh / 1000 * days_per_year;
+		double yearly_energy_cost = total_energy_Wh_perDay * energy_cost_kWh / 1000 * bevarmejo::days_per_year;
 		
 		// TODO: tanks costs
 
