@@ -185,7 +185,8 @@ namespace bevarmejo {
 			min_pressure_constraint[t] = bevarmejo::minimum_pressure_satisfied(network_results.head_at_dnodes, bevarmejo::min_pressure_psi);
 		}
 		// average through the day Index of resilience
-		fitv[1] = std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
+		// minuse beacuse we want to maximize
+		fitv[1] = -std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
 
         return fitv;
     }
