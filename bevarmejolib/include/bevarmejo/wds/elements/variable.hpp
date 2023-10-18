@@ -17,40 +17,45 @@ class variable_core
 private:
     std::string _unit_; // TODO: see if it possible to convert to boost.units
 public:
-    variable_core(): _unit_(""){};
+    variable_core() : _unit_("") {}
 
-    variable_core(const std::string& unit): _unit_(unit){};
+    variable_core(const std::string& unit): _unit_(unit){}
 
-    ~variable_core() {};
+    ~variable_core() {}
 
-    const std::string unit() const {return _unit_;};
+    const std::string unit() const {return _unit_;} 
     // Assignement operator not possible except at construction.
 
 }; // class variable_core
 
 template<typename VT>
 class variable : public variable_core {
+    public:
+        using inherited= variable_core;
 
     private:
         VT _value_;
 
     public:
 
-        variable() = default;
+        variable(): 
+            inherited(),
+            _value_()
+            {}
 
         variable(const std::string unit):
-            variable_core(unit){};
+            inherited(unit){}
 
         template <typename ...Params>
         variable(const std::string unit, Params&&... params): 
-            variable_core(unit), 
-            _value_(std::forward<Params>(params)...){};
+            inherited(unit), 
+            _value_(params...){}
 
-        ~variable() {};
+        ~variable() {} 
 
-        VT& value() {return _value_;};
-        void value(const VT& value) {_value_ = value;};
-        VT& operator()() {return _value_;};
+        VT& value() {return _value_;}
+        void value(const VT& value) {_value_ = value;}
+        VT& operator()() {return _value_;} 
 }; // class variable
 
 } // namespace vars

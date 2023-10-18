@@ -16,8 +16,26 @@ template <typename ET>
 class temporal : public std::map<long,ET> {
 
     public:
-        ET& when(const long time) {return (*this)[time];};
+        using inherited= std::map<long,ET>;
 
+        temporal() : inherited() {}
+
+        temporal(const ET& value) : inherited() {
+            (*this)[0] = value;
+        }
+
+        temporal(const long time, const ET& value) : inherited() {
+            (*this)[time] = value;
+        }
+
+        template <typename ...Params>
+        temporal(const long time, Params&& ...params) : inherited() {
+            (*this)[time] = ET(params...);
+        }
+
+        ET& when(const long time) {return (*this).at(time);};
+        // but of course you have also find, at, [], contains etc..  
+        
 }; // class temporal
 
 } // namespace vars
