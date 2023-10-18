@@ -231,12 +231,12 @@ std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydra
 
 void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
     // simply a wrapper as all chekc operations are done inside the class
-    _subnetworks_.insert(Subnetwork(subnetwork_filename));
+    _subnetworks_.insert(subnetwork(subnetwork_filename));
 }
 
-bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string &name) const
+bevarmejo::subnetwork WaterDistributionSystem::get_subnetwork(const std::string &name) const
 {
-    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     return *subnet_it;
@@ -245,7 +245,7 @@ bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string 
 bool WaterDistributionSystem::is_in_subnetork(const std::string &name, const std::string &id) const {
     bool found = false;
     
-    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     for (std::size_t i = 0; i < subnet_it->size(); ++i){

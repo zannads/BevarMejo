@@ -33,7 +33,7 @@ protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
     // Subnetworks of IDs
-    std::unordered_set<Subnetwork> _subnetworks_;
+    std::unordered_set<subnetwork> _subnetworks_;
     
 public:
     
@@ -79,7 +79,7 @@ public:
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);
     // get back a subnework from the list of subnetworks
-    bevarmejo::Subnetwork get_subnetwork(const std::string& name) const;
+    bevarmejo::subnetwork get_subnetwork(const std::string& name) const;
     // tell me if an ID is part of this subnetwork
     bool is_in_subnetork(const std::string& name, const std::string& id) const;
 
