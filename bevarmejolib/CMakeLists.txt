@@ -16,7 +16,8 @@ ENDIF()
 set(WDS_INC_ROOT "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" CACHE PATH "Path to the rootfolder of the WDS")
 set(WDS_FILES "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}/water_distribution_system.hpp" 
               "${WDS_INC_ROOT}/subnetwork.cpp" "${WDS_INC_ROOT}/subnetwork.hpp"
-              "${WDS_INC_ROOT}/elements/variable.hpp")
+              "${WDS_INC_ROOT}/elements/variable.hpp"
+              "${WDS_INC_ROOT}/elements/temporal.hpp")
 
 add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
                     "src/experiment.cpp" "include/bevarmejo/experiment.hpp" 
