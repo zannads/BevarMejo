@@ -38,7 +38,7 @@ for (std::size_t i = 0; i < network_data.flow_out_reservoirs.size(); ++i) {
     denominator += network_data.flow_out_reservoirs[i] * network_data.head_at_reservoirs[i];
 }
 for (std::size_t i = 0; i < network_data.power_at_pumps.size(); ++i) {
-    denominator += network_data.power_at_pumps[i]/water_specific_weight_N_per_m3;
+    denominator += network_data.power_at_pumps[i]/bevarmejo::water_specific_weight_N_per_m3;
 } 
 for (std::size_t i = 0; i < network_data.flow_at_dnodes.size(); ++i) {
     denominator -= network_data.flow_at_dnodes[i] * req_head_at_dnodes[i];

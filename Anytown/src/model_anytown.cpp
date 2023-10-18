@@ -16,6 +16,9 @@
 
 #include "pugixml.hpp"
 
+#include "bevarmejo/constants.hpp"
+#include "bevarmejo/econometric_functions.hpp"
+#include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/water_distribution_system.hpp"
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/resilience_index.hpp"
@@ -133,7 +136,7 @@ namespace bevarmejo {
 		// 	 [x]	run EPS as it is
 		// 	 [x]	check energy consumption
 		// 	 [x]	check pressure for reliability
-		// 	 [ ]	check min pressure constraint
+		// 	 [x]	check min pressure constraint
 		// 	 [ ]	check tanks complete emptying and filling
 		// 2. instantenous peak flow
 		// 		apply changes wrt EPS
@@ -168,7 +171,9 @@ namespace bevarmejo {
 
 		// Compute OF on res. 
 		std::vector<double> fitv(n_fit, 0);
-		fitv[0] = cost(dv, res[2]);
+
+		// NPV of the solution (negative as both initial investement and cash flows are negative)
+		fitv[0] = -cost(dv, res[2]);
 		std::vector<double> hourly_Ir(res[0].size(), 0.0);
 		std::vector<bool> min_pressure_constraint(res[0].size(), false);
 		for (std::size_t t = 0; t<res[0].size(); ++t) {
@@ -185,7 +190,8 @@ namespace bevarmejo {
 			min_pressure_constraint[t] = bevarmejo::minimum_pressure_satisfied(network_results.head_at_dnodes, bevarmejo::min_pressure_psi);
 		}
 		// average through the day Index of resilience
-		fitv[1] = std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
+		// minuse beacuse we want to maximize
+		fitv[1] = -std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
 
         return fitv;
     }
@@ -275,18 +281,18 @@ namespace bevarmejo {
 			design_cost += pipe_alt_costs.new_cost;
 		}
 		// energy from pumps 
-		double total_energy_Wh = 0.0;
+		double total_energy_Wh_perDay = 0.0;
 		for (auto& hour : energy) {
 			for (auto& pump_energy : hour) {
-				total_energy_Wh += pump_energy;
+				total_energy_Wh_perDay += pump_energy;
 			}
 		}
-		double energy_cost = total_energy_Wh * energy_cost_kWh / 1000;
-		double npv_energy_cost = energy_cost * pow(1 + discount_rate, amortization_years);
-
+		double yearly_energy_cost = total_energy_Wh_perDay * energy_cost_kWh / 1000 * bevarmejo::days_per_year;
+		
 		// TODO: tanks costs
 
-		return design_cost + npv_energy_cost;
+		return bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
+	
     }
 
     std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv) const
