@@ -5,8 +5,8 @@
 //  Created by Dennis Zanutto on 04/07/23.
 //
 
-#ifndef BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
-#define BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
+#ifndef BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
+#define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
 #include <stdio.h>
@@ -22,7 +22,7 @@
 
 namespace bevarmejo {
 
-class WaterDistributionSystem{
+class water_distribution_system{
 public:
     // Handler for the project.
     // Public because I may want to modify it (e.g., apply a decision vector).
@@ -38,28 +38,28 @@ protected:
 public:
     
     // Default constructor
-    WaterDistributionSystem();
+    water_distribution_system();
     
     // Constructor from .inp file as a path reference
-   // WaterDistributionSystem(const std::filesystem::path& inp_filename);
+   // water_distribution_system(const std::filesystem::path& inp_filename);
     
     // Constructor from .inp file
-    WaterDistributionSystem(std::string inp_filename);
+    water_distribution_system(std::string inp_filename);
  
     // Copy constructor
     // this is not actually a copy constructor but rather a reinitialization one.
-    WaterDistributionSystem(const WaterDistributionSystem &src);
+    water_distribution_system(const water_distribution_system &src);
     
     // Move constructor
-    WaterDistributionSystem(WaterDistributionSystem &&src) noexcept;
+    water_distribution_system(water_distribution_system &&src) noexcept;
     
     // Copy Assignement operator
-    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs);
+    water_distribution_system& operator=(const water_distribution_system& rhs);
     
     // Move Assignement operator
-    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept;
+    water_distribution_system& operator=(water_distribution_system&& rhs) noexcept;
     
-    ~WaterDistributionSystem();
+    ~water_distribution_system();
     
     // Equivalent to constuctor from .inp file
     void init();
@@ -86,8 +86,10 @@ public:
     // Wrappers for linees-of-code consuming EPANET functions
     std::string get_node_id(int index) const;
 
-};
+}; // class water_distribution_system
 
-} /* namespace bevarmejo */
+using wds_ = water_distribution_system; // short name for water_distribution_system
 
-#endif /* BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP */
+} // namespace bevarmejo
+
+#endif // BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP

@@ -119,7 +119,7 @@ namespace bevarmejo {
 
     private: 
         /* Anytonw specific data */
-        std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
+        std::shared_ptr<bevarmejo::water_distribution_system> _anytown_;
         std::vector<pipes_alt_costs> _pipes_alt_costs_;
         std::vector<tanks_costs> _tanks_costs_;
 
@@ -128,8 +128,8 @@ namespace bevarmejo {
         double resilience_index(const std::vector<double>& pressures, const std::vector<double>& flows) const;
 
         /* Helper functions */
-        std::vector<double> apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
-        void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
+        std::vector<double> apply_dv(std::shared_ptr<bevarmejo::water_distribution_system> anytown, const std::vector<double>& dv) const;
+        void reset_dv(std::shared_ptr<bevarmejo::water_distribution_system> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
         std::vector<std::vector<double>> decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const;
 
 	}; /* class ModelAnytown*/
