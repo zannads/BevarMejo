@@ -22,6 +22,8 @@
 
 namespace bevarmejo {
 
+namespace wds {
+
 class water_distribution_system{
 public:
     // Handler for the project.
@@ -79,7 +81,7 @@ public:
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);
     // get back a subnework from the list of subnetworks
-    bevarmejo::subnetwork get_subnetwork(const std::string& name) const;
+    bevarmejo::wds::subnetwork get_subnetwork(const std::string& name) const;
     // tell me if an ID is part of this subnetwork
     bool is_in_subnetork(const std::string& name, const std::string& id) const;
 
@@ -88,7 +90,9 @@ public:
 
 }; // class water_distribution_system
 
-using wds_ = water_distribution_system; // short name for water_distribution_system
+} // namespace wds
+
+using wds_ = wds::water_distribution_system; // short name for water_distribution_system
 
 } // namespace bevarmejo
 

@@ -17,6 +17,7 @@
 #include "epanet2_2.h"
 
 namespace bevarmejo {
+namespace wds {
 	class subnetwork
 	{
 		/* Constructors and Destructors */
@@ -64,13 +65,14 @@ namespace bevarmejo {
 
 	}; // class subnetwork
 
+} // namespace wds
 } // namespace bevarmejo
 
 // Hash function for subnetwork
 namespace std {
     template<>
-    struct hash<bevarmejo::subnetwork> {
-        size_t operator()(const bevarmejo::subnetwork &s) const {
+    struct hash<bevarmejo::wds::subnetwork> {
+        size_t operator()(const bevarmejo::wds::subnetwork &s) const {
             return std::hash<std::string>()(s.name()); // use the hash function for std::string
         }
     };

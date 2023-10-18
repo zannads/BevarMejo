@@ -22,6 +22,8 @@
 #include "water_distribution_system.hpp"
 
 namespace bevarmejo {
+namespace wds {
+
 water_distribution_system::water_distribution_system(){
     ph_ = nullptr;
 }
@@ -234,9 +236,9 @@ void water_distribution_system::add_subnetwork(const std::filesystem::path& subn
     _subnetworks_.insert(subnetwork(subnetwork_filename));
 }
 
-bevarmejo::subnetwork water_distribution_system::get_subnetwork(const std::string &name) const
+bevarmejo::wds::subnetwork water_distribution_system::get_subnetwork(const std::string &name) const
 {
-    auto subnet_it = _subnetworks_.find(bevarmejo::subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     return *subnet_it;
@@ -245,7 +247,7 @@ bevarmejo::subnetwork water_distribution_system::get_subnetwork(const std::strin
 bool water_distribution_system::is_in_subnetork(const std::string &name, const std::string &id) const {
     bool found = false;
     
-    auto subnet_it = _subnetworks_.find(bevarmejo::subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     for (std::size_t i = 0; i < subnet_it->size(); ++i){
@@ -269,4 +271,5 @@ std::string water_distribution_system::get_node_id(int index) const {
     return node_id_str;
 }
 
+} // namespace wds
 } // namespace bevarmejo 

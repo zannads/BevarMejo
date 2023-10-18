@@ -19,6 +19,7 @@
 #include "subnetwork.hpp"
 
 namespace bevarmejo {
+namespace wds {
 
 	void subnetwork::load_subnetwork(std::filesystem::path subnetwork_filename)
 	{
@@ -105,4 +106,5 @@ namespace bevarmejo {
 		return en_object_type_int;
 	}
 
+} // namespace wds
 } // namespace bevarmejo
