@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <vector>
 
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
 class Hanoi : public bevarmejo::WaterDistributionSystem {

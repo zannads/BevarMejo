@@ -19,7 +19,7 @@
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/resilience_index.hpp"
 

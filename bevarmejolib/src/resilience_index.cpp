@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 
-#include "constants.hpp"
+#include "bevarmejo/constants.hpp"
 #include "resilience_index.hpp"
 
 namespace bevarmejo {

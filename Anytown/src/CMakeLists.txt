@@ -7,5 +7,6 @@ target_link_libraries(modelAnytown PUBLIC Pagmo::pagmo epanet bemelib)
 
 target_include_directories(modelAnytown PUBLIC
 							"${CMAKE_CURRENT_SOURCE_DIR}"
-							"${PROJECT_SOURCE_DIR}/bevarmejolib/include"
+							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
+							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
 )

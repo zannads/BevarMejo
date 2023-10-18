@@ -15,7 +15,7 @@
 
 #include "pugixml.hpp"
 
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/resilience_index.hpp"
 
 namespace fsys = std::filesystem;

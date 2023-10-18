@@ -18,5 +18,6 @@ target_link_libraries(hanoiOptimization PRIVATE Pagmo::pagmo bemelib modelHanoi)
 target_include_directories(hanoiOptimization PUBLIC
                           "${PROJECT_BINARY_DIR}"
                           "${PROJECT_SOURCE_DIR}/Hanoi/include"
-                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include"
+                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
+                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
                           )

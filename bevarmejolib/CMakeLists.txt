@@ -17,8 +17,8 @@ ENDIF()
 add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
                     "src/experiment.cpp" "include/bevarmejo/experiment.hpp" 
                     "${PUGIXML_ROOT}/pugixml.cpp" 
-                    "src/water_distribution_system.cpp" "include/bevarmejo/water_distribution_system.hpp" 
-                    "src/subnetwork.cpp" "include/bevarmejo/subnetwork.hpp"
+                    "include/bevarmejo/wds/water_distribution_system.cpp" "include/bevarmejo/wds/water_distribution_system.hpp" 
+                    "include/bevarmejo/wds/subnetwork.cpp" "include/bevarmejo/wds/subnetwork.hpp"
                     "src/resilience_index.cpp" "include/bevarmejo/resilience_index.hpp"
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp")
@@ -30,6 +30,7 @@ target_link_libraries(bemelib PUBLIC Pagmo::pagmo)
 target_include_directories(bemelib PUBLIC
                             "include"
                             "include/bevarmejo"
+                            "include/bevarmejo/wds"
                             "${PUGIXML_ROOT}"
                             "${EPANET_ROOT}/include"
 )

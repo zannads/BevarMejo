@@ -17,5 +17,6 @@ target_link_libraries(anytownTest PRIVATE Pagmo::pagmo bemelib modelAnytown)
 target_include_directories(anytownTest PUBLIC
                           "${PROJECT_BINARY_DIR}"
                           "${PROJECT_SOURCE_DIR}/Anytown/src"
-                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include"
+                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
+                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
                           )
