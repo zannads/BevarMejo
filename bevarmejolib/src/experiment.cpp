@@ -15,7 +15,9 @@
 #include "pagmo/algorithm.hpp"
 #include "pagmo/population.hpp"
 
-#include "io.hpp"
+#include "pugixml.hpp"
+
+#include "bevarmejo/io.hpp"
 
 #include "experiment.hpp"
 
@@ -25,8 +27,10 @@ namespace bevarmejo {
 namespace fsys = std::filesystem;
 // Constructor from path to root folder (preferred)
 Experiment::Experiment(fsys::path experiment_folder,
+                       unsigned int seed,
                        fsys::path settings_filename) :
     _root_experiment_folder_(experiment_folder),
+    _seed_(seed),
     _settings_filename_(settings_filename) {
         
     // save initial time of the experiment
@@ -53,6 +57,12 @@ Experiment::Experiment(fsys::path experiment_folder,
         throw std::runtime_error(error_message);
     }
     
+    // upload settings file 
+    pugi::xml_parse_result result = _settings_.load_file(settings_file().c_str());
+
+    if (result.status != pugi::status_ok) {
+        throw std::runtime_error(result.description());
+    }
 }
 /* Methods */
 //Check complaiance of root folder
@@ -78,37 +88,31 @@ void Experiment::finished(){
 
 void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &algo){
     
-    //TODO create your own name
-    fsys::path output_filename = output_dir()/"test.out";
-    
     // open and create the file
-    std::ofstream ofs(output_filename);
+    std::ofstream ofs(output_file());
     if (!ofs.is_open())
         return; // how can I redirect this to cout?
     
-    std::cout <<"\nWriting results on:\n\t" <<output_filename.string() <<std::endl;
+    std::cout <<"\nWriting results on:\n\t" << output_file().string() << std::endl;
     
     // 0. write the header (system and experiment info)
-    stream_param(ofs, "Experiment:", get_name());
-    stream_param(ofs, get_extra_info(), "");
+    stream_param(ofs, "Experiment", get_name());
+    stream_out(ofs, get_extra_info());
     
     // 1. Algorithm
-    stream_param(ofs, "Algorithm: ", algo.get_name());
-    stream_param(ofs, "", algo.get_extra_info());
-    ofs <<std::endl;
+    stream_param(ofs, "Algorithm", algo.get_name());
+    stream_out(ofs, algo.get_extra_info(), '\n', '\n');
     
     // 2. Model Problem
-    stream_param(ofs, "Problem name: ", pop.get_problem().get_name());
-    stream_param(ofs, "", pop.get_problem().get_extra_info());
-    
-    ofs <<std::endl;
+    stream_param(ofs, "Problem name", pop.get_problem().get_name());
+    stream_out(ofs, pop.get_problem().get_extra_info(), '\n', '\n');
     
     // 3. Population
-    stream_param(ofs, "Population:", "");
-    stream_param(ofs, "\tFitness evaluations: ", pop.get_problem().get_fevals());
+    stream_out(ofs, "Population\n");
+    stream_param(ofs, "\tFitness evaluations", pop.get_problem().get_fevals());
     auto last_individual = pop.size();
-    stream_param(ofs, "\tPopulation size:\t ", last_individual);
-    stream_param(ofs, "\tSeed:\t\t\t\t ", pop.get_seed());
+    stream_param(ofs, "\tPopulation size", last_individual);
+    stream_param(ofs, "\tSeed", pop.get_seed());
     
     auto population_ids = pop.get_ID();
     auto pop_dvs        = pop.get_x();
@@ -116,26 +120,29 @@ void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &alg
     
     //stream_param(ofs, "List of individuals: ", "");
     for (auto individual = 0u; individual<last_individual; ++individual){
-        stream_param(ofs, "#", individual);
-        stream_param(ofs, "\tID: ", population_ids[individual]);
-        stream_param(ofs, "\tDecision vector: ", pop_dvs[individual]);
-        stream_param(ofs, "\tFitness vector: ", pop_fitnesses[individual]);
+        stream_out(ofs, "#", individual, '\n');
+        stream_param(ofs, "\tID", population_ids[individual]);
+        stream_param(ofs, "\tDecision vector", pop_dvs[individual]);
+        stream_param(ofs, "\tFitness vector", pop_fitnesses[individual]);
     }
+}
+
+void Experiment::set_name(std::string name)
+{
+	_name_ = name;
 }
 
 /* Setters and getters */
 std::string Experiment::get_name(){
-    std::ostringstream oss;
-    oss << _name_;
-    return oss.str();
+    return _name_;
 }
 
 std::string Experiment::get_extra_info(){
     // TODO extend
     std::ostringstream oss;
-    oss << _user_custom_info_ <<'\n';
-    stream_param(oss, "\tOptimisation begun: ", ctime(&_start_time_));
-    stream_param(oss, "\tOptimisation ended: ", ctime(&_end_time_  ));
+    stream_out(oss, _user_custom_info_, '\n');
+    stream_param(oss, "\tOptimisation begun", ctime(&_start_time_));
+    stream_param(oss, "\tOptimisation ended", ctime(&_end_time_  ));
     return oss.str();
 }
 
@@ -154,4 +161,28 @@ fsys::path Experiment::runtime_dir(){
 fsys::path Experiment::settings_file(){
     return input_dir()/_settings_filename_;
 }
+fsys::path Experiment::output_file()
+{
+    fsys::path output_filename = output_dir()/_name_;
+    output_filename += "_";
+    output_filename += std::to_string(_seed_);
+    output_filename += ".out";
+    return output_filename;
 }
+pugi::xml_node Experiment::algorithm_settings() const
+{
+    pugi::xml_node algorithm_settings_node = _settings_.child("optProblem").child("optAlgorithm").first_child();
+    if (algorithm_settings_node.empty())
+		throw std::runtime_error("\nNo algorithm settings found in the settings file\n");
+    return algorithm_settings_node;
+}
+
+pugi::xml_node Experiment::model_settings() const
+{
+    pugi::xml_node model_settings_node = _settings_.child("optProblem").child("systemModel").first_child();
+    if (model_settings_node.empty())
+        throw std::runtime_error("\nNo model settings found in the settings file\n");
+	return model_settings_node;
+}
+
+} // namespace bevarmejo

@@ -77,3 +77,4 @@ add_subdirectory("bevarmejolib")
 
 # Include sub-projects.
 add_subdirectory ("Hanoi")
+add_subdirectory ("Anytown")
