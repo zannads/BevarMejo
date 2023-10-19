@@ -9,7 +9,7 @@ target_link_libraries( VarsTests PUBLIC
     GTest::gtest_main
 )
 
-add_executable( ResTests 
+add_executable( ResTests
     results_tests.cpp
 )
 

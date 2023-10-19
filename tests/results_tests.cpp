@@ -52,11 +52,11 @@ TEST_F(FakeNodeTest, DefaultConstructor) {
     ASSERT_EQ(0, _results_.strings().size());
     ASSERT_EQ(6, _results_.integers().size());
     ASSERT_EQ(_results_.integers().find("IDp")->second.unit(), _results_.integers().at("IDo").unit());
-    ASSERT_EQ(_results_.integers()["IDp"].value(), _results_.integers().get("IDo").value());
+    ASSERT_EQ(_results_.integers()["IDp"].value(), _results_.integers().get("IDo"));
     ASSERT_EQ(3, _results_.temporal_reals().size());
     ASSERT_EQ("PRESSURE", _results_.temporal_reals().find("PRESSURE")->first);
     ASSERT_EQ(0, _results_.temporal_reals().at("PRESSURE").value().size());
-    ASSERT_EQ(1, _results_.temporal_reals().get("FLOW")().size());
-    ASSERT_EQ(0, _results_.temporal_reals().get("HEAD")().find(0)->first);
-    ASSERT_EQ(3.0, _results_.temporal_reals().get_v("HEAD").when(0));
+    ASSERT_EQ(1, _results_.temporal_reals().get("FLOW").size());
+    ASSERT_EQ(0, _results_.temporal_reals().get("HEAD").find(0)->first);
+    ASSERT_EQ(3.0, _results_.temporal_reals().at("HEAD").value().when(0));
 }

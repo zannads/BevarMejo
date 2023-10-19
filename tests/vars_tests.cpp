@@ -183,12 +183,12 @@ TEST(VariableTest, NameValueConstructorWithMultiParams) {
 
 TEST(VariablesTest, GetFunction) {
     bevarmejo::wds::vars::variables<int> vars("x", 42);
-    EXPECT_EQ(42, vars.get("x"));
+    EXPECT_EQ(42, vars.at("x"));
 }
 
 TEST(VariablesTest, GetFunctionThrows) {
     bevarmejo::wds::vars::variables<int> vars("x", 42);
-    EXPECT_THROW(vars.get("y"), std::out_of_range);
+    EXPECT_THROW(vars.at("y"), std::out_of_range);
 }
 
 // COMBINATION OF CLASSES UNDER TEST
@@ -200,7 +200,8 @@ TEST(VarsCombinedTest, FinalCombinedConstructor) {
     bevarmejo::wds::vars::variables<bevarmejo::wds::vars::variable<bevarmejo::wds::vars::temporal<CTest2<int,std::string>>>> vars("PRES", "m", 10, 42, "yeaaah");
     EXPECT_EQ(1, vars.size());
     EXPECT_EQ("m", vars["PRES"].unit());
-    EXPECT_EQ(1, vars["PRES"]().size());
+    EXPECT_EQ(1, vars["PRES"].value().size());
     EXPECT_EQ(42, vars["PRES"]().when(10)._t);
     EXPECT_EQ("yeaaah", vars["PRES"]().when(10)._u);
+    EXPECT_EQ(vars.get("PRES").when(10)._t, vars["PRES"]().when(10)._t);
 }
