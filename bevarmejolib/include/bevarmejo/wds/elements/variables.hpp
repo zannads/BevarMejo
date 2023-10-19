@@ -56,7 +56,6 @@ class variables : public std::unordered_map<std::string, VT> {
 
         VT& get(const std::string& name) { return (*this).at(name); }
 
-        
         auto& get_v(const std::string& name) { return (*this).at(name).value(); };
 
         void emplace(const std::string& name) {
