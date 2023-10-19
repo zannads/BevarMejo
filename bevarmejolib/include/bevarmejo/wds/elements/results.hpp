@@ -29,7 +29,17 @@ public:
     /// @brief Default constructor
     results();
 
-    // TODO: all constructors 
+    // Copy constructor
+    results(const results& other);
+
+    // Move constructor
+    results(results&& rhs) noexcept;
+
+    // Copy assignment operator
+    results& operator=(const results& rhs);
+
+    // Move assignment operator
+    results& operator=(results&& rhs) noexcept;
 
     /// @brief Destructor
     virtual ~results();
