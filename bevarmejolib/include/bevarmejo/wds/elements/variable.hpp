@@ -21,7 +21,30 @@ public:
 
     variable_core(const std::string& unit): _unit_(unit){}
 
+    // Copy constructor
+    variable_core(const variable_core& other) : _unit_(other._unit_) {}
+
+    // Move constructor
+    variable_core(variable_core&& other) : _unit_(std::move(other._unit_)) {}
+
+    // Copy assignment operator
+    variable_core& operator=(const variable_core& other) {
+        if (this != &other) {
+            _unit_ = other._unit_;
+        }
+        return *this;
+    }
+
+    // Move assignment operator
+    variable_core& operator=(variable_core&& other) {
+        if (this != &other) {
+            _unit_ = std::move(other._unit_);
+        }
+        return *this;
+    }    
+
     virtual ~variable_core() {}
+
 
     const std::string unit() const {return _unit_;} 
     // Assignement operator not possible except at construction.
@@ -38,32 +61,51 @@ class variable : public variable_core {
 
     public:
 
-        variable(): 
-            inherited(),
-            _value_()
-            {}
+        variable() : inherited(),
+                     _value_() {}
 
-        variable(const std::string unit):
-            inherited(unit),
-            _value_()
-            {}
+        variable(const std::string unit) : inherited(unit),
+                                            _value_() {}
 
-        variable(const VT& value):
-            inherited(),
-            _value_(value)
-            {}
+        variable(const VT& value) : inherited(),
+                                    _value_(value) {}
 
         template <typename ...Params>
-        variable(const std::string unit, Params&&... params): 
-            inherited(unit), 
-            _value_(params...)
-            {}
+        variable(const std::string unit, Params&&... params) : inherited(unit), 
+                                                                _value_(std::forward<Params>(params)...) {}
 
-        ~variable() {} 
+        // Copy constructor
+        variable(const variable& other) : inherited(other),
+                                            _value_(other._value_) {}
+
+        // Move constructor
+        variable(variable&& other) : inherited(std::move(other)),
+                                    _value_(std::move(other._value_)) {}
+
+        // Copy assignment operator
+        variable& operator=(const variable& other) {
+            if (this != &other) {
+                inherited::operator=(other);
+                _value_ = other._value_;
+            }
+            return *this;
+        }
+
+        // Move assignment operator
+        variable& operator=(variable&& other) {
+            if (this != &other) {
+                inherited::operator=(std::move(other));
+                _value_ = std::move(other._value_);
+            }
+            return *this;
+        }
+
+        virtual ~variable() {}
 
         VT& value() {return _value_;}
         void value(const VT& value) {_value_ = value;}
         VT& operator()() {return _value_;} 
+
 }; // class variable
 
 } // namespace vars
