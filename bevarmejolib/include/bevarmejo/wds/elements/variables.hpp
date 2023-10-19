@@ -54,10 +54,7 @@ class variables : public std::unordered_map<std::string, VT> {
 
         virtual ~variables() { inherited::clear(); }
 
-        VT& get(const std::string& name) { return (*this).at(name); }
-
-        
-        auto& get_v(const std::string& name) { return (*this).at(name).value(); };
+        auto& get(const std::string& name) { return (*this).at(name).value(); }
 
         void emplace(const std::string& name) {
             inherited::emplace(name, VT());
