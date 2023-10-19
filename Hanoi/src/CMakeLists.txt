@@ -9,5 +9,6 @@ target_link_libraries(modelHanoi PUBLIC Pagmo::pagmo epanet bemelib)
 
 target_include_directories(modelHanoi PUBLIC
 							"${CMAKE_CURRENT_SOURCE_DIR}/../include"
-							"${PROJECT_SOURCE_DIR}/bevarmejolib/include"
+							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
+							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
 )

@@ -11,15 +11,16 @@
 #include <stdio.h>
 #include <vector>
 
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
-class Hanoi : public bevarmejo::WaterDistributionSystem {
+class Hanoi : public bevarmejo::wds::water_distribution_system {
     
 public:
     // Run a simulation of the Hanoi problem and return the pressures at all nodes
     std::vector<double> evaluate() const;
 };
 
-} /* namespace bevarmejo */
-#endif /* HANOI__HANOI_HPP */
+} // namespace bevarmejo
+
+#endif // HANOI__HANOI_HPP

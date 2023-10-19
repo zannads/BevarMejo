@@ -19,7 +19,7 @@
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/resilience_index.hpp"
 
@@ -56,7 +56,7 @@ namespace bevarmejo {
 		fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
 		inp_filename = input_directory / inp_filename;
 
-		_anytown_ = std::make_shared<WaterDistributionSystem>();
+		_anytown_ = std::make_shared<wds_>();
 		_anytown_->set_inpfile(inp_filename.string());
 		_anytown_->init();
 
@@ -295,7 +295,7 @@ namespace bevarmejo {
 	
     }
 
-    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv) const
+    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<wds_> anytown, const std::vector<double> &dv) const
     {
 		std::vector<double> old_HW_coeffs;
 		// 1. existing pipes
@@ -388,7 +388,7 @@ namespace bevarmejo {
         return old_HW_coeffs;
     }
 
-    void ModelAnytown::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double> &dv, const std::vector<double> &old_HW_coeffs) const {
+    void ModelAnytown::reset_dv(std::shared_ptr<wds_> anytown, const std::vector<double> &dv, const std::vector<double> &old_HW_coeffs) const {
 		// Do the opposite operations of apply_dv 
 		std::vector<const double>::iterator old_HW_coeffs_iter = old_HW_coeffs.begin();
 

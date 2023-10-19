@@ -22,13 +22,15 @@
 #include "water_distribution_system.hpp"
 
 namespace bevarmejo {
-WaterDistributionSystem::WaterDistributionSystem(){
+namespace wds {
+
+water_distribution_system::water_distribution_system(){
     ph_ = nullptr;
 }
 
-//WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& inp_path){};
+//water_distribution_system::water_distribution_system(const std::filesystem::path& inp_path){};
 
-WaterDistributionSystem::WaterDistributionSystem(std::string inp_filename){
+water_distribution_system::water_distribution_system(std::string inp_filename){
     this->set_inpfile(inp_filename);
     
     this->init();
@@ -36,7 +38,7 @@ WaterDistributionSystem::WaterDistributionSystem(std::string inp_filename){
 
 // Copy constructor
 // this is not actually a copy constructor but rather a reinitialization one because I'm starting drom the inp file every time.
-WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem &src){
+water_distribution_system::water_distribution_system(const water_distribution_system &src){
     _inp_filename_ = src._inp_filename_;
     
     init();
@@ -44,7 +46,7 @@ WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem &
     _subnetworks_ = src._subnetworks_;
 }
 
-WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src) noexcept{
+water_distribution_system::water_distribution_system(water_distribution_system &&src) noexcept{
     _inp_filename_ = std::move(src._inp_filename_);
 
     ph_ = src.ph_;
@@ -53,9 +55,9 @@ WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem &&src) 
     _subnetworks_ = std::move(src._subnetworks_);
 }
 
-WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
+water_distribution_system& water_distribution_system::operator=(const water_distribution_system& rhs) {
     if (this != &rhs){
-        WaterDistributionSystem temp(rhs);
+        water_distribution_system temp(rhs);
         ph_ = temp.ph_;
         temp.ph_ = nullptr;
         std::swap(_inp_filename_, temp._inp_filename_);
@@ -64,7 +66,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistribut
     return *this;
 }
 
-WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSystem &&rhs) noexcept {
+water_distribution_system& water_distribution_system::operator=(water_distribution_system &&rhs) noexcept {
     ph_ = rhs.ph_;
     rhs.ph_ = nullptr;
     
@@ -73,7 +75,7 @@ WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSys
     return *this;
 }
 
-WaterDistributionSystem::~WaterDistributionSystem(){
+water_distribution_system::~water_distribution_system(){
     if (ph_!=nullptr){
         EN_close(ph_);
         EN_deleteproject(ph_);
@@ -82,7 +84,7 @@ WaterDistributionSystem::~WaterDistributionSystem(){
     }
 }
 
-void WaterDistributionSystem::init(){
+void water_distribution_system::init(){
     assert(!_inp_filename_.empty());
     
     int errorcode = EN_createproject(&ph_);
@@ -99,15 +101,15 @@ void WaterDistributionSystem::init(){
     EN_setreport(ph_, "MESSAGES NO");
 }
 
-void WaterDistributionSystem::set_inpfile(const std::string inp_filename){
+void water_distribution_system::set_inpfile(const std::string inp_filename){
     _inp_filename_ = inp_filename;
 }
 
-std::string WaterDistributionSystem::get_inpfile() const{
+std::string water_distribution_system::get_inpfile() const{
     return _inp_filename_;
 }
 
-std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydraulics() const
+std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hydraulics() const
 {
     // Empty 3d vector of results
     std::vector<std::vector<std::vector<double>>> results;
@@ -229,23 +231,23 @@ std::vector<std::vector<std::vector<double>>> WaterDistributionSystem::run_hydra
     return results;
 }
 
-void WaterDistributionSystem::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
+void water_distribution_system::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
     // simply a wrapper as all chekc operations are done inside the class
-    _subnetworks_.insert(Subnetwork(subnetwork_filename));
+    _subnetworks_.insert(subnetwork(subnetwork_filename));
 }
 
-bevarmejo::Subnetwork WaterDistributionSystem::get_subnetwork(const std::string &name) const
+bevarmejo::wds::subnetwork water_distribution_system::get_subnetwork(const std::string &name) const
 {
-    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     return *subnet_it;
 }
 
-bool WaterDistributionSystem::is_in_subnetork(const std::string &name, const std::string &id) const {
+bool water_distribution_system::is_in_subnetork(const std::string &name, const std::string &id) const {
     bool found = false;
     
-    auto subnet_it = _subnetworks_.find(bevarmejo::Subnetwork(name));
+    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
     if (subnet_it == _subnetworks_.end())
         throw std::runtime_error("Subnetwork not found");
     for (std::size_t i = 0; i < subnet_it->size(); ++i){
@@ -258,7 +260,7 @@ bool WaterDistributionSystem::is_in_subnetork(const std::string &name, const std
     return found;
 }
 
-std::string WaterDistributionSystem::get_node_id(int index) const {
+std::string water_distribution_system::get_node_id(int index) const {
     char* node_id = new char[EN_MAXID];
     int errorcode = EN_getnodeid(ph_, index, node_id);
     assert(errorcode <= 100);
@@ -269,4 +271,5 @@ std::string WaterDistributionSystem::get_node_id(int index) const {
     return node_id_str;
 }
 
-} /* namespace bevarmejo */
+} // namespace wds
+} // namespace bevarmejo 

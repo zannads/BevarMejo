@@ -5,8 +5,8 @@
 //  Created by Dennis Zanutto on 12/07/23.
 //
 
-#ifndef BEVARMEJOLIB__SUBNETWORK_HPP
-#define BEVARMEJOLIB__SUBNETWORK_HPP
+#ifndef BEVARMEJOLIB__WDS__SUBNETWORK_HPP
+#define BEVARMEJOLIB__WDS__SUBNETWORK_HPP
 
 #include <filesystem>
 #include <functional> // for std::hash
@@ -17,25 +17,26 @@
 #include "epanet2_2.h"
 
 namespace bevarmejo {
-	class Subnetwork
+namespace wds {
+	class subnetwork
 	{
 		/* Constructors and Destructors */
 	public:
-		Subnetwork() = default;
-		Subnetwork(std::filesystem::path subnetwork_filename) {
+		subnetwork() = default;
+		subnetwork(std::filesystem::path subnetwork_filename) {
 			load_subnetwork(subnetwork_filename); };
-		Subnetwork(std::string name) : _name_(name) {};
+		subnetwork(std::string name) : _name_(name) {};
 		/*
-		Subnetwork(std::string en_object_type, std::vector<int> subnetwork_list);
-		Subnetwork(std::string en_object_type, std::vector<std::string> subnetwork_list);
-		Subnetwork(std::string en_object_type, std::vector<int> subnetwork_list, EN_Project ph);
-		Subnetwork(std::string en_object_type, std::vector<std::string> subnetwork_list, EN_Project ph);
+		subnetwork(std::string en_object_type, std::vector<int> subnetwork_list);
+		subnetwork(std::string en_object_type, std::vector<std::string> subnetwork_list);
+		subnetwork(std::string en_object_type, std::vector<int> subnetwork_list, EN_Project ph);
+		subnetwork(std::string en_object_type, std::vector<std::string> subnetwork_list, EN_Project ph);
 		*/
-		//~Subnetwork();
+		//~subnetwork();
 
 		// Equality operator checks only the name for uniqueness 
 		// Two networks with the same name are considered equal
-		bool operator==(const Subnetwork& rhs) const {
+		bool operator==(const subnetwork& rhs) const {
 			return _name_ == rhs._name_;
 		}
 
@@ -62,18 +63,19 @@ namespace bevarmejo {
 	private:
 		int _is_en_object_type_valid(const std::string& en_object_type) const;
 
-	}; /* class Subnetwork */
+	}; // class subnetwork
 
-} /* namespace bevarmejo */
+} // namespace wds
+} // namespace bevarmejo
 
-// Hash function for Subnetwork
+// Hash function for subnetwork
 namespace std {
     template<>
-    struct hash<bevarmejo::Subnetwork> {
-        size_t operator()(const bevarmejo::Subnetwork &s) const {
+    struct hash<bevarmejo::wds::subnetwork> {
+        size_t operator()(const bevarmejo::wds::subnetwork &s) const {
             return std::hash<std::string>()(s.name()); // use the hash function for std::string
         }
     };
 }
 
-#endif /* BEVARMEJOLIB__SUBNETWORK_HPP */
+#endif // BEVARMEJOLIB__WDS__SUBNETWORK_HPP

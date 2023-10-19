@@ -19,8 +19,9 @@
 #include "subnetwork.hpp"
 
 namespace bevarmejo {
+namespace wds {
 
-	void Subnetwork::load_subnetwork(std::filesystem::path subnetwork_filename)
+	void subnetwork::load_subnetwork(std::filesystem::path subnetwork_filename)
 	{
 		// checks if file exists
 		if (!std::filesystem::exists(subnetwork_filename)) {
@@ -51,15 +52,15 @@ namespace bevarmejo {
 		}
 	}
 
-	std::size_t Subnetwork::size() const { return _subnetwork_list_.size(); }
+	std::size_t subnetwork::size() const { return _subnetwork_list_.size(); }
 
 	/* Getters */
-	std::string Subnetwork::name() const { return _name_; }
-	std::vector<std::string> Subnetwork::subnetwork_list() const { return _subnetwork_list_; }
-	std::string Subnetwork::at(const int index) const { return _subnetwork_list_.at(index); }
+	std::string subnetwork::name() const { return _name_; }
+	std::vector<std::string> subnetwork::subnetwork_list() const { return _subnetwork_list_; }
+	std::string subnetwork::at(const int index) const { return _subnetwork_list_.at(index); }
 
 
-	void Subnetwork::_load_subnetwork(std::istream& is)
+	void subnetwork::_load_subnetwork(std::istream& is)
 	{
 		std::size_t dimensions = load_dimensions(is, "#TYPE"); 
 		std::string en_object_type;
@@ -75,7 +76,7 @@ namespace bevarmejo {
 		stream_in(is, _comment_);
 	}
 
-	int Subnetwork::_is_en_object_type_valid(const std::string& en_object_type) const
+	int subnetwork::_is_en_object_type_valid(const std::string& en_object_type) const
 	{
 		int en_object_type_int = 0;
 		if (en_object_type == "EN_NODE") {
@@ -105,4 +106,5 @@ namespace bevarmejo {
 		return en_object_type_int;
 	}
 
-} /* namespace bevarmejo */
+} // namespace wds
+} // namespace bevarmejo

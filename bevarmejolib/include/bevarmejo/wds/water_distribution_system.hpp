@@ -5,8 +5,8 @@
 //  Created by Dennis Zanutto on 04/07/23.
 //
 
-#ifndef BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
-#define BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP
+#ifndef BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
+#define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
 #include <stdio.h>
@@ -22,7 +22,9 @@
 
 namespace bevarmejo {
 
-class WaterDistributionSystem{
+namespace wds {
+
+class water_distribution_system{
 public:
     // Handler for the project.
     // Public because I may want to modify it (e.g., apply a decision vector).
@@ -33,33 +35,33 @@ protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
     // Subnetworks of IDs
-    std::unordered_set<Subnetwork> _subnetworks_;
+    std::unordered_set<subnetwork> _subnetworks_;
     
 public:
     
     // Default constructor
-    WaterDistributionSystem();
+    water_distribution_system();
     
     // Constructor from .inp file as a path reference
-   // WaterDistributionSystem(const std::filesystem::path& inp_filename);
+   // water_distribution_system(const std::filesystem::path& inp_filename);
     
     // Constructor from .inp file
-    WaterDistributionSystem(std::string inp_filename);
+    water_distribution_system(std::string inp_filename);
  
     // Copy constructor
     // this is not actually a copy constructor but rather a reinitialization one.
-    WaterDistributionSystem(const WaterDistributionSystem &src);
+    water_distribution_system(const water_distribution_system &src);
     
     // Move constructor
-    WaterDistributionSystem(WaterDistributionSystem &&src) noexcept;
+    water_distribution_system(water_distribution_system &&src) noexcept;
     
     // Copy Assignement operator
-    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs);
+    water_distribution_system& operator=(const water_distribution_system& rhs);
     
     // Move Assignement operator
-    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept;
+    water_distribution_system& operator=(water_distribution_system&& rhs) noexcept;
     
-    ~WaterDistributionSystem();
+    ~water_distribution_system();
     
     // Equivalent to constuctor from .inp file
     void init();
@@ -79,15 +81,19 @@ public:
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);
     // get back a subnework from the list of subnetworks
-    bevarmejo::Subnetwork get_subnetwork(const std::string& name) const;
+    bevarmejo::wds::subnetwork get_subnetwork(const std::string& name) const;
     // tell me if an ID is part of this subnetwork
     bool is_in_subnetork(const std::string& name, const std::string& id) const;
 
     // Wrappers for linees-of-code consuming EPANET functions
     std::string get_node_id(int index) const;
 
-};
+}; // class water_distribution_system
 
-} /* namespace bevarmejo */
+} // namespace wds
 
-#endif /* BEVARMEJOLIB__WATER_DISTRIBUTION_SYSTEM_HPP */
+using wds_ = wds::water_distribution_system; // short name for water_distribution_system
+
+} // namespace bevarmejo
+
+#endif // BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
