@@ -21,7 +21,7 @@ public:
 
     variable_core(const std::string& unit): _unit_(unit){}
 
-    ~variable_core() {}
+    virtual ~variable_core() {}
 
     const std::string unit() const {return _unit_;} 
     // Assignement operator not possible except at construction.
@@ -44,12 +44,20 @@ class variable : public variable_core {
             {}
 
         variable(const std::string unit):
-            inherited(unit){}
+            inherited(unit),
+            _value_()
+            {}
+
+        variable(const VT& value):
+            inherited(),
+            _value_(value)
+            {}
 
         template <typename ...Params>
         variable(const std::string unit, Params&&... params): 
             inherited(unit), 
-            _value_(params...){}
+            _value_(params...)
+            {}
 
         ~variable() {} 
 
