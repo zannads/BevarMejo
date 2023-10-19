@@ -22,6 +22,48 @@ results::results() :
     _temporal_reals_()
     {}
 
+// Copy constructor
+results::results(const results& other) :
+    _strings_(other._strings_),
+    _integers_(other._integers_),
+    _reals_(other._reals_),
+    _temporal_integers_(other._temporal_integers_),
+    _temporal_reals_(other._temporal_reals_)
+    {}
+
+// Move constructor
+results::results(results&& rhs) noexcept :
+    _strings_(std::move(rhs._strings_)),
+    _integers_(std::move(rhs._integers_)),
+    _reals_(std::move(rhs._reals_)),
+    _temporal_integers_(std::move(rhs._temporal_integers_)),
+    _temporal_reals_(std::move(rhs._temporal_reals_))
+    {}
+
+// Copy assignment operator
+results& results::operator=(const results& rhs) {
+    if (this != &rhs) {
+        _strings_ = rhs._strings_;
+        _integers_ = rhs._integers_;
+        _reals_ = rhs._reals_;
+        _temporal_integers_ = rhs._temporal_integers_;
+        _temporal_reals_ = rhs._temporal_reals_;
+    }
+    return *this;
+}
+
+// Move assignment operator
+results& results::operator=(results&& rhs) noexcept {
+    if (this != &rhs) {
+        _strings_ = std::move(rhs._strings_);
+        _integers_ = std::move(rhs._integers_);
+        _reals_ = std::move(rhs._reals_);
+        _temporal_integers_ = std::move(rhs._temporal_integers_);
+        _temporal_reals_ = std::move(rhs._temporal_reals_);
+    }
+    return *this;
+}
+
 results::~results() {
     this->clear();
 }

@@ -21,18 +21,42 @@ class temporal : public std::map<long,ET> {
         temporal() : inherited() {}
 
         temporal(const ET& value) : inherited() {
-            (*this)[0] = value;
+            inherited::emplace(0,value);
         }
 
         temporal(const long time, const ET& value) : inherited() {
-            (*this)[time] = value;
+            inherited::emplace(time,value);
         }
 
         template <typename ...Params>
         temporal(const long time, Params&& ...params) : inherited() {
-            (*this)[time] = ET(params...);
+            inherited::emplace(time,ET(params...));
         }
 
+        // Copy constructor
+        temporal(const temporal& other) : inherited(other) {}
+
+        // Move constructor
+        temporal(temporal&& other) noexcept : inherited(std::move(other)) {}
+
+        // Copy assignment operator
+        temporal& operator=(const temporal& rhs) {
+            if (this != &rhs) {
+                inherited::operator=(rhs);
+            }
+            return *this;
+        }
+
+        // Move assignment operator
+        temporal& operator=(temporal&& rhs) noexcept {
+            if (this != &rhs) {
+                inherited::operator=(std::move(rhs));
+            }
+            return *this;
+        }
+
+        virtual ~temporal() { inherited::clear(); }
+       
         ET& when(const long time) {return (*this).at(time);};
         // but of course you have also find, at, [], contains etc..  
         
