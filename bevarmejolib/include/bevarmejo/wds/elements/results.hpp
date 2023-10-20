@@ -18,11 +18,11 @@ namespace wds {
 class results {
 
 private:
-    vars::variables<vars::variable<int>> _integers_;
-    vars::variables<vars::variable<double>> _reals_;   
+    vars::variables_int _integers_;
+    vars::variables_real _reals_;   
 
-    vars::variables<vars::variable<vars::temporal<int>>> _temporal_integers_;
-    vars::variables<vars::variable<vars::temporal<double>>> _temporal_reals_;
+    vars::variables_tseries_int _temporal_integers_;
+    vars::variables_tseries_real _temporal_reals_;
 
 public:
     /// @brief Default constructor
@@ -44,11 +44,11 @@ public:
     virtual ~results();
 
     // getters 
-    vars::variables<vars::variable<int>>& integers() {return _integers_;}
-    vars::variables<vars::variable<double>>& reals() {return _reals_;}
+    vars::variables_int& integers() {return _integers_;}
+    vars::variables_real& reals() {return _reals_;}
 
-    vars::variables<vars::variable<vars::temporal<int>>>& temporal_integers() {return _temporal_integers_;}
-    vars::variables<vars::variable<vars::temporal<double>>>& temporal_reals() {return _temporal_reals_;}
+    vars::variables_tseries_int& temporal_integers() {return _temporal_integers_;}
+    vars::variables_tseries_real& temporal_reals() {return _temporal_reals_;}
 
     // to merge two results objects
     void add(const results& rhs);
@@ -58,7 +58,6 @@ public:
 
     // clear the results 
     void clear();
-
 
 };
 

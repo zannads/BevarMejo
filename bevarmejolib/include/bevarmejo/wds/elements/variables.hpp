@@ -8,6 +8,9 @@
 
 #include <unordered_map>
 
+#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
+
 namespace bevarmejo {
 namespace wds {
 namespace vars {
@@ -65,6 +68,12 @@ class variables : public std::unordered_map<std::string, VT> {
         }
 
 }; // class variables
+
+using variables_int= variables<var_int>;
+using variables_real= variables<var_real>;
+
+using variables_tseries_int= variables<var_tseries_int>;
+using variables_tseries_real= variables<var_tseries_real>;
 
 } // namespace vars
 } // namespace wds
