@@ -18,5 +18,15 @@ target_link_libraries( ResTests PUBLIC
     GTest::gtest_main
 )
 
+add_executable( JunctionTests
+    junction_tests.cpp
+)
+
+target_link_libraries( JunctionTests PUBLIC
+    bemelib
+    GTest::gtest_main
+)
+
 gtest_discover_tests( VarsTests )
 gtest_discover_tests( ResTests )
+gtest_discover_tests( JunctionTests )
