@@ -9,6 +9,8 @@
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
 
+#include "bevarmejo/wds/elements/demand.hpp"
+
 namespace bevarmejo {
 namespace wds {
 
@@ -30,7 +32,9 @@ public:
 
 protected:
 
-    // should store demands in vector??
+    // should store demands in vector?? 
+    // for now I will simply store a single demand object
+    demand _demand_;
 
     // variables
     vars::var_real* _demand_constant_;
