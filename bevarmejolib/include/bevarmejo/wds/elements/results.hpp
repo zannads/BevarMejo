@@ -18,7 +18,6 @@ namespace wds {
 class results {
 
 private:
-    vars::variables<vars::variable<std::string>> _strings_;
     vars::variables<vars::variable<int>> _integers_;
     vars::variables<vars::variable<double>> _reals_;   
 
@@ -45,7 +44,6 @@ public:
     virtual ~results();
 
     // getters 
-    vars::variables<vars::variable<std::string>>& strings() {return _strings_;}
     vars::variables<vars::variable<int>>& integers() {return _integers_;}
     vars::variables<vars::variable<double>>& reals() {return _reals_;}
 
