@@ -13,13 +13,18 @@ ENDIF()
 
 #file(GLOB BEMELIB_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} src/*.cpp)
 #add_library(bemelib ${BEMELIB_SOURCES})
-set(WDS_INC_ROOT "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" CACHE PATH "Path to the rootfolder of the WDS")
-set(WDS_FILES "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}/water_distribution_system.hpp" 
-              "${WDS_INC_ROOT}/subnetwork.cpp" "${WDS_INC_ROOT}/subnetwork.hpp"
-              "${WDS_INC_ROOT}/elements/temporal.hpp"
-              "${WDS_INC_ROOT}/elements/variable.hpp"
-              "${WDS_INC_ROOT}/elements/variables.hpp"
-              "${WDS_INC_ROOT}/elements/results.hpp" "${WDS_INC_ROOT}/elements/results.cpp"
+set(WDS_INC_ROOT    "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" 
+         CACHE PATH "Path to the rootfolder of the WDS"
+)
+set(WDS_FILES   "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}/water_distribution_system.hpp" 
+                "${WDS_INC_ROOT}/subnetwork.cpp" "${WDS_INC_ROOT}/subnetwork.hpp"
+                "${WDS_INC_ROOT}/elements/node.hpp" "${WDS_INC_ROOT}/elements/node.cpp"
+                "${WDS_INC_ROOT}/elements/element.hpp" "${WDS_INC_ROOT}/elements/element.cpp"
+                "${WDS_INC_ROOT}/elements/results.hpp" "${WDS_INC_ROOT}/elements/results.cpp"
+)
+set(WDS_VARS    "${WDS_INC_ROOT}/elements/variables.hpp"
+                "${WDS_INC_ROOT}/elements/variable.hpp"
+                "${WDS_INC_ROOT}/elements/temporal.hpp"
 )
 
 add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
@@ -29,6 +34,7 @@ add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
                     ${WDS_FILES}
+                    ${WDS_VARS}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)

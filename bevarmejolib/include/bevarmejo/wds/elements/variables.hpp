@@ -8,6 +8,9 @@
 
 #include <unordered_map>
 
+#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
+
 namespace bevarmejo {
 namespace wds {
 namespace vars {
@@ -54,9 +57,7 @@ class variables : public std::unordered_map<std::string, VT> {
 
         virtual ~variables() { inherited::clear(); }
 
-        VT& get(const std::string& name) { return (*this).at(name); }
-
-        auto& get_v(const std::string& name) { return (*this).at(name).value(); };
+        auto& get(const std::string& name) { return (*this).at(name).value(); }
 
         void emplace(const std::string& name) {
             inherited::emplace(name, VT());
@@ -67,6 +68,12 @@ class variables : public std::unordered_map<std::string, VT> {
         }
 
 }; // class variables
+
+using variables_int= variables<var_int>;
+using variables_real= variables<var_real>;
+
+using variables_tseries_int= variables<var_tseries_int>;
+using variables_tseries_real= variables<var_tseries_real>;
 
 } // namespace vars
 } // namespace wds

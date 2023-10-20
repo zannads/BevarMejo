@@ -62,6 +62,9 @@ class temporal : public std::map<long,ET> {
         
 }; // class temporal
 
+using timeseries_int= temporal<int>;
+using timeseries_real= temporal<double>;
+
 } // namespace vars
 } // namespace wds
 } // namespace bevarmejo

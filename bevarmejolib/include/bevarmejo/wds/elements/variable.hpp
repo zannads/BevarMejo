@@ -8,6 +8,8 @@
 
 #include <string>
 
+#include "bevarmejo/wds/elements/temporal.hpp"
+
 namespace bevarmejo {
 namespace wds {
 namespace vars {
@@ -107,6 +109,12 @@ class variable : public variable_core {
         VT& operator()() {return _value_;} 
 
 }; // class variable
+
+using var_int= variable<int>;
+using var_real= variable<double>;
+
+using var_tseries_int= variable<timeseries_int>;
+using var_tseries_real= variable<timeseries_real>;
 
 } // namespace vars
 } // namespace wds
