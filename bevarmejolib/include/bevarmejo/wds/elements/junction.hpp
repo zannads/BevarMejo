@@ -36,7 +36,7 @@ protected:
     // for now I will simply store a single demand object
     demand _demand_;
 
-    // variables
+    // variables (pointer to this and not double because it may change type soon)
     vars::var_real* _demand_constant_;
 
     // results
@@ -71,12 +71,12 @@ public:
     const unsigned int& element_type() const override {return ELEMENT_JUNCTION;}
 
     // getters -- variables
-    vars::var_real* demand_constant() {return _demand_constant_;}
+    vars::var_real& demand_constant() {return *_demand_constant_;}
 
     // getters -- results
-    vars::var_tseries_real* demand_requested() {return _demand_requested_;}
-    vars::var_tseries_real* demand_delivered() {return _demand_delivered_;}
-    vars::var_tseries_real* demand_undelivered() {return _demand_undelivered_;}
+    vars::var_tseries_real& demand_requested() {return *_demand_requested_;}
+    vars::var_tseries_real& demand_delivered() {return *_demand_delivered_;}
+    vars::var_tseries_real& demand_undelivered() {return *_demand_undelivered_;}
 
     // TODO: Getter demands
 

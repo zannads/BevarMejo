@@ -44,8 +44,8 @@ public:
 
     virtual ~demand() { _pattern_.reset(); } // release ownership 
 
-    double& base_demand() { return _base_dem_.value(); }
-    void base_demand(double bd) { _base_dem_.value(bd); }
+    vars::var_real& base_demand() { return _base_dem_; }
+    void base_demand_val(double bd) { _base_dem_.value(bd); }
 
     std::shared_ptr<pattern> who_is_yr_pattern() const {return _pattern_;}
     void change_pattern(std::shared_ptr<pattern> a_pattern) {_pattern_ = a_pattern;}
