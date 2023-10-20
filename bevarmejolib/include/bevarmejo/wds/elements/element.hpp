@@ -13,6 +13,39 @@
 namespace bevarmejo {
 namespace wds {
 
+// Registry of element types...
+static const unsigned int ELEMENT_ELEMENT = 0; // can't be instantiated but can be used for filtering
+static const unsigned int ELEMENT_NETWORK = 1;
+static const unsigned int ELEMENT_GROUP= 2;
+static const unsigned int ELEMENT_PATTERN= 3;
+
+static const unsigned int ELEMENT_DISTRIBUTION= 4;
+static const unsigned int ELEMENT_DISTRIBUTIONS= 5;
+
+static const unsigned int ELEMENT_NODES= 8;
+static const unsigned int ELEMENT_LINKS= 9;
+
+static const unsigned int ELEMENT_JUNCTION= 10;
+static const unsigned int ELEMENT_RESERVOIR= 11;
+static const unsigned int ELEMENT_TANK = 12;
+static const unsigned int ELEMENT_SOURCE = 13;
+
+static const unsigned int ELEMENT_NODE = 14;
+
+static const unsigned int ELEMENT_LINK = 15;
+static const unsigned int ELEMENT_DIMENSIONED_LINK= 16;
+
+static const unsigned int ELEMENT_PIPE = 20;
+static const unsigned int ELEMENT_PUMP= 21;
+
+static const unsigned int ELEMENT_VALVE= 30;
+static const unsigned int ELEMENT_PRV= 31;
+static const unsigned int ELEMENT_PSV= 32;
+static const unsigned int ELEMENT_PBV= 33;
+static const unsigned int ELEMENT_FCV= 34;
+static const unsigned int ELEMENT_TCV= 35;
+static const unsigned int ELEMENT_GPV= 36;
+
 class element {
     // WDS ancestor object
     /************************************************************************
@@ -61,7 +94,7 @@ class element {
         void id(const std::string& id) {_id_ = id;}
 
         virtual const std::string& element_name() const = 0;
-        virtual const std::string& element_type() const = 0;
+        virtual const unsigned int& element_type() const = 0;
 
         results& results() {return _results_;}
 };
