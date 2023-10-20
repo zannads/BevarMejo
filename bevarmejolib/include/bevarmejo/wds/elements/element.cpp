@@ -20,6 +20,14 @@ element::element() :
         _update_pointers();
     }
 
+element::element(const std::string& id) :
+    _id_(id),
+    _results_()
+    {
+        _add_results();
+        _update_pointers();
+    }
+
 // Copy constructor
 element::element(const element& other) :
     _id_(other._id_),

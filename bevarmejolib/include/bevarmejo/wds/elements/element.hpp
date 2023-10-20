@@ -37,6 +37,8 @@ class element {
         /// @brief Default constructor
         element();
 
+        element(const std::string& id);
+
         // Copy constructor
         element(const element& other);
 
