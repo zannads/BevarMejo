@@ -8,6 +8,12 @@
 namespace bevarmejo {
 namespace wds {
 
+pattern::pattern() : inherited() 
+                    {
+                        _add_results();
+                        _update_pointers();
+                    }
+
 pattern::pattern(const std::string& id) : inherited(id) 
                                             {
                                                 _add_results();

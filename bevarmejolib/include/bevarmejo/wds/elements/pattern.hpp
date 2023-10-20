@@ -20,7 +20,7 @@ class pattern : public element, public vars::temporal<double> {
 
     public: 
         // Default constructor
-        pattern() = delete;
+        pattern();
 
         pattern(const std::string& id);
 
