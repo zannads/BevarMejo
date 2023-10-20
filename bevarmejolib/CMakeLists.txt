@@ -20,6 +20,7 @@ set(WDS_FILES   "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}
                 "${WDS_INC_ROOT}/subnetwork.cpp" "${WDS_INC_ROOT}/subnetwork.hpp"
                 "${WDS_INC_ROOT}/elements/junction.hpp" "${WDS_INC_ROOT}/elements/junction.cpp"
                 "${WDS_INC_ROOT}/elements/node.hpp" "${WDS_INC_ROOT}/elements/node.cpp"
+                "${WDS_INC_ROOT}/elements/pattern.hpp" "${WDS_INC_ROOT}/elements/pattern.cpp"
                 "${WDS_INC_ROOT}/elements/element.hpp" "${WDS_INC_ROOT}/elements/element.cpp"
                 "${WDS_INC_ROOT}/elements/results.hpp" "${WDS_INC_ROOT}/elements/results.cpp"
 )
