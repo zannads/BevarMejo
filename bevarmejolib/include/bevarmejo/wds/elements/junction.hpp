@@ -4,6 +4,7 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
+#include <variant>
 
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
@@ -44,7 +45,7 @@ protected:
     vars::var_tseries_real* _demand_delivered_;
     vars::var_tseries_real* _demand_undelivered_;
 
-    // TODO: add properties as now demand can change
+    void _add_properties() override;
     void _add_results() override;
     void _update_pointers() override;
 

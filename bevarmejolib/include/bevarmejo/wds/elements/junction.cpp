@@ -67,7 +67,14 @@ junction& junction::operator=(junction&& rhs) noexcept {
 
 junction::~junction() { /* Everything is deleted by the inherited destructor */ }
 
-void junction::_add_results() {
+void junction::_add_properties()
+{
+    inherited::_add_properties();
+    properties().emplace(L_DEMAND, vars::var_real(vars::L_M3_PER_S,0));
+}
+
+void junction::_add_results()
+{
     inherited::_add_results();
     results().temporal_reals().emplace(LDEMAND_REQUESTED, vars::L_M3_PER_S);
     results().temporal_reals().emplace(LDEMAND_DELIVERED, vars::L_M3_PER_S);
@@ -77,7 +84,7 @@ void junction::_add_results() {
 void junction::_update_pointers() {
     inherited::_update_pointers();
 
-    _demand_constant_ = &(_demand_.base_demand() );
+    _demand_constant_ = &(std::get<vars::var_real>(properties().at(L_DEMAND)));
 
     _demand_requested_ = &(results().temporal_reals().at(LDEMAND_REQUESTED));
     _demand_delivered_ = &(results().temporal_reals().at(LDEMAND_DELIVERED));
