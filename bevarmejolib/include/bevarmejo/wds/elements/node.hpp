@@ -8,9 +8,12 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__NODE_HPP
 
 #include <string>
+#include <unordered_set>
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
+
+#include "bevarmejo/wds/elements/link.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -24,6 +27,8 @@ const std::string LABEL_PRESSURE=       "Pressure";
 const std::string LABEL_PRESSURE_UNITS= "m";
 const std::string LABEL_HEAD=           "Head";
 
+class link;
+
 class node : public element {
     
     public:
@@ -34,7 +39,7 @@ class node : public element {
         double _x_coord_;
         double _y_coord_;
 
-        // TODO: add linklist
+        std::unordered_set<link*> _links_;
 
         double _elevation_; // or z coordinate
 
@@ -80,6 +85,10 @@ class node : public element {
         const double& z_coord() const {return _elevation_;}
         const double& elevation() const {return _elevation_;}
         void elevation(const double& elevation) {_elevation_ = elevation;}
+
+        std::unordered_set<link*>& connected_links() {return _links_;}
+        void add_link(link* l);
+        void remove_link(link* l);
 
         // results
         const vars::var_tseries_real& head() const {return *_head_;}

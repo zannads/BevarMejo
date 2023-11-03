@@ -86,6 +86,20 @@ node::~node() {
     // results are cleared when the inherited destructor is called
 }
 
+void node::add_link(link *l)
+{
+    if (l != nullptr) {
+        _links_.insert(l);
+    }
+}
+
+void node::remove_link(link *l)
+{
+    if (l != nullptr) {
+        _links_.erase(l);
+    }
+}
+
 void node::_add_properties()
 {
     inherited::_add_properties();
