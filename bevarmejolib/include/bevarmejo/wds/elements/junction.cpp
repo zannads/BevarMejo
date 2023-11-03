@@ -19,6 +19,7 @@ junction::junction(const std::string& id) : inherited(id),
                                             _demand_delivered_(nullptr),
                                             _demand_undelivered_(nullptr)
                                             {
+                                                _add_properties();
                                                 _add_results();
                                                 _update_pointers();
                                             }
@@ -70,7 +71,7 @@ junction::~junction() { /* Everything is deleted by the inherited destructor */ 
 void junction::_add_properties()
 {
     inherited::_add_properties();
-    properties().emplace(L_DEMAND, vars::var_real(vars::L_M3_PER_S,0));
+    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::L_M3_PER_S,0));
 }
 
 void junction::_add_results()
@@ -84,7 +85,7 @@ void junction::_add_results()
 void junction::_update_pointers() {
     inherited::_update_pointers();
 
-    _demand_constant_ = &(std::get<vars::var_real>(properties().at(L_DEMAND)));
+    _demand_constant_ = &(std::get<vars::var_real>(properties().at(LDEMAND_CONSTANT)));
 
     _demand_requested_ = &(results().temporal_reals().at(LDEMAND_REQUESTED));
     _demand_delivered_ = &(results().temporal_reals().at(LDEMAND_DELIVERED));
