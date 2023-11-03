@@ -17,11 +17,13 @@ TEST(JunctionTests, Constructor) {
     ASSERT_EQ("J1", j.id());
     EXPECT_EQ("Junction", j.element_name());
     EXPECT_EQ(10, j.element_type());
-    EXPECT_EQ(nullptr, j.demand_constant()); // until I add the demand in the properties
-    EXPECT_NE(nullptr, j.demand_requested());
-    EXPECT_NE(nullptr, j.demand_delivered());
-    EXPECT_NE(nullptr, j.demand_undelivered());
-
+    EXPECT_EQ(vars::L_M3_PER_S, j.demand_constant().unit());
+    EXPECT_EQ(vars::L_M3_PER_S, j.demand_delivered().unit());
+    EXPECT_EQ(0, j.demand_delivered().value().size());
+    ASSERT_EQ(LDEMAND_CONSTANT, j.properties().find("Demand (constant)")->first);
+    EXPECT_EQ(vars::L_M3_PER_S, std::get<vars::var_real>(j.properties().at(LDEMAND_CONSTANT)).unit());
+    EXPECT_EQ(0.0, std::get<vars::var_real>(j.properties().at(LDEMAND_CONSTANT)).value());
+    
     // inherited from node 
     EXPECT_EQ(0.0, j.x_coord());
     EXPECT_EQ(0.0, j.y_coord());
