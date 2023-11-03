@@ -1,0 +1,210 @@
+---
+title: Water Distribution System
+---
+classDiagram
+
+class WaterDistributionSystem {
+
+- std::string _inp_filename_
+
+- collection of elements
+
+- std::unordered_set<bevarmejo::SubNetwork> _subnetworks_
+
+}
+
+class Subnetwork~T~ {
+
+# std::string _name_
+
+# Collection of pointers to elements
+
+# std::string _comment_
+
+}
+
+WaterDistributionSystem "0..*" *-- Subnetwork
+
+class Element {
+
+- std::string _id_
+
+- Properties _properties_
+
+- Results _results
+
+# addProperties()
+
+# addResults()
+
+}
+
+Element --* "1..*" WaterDistributionSystem
+
+Element <-- "1..*" Subnetwork
+
+class Node {
+
+# double x_coord
+
+# double y_coord
+
+# std::unordered_set~std::shared_pointer~Link~~ _links_list_
+
+# pointers_to_properties~elevation~
+
+# pointers_to_results~pressure,concentration,wage~
+
+# addProperties()
+
+# addResults()
+
+}
+
+Node --|> Element
+
+class Link {
+
+# std::shared_pointer~Node~ _node1_
+
+# std::shared_pointer~Node~ _node2_
+
+# pointers_to_properties~_initial_status_~
+
+# pointers_to_properties~flow, concentration, age~
+
+# addProperties()
+
+# addResults()
+
+  
+
+}
+
+Link --|> Element
+
+class DimensionedLink {
+
+# pointers_to_properties~diameter,roughness,minor_loss,bulk_coeff,wall_coeff~
+
+# pointers_to_results~velocity~
+
+# addProperties()
+
+# addResults()
+
+}
+
+DimensionedLink --|> Link
+
+class Properties {
+
+- Variables~Variable~strings~~ strings
+
+- Variables~Variable~int~~ integers
+
+- Variables~Variable~double~~ reals
+
+- Variables~Temporal~Variable~int~~~ _temporal_integers_
+
+- Variables~Temporal~Variable~double~~~ _temporal_reals_
+
+...
+
++ clear()
+
++ size()
+
++ merge()
+
++ commit()
+
++ rollback()
+
++ reset()
+
+}
+
+Properties --* Element
+
+class VariablesM~T~ {
+
++ locate()
+
++ indexOf()
+
++ add()
+
+}
+
+VariablesM --* Properties
+
+VariablesM --|> VectorM~T~
+
+class VariableM~T~ {
+
+- T _value_
+
+}
+
+class VariableString {
+
+- string _value_
+
+}
+
+class VariableCore {
+
+- Unit _unit_
+
+}
+
+VariableM --|> VariableCore
+
+VariableString --|> VariableCore
+
+VariablesM~T~ *-- VariableM~T~
+
+VariablesM~T~ *-- VariableString~T~
+
+class TemporalM~T~ {
+
+- std::vector~T~ _container_
+
+}
+
+VariablesM *-- TemporalM
+
+TemporalM *-- VariableM
+
+  
+
+class Variables~T~ {
+
+  
+
+}
+
+Variables --|> Unordered_set~T~
+
+class Temporal~T~ {
+
++ when(long t)
+
+}
+
+Temporal --|> Set~long,T~
+
+Variables *-- Temporal
+
+class Variable~T~ {
+
+- boost::units::qunatity~T~ _value_
+
+}
+
+Variable --* Temporal
+
+Variables *-- Variable
+
+Properties *-- Variables
