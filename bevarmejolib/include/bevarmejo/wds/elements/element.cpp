@@ -14,16 +14,20 @@ namespace wds {
 
 element::element() :
     _id_(""),
+    _properties_(),
     _results_()
     {
+        _add_properties();
         _add_results();
         _update_pointers();
     }
 
 element::element(const std::string& id) :
     _id_(id),
+    _properties_(),
     _results_()
     {
+        _add_properties();
         _add_results();
         _update_pointers();
     }
@@ -31,6 +35,7 @@ element::element(const std::string& id) :
 // Copy constructor
 element::element(const element& other) :
     _id_(other._id_),
+    _properties_(other._properties_),
     _results_(other._results_)
     {
         _update_pointers();
@@ -39,6 +44,7 @@ element::element(const element& other) :
 // Move constructor
 element::element(element&& rhs) noexcept :
     _id_(std::move(rhs._id_)),
+    _properties_(std::move(rhs._properties_)),
     _results_(std::move(rhs._results_))
     {
         _update_pointers();
@@ -48,6 +54,7 @@ element::element(element&& rhs) noexcept :
 element& element::operator=(const element& rhs) {
     if (this != &rhs) {
         _id_ = rhs._id_;
+        _properties_ = rhs._properties_;
         _results_ = rhs._results_;
         _update_pointers();
     }
@@ -58,6 +65,7 @@ element& element::operator=(const element& rhs) {
 element& element::operator=(element&& rhs) noexcept {
     if (this != &rhs) {
         _id_ = std::move(rhs._id_);
+        _properties_ = std::move(rhs._properties_);
         _results_ = std::move(rhs._results_);
         _update_pointers();
     }
@@ -65,6 +73,7 @@ element& element::operator=(element&& rhs) noexcept {
 }
 
 element::~element() {
+    _properties_.clear();
     _results_.clear();
 }
 
@@ -74,6 +83,11 @@ bool element::operator==(const element& rhs) const {
 
 void element::_update_pointers() {
     // there are actually no pointers to update with this setup
+}
+
+void element::_add_properties() {
+    // override to add properties to the properties object
+    _properties_.clear();
 }
 
 void element::_add_results() {

@@ -4,10 +4,13 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
+#include <variant>
 
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
+
+#include "bevarmejo/wds/elements/demand.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -30,9 +33,11 @@ public:
 
 protected:
 
-    // should store demands in vector??
+    // should store demands in vector?? 
+    // for now I will simply store a single demand object
+    demand _demand_;
 
-    // variables
+    // variables (pointer to this and not double because it may change type soon)
     vars::var_real* _demand_constant_;
 
     // results
@@ -40,7 +45,7 @@ protected:
     vars::var_tseries_real* _demand_delivered_;
     vars::var_tseries_real* _demand_undelivered_;
 
-    // TODO: add properties as now demand can change
+    void _add_properties() override;
     void _add_results() override;
     void _update_pointers() override;
 
@@ -67,12 +72,12 @@ public:
     const unsigned int& element_type() const override {return ELEMENT_JUNCTION;}
 
     // getters -- variables
-    vars::var_real* demand_constant() {return _demand_constant_;}
+    vars::var_real& demand_constant() {return *_demand_constant_;}
 
     // getters -- results
-    vars::var_tseries_real* demand_requested() {return _demand_requested_;}
-    vars::var_tseries_real* demand_delivered() {return _demand_delivered_;}
-    vars::var_tseries_real* demand_undelivered() {return _demand_undelivered_;}
+    vars::var_tseries_real& demand_requested() {return *_demand_requested_;}
+    vars::var_tseries_real& demand_delivered() {return *_demand_delivered_;}
+    vars::var_tseries_real& demand_undelivered() {return *_demand_undelivered_;}
 
     // TODO: Getter demands
 

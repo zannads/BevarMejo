@@ -86,10 +86,17 @@ node::~node() {
     // results are cleared when the inherited destructor is called
 }
 
-void node::_add_results() {
-        inherited::_add_results();
-        results().temporal_reals().emplace(LABEL_PRESSURE, LABEL_PRESSURE_UNITS);
-        results().temporal_reals().emplace(LABEL_HEAD, LABEL_PRESSURE_UNITS);
+void node::_add_properties()
+{
+    inherited::_add_properties();
+    // no properties to add
+}
+
+void node::_add_results()
+{
+    inherited::_add_results();
+    results().temporal_reals().emplace(LABEL_PRESSURE, LABEL_PRESSURE_UNITS);
+    results().temporal_reals().emplace(LABEL_HEAD, LABEL_PRESSURE_UNITS);
 }
 
 void node::_update_pointers() {

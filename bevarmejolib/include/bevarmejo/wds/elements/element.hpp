@@ -7,7 +7,10 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 
 #include <string>
+#include <unordered_map>
 
+#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/results.hpp"
 
 namespace bevarmejo {
@@ -56,9 +59,17 @@ class element {
     private:
         std::string _id_; // Human readable id (EPANET ID too)
 
+        //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
+        // don't use strings for now
+        using PropertiesTypes = std::variant<vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
+        using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
+        
+        PropertiesMap _properties_; // Properties of the element
         results _results_; // Results of the last simulation, will be filled in the derived class at construction.
 
+
     protected:
+        virtual void _add_properties();
         virtual void _add_results(); 
 
         /* should be called every time you add a variable to the results, so that, if you have a property
@@ -96,6 +107,7 @@ class element {
         virtual const std::string& element_name() const = 0;
         virtual const unsigned int& element_type() const = 0;
 
+        PropertiesMap& properties() {return _properties_;}
         results& results() {return _results_;}
 };
 

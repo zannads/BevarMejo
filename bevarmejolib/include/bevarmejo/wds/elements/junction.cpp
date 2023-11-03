@@ -13,6 +13,7 @@ namespace bevarmejo {
 namespace wds {
 
 junction::junction(const std::string& id) : inherited(id),
+                                            _demand_(),
                                             _demand_constant_(nullptr),
                                             _demand_requested_(nullptr),
                                             _demand_delivered_(nullptr),
@@ -24,6 +25,7 @@ junction::junction(const std::string& id) : inherited(id),
 
 // Copy constructor
 junction::junction(const junction& other) : inherited(other),
+                                            _demand_(other._demand_),
                                             _demand_constant_(nullptr),
                                             _demand_requested_(nullptr),
                                             _demand_delivered_(nullptr),
@@ -34,6 +36,7 @@ junction::junction(const junction& other) : inherited(other),
 
 // Move constructor
 junction::junction(junction&& rhs) noexcept : inherited(std::move(rhs)),
+                                            _demand_(std::move(rhs._demand_)),
                                             _demand_constant_(nullptr),
                                             _demand_requested_(nullptr),
                                             _demand_delivered_(nullptr),
@@ -46,6 +49,7 @@ junction::junction(junction&& rhs) noexcept : inherited(std::move(rhs)),
 junction& junction::operator=(const junction& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        _demand_ = rhs._demand_;
         _update_pointers();
     }
     return *this;
@@ -55,6 +59,7 @@ junction& junction::operator=(const junction& rhs) {
 junction& junction::operator=(junction&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        _demand_ = std::move(rhs._demand_);
         _update_pointers();
     }
     return *this;
@@ -62,7 +67,14 @@ junction& junction::operator=(junction&& rhs) noexcept {
 
 junction::~junction() { /* Everything is deleted by the inherited destructor */ }
 
-void junction::_add_results() {
+void junction::_add_properties()
+{
+    inherited::_add_properties();
+    properties().emplace(L_DEMAND, vars::var_real(vars::L_M3_PER_S,0));
+}
+
+void junction::_add_results()
+{
     inherited::_add_results();
     results().temporal_reals().emplace(LDEMAND_REQUESTED, vars::L_M3_PER_S);
     results().temporal_reals().emplace(LDEMAND_DELIVERED, vars::L_M3_PER_S);
@@ -72,8 +84,7 @@ void junction::_add_results() {
 void junction::_update_pointers() {
     inherited::_update_pointers();
 
-    // TODO: make point to the demand when will be added
-    _demand_constant_ = nullptr;
+    _demand_constant_ = &(std::get<vars::var_real>(properties().at(L_DEMAND)));
 
     _demand_requested_ = &(results().temporal_reals().at(LDEMAND_REQUESTED));
     _demand_delivered_ = &(results().temporal_reals().at(LDEMAND_DELIVERED));

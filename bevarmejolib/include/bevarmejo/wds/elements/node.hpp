@@ -44,6 +44,7 @@ class node : public element {
         vars::var_tseries_real* _pressure_;
         // TODO: water quality 
 
+        void _add_properties() override;
         void _add_results() override;
 
         void _update_pointers() override;
