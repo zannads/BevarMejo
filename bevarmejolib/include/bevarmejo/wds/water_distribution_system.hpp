@@ -9,6 +9,8 @@
 #define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
+#include <iostream>
+#include <memory>
 #include <stdio.h>
 #include <string>
 #include <unordered_set>
@@ -16,9 +18,18 @@
 
 #include "epanet2_2.h"
 
-#include "io.hpp"
+#include "bevarmejo/io.hpp"
 
-#include "subnetwork.hpp"
+#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/source.hpp"
+#include "bevarmejo/wds/elements/tank.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+#include "bevarmejo/wds/elements/pipe.hpp"
+
+#include "bevarmejo/wds/subnetwork.hpp"
 
 namespace bevarmejo {
 
@@ -34,6 +45,8 @@ public:
 protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
+    // Collectionf of elements of the network
+    std::vector<std::shared_ptr<element>> _elements_;
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;
     
@@ -46,7 +59,7 @@ public:
    // water_distribution_system(const std::filesystem::path& inp_filename);
     
     // Constructor from .inp file
-    water_distribution_system(std::string inp_filename);
+    water_distribution_system(const std::string& inp_filename);
  
     // Copy constructor
     // this is not actually a copy constructor but rather a reinitialization one.

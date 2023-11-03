@@ -6,6 +6,7 @@
 //
 
 #include <assert.h>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <stdio.h>
@@ -30,7 +31,7 @@ water_distribution_system::water_distribution_system(){
 
 //water_distribution_system::water_distribution_system(const std::filesystem::path& inp_path){};
 
-water_distribution_system::water_distribution_system(std::string inp_filename){
+water_distribution_system::water_distribution_system(const std::string& inp_filename){
     this->set_inpfile(inp_filename);
     
     this->init();
@@ -52,6 +53,7 @@ water_distribution_system::water_distribution_system(water_distribution_system &
     ph_ = src.ph_;
     src.ph_ = nullptr;
 
+    _elements_ = std::move(src._elements_);
     _subnetworks_ = std::move(src._subnetworks_);
 }
 
@@ -61,6 +63,7 @@ water_distribution_system& water_distribution_system::operator=(const water_dist
         ph_ = temp.ph_;
         temp.ph_ = nullptr;
         std::swap(_inp_filename_, temp._inp_filename_);
+        std::swap(_elements_, temp._elements_);
         std::swap(_subnetworks_, temp._subnetworks_);
     }
     return *this;
@@ -71,6 +74,7 @@ water_distribution_system& water_distribution_system::operator=(water_distributi
     rhs.ph_ = nullptr;
     
     _inp_filename_ = std::move(rhs._inp_filename_);
+    _elements_ = std::move(rhs._elements_);
     _subnetworks_ = std::move(rhs._subnetworks_);
     return *this;
 }
@@ -99,6 +103,69 @@ void water_distribution_system::init(){
     }
     
     EN_setreport(ph_, "MESSAGES NO");
+
+    // Populate the elements vector
+    int n_nodes;
+    errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
+    assert(errorcode < 100);
+    int n_links;
+    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
+    assert(errorcode < 100);
+    _elements_.reserve(n_nodes + n_links);
+    
+    for (int i = 1; i <= n_nodes; ++i) {
+        char* node_id = new char[EN_MAXID];
+        errorcode = EN_getnodeid(ph_, i, node_id);
+        assert(errorcode < 100);
+
+        int node_type;
+        errorcode = EN_getnodetype(ph_, i, &node_type);
+        assert(errorcode < 100);
+
+        if (node_type == EN_JUNCTION){
+            _elements_.push_back(std::make_shared<junction>(node_id));
+        }
+        else if (node_type == EN_RESERVOIR){
+            // TODO: _elements_.push_back(std::make_shared<reservoir>(node_id));
+            stream_out(std::cout, "Reservoirs not implemented yet\n");
+        }
+        else if (node_type == EN_TANK){
+            _elements_.push_back(std::make_shared<tank>(node_id));
+        }
+        else {
+            throw std::runtime_error("Unknown node type\n");
+        }
+        delete[] node_id;
+    }
+
+    for (int i = 1; i <= n_links; ++i) {
+        char* link_id = new char[EN_MAXID];
+        errorcode = EN_getlinkid(ph_, i, link_id);
+        assert(errorcode < 100);
+
+        int link_type;
+        errorcode = EN_getlinktype(ph_, i, &link_type);
+        assert(errorcode < 100);
+
+        if (link_type == EN_PIPE) {
+            _elements_.push_back(std::make_shared<pipe>(link_id));
+        }
+        else if (link_type == EN_PUMP) {
+            // TODO: _elements_.push_back(std::make_shared<pump>(link_id));
+            stream_out(std::cout, "Pumps not implemented yet\n");
+        }
+        else { //TODO: all sorts of valves if (link_type == EN_VALVE) {
+            //_elements_.push_back(std::make_shared<valve>(link_id));
+            stream_out(std::cout, "Valves not implemented yet or unknown link type\n");
+        }
+    }
+
+
+    // TODO: fill the data from EPANET :)
+    for (auto& element : _elements_) {
+        //element->load_from_epanet(ph_);
+    }
+
 }
 
 void water_distribution_system::set_inpfile(const std::string inp_filename){
