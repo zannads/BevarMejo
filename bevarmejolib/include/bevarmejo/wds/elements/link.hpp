@@ -63,13 +63,15 @@ public:
     virtual ~link();
 
     node* from_node() const { return _node_start_; }
-    node* to_node() const { return _node_end_; }
-
     void from_node(node* n);
+    node* to_node() const { return _node_end_; }
     void to_node(node* n);
 
-    vars::var_int& initial_status() const { return *_initial_status_; }
+    // ----- load from EPANET ----- //
+    void retrieve_index(EN_Project ph) override;
+    void retrieve_properties(EN_Project ph) override;
 
+    vars::var_int& initial_status() const { return *_initial_status_; }
     vars::var_tseries_real& flow() const { return *_flow_; }
 
 };

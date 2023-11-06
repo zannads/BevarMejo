@@ -77,18 +77,22 @@ class node : public element {
 
         // getters
         const double& x_coord() const {return _x_coord_;}
-        void x_coord(const double& x_coord) {_x_coord_ = x_coord;}
+        void x_coord(const double x_coord) {_x_coord_ = x_coord;}
 
         const double& y_coord() const {return _y_coord_;}
-        void y_coord(const double& y_coord) {_y_coord_ = y_coord;}
+        void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
         const double& z_coord() const {return _elevation_;}
         const double& elevation() const {return _elevation_;}
-        void elevation(const double& elevation) {_elevation_ = elevation;}
+        void elevation(const double elevation) {_elevation_ = elevation;}
 
         std::unordered_set<link*>& connected_links() {return _links_;}
         void add_link(link* l);
         void remove_link(link* l);
+
+        // ----- load from EPANET ----- //
+        void retrieve_index(EN_Project ph) override;
+        void retrieve_properties(EN_Project ph) override;
 
         // results
         const vars::var_tseries_real& head() const {return *_head_;}

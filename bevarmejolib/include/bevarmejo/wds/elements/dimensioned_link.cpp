@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/results.hpp"
@@ -66,6 +68,40 @@ dimensioned_link& dimensioned_link::operator=(dimensioned_link&& rhs) noexcept {
 }
 
 dimensioned_link::~dimensioned_link() {/* results are cleared when the inherited destructor is called*/ }
+
+void dimensioned_link::retrieve_properties(EN_Project ph) {
+    inherited::retrieve_properties(ph);
+    
+    assert(index()!=0);
+
+    int errorcode = 0;
+    double val = 0;
+
+    errorcode = EN_getlinkvalue(ph, index(), EN_DIAMETER, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the diameter of link "+id()+" from EPANET project.");
+    _diameter_->value(val);
+
+    errorcode = EN_getlinkvalue(ph, index(), EN_ROUGHNESS, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the roughness of link "+id()+" from EPANET project.");
+    _roughness_->value(val);
+
+    errorcode = EN_getlinkvalue(ph, index(), EN_MINORLOSS, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the minor loss of link "+id()+" from EPANET project.");
+    _minor_loss_->value(val);
+
+    errorcode = EN_getlinkvalue(ph, index(), EN_KBULK, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the bulk coefficient of link "+id()+" from EPANET project.");
+    _bulk_coeff_->value(val);
+
+    errorcode = EN_getlinkvalue(ph, index(), EN_KWALL, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the wall coefficient of link "+id()+" from EPANET project.");
+    _wall_coeff_->value(val);
+}
 
 void dimensioned_link::_add_properties() {
     inherited::_add_properties();

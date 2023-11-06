@@ -9,6 +9,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "epanet2_2.h"
+
 #include "bevarmejo/wds/elements/variable.hpp"
 #include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/results.hpp"
@@ -58,6 +60,7 @@ class element {
 
     private:
         std::string _id_; // Human readable id (EPANET ID too)
+        int _index_; // Index in the EPANET project for cache purposes
 
         //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
         // don't use strings for now
@@ -103,9 +106,16 @@ class element {
         // getters
         const std::string& id() const {return _id_;}
         void id(const std::string& id) {_id_ = id;}
+        int index() const {return _index_;}
+        void index(const int index) {_index_ = index;}
 
         virtual const std::string& element_name() const = 0;
         virtual const unsigned int& element_type() const = 0;
+
+        // Functions to get information from EPANET project
+        // Results are not loaded thorugh these functions, but rather from the WDS object
+        virtual void retrieve_index(EN_Project ph) = 0;
+        virtual void retrieve_properties(EN_Project ph) = 0;
 
         PropertiesMap& properties() {return _properties_;}
         results& results() {return _results_;}

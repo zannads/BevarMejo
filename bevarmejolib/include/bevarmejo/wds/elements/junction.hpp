@@ -71,6 +71,9 @@ public:
     const std::string& element_name() const override {return LNAME_JUNCTION;}
     const unsigned int& element_type() const override {return ELEMENT_JUNCTION;}
 
+    // ----- load from EPANET ----- //
+    void retrieve_properties(EN_Project ph) override;
+
     // getters -- variables
     vars::var_real& demand_constant() {return *_demand_constant_;}
 

@@ -50,7 +50,7 @@ public:
     std::shared_ptr<pattern> who_is_yr_pattern() const {return _pattern_;}
     void change_pattern(std::shared_ptr<pattern> a_pattern) {_pattern_ = a_pattern;}
 
-    const double when(const long time) {return _base_dem_.value() * _pattern_->when(time);}
+    //const double when(const long time) {return _base_dem_.value() * _pattern_->when(time);}
 
     const std::string& id() {return _pattern_->id(); }
 

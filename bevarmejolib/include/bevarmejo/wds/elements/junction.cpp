@@ -68,6 +68,12 @@ junction& junction::operator=(junction&& rhs) noexcept {
 
 junction::~junction() { /* Everything is deleted by the inherited destructor */ }
 
+void junction::retrieve_properties(EN_Project ph) {
+    inherited::retrieve_properties(ph);
+
+    //TODO: get the demands 
+}
+
 void junction::_add_properties()
 {
     inherited::_add_properties();

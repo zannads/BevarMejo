@@ -1,3 +1,4 @@
+#include <cassert>
 #include <string>
 #include <variant>
 
@@ -54,6 +55,18 @@ pipe& pipe::operator=(pipe&& rhs) noexcept {
 // Destructor
 pipe::~pipe() {
     // delete _length_;
+}
+
+void pipe::retrieve_properties(EN_Project ph) {
+    inherited::retrieve_properties(ph);
+    assert(index()!= 0);
+
+    int errorode = 0;
+    double length = 0.0;
+    errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &length);
+    if (errorode != 0)
+        throw std::runtime_error("Error retrieving pipe length");
+    _length_->value(length);
 }
 
 void pipe::_add_properties() {

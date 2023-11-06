@@ -58,6 +58,9 @@ public:
     const std::string& element_name() const override {return LNAME_PIPE;}
     const unsigned int& element_type() const override {return ELEMENT_PIPE;}
 
+    // ----- load from EPANET ----- //
+    void retrieve_properties(EN_Project ph) override;
+
     vars::var_real& length() const { return *_length_; }
 
 };

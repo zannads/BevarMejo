@@ -64,6 +64,9 @@ public:
     // Destructor
     virtual ~dimensioned_link();
 
+    // ----- load from EPANET ----- //
+    void retrieve_properties(EN_Project ph) override;
+
     vars::var_real& diameter() const { return *_diameter_; }
     vars::var_real& roughness() const { return *_roughness_; }
     vars::var_real& minor_loss() const { return *_minor_loss_; }
