@@ -83,6 +83,10 @@ public:
     //void set_inpfile(const std::string& inp_filename);
     void set_inpfile(const std::string inp_filename);
     std::string get_inpfile() const;
+
+    // Cache the indices of the elements in the network.
+    // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
+    void cache_indices() const;
     
     //Run, the output has a fixed format: pressure at all nodes, flow in all links,
     // energy at all pumps. Each one of these is a matrix with the following dimensions:

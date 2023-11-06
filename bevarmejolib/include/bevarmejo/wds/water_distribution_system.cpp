@@ -242,9 +242,17 @@ std::string water_distribution_system::get_inpfile() const{
     return _inp_filename_;
 }
 
-std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hydraulics() const
-{
+void water_distribution_system::cache_indices() const {
+    for (auto& element : _elements_) {
+        element->retrieve_index(ph_);
+    }
+}
+
+std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hydraulics() const{
     // Empty 3d vector of results
+    // Cache the indices of the elements
+    cache_indices();
+
     std::vector<std::vector<std::vector<double>>> results;
 
     int errorcode = EN_openH(ph_);
