@@ -113,6 +113,7 @@ void water_distribution_system::init(){
     assert(errorcode < 100);
     _elements_.reserve(n_nodes + n_links);
     
+    // [1/6] Nodes 
     for (int i = 1; i <= n_nodes; ++i) {
         char* node_id = new char[EN_MAXID];
         errorcode = EN_getnodeid(ph_, i, node_id);
@@ -138,6 +139,7 @@ void water_distribution_system::init(){
         delete[] node_id;
     }
 
+    // [2/6] Links
     for (int i = 1; i <= n_links; ++i) {
         char* link_id = new char[EN_MAXID];
         errorcode = EN_getlinkid(ph_, i, link_id);
@@ -160,11 +162,75 @@ void water_distribution_system::init(){
         }
     }
 
+    // [3/6] Patterns
+    int n_patterns;
+    errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_patterns; ++i) {
+        char* pattern_id = new char[EN_MAXID];
+        errorcode = EN_getpatternid(ph_, i, pattern_id);
+        assert(errorcode < 100);
 
-    // TODO: fill the data from EPANET :)
-    for (auto& element : _elements_) {
-        //element->load_from_epanet(ph_);
+        _elements_.push_back(std::make_shared<pattern>(pattern_id));
+        delete[] pattern_id;
     }
+
+    // [4/6] Curves
+    int n_curves;
+    errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_curves; ++i) {
+        /*char* curve_id = new char[EN_MAXID];
+        errorcode = EN_getcurveid(ph_, i, curve_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<curve>(curve_id));
+        delete[] curve_id;
+        */
+        stream_out(std::cout, "Curves not implemented yet\n");
+    }
+
+    // [5/6] Controls (simple control)
+    int n_controls;
+    errorcode = EN_getcount(ph_, EN_CONTROLCOUNT, &n_controls);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_controls; ++i) {
+        /*char* control_id = new char[EN_MAXID];
+        errorcode = EN_getcontrol(ph_, i, control_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<control>(control_id));
+        delete[] control_id;
+        */
+        stream_out(std::cout, "Controls not implemented yet\n");
+    }
+
+    // [6/6] Rules (control rules)
+    int n_rules;
+    errorcode = EN_getcount(ph_, EN_RULECOUNT, &n_rules);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_rules; ++i) {
+        /*char* rule_id = new char[EN_MAXID];
+        errorcode = EN_getrule(ph_, i, rule_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<rule>(rule_id));
+        delete[] rule_id;
+        */
+        stream_out(std::cout, "Rules not implemented yet\n");
+    }
+
+    // Fill the data from EPANET. Use polymorphism in the right way :)
+    for (auto& element : _elements_) {
+        element->retrieve_index(ph_);
+        element->retrieve_properties(ph_);
+    }
+
+    // Nodes have pointers to demands and to links. Links have pointers to nodes. 
+    // I couldn't create this relationships inside the element as it has no idea of the other elements.
+    // So I create them here.
+    // connect_network(ph_);
+    // assign_patterns(ph_);
 
 }
 
