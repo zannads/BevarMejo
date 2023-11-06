@@ -3,7 +3,8 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include <vector>
+
 #include "bevarmejo/wds/elements/element.hpp"
 
 namespace bevarmejo {
@@ -11,12 +12,13 @@ namespace wds {
 
 static const std::string LNAME_PATTERN= "Pattern";
 
-class pattern : public element, public vars::temporal<double> {
+class pattern : public element {
     public:
         using inherited= element;
-        using container= vars::temporal<double>;
+        using container= std::vector<double>;
 
-    // should not have any property in my opinion
+    protected:
+        container _data_;
 
     public: 
         // Default constructor
@@ -38,7 +40,7 @@ class pattern : public element, public vars::temporal<double> {
         // Move assignment operator
         pattern& operator=(pattern&& rhs) noexcept;
 
-        virtual ~pattern() { container::clear(); }
+        virtual ~pattern() { _data_.clear(); }
 
         // Actually all this function could be handled in the temporal class 
         //const unsigned int start_time() const { return (*this).begin()->first; }
@@ -51,6 +53,10 @@ class pattern : public element, public vars::temporal<double> {
         // ----- override inherited pure virtual methods ----- // 
         const std::string& element_name() const override {return LNAME_PATTERN;}
         const unsigned int& element_type() const override {return ELEMENT_PATTERN;}
+
+         // ----- load from EPANET ----- //
+        void retrieve_index(EN_Project ph) override;
+        void retrieve_properties(EN_Project ph) override;
 
 }; // class pattern
 
