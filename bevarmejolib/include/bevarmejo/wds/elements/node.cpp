@@ -128,6 +128,20 @@ void node::retrieve_properties(EN_Project ph) {
     this->elevation(z);
 }
 
+void node::retrieve_results(EN_Project ph, long t=0) {
+    assert(index() != 0);
+    int errorcode = 0;
+    double head, pressure;
+    errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &head);
+    if (errorcode > 100) 
+        throw std::runtime_error("Error retrieving head of node " + id() + " from EPANET project.");
+    this->_head_->value().insert(std::make_pair(t, head));
+    errorcode = EN_getnodevalue(ph, index(), EN_PRESSURE, &pressure);
+    if (errorcode > 100) 
+        throw std::runtime_error("Error retrieving pressure of node " + id() + " from EPANET project.");
+    this->_pressure_->value().insert(std::make_pair(t, pressure));
+}
+
 void node::_add_properties()
 {
     inherited::_add_properties();

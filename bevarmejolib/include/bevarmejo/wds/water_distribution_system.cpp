@@ -137,6 +137,9 @@ void water_distribution_system::init(){
             throw std::runtime_error("Unknown node type\n");
         }
         delete[] node_id;
+
+        // Save it in _nodes_ too
+        _nodes_.push_back(std::dynamic_pointer_cast<node>(_elements_.back()));
     }
 
     // [2/6] Links
@@ -333,6 +336,10 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
             // of this instant in the next reporting time step. So I increment r_iter before 
             // saving the energy 
             ++r_iter;
+            // Use polymorphism to get the results from EPANET
+            for (auto node : _nodes_) {
+                node->retrieve_results(ph_, t);
+            }
         }
 
         // always add energy (at the next one) but be careful of the last step

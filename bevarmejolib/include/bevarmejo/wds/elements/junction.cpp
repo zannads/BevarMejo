@@ -74,6 +74,23 @@ void junction::retrieve_properties(EN_Project ph) {
     //TODO: get the demands 
 }
 
+void junction::retrieve_results(EN_Project ph, long t=0) {
+    inherited::retrieve_results(ph, t);
+
+    int errorcode;
+    double demand_requested, demand_undelivered;
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &demand_requested);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
+    this->_demand_requested_->value().insert(std::make_pair(t, demand_requested));
+
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &demand_undelivered);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving demand deficit for node " + id()+"\n");
+    this->_demand_undelivered_->value().insert(std::make_pair(t, demand_undelivered));
+
+}
+
 void junction::_add_properties()
 {
     inherited::_add_properties();

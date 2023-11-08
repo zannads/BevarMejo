@@ -47,6 +47,8 @@ protected:
     std::string _inp_filename_;
     // Collectionf of elements of the network
     std::vector<std::shared_ptr<element>> _elements_;
+    // Collection of nodes of the network
+    std::vector<std::shared_ptr<node>> _nodes_;
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;
     
