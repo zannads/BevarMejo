@@ -73,7 +73,7 @@ public:
 
     // ----- load from EPANET ----- //
     void retrieve_properties(EN_Project ph) override;
-    void retrieve_results(EN_Project ph, long t);
+    void retrieve_results(EN_Project ph, long t) override;
 
     // getters -- variables
     vars::var_real& demand_constant() {return *_demand_constant_;}

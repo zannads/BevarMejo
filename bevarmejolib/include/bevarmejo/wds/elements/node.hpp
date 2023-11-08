@@ -93,7 +93,7 @@ class node : public element {
         // ----- load from EPANET ----- //
         void retrieve_index(EN_Project ph) override;
         void retrieve_properties(EN_Project ph) override;
-        void retrieve_results(EN_Project ph, long t);
+        virtual void retrieve_results(EN_Project ph, long t);
 
         // results
         const vars::var_tseries_real& head() const {return *_head_;}
