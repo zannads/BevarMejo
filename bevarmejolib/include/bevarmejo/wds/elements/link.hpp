@@ -70,6 +70,7 @@ public:
     // ----- load from EPANET ----- //
     void retrieve_index(EN_Project ph) override;
     void retrieve_properties(EN_Project ph) override;
+    virtual void retrieve_results(EN_Project ph, long t);
 
     vars::var_int& initial_status() const { return *_initial_status_; }
     vars::var_tseries_real& flow() const { return *_flow_; }

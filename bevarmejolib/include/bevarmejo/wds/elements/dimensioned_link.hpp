@@ -66,6 +66,7 @@ public:
 
     // ----- load from EPANET ----- //
     void retrieve_properties(EN_Project ph) override;
+    void retrieve_results(EN_Project ph, long t) override;
 
     vars::var_real& diameter() const { return *_diameter_; }
     vars::var_real& roughness() const { return *_roughness_; }

@@ -103,6 +103,17 @@ void dimensioned_link::retrieve_properties(EN_Project ph) {
     _wall_coeff_->value(val);
 }
 
+void dimensioned_link::retrieve_results(EN_Project ph, long t) {
+    inherited::retrieve_results(ph, t);
+
+    int errorcode = 0;  
+    double velocity = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &velocity);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving the velocity of link "+id()+" from EPANET project.");
+    this->_velocity_->value().insert(std::make_pair(t, velocity));
+}
+
 void dimensioned_link::_add_properties() {
     inherited::_add_properties();
 

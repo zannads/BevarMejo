@@ -132,5 +132,15 @@ void link::retrieve_properties(EN_Project ph) {
     // So I have to do it in the network class.
 }
 
+void link::retrieve_results(EN_Project ph, long t) {
+    assert(index() != 0);
+    int errorcode = 0;
+    double flow = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_FLOW, &flow);
+    if (errorcode > 100) 
+        throw std::runtime_error("Error retrieving flow of link " + id() + " from EPANET project.");
+    this->_flow_->value().insert(std::make_pair(t, flow));
+}
+
 } // namespace wds
 } // namespace bevarmejo

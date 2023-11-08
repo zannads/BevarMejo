@@ -49,6 +49,8 @@ protected:
     std::vector<std::shared_ptr<element>> _elements_;
     // Collection of nodes of the network
     std::vector<std::shared_ptr<node>> _nodes_;
+    // Collection of links of the network
+    std::vector<std::shared_ptr<link>> _links_;
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;
     

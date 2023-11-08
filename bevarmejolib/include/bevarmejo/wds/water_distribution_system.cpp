@@ -163,6 +163,10 @@ void water_distribution_system::init(){
             //_elements_.push_back(std::make_shared<valve>(link_id));
             stream_out(std::cout, "Valves not implemented yet or unknown link type\n");
         }
+        delete[] link_id;
+
+        // Save it in _links_ too
+        _links_.push_back(std::dynamic_pointer_cast<link>(_elements_.back()));
     }
 
     // [3/6] Patterns
@@ -339,6 +343,9 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
+            }
+            for (auto link : _links_) {
+                link->retrieve_results(ph_, t);
             }
         }
 
