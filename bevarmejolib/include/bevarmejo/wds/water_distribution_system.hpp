@@ -92,12 +92,7 @@ public:
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
     void cache_indices() const;
     
-    //Run, the output has a fixed format: pressure at all nodes, flow in all links,
-    // energy at all pumps. Each one of these is a matrix with the following dimensions:
-    // 1st dimension: time
-    // 2nd dimension: node/link/pump
-    // if something fails , it returns an empty vector.
-    std::vector<std::vector<std::vector<double>>> run_hydraulics() const;
+    void run_hydraulics() const;
 
     // add a subnetwork to the list of subnetworks from path to file
     void add_subnetwork(const std::filesystem::path& subnetwork_filename);

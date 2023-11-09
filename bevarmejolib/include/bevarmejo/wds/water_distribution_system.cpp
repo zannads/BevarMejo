@@ -255,20 +255,17 @@ void water_distribution_system::cache_indices() const {
     }
 }
 
-std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hydraulics() const{
-    // Empty 3d vector of results
-    // Cache the indices of the elements
-    cache_indices();
-
-    std::vector<std::vector<std::vector<double>>> results;
-
+void water_distribution_system::run_hydraulics() const{
+    // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
     if (errorcode >= 100)
-        return results;
+        return; // I don't think I need to close it here
 
     errorcode = EN_initH(ph_, 10);
-    if (errorcode >= 100)
-        return results;
+    if (errorcode >= 100) {
+        int errorcode2 = EN_closeH(ph_);
+        throw std::runtime_error("Hydraulic initialization failed.");
+    }
 
     // if the inp file is correct these errors should be always 0
     long h_step;
@@ -283,36 +280,11 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
 
     long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
 
-    // here I should build the the 3 objects a priori 
-    // in the future with subnetworks I could remove this complex data retrival
-    int n_nodes;
-    errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
-    assert(errorcode < 100);
-
-    int n_links;
-    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
-    assert(errorcode < 100);
-
-    int n_pumps{ 0 };
-    for (int i = 1; i <= n_links; ++i) {
-        int link_type;
-        errorcode = EN_getlinktype(ph_, i, &link_type);
-        assert(errorcode < 100);
-        if (link_type == EN_PUMP)
-            n_pumps++;
-    }
-
-    std::vector<std::vector<double>> pressures(n_reports, std::vector<double>(n_nodes));
-    std::vector<std::vector<double>> flows    (n_reports, std::vector<double>(n_links));
-    std::vector<std::vector<double>> energies (n_reports, std::vector<double>(n_pumps, 0.));
-
-
     bool solution_has_failed = false;
     bool scheduled; // is the current time a reporting time?
     long t{ 0 }; // current time
     long delta_t{ 0 }; // real hydraulic time step
-    unsigned int r_iter{ 0 }; // index of the current report
-
+    
     do {
         errorcode = EN_runH(ph_, &t);
         if (errorcode >= 100) {
@@ -321,25 +293,9 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
             // I don'return because I need to close the hydraulics
         }
 
-        errorcode = EN_nextH(ph_, &delta_t);
-        assert(errorcode < 100);
-
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
         if (scheduled) {
-            // save pressures and flows
-            for (int j = 1; j <= n_nodes; ++j) {
-                errorcode = EN_getnodevalue(ph_, j, EN_PRESSURE, &pressures[r_iter][j - 1]);
-                assert(errorcode < 100);
-            }
-            for (int j = 1; j <= n_links; ++j) {
-                errorcode = EN_getlinkvalue(ph_, j, EN_FLOW, &flows[r_iter][j - 1]);
-                assert(errorcode < 100);
-            }
-            // at scheduled time step, i.e., when I save the report, I should save the energy 
-            // of this instant in the next reporting time step. So I increment r_iter before 
-            // saving the energy 
-            ++r_iter;
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
@@ -349,41 +305,16 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
             }
         }
 
-        // always add energy (at the next one) but be careful of the last step
-        if (n_pumps > 0 && r_iter < n_reports) {
-            int pump_iter = 0;
-            for (int j = 1; j <= n_links; ++j) {
+        errorcode = EN_nextH(ph_, &delta_t);
+        assert(errorcode < 100);
 
-                int link_type;
-                errorcode = EN_getlinktype(ph_, j, &link_type);
-                assert(errorcode < 100);
-                if (link_type == EN_PUMP) {
-                    double instant_energy;
-                    errorcode = EN_getlinkvalue(ph_, j, EN_ENERGY, &instant_energy);
-                    assert(errorcode < 100);
-
-                    energies[r_iter][pump_iter] += instant_energy * delta_t;
-                    ++pump_iter;
-                }
-            }
-        }
-
-        // get ready for the next step
-        t += delta_t;
     } while (delta_t > 0);
 
     errorcode = EN_closeH(ph_);
     assert(errorcode < 100);
 
     if (solution_has_failed)
-        return results;
-
-    // if the solution is correct, I return the whole results
-    results.push_back(pressures);
-    results.push_back(flows);
-    results.push_back(energies);
-
-    return results;
+        throw std::runtime_error("Hydraulic solution failed.");
 }
 
 void water_distribution_system::add_subnetwork(const std::filesystem::path& subnetwork_filename) {

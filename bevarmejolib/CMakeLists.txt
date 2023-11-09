@@ -40,9 +40,9 @@ set(WDS_VARS    "${WDS_INC_ROOT}/elements/variables.hpp"
 add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
                     "src/experiment.cpp" "include/bevarmejo/experiment.hpp" 
                     "${PUGIXML_ROOT}/pugixml.cpp" 
-                    "src/resilience_index.cpp" "include/bevarmejo/resilience_index.hpp"
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
+                    "src/hydraulic_functions.cpp" "include/bevarmejo/hydraulic_functions.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
                     ${WDS_LINKS}
