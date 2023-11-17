@@ -1,53 +1,61 @@
 #include <cassert>
+#include <string>
+#include <unordered_map>
+#include <variant>
 
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/results.hpp"
-#include "bevarmejo/wds/elements/variables.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "epanet2_2.h"
+
 #include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/elements/variable.hpp"
+
+#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
 
 #include "dimensioned_link.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-dimensioned_link::dimensioned_link(const std::string& id) : inherited(id),
-                                                            _diameter_(nullptr),
-                                                            _roughness_(nullptr),
-                                                            _minor_loss_(nullptr),
-                                                            _bulk_coeff_(nullptr),
-                                                            _wall_coeff_(nullptr),
-                                                            _velocity_(nullptr)
-                                                            {
-                                                                _add_properties();
-                                                                _add_results();
-                                                                _update_pointers();
-                                                            }
+dimensioned_link::dimensioned_link(const std::string& id) : 
+    inherited(id),
+    _diameter_(nullptr),
+    _roughness_(nullptr),
+    _minor_loss_(nullptr),
+    _bulk_coeff_(nullptr),
+    _wall_coeff_(nullptr),
+    _velocity_(nullptr)
+    {
+        _add_properties();
+        _add_results();
+        _update_pointers();
+    }
 
 // Copy constructor
-dimensioned_link::dimensioned_link(const dimensioned_link& other) : inherited(other),
-                                                                    _diameter_(nullptr),
-                                                                    _roughness_(nullptr),
-                                                                    _minor_loss_(nullptr),
-                                                                    _bulk_coeff_(nullptr),
-                                                                    _wall_coeff_(nullptr),
-                                                                    _velocity_(nullptr)
-                                                                    {
-                                                                        _update_pointers();
-                                                                    }
+dimensioned_link::dimensioned_link(const dimensioned_link& other) : 
+    inherited(other),
+    _diameter_(nullptr),
+    _roughness_(nullptr),
+    _minor_loss_(nullptr),
+    _bulk_coeff_(nullptr),
+    _wall_coeff_(nullptr),
+    _velocity_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Move constructor
-dimensioned_link::dimensioned_link(dimensioned_link&& rhs) noexcept : inherited(std::move(rhs)),
-                                                                        _diameter_(nullptr),
-                                                                        _roughness_(nullptr),
-                                                                        _minor_loss_(nullptr),
-                                                                        _bulk_coeff_(nullptr),
-                                                                        _wall_coeff_(nullptr),
-                                                                        _velocity_(nullptr)
-                                                                        {
-                                                                            _update_pointers();
-                                                                        }
+dimensioned_link::dimensioned_link(dimensioned_link&& rhs) noexcept : 
+    inherited(std::move(rhs)),
+    _diameter_(nullptr),
+    _roughness_(nullptr),
+    _minor_loss_(nullptr),
+    _bulk_coeff_(nullptr),
+    _wall_coeff_(nullptr),
+    _velocity_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Copy assignment operator
 dimensioned_link& dimensioned_link::operator=(const dimensioned_link& rhs) {
@@ -107,11 +115,11 @@ void dimensioned_link::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
 
     int errorcode = 0;  
-    double velocity = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &velocity);
+    double d_velocity = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &d_velocity);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the velocity of link "+id()+" from EPANET project.");
-    this->_velocity_->value().insert(std::make_pair(t, velocity));
+    this->_velocity_->value().insert(std::make_pair(t, d_velocity));
 }
 
 void dimensioned_link::_add_properties() {
@@ -127,7 +135,7 @@ void dimensioned_link::_add_properties() {
 void dimensioned_link::_add_results() {
     inherited::_add_results();
 
-    results().temporal_reals().emplace(L_VELOCITY, "m/s");
+    results().emplace(L_VELOCITY, vars::var_tseries_real("m/s"));
 }
 
 void dimensioned_link::_update_pointers() {
@@ -139,7 +147,7 @@ void dimensioned_link::_update_pointers() {
     _bulk_coeff_ = &std::get<vars::var_real>(properties().at(L_BULK_COEFF));
     _wall_coeff_ = &std::get<vars::var_real>(properties().at(L_WALL_COEFF));
 
-    _velocity_ = &results().temporal_reals().at(L_VELOCITY);
+    _velocity_ = &std::get<vars::var_tseries_real>(results().at(L_VELOCITY));
 }
 
 } // namespace wds

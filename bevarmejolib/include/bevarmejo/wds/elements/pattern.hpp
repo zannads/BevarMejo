@@ -3,7 +3,10 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 
+#include <string>
 #include <vector>
+
+#include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
 
@@ -17,22 +20,30 @@ class pattern : public element {
         using inherited= element;
         using container= std::vector<double>;
 
+    /*--- Attributes ---*/
     protected:
-        container _data_;
+        /*--- Properties ---*/
+        container _multipliers_;
 
+    protected:
+        
+     /*--- Constructors ---*/
     public: 
         // Default constructor
-        pattern();
+        pattern() = delete;
 
-        pattern(const std::string& id);
+        pattern(const std::string& id) : inherited(id), _multipliers_() { }
 
         // TODO: could add a constructor with a vector of values
 
         // Copy constructor
-        pattern(const pattern& other);
+        pattern(const pattern& other) : inherited(other), 
+                                        _multipliers_(other._multipliers_) { }
 
         // Move constructor
-        pattern(pattern&& rhs) noexcept;
+        pattern(pattern&& rhs) noexcept : 
+            inherited(std::move(rhs)),
+            _multipliers_(std::move(rhs._multipliers_)) { }
 
         // Copy assignment operator
         pattern& operator=(const pattern& rhs);
@@ -40,21 +51,23 @@ class pattern : public element {
         // Move assignment operator
         pattern& operator=(pattern&& rhs) noexcept;
 
-        virtual ~pattern() { _data_.clear(); }
+        virtual ~pattern() { _multipliers_.clear(); }
 
-        // Actually all this function could be handled in the temporal class 
-        //const unsigned int start_time() const { return (*this).begin()->first; }
+    /*--- Getters and setters ---*/
+    public:
+        /*--- Properties ---*/
+        const container& multipliers() const { return _multipliers_; }
 
-        //std::vector<double> multipliers() const;
-
-        void _update_pointers() override { inherited::_update_pointers(); }
-        void _add_results() override { inherited::_add_results(); }
-
-        // ----- override inherited pure virtual methods ----- // 
+    /*--- Pure virtual methods override---*/
+    public:
+        /*--- Properties ---*/
         const std::string& element_name() const override {return LNAME_PATTERN;}
-        const unsigned int& element_type() const override {return ELEMENT_PATTERN;}
+        const unsigned int element_type() const override {return ELEMENT_PATTERN;}
 
-         // ----- load from EPANET ----- //
+
+    /*--- EPANET-dependent PVMs ---*/
+    public:
+        /*--- Properties ---*/
         void retrieve_index(EN_Project ph) override;
         void retrieve_properties(EN_Project ph) override;
 

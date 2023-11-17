@@ -10,29 +10,32 @@
 namespace bevarmejo {
 namespace wds {
 
-source::source(const std::string& id) : inherited(id), 
-                                        _inflow_(nullptr),
-                                        _source_elevation_(nullptr) 
-                                        {
-                                            _add_results();
-                                            _update_pointers();
-                                        }
+source::source(const std::string& id) : 
+    inherited(id), 
+    _inflow_(nullptr),
+    _source_elevation_(nullptr) 
+    {
+        _add_results();
+        _update_pointers();
+    }
 
 // Copy constructor
-source::source(const source& other) : inherited(other), 
-                                        _inflow_(nullptr),
-                                        _source_elevation_(nullptr) 
-                                        {
-                                            _update_pointers();
-                                        }
+source::source(const source& other) : 
+    inherited(other), 
+    _inflow_(nullptr),
+    _source_elevation_(nullptr) 
+    {
+        _update_pointers();
+    }
 
 // Move constructor
-source::source(source&& rhs) noexcept : inherited(std::move(rhs)), 
-                                        _inflow_(nullptr),
-                                        _source_elevation_(nullptr) 
-                                        {
-                                            _update_pointers();
-                                        }
+source::source(source&& rhs) noexcept : 
+    inherited(std::move(rhs)), 
+    _inflow_(nullptr),
+    _source_elevation_(nullptr) 
+    {
+        _update_pointers();
+    }
 
 // Copy assignment operator
 source& source::operator=(const source& rhs) {
@@ -57,15 +60,15 @@ source::~source() {/* results are cleared when the inherited destructor is calle
 void source::_add_results() {
     inherited::_add_results();
 
-    results().temporal_reals().emplace(LINFLOW, vars::L_M3_PER_S);
-    results().temporal_reals().emplace(LSOURCE_ELEV, vars::L_METER);
+    results().emplace(LINFLOW, vars::var_tseries_real(vars::L_M3_PER_S));
+    results().emplace(LSOURCE_ELEV, vars::var_tseries_real(vars::L_METER));
 }
 
 void source::_update_pointers() {
     inherited::_update_pointers();
 
-    _inflow_ = &results().temporal_reals().at(LINFLOW);
-    _source_elevation_ = &results().temporal_reals().at(LSOURCE_ELEV);
+    _inflow_ = &std::get<vars::var_tseries_real>(results().at(LINFLOW));
+    _source_elevation_ = &std::get<vars::var_tseries_real>(results().at(LSOURCE_ELEV));
 }
 
 } // namespace wds

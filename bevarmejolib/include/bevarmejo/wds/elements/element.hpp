@@ -8,12 +8,12 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/variable.hpp"
 #include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/results.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -58,28 +58,32 @@ class element {
      * of the WDS. It is a pure virtual class, so it cannot be instantiated.
     */
 
+   /*--- Attributes ---*/
     private:
+        /*--- Properties ---*/
         std::string _id_; // Human readable id (EPANET ID too)
         int _index_; // Index in the EPANET project for cache purposes
 
         //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
         // don't use strings for now
-        using PropertiesTypes = std::variant<vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
+        using PropertiesTypes = std::variant<
+            vars::var_int, 
+            vars::var_real, 
+            vars::var_tseries_int, 
+            vars::var_tseries_real>;
         using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
         
         PropertiesMap _properties_; // Properties of the element
-        results _results_; // Results of the last simulation, will be filled in the derived class at construction.
-
-
+        
     protected:
         virtual void _add_properties();
-        virtual void _add_results(); 
 
         /* should be called every time you add a variable to the results, so that, if you have a property
          * in the derived class that is a pointer to a variable in the results, you can update it. 
          */   
         virtual void _update_pointers(); 
         
+    /*--- Constructors ---*/
     public:
         /// @brief Default constructor
         element();
@@ -101,24 +105,32 @@ class element {
         /// @brief Destructor
         virtual ~element();
 
+    /*--- Operators ---*/
+    public:
         bool operator==(const element& rhs) const;
         
-        // getters
+    /*--- Getters and setters ---*/
+    public:
+        /*--- Properties ---*/
         const std::string& id() const {return _id_;}
         void id(const std::string& id) {_id_ = id;}
         int index() const {return _index_;}
         void index(const int index) {_index_ = index;}
 
-        virtual const std::string& element_name() const = 0;
-        virtual const unsigned int& element_type() const = 0;
+        PropertiesMap& properties() {return _properties_;}
 
-        // Functions to get information from EPANET project
-        // Results are not loaded thorugh these functions, but rather from the WDS object
+    /*--- Pure virtual methods ---*/
+    public:
+        /*--- Properties ---*/
+        virtual const std::string& element_name() const = 0;
+        virtual const unsigned int element_type() const = 0;
+
+    /*-- EPANET-dependent PVMs --*/
+    public:
+        /*--- Properties ---*/
         virtual void retrieve_index(EN_Project ph) = 0;
         virtual void retrieve_properties(EN_Project ph) = 0;
-
-        PropertiesMap& properties() {return _properties_;}
-        results& results() {return _results_;}
+   
 };
 
 } // namespace wds

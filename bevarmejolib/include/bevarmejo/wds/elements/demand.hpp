@@ -6,6 +6,8 @@
 #include <string>
 
 #include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
+
 #include "bevarmejo/wds/elements/pattern.hpp"
 
 namespace bevarmejo {   
@@ -15,16 +17,23 @@ static const std::string L_DEMAND = "demand";
 
 class demand {
 
+/*--- Attributes ---*/
 private:
     vars::var_real _base_dem_;
     std::shared_ptr<pattern> _pattern_;
 
+/*--- Constructors ---*/
 public:
-    demand() : _base_dem_(vars::L_M3_PER_S, 0.0), _pattern_(std::make_shared<pattern>()) {}
+    demand() :  _base_dem_(vars::L_M3_PER_S, 0.0), 
+                _pattern_(nullptr) {}
     
-    demand(const demand& other) : _base_dem_(other._base_dem_), _pattern_(other._pattern_) {}
+    demand(const demand& other) : 
+        _base_dem_(other._base_dem_), 
+        _pattern_(other._pattern_) {}
 
-    demand(demand&& rhs) noexcept : _base_dem_(std::move(rhs._base_dem_)), _pattern_(std::move(rhs._pattern_)) {}
+    demand(demand&& rhs) noexcept : 
+        _base_dem_(std::move(rhs._base_dem_)), 
+        _pattern_(std::move(rhs._pattern_)) {}
 
     demand& operator=(const demand& rhs) {
         if (this != &rhs) {
@@ -44,6 +53,8 @@ public:
 
     virtual ~demand() { _pattern_.reset(); } // release ownership 
 
+/*--- Getters and setters ---*/
+public:
     vars::var_real& base_demand() { return _base_dem_; }
     void base_demand_val(double bd) { _base_dem_.value(bd); }
 

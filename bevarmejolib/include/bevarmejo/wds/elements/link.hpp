@@ -2,11 +2,14 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP
 
 #include <string>
-#include <variant>
 
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
 
+#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
 namespace bevarmejo {
@@ -22,26 +25,29 @@ static const std::string L_FLOW= "Flow";
 
 class node; // forward declaration
 
-class link : public element {
+class link : public network_element {
 
 public:
-    using inherited= element;
+    using inherited= network_element;
 
+/*--- Attributes ---*/
 protected:
+    /*--- Properties ---*/
     node* _node_start_;
     node* _node_end_;
 
-    // pointers to variables
     vars::var_int* _initial_status_;
 
-    // pointers to results 
+    /*---  Results   ---*/ 
     vars::var_tseries_real* _flow_;
     // TODO: water quality
 
+protected:
     void _add_properties() override;
     void _add_results() override;
     void _update_pointers() override;
 
+/*--- Constructors ---*/
 public:
     link() = delete;
 
@@ -62,20 +68,29 @@ public:
     // Destructor
     virtual ~link();
 
+/*--- Getters and setters ---*/
+public:
+    /*--- Properties ---*/
     node* from_node() const { return _node_start_; }
-    void from_node(node* n);
-    node* to_node() const { return _node_end_; }
-    void to_node(node* n);
+    void from_node(node* a_node);
 
-    // ----- load from EPANET ----- //
-    void retrieve_index(EN_Project ph) override;
-    void retrieve_properties(EN_Project ph) override;
-    virtual void retrieve_results(EN_Project ph, long t);
+    node* to_node() const { return _node_end_; }
+    void to_node(node* a_node);
 
     vars::var_int& initial_status() const { return *_initial_status_; }
-    vars::var_tseries_real& flow() const { return *_flow_; }
 
-};
+    /*---  Results   ---*/
+    const vars::var_tseries_real& flow() const { return *_flow_; }
+
+/*--- Pure virtual methods override---*/
+
+/*--- EPANET-dependent PVMs override ---*/
+public:
+    void retrieve_index(EN_Project ph) override;
+    void retrieve_properties(EN_Project ph) override;
+    void retrieve_results(EN_Project ph, long t) override;
+
+}; // class link
 
 } // namespace wds
 } // namespace bevarmejo

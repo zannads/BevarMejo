@@ -2,12 +2,16 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP
 
 #include <string>
-#include <variant>
 
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -25,15 +29,18 @@ class pipe : public dimensioned_link {
 public:
     using inherited= dimensioned_link;
 
-protected:
-    // pointers to variables
+ /*--- Attributes ---*/
+    protected:
+    /*--- Properties ---*/
     vars::var_real* _length_;
 
-    // no extra results
+    /*---  Results   ---*/
 
+protected:
     void _add_properties() override;
     void _update_pointers() override;
 
+/*--- Constructors ---*/
 public:
     pipe() = delete;
 
@@ -54,14 +61,23 @@ public:
     // Destructor
     virtual ~pipe();
 
-    // ----- override inherited pure virtual methods ----- // 
-    const std::string& element_name() const override {return LNAME_PIPE;}
-    const unsigned int& element_type() const override {return ELEMENT_PIPE;}
-
-    // ----- load from EPANET ----- //
-    void retrieve_properties(EN_Project ph) override;
-
+/*--- Getters and setters ---*/
+public:
+    /*--- Properties ---*/
     vars::var_real& length() const { return *_length_; }
+
+    /*---  Results   ---*/
+
+/*--- Pure virtual methods ---*/
+public:
+    /*--- Properties ---*/
+    const std::string& element_name() const override {return LNAME_PIPE;}
+    const unsigned int element_type() const override {return ELEMENT_PIPE;}
+
+/*-- EPANET-dependent PVMs --*/
+public:
+    /*--- Properties ---*/
+    void retrieve_properties(EN_Project ph) override;
 
 };
 

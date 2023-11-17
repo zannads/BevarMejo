@@ -4,8 +4,13 @@
 // Created by Dennis Zanutto on 20/10/23.
 
 #include <string>
+#include <unordered_map>
+#include <variant>
 
-#include "bevarmejo/wds/elements/results.hpp"
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
 
 #include "element.hpp"
 
@@ -15,22 +20,18 @@ namespace wds {
 element::element() :
     _id_(""),
     _index_(0),
-    _properties_(),
-    _results_()
+    _properties_()
     {
         _add_properties();
-        _add_results();
         _update_pointers();
     }
 
 element::element(const std::string& id) :
     _id_(id),
     _index_(0),
-    _properties_(),
-    _results_()
+    _properties_()
     {
         _add_properties();
-        _add_results();
         _update_pointers();
     }
 
@@ -38,8 +39,7 @@ element::element(const std::string& id) :
 element::element(const element& other) :
     _id_(other._id_),
     _index_(other._index_),
-    _properties_(other._properties_),
-    _results_(other._results_)
+    _properties_(other._properties_)
     {
         _update_pointers();
     }
@@ -48,8 +48,7 @@ element::element(const element& other) :
 element::element(element&& rhs) noexcept :
     _id_(std::move(rhs._id_)),
     _index_(rhs._index_),
-    _properties_(std::move(rhs._properties_)),
-    _results_(std::move(rhs._results_))
+    _properties_(std::move(rhs._properties_))
     {
         _update_pointers();
     }
@@ -60,7 +59,6 @@ element& element::operator=(const element& rhs) {
         _id_ = rhs._id_;
         _index_ = rhs._index_;
         _properties_ = rhs._properties_;
-        _results_ = rhs._results_;
         _update_pointers();
     }
     return *this;
@@ -72,7 +70,6 @@ element& element::operator=(element&& rhs) noexcept {
         _id_ = std::move(rhs._id_);
         _index_ = rhs._index_;
         _properties_ = std::move(rhs._properties_);
-        _results_ = std::move(rhs._results_);
         _update_pointers();
     }
     return *this;
@@ -80,7 +77,6 @@ element& element::operator=(element&& rhs) noexcept {
 
 element::~element() {
     _properties_.clear();
-    _results_.clear();
 }
 
 bool element::operator==(const element& rhs) const {
@@ -88,17 +84,14 @@ bool element::operator==(const element& rhs) const {
 }
 
 void element::_update_pointers() {
-    // there are actually no pointers to update with this setup
+    // If in derived classes you have pointers to properties or results,
+    // you should override this function and update them here.
 }
 
 void element::_add_properties() {
-    // override to add properties to the properties object
+    // If in derived classes you have properties, you should override this 
+    // function and add them here.
     _properties_.clear();
-}
-
-void element::_add_results() {
-    // override to add results to the results object
-    _results_.clear();
 }
 
 } // namespace wds

@@ -25,16 +25,19 @@ class source : public node {
 public:
     using inherited= node;
 
+/*--- Attributes ---*/
 protected:
-    // no pointers to properties
+    /*--- Properties ---*/
 
-    // results
+    /*---  Results   ---*/
     vars::var_tseries_real* _inflow_;
     vars::var_tseries_real* _source_elevation_;
 
+protected:
     void _add_results() override;
     void _update_pointers() override;
 
+/*--- Constructors ---*/
 public:
     source() = delete;
     source(const std::string& id);
@@ -54,8 +57,22 @@ public:
     // Destructor
     virtual ~source();
 
+/*--- Getters and setters ---*/
+public:
+    /*--- Properties ---*/
+
+    /*---  Results   ---*/
     vars::var_tseries_real& inflow() const { return *_inflow_; }
     vars::var_tseries_real& source_elevation() const { return *_source_elevation_; }
+
+/*--- Pure virtual methods override---*/
+
+/*--- EPANET-dependent PVMs override ---*/
+public:
+    /*--- Properties ---*/
+
+    /*--- Results ---*/
+    //void retrieve_results(EN_Project ph, long t) override;
 
 };
     

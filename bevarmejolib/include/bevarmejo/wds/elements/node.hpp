@@ -10,9 +10,13 @@
 #include <string>
 #include <unordered_set>
 
-#include "bevarmejo/wds/elements/element.hpp"
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
 
+#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
 namespace bevarmejo {
@@ -29,34 +33,38 @@ const std::string LABEL_HEAD=           "Head";
 
 class link;
 
-class node : public element {
+class node : public network_element {
     
     public:
-        using inherited= element;
+        using inherited= network_element;
 
+    /*--- Attributes ---*/
     protected:
+        /*--- Properties ---*/
         // TODO: use boost:geometry to store coordinates
         double _x_coord_;
         double _y_coord_;
 
         std::unordered_set<link*> _links_;
 
+        // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
 
-        // results 
+        /*---  Results   ---*/ 
         // pointer to the result property in the results object
         vars::var_tseries_real* _head_;
         vars::var_tseries_real* _pressure_;
         // TODO: water quality 
 
+    protected:
         void _add_properties() override;
         void _add_results() override;
-
         void _update_pointers() override;
 
+    /*--- Constructors ---*/
     public:
         /// @brief Default constructor
-        node();
+        node() = delete;
 
         node(const std::string& id);
 
@@ -75,32 +83,34 @@ class node : public element {
         /// @brief Destructor
         virtual ~node();
 
-        // getters
-        const double& x_coord() const {return _x_coord_;}
+    /*--- Getters and setters ---*/
+    public:
+        /*--- Properties ---*/
+        const double x_coord() const {return _x_coord_;}
         void x_coord(const double x_coord) {_x_coord_ = x_coord;}
 
-        const double& y_coord() const {return _y_coord_;}
+        const double y_coord() const {return _y_coord_;}
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
-        const double& z_coord() const {return _elevation_;}
-        const double& elevation() const {return _elevation_;}
+        std::unordered_set<link*>& connected_links() {return _links_;}
+        void add_link(link* a_link);
+        void remove_link(link* a_link);
+
+        const double z_coord() const {return _elevation_;}
+        const double elevation() const {return _elevation_;}
         void elevation(const double elevation) {_elevation_ = elevation;}
 
-        std::unordered_set<link*>& connected_links() {return _links_;}
-        void add_link(link* l);
-        void remove_link(link* l);
+        /*--- Results ---*/
+        const vars::var_tseries_real& head() const {return *_head_;}
+        const vars::var_tseries_real& pressure() const {return *_pressure_;}
 
-        // ----- load from EPANET ----- //
+    /*--- Pure virtual methods override---*/
+
+    /*--- EPANET-dependent PVMs override ---*/
+    public:
         void retrieve_index(EN_Project ph) override;
         void retrieve_properties(EN_Project ph) override;
-        virtual void retrieve_results(EN_Project ph, long t);
-
-        // results
-        const vars::var_tseries_real& head() const {return *_head_;}
-        void head(const vars::var_tseries_real& head) {*_head_ = head;}
-
-        const vars::var_tseries_real& pressure() const {return *_pressure_;}
-        void pressure(const vars::var_tseries_real& pressure) {*_pressure_ = pressure;}
+        void retrieve_results(EN_Project ph, long t) override;
 
 }; // class node
 

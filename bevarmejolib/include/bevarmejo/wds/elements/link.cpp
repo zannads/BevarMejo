@@ -1,13 +1,17 @@
 // Constructors and destructor from link.hpp
 //
 #include <cassert>
+#include <string>
+#include <unordered_map>
+#include <variant>
+
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/elements/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/results.hpp"
-#include "bevarmejo/wds/elements/variables.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
-
+#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
 #include "link.hpp"
@@ -15,36 +19,39 @@
 namespace bevarmejo {
 namespace wds {
 
-link::link(const std::string& id) : inherited(id),
-                                    _node_start_(nullptr),
-                                    _node_end_(nullptr),
-                                    _initial_status_(nullptr),
-                                    _flow_(nullptr)
-                                    {
-                                        _add_properties();
-                                        _add_results();
-                                        _update_pointers();
-                                    }
+link::link(const std::string& id) : 
+    inherited(id),
+    _node_start_(nullptr),
+    _node_end_(nullptr),
+    _initial_status_(nullptr),
+    _flow_(nullptr)
+    {
+        _add_properties();
+        _add_results();
+        _update_pointers();
+    }
 
 // Copy constructor
-link::link(const link& other) : inherited(other),
-                                _node_start_(nullptr),
-                                _node_end_(nullptr),
-                                _initial_status_(nullptr),
-                                _flow_(nullptr)
-                                {
-                                    _update_pointers();
-                                }
+link::link(const link& other) : 
+    inherited(other),
+    _node_start_(nullptr),
+    _node_end_(nullptr),
+    _initial_status_(nullptr),
+    _flow_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Move constructor
-link::link(link&& rhs) noexcept : inherited(std::move(rhs)),
-                                    _node_start_(nullptr),
-                                    _node_end_(nullptr),
-                                    _initial_status_(nullptr),
-                                    _flow_(nullptr)
-                                    {
-                                        _update_pointers();
-                                    }
+link::link(link&& rhs) noexcept : 
+    inherited(std::move(rhs)),
+    _node_start_(nullptr),
+    _node_end_(nullptr),
+    _initial_status_(nullptr),
+    _flow_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Copy assignment operator
 link& link::operator=(const link& rhs) {
@@ -75,7 +82,7 @@ void link::_add_properties() {
 void link::_add_results() {
     inherited::_add_results();
 
-    results().temporal_reals().emplace(L_FLOW, vars::L_M3_PER_S);
+    results().emplace(L_FLOW, vars::var_tseries_real(vars::L_M3_PER_S));
 }
 
 void link::_update_pointers() {
@@ -83,27 +90,27 @@ void link::_update_pointers() {
 
     _initial_status_ = &std::get<vars::var_int>(properties().at(L_INITIAL_STATUS));
 
-    _flow_ = &results().temporal_reals().at(L_FLOW);
+    _flow_ = &std::get<vars::var_tseries_real>(results().at(L_FLOW));
 }
 
-void link::from_node(node* n) {
+void link::from_node(node* a_node) {
     if (_node_start_ != nullptr)
         _node_start_->remove_link(this);
 
-    _node_start_ = n;
+    _node_start_ = a_node;
 
     if (_node_start_ != nullptr)
-        _node_start_->connected_links().insert(this);
+        _node_start_->add_link(this);
 }
 
-void link::to_node(node* n) {
+void link::to_node(node* a_node) {
     if (_node_end_ != nullptr)
         _node_end_->remove_link(this);
 
-    _node_end_ = n;
+    _node_end_ = a_node;
 
     if (_node_end_ != nullptr)
-        _node_end_->connected_links().insert(this);
+        _node_end_->add_link(this);
 }
 
 void link::retrieve_index(EN_Project ph) {
@@ -121,12 +128,12 @@ void link::retrieve_properties(EN_Project ph) {
     int errorcode = 0;
 
     // get the initial status
-    double initial_status = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_INITSTATUS, &initial_status);
+    double d_initial_status = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_INITSTATUS, &d_initial_status);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving initial status of link " + id() + " from EPANET project.");
 
-    _initial_status_->value(initial_status);
+    _initial_status_->value(d_initial_status);
 
     // Unfortuntely, I can't retrieve the pointers to the node if I'm not sure the nodes have been created. 
     // So I have to do it in the network class.
@@ -135,11 +142,11 @@ void link::retrieve_properties(EN_Project ph) {
 void link::retrieve_results(EN_Project ph, long t) {
     assert(index() != 0);
     int errorcode = 0;
-    double flow = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_FLOW, &flow);
+    double d_flow = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_FLOW, &d_flow);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving flow of link " + id() + " from EPANET project.");
-    this->_flow_->value().insert(std::make_pair(t, flow));
+    this->_flow_->value().insert(std::make_pair(t, d_flow));
 }
 
 } // namespace wds

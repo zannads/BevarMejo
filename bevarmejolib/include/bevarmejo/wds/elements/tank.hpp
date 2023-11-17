@@ -58,7 +58,7 @@ public:
 
     // ----- override inherited pure virtual methods ----- // 
     const std::string& element_name() const override { return LNAME_TANK; }
-    const unsigned int& element_type() const override { return ELEMENT_TANK; }
+    const unsigned int element_type() const override { return ELEMENT_TANK; }
 
 };
 

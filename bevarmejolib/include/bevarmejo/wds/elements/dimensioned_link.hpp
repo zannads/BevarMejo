@@ -2,11 +2,15 @@
 #define BEVARMELIB__WDS_ELEMENTS__DIMENSIONED_LINK_HPP
 
 #include <string>
-#include <variant>
 
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -29,23 +33,25 @@ class dimensioned_link : public link {
 public:
     using inherited= link;
 
+/*--- Attributes ---*/
 protected:
-    // pointer to variables 
+    /*--- Properties ---*/
     vars::var_real* _diameter_;
     vars::var_real* _roughness_;
     vars::var_real* _minor_loss_;
     vars::var_real* _bulk_coeff_;
     vars::var_real* _wall_coeff_;
 
-    // pointer to results
+    /*---  Results   ---*/
     vars::var_tseries_real* _velocity_;
 
+protected:
     void _add_properties() override;
     void _add_results() override;
     void _update_pointers() override;
 
+/*--- Constructors ---*/
 public:
-    // Constructors
     dimensioned_link() = delete;
     dimensioned_link(const std::string& id);
 
@@ -64,17 +70,24 @@ public:
     // Destructor
     virtual ~dimensioned_link();
 
-    // ----- load from EPANET ----- //
-    void retrieve_properties(EN_Project ph) override;
-    void retrieve_results(EN_Project ph, long t) override;
-
+/*--- Getters and setters ---*/
+public:
+    /*--- Properties ---*/
     vars::var_real& diameter() const { return *_diameter_; }
     vars::var_real& roughness() const { return *_roughness_; }
     vars::var_real& minor_loss() const { return *_minor_loss_; }
     vars::var_real& bulk_coeff() const { return *_bulk_coeff_; }
     vars::var_real& wall_coeff() const { return *_wall_coeff_; }
 
+    /*---  Results   ---*/
     vars::var_tseries_real& velocity() const { return *_velocity_; }
+
+/*--- Pure virtual methods override---*/
+
+/*--- EPANET-dependent PVMs override ---*/
+public:
+    void retrieve_properties(EN_Project ph) override;
+    void retrieve_results(EN_Project ph, long t) override;
 
 };
 

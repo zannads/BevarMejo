@@ -1,38 +1,46 @@
 #include <cassert>
 #include <string>
+#include <unordered_map>
 #include <variant>
 
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
 
 #include "pipe.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-pipe::pipe(const std::string& id) : inherited(id),
-                                    _length_(nullptr)
-                                    {
-                                        _add_properties();
-                                        _add_results();
-                                        _update_pointers();
-                                    }
+pipe::pipe(const std::string& id) : 
+    inherited(id),
+    _length_(nullptr)
+    {
+        _add_properties();
+        _add_results();
+        _update_pointers();
+    }
 
 // Copy constructor
-pipe::pipe(const pipe& other) : inherited(other),
-                                _length_(nullptr)
-                                {
-                                    _update_pointers();
-                                }
+pipe::pipe(const pipe& other) : 
+    inherited(other),
+    _length_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Move constructor
-pipe::pipe(pipe&& rhs) noexcept : inherited(std::move(rhs)),
-                                    _length_(nullptr)
-                                    {
-                                        _update_pointers();
-                                    }
+pipe::pipe(pipe&& rhs) noexcept : 
+    inherited(std::move(rhs)),
+    _length_(nullptr)
+    {
+        _update_pointers();
+    }
 
 // Copy assignment operator
 pipe& pipe::operator=(const pipe& rhs) {
