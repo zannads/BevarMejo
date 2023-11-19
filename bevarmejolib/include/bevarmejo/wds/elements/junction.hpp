@@ -35,13 +35,12 @@ static const std::string LNAME_JUNCTION= "Junction";
 class junction : public node {    
 public:
     using inherited= node;
-    using DemandContainer = std::vector<demand>;
+    using DemandContainer = std::vector<Demand>;
 
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    // TODO: from containing demand object to containing DemandContainer object
-    demand _demand_;
+    DemandContainer _demands_;
 
     vars::var_real* _demand_constant_;
 
@@ -77,15 +76,28 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    const demand& demands() const {return _demand_;}
-    void demands(const demand& a_demand) {_demand_ = a_demand;}
-    // TODO: methods for DemandContainer
+    DemandContainer& demands() {return _demands_;}
+    const DemandContainer& demands() const {return _demands_;}
+
+    Demand& demand(const std::string& a_category);
+
+    void add_demand(const Demand& a_demand) {_demands_.push_back(a_demand);}
+    void add_demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern);
+    void remove_demand(const std::string& a_category);
+private:
+    auto _find_demand(const std::string& a_category) const;
+    
     vars::var_real& demand_constant() {return *_demand_constant_;}
 
     /*---  Results   ---*/
     const vars::var_tseries_real& demand_requested() const {return *_demand_requested_;}
     const vars::var_tseries_real& demand_delivered() const {return *_demand_delivered_;}
     const vars::var_tseries_real& demand_undelivered() const {return *_demand_undelivered_;}
+
+/*--- Methods ---*/
+public:
+    const bool has_demand() const override;
+    void retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>>& patterns);
 
 /*--- Pure virtual methods override---*/
 public:

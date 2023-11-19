@@ -104,6 +104,10 @@ class node : public network_element {
         const vars::var_tseries_real& head() const {return *_head_;}
         const vars::var_tseries_real& pressure() const {return *_pressure_;}
 
+    /*--- Methods ---*/
+    public:
+        virtual const bool has_demand() const {return false;}
+
     /*--- Pure virtual methods override---*/
 
     /*--- EPANET-dependent PVMs override ---*/

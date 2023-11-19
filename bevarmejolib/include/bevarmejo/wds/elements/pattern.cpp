@@ -11,6 +11,32 @@
 namespace bevarmejo {
 namespace wds {
 
+pattern::pattern(const std::string& id) : 
+    inherited(id), 
+    _multipliers_(),
+    _start_time_s_(0),
+    _step_s_(3600) { }
+
+pattern::pattern(const std::string &id, long a_start_time_s, long a_step_s) :
+    inherited(id),
+    _multipliers_(),
+    _start_time_s_(a_start_time_s),
+    _step_s_(a_step_s) { }
+
+// Copy constructor
+pattern::pattern(const pattern& other) :
+    inherited(other), 
+    _multipliers_(other._multipliers_),
+    _start_time_s_(other._start_time_s_),
+    _step_s_(other._step_s_) { }
+
+// Move constructor
+pattern::pattern(pattern&& rhs) noexcept : 
+    inherited(std::move(rhs)),
+    _multipliers_(std::move(rhs._multipliers_)),
+    _start_time_s_(rhs._start_time_s_),
+    _step_s_(rhs._step_s_) { }
+
 // Copy assignment operator
 pattern& pattern::operator=(const pattern& rhs) {
     if (this != &rhs) {

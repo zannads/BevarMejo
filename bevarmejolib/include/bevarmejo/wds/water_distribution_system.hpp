@@ -47,10 +47,13 @@ protected:
     std::string _inp_filename_;
     // Collectionf of elements of the network
     std::vector<std::shared_ptr<element>> _elements_;
-    // Collection of nodes of the network
+    
+    // Class-specific collections of elements
     std::vector<std::shared_ptr<node>> _nodes_;
-    // Collection of links of the network
     std::vector<std::shared_ptr<link>> _links_;
+    std::vector<std::shared_ptr<pattern>> _patterns_;
+    std::vector<std::shared_ptr<junction>> _junctions_;
+
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;
     
@@ -91,6 +94,8 @@ public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
     void cache_indices() const;
+    void assign_demands();
+    void connect_network();
     
     void run_hydraulics() const;
 

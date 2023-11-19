@@ -23,7 +23,7 @@ namespace wds {
 
 junction::junction(const std::string& id) : 
     inherited(id),
-    _demand_(),
+    _demands_(),
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
@@ -37,7 +37,7 @@ junction::junction(const std::string& id) :
 // Copy constructor
 junction::junction(const junction& other) : 
     inherited(other),
-    _demand_(other._demand_),
+    _demands_(other._demands_),
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
@@ -49,7 +49,7 @@ junction::junction(const junction& other) :
 // Move constructor
 junction::junction(junction&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _demand_(std::move(rhs._demand_)),
+    _demands_(std::move(rhs._demands_)),
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
@@ -62,7 +62,7 @@ junction::junction(junction&& rhs) noexcept :
 junction& junction::operator=(const junction& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
-        _demand_ = rhs._demand_;
+        _demands_ = rhs._demands_;
         _update_pointers();
     }
     return *this;
@@ -72,7 +72,7 @@ junction& junction::operator=(const junction& rhs) {
 junction& junction::operator=(junction&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        _demand_ = std::move(rhs._demand_);
+        _demands_ = std::move(rhs._demands_);
         _update_pointers();
     }
     return *this;
@@ -80,10 +80,76 @@ junction& junction::operator=(junction&& rhs) noexcept {
 
 junction::~junction() { /* Everything is deleted by the inherited destructor */ }
 
-void junction::retrieve_properties(EN_Project ph) {
+Demand& junction::demand(const std::string &a_category) {
+    for (auto& d : _demands_) {
+        if (d.category() == a_category) {
+            return d;
+        }
+    }
+}
+
+void junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern) {
+    _demands_.emplace_back(Demand(a_category, a_base_dem, a_pattern));
+}
+
+auto junction::_find_demand(const std::string &a_category) const {
+    for (auto it = _demands_.begin(); it != _demands_.end(); ++it) {
+        if (it->category() == a_category) {
+            return it;
+        }
+    }
+}
+
+void junction::remove_demand(const std::string &a_category) {
+    auto d_p_demand = _find_demand(a_category);
+    if (d_p_demand != _demands_.end()) {
+        _demands_.erase(d_p_demand);
+    }
+}
+
+const bool junction::has_demand() const {
+    return _demand_constant_->value() > 0 || !_demands_.empty();
+}
+
+void junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>> &patterns) {
+    int errorcode;
+    int n_demands;
+    errorcode = EN_getnumdemands(ph, this->index(), &n_demands);
+    assert(errorcode < 100);
+
+    for (int i=1; i<= n_demands; ++i) {
+        double d_base_demand;
+        errorcode = EN_getbasedemand(ph, this->index(), i, &d_base_demand);
+        assert(errorcode < 100);
+
+        int pattern_index;
+        errorcode = EN_getdemandpattern(ph, this->index(), i, &pattern_index);
+        assert(errorcode < 100);
+        // look for the pattern in the _patterns_ vector
+        std::shared_ptr<pattern> p_pattern = nullptr;
+        for (auto& pattern : patterns) {
+            if (pattern->index() == pattern_index) {
+                p_pattern = pattern;
+                break;
+            }
+        }
+        assert(p_pattern != nullptr);
+        
+        char* d_category_ = new char[EN_MAXID];
+        errorcode = EN_getdemandname(ph, this->index(), i, d_category_);
+        assert(errorcode < 100);
+        std::string d_category(d_category_);
+        delete[] d_category_;
+
+        this->add_demand(d_category, d_base_demand, p_pattern);
+    }
+}
+
+void junction::retrieve_properties(EN_Project ph)
+{
     inherited::retrieve_properties(ph);
 
-    //TODO: get the demands 
+    //TODO: get the demands
 }
 
 void junction::retrieve_results(EN_Project ph, long t=0) {
