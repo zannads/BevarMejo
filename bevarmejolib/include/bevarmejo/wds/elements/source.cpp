@@ -1,3 +1,4 @@
+#include <cassert>
 #include <string>
 #include <variant>
 
@@ -56,6 +57,23 @@ source& source::operator=(source&& rhs) noexcept {
 }
 
 source::~source() {/* results are cleared when the inherited destructor is called*/ }
+
+void source::retrieve_results(EN_Project ph, long t) {
+    inherited::retrieve_results(ph, t);
+    assert(index()!= 0);
+
+    int errorcode = 0;
+    double val = 0.0;
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
+    this->_inflow_->value().insert(std::make_pair(t, val));
+
+    errorcode = EN_getnodevalue(ph, index(), EN_ELEVATION, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving elevation for node " + id()+"\n");
+    this->_source_elevation_->value().insert(std::make_pair(t, val));
+}
 
 void source::_add_results() {
     inherited::_add_results();

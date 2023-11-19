@@ -35,6 +35,10 @@ water_distribution_system::water_distribution_system(const std::string& inp_file
     this->set_inpfile(inp_filename);
     
     this->init();
+
+    // shoudl add classic subnetworks here
+    // Demand nodes 
+    // Subgroups e.g., pipes, pumps, etc, 
 }
 
 // Copy constructor
@@ -105,15 +109,13 @@ void water_distribution_system::init(){
     EN_setreport(ph_, "MESSAGES NO");
 
     // Populate the elements vector
+    // [1/6] Nodes
     int n_nodes;
     errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
     assert(errorcode < 100);
-    int n_links;
-    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
-    assert(errorcode < 100);
-    _elements_.reserve(n_nodes + n_links);
-    
-    // [1/6] Nodes 
+    _elements_.reserve(n_nodes);
+    _nodes_.reserve(n_nodes);
+     
     for (int i = 1; i <= n_nodes; ++i) {
         char* node_id = new char[EN_MAXID];
         errorcode = EN_getnodeid(ph_, i, node_id);
@@ -125,6 +127,9 @@ void water_distribution_system::init(){
 
         if (node_type == EN_JUNCTION){
             _elements_.push_back(std::make_shared<junction>(node_id));
+
+            // Save it in _junctions_ too
+            _junctions_.push_back(std::dynamic_pointer_cast<junction>(_elements_.back()));
         }
         else if (node_type == EN_RESERVOIR){
             // TODO: _elements_.push_back(std::make_shared<reservoir>(node_id));
@@ -143,6 +148,12 @@ void water_distribution_system::init(){
     }
 
     // [2/6] Links
+    int n_links;
+    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
+    assert(errorcode < 100);
+    _elements_.reserve(n_links);
+    _links_.reserve(n_links);
+
     for (int i = 1; i <= n_links; ++i) {
         char* link_id = new char[EN_MAXID];
         errorcode = EN_getlinkid(ph_, i, link_id);
@@ -173,6 +184,9 @@ void water_distribution_system::init(){
     int n_patterns;
     errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
     assert(errorcode < 100);
+    _elements_.reserve(n_patterns);
+    _patterns_.reserve(n_patterns);
+
     for (int i = 1; i <= n_patterns; ++i) {
         char* pattern_id = new char[EN_MAXID];
         errorcode = EN_getpatternid(ph_, i, pattern_id);
@@ -180,6 +194,9 @@ void water_distribution_system::init(){
 
         _elements_.push_back(std::make_shared<pattern>(pattern_id));
         delete[] pattern_id;
+
+        // Save it in _patterns_ too
+        _patterns_.push_back(std::dynamic_pointer_cast<pattern>(_elements_.back()));
     }
 
     // [4/6] Curves
@@ -237,7 +254,9 @@ void water_distribution_system::init(){
     // I couldn't create this relationships inside the element as it has no idea of the other elements.
     // So I create them here.
     // connect_network(ph_);
-    // assign_patterns(ph_);
+    for (auto& junction : _junctions_) {
+        junction->retrieve_demands(ph_, _patterns_);
+    }
 
 }
 
