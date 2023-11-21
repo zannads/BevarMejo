@@ -13,7 +13,7 @@
 namespace bevarmejo {
 namespace wds {
 
-network_element::network_element(const std::string& id) :
+NetworkElement::NetworkElement(const std::string& id) :
     inherited(id),
     _results_()
     {
@@ -23,7 +23,7 @@ network_element::network_element(const std::string& id) :
     }
 
 // Copy constructor
-network_element::network_element(const network_element& other) :
+NetworkElement::NetworkElement(const NetworkElement& other) :
     inherited(other),
     _results_(other._results_)
     {
@@ -31,7 +31,7 @@ network_element::network_element(const network_element& other) :
     }
 
 // Move constructor
-network_element::network_element(network_element&& other) noexcept :
+NetworkElement::NetworkElement(NetworkElement&& other) noexcept :
     inherited(std::move(other)),
     _results_(std::move(other._results_))
     {
@@ -39,7 +39,7 @@ network_element::network_element(network_element&& other) noexcept :
     }
 
 // Copy assignment operator
-network_element& network_element::operator=(const network_element& rhs) {
+NetworkElement& NetworkElement::operator=(const NetworkElement& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _results_ = rhs._results_;
@@ -49,7 +49,7 @@ network_element& network_element::operator=(const network_element& rhs) {
 }
 
 // Move assignment operator
-network_element& network_element::operator=(network_element&& rhs) noexcept {
+NetworkElement& NetworkElement::operator=(NetworkElement&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _results_ = std::move(rhs._results_);
@@ -59,21 +59,21 @@ network_element& network_element::operator=(network_element&& rhs) noexcept {
 }
 
 // Destructor
-network_element::~network_element() {
+NetworkElement::~NetworkElement() {
     _results_.clear();
 }
 
-void network_element::_add_properties() {
+void NetworkElement::_add_properties() {
     inherited::_add_properties();
 }
 
-void network_element::_add_results() {
+void NetworkElement::_add_results() {
     // If in derived classes you have results, you should override this 
     // function and add them here.
     _results_.clear();
 }
 
-void network_element::_update_pointers() { }
+void NetworkElement::_update_pointers() { }
 
 } // namespace wds
 } // namespace bevarmejo

@@ -16,10 +16,10 @@
 namespace bevarmejo {
 namespace wds {
 
-class network_element : public Element {
+class NetworkElement : public Element {
     // WDS ancestor object
     /************************************************************************
-     * The bevarmejo::wds::network_element class is the ancestor of networks 
+     * The bevarmejo::wds::NetworkElement class is the ancestor of networks 
      * and pipes elements of the WDS. It is a pure virtual class.
     */
 
@@ -47,24 +47,24 @@ class network_element : public Element {
 
     /*--- Constructors ---*/
     public:
-        network_element() = delete;
+        NetworkElement() = delete;
 
-        network_element(const std::string& id);
+        NetworkElement(const std::string& id);
 
         // Copy constructor
-        network_element(const network_element& other);
+        NetworkElement(const NetworkElement& other);
 
         // Move constructor
-        network_element(network_element&& other) noexcept;
+        NetworkElement(NetworkElement&& other) noexcept;
 
         // Copy assignment operator
-        network_element& operator=(const network_element& rhs);
+        NetworkElement& operator=(const NetworkElement& rhs);
 
         // Move assignment operator
-        network_element& operator=(network_element&& rhs) noexcept;
+        NetworkElement& operator=(NetworkElement&& rhs) noexcept;
 
         // Destructor
-        virtual ~network_element();
+        virtual ~NetworkElement();
 
     /*--- Getters and setters ---*/
     public:

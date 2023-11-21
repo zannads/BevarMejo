@@ -33,10 +33,10 @@ const std::string LABEL_HEAD=           "Head";
 
 class link;
 
-class node : public network_element {
+class node : public NetworkElement {
     
     public:
-        using inherited= network_element;
+        using inherited= NetworkElement;
 
     /*--- Attributes ---*/
     protected:

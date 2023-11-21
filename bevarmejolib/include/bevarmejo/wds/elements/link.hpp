@@ -25,10 +25,10 @@ static const std::string L_FLOW= "Flow";
 
 class node; // forward declaration
 
-class link : public network_element {
+class link : public NetworkElement {
 
 public:
-    using inherited= network_element;
+    using inherited= NetworkElement;
 
 /*--- Attributes ---*/
 protected:
