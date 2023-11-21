@@ -46,7 +46,7 @@ protected:
     // Path to the inp file from which the project will be uploaded.
     std::string _inp_filename_;
     // Collectionf of elements of the network
-    std::vector<std::shared_ptr<element>> _elements_;
+    std::vector<std::shared_ptr<Element>> _elements_;
     
     // Class-specific collections of elements
     std::vector<std::shared_ptr<node>> _nodes_;

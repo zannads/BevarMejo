@@ -17,7 +17,7 @@
 namespace bevarmejo {
 namespace wds {
 
-element::element() :
+Element::Element() :
     _id_(""),
     _index_(0),
     _properties_()
@@ -26,7 +26,7 @@ element::element() :
         _update_pointers();
     }
 
-element::element(const std::string& id) :
+Element::Element(const std::string& id) :
     _id_(id),
     _index_(0),
     _properties_()
@@ -35,17 +35,26 @@ element::element(const std::string& id) :
         _update_pointers();
     }
 
+// Copy and Move constructors and assignment operators
+// 
+// Copy operations invalidate the index. This because the index refers to the
+// location of that element in the equations of a specific EPANET project.
+// Thus, the index is like a pointer and it becomes invalid as we assume that 
+// with a copy operation we will have a new element that will change the order
+// in the equations inside the EPANET project. 
+// This will not be true for the move operations as we are transferring ownership.
+
 // Copy constructor
-element::element(const element& other) :
+Element::Element(const Element& other) :
     _id_(other._id_),
-    _index_(other._index_),
+    _index_(0),
     _properties_(other._properties_)
     {
         _update_pointers();
     }
 
 // Move constructor
-element::element(element&& rhs) noexcept :
+Element::Element(Element&& rhs) noexcept :
     _id_(std::move(rhs._id_)),
     _index_(rhs._index_),
     _properties_(std::move(rhs._properties_))
@@ -54,10 +63,10 @@ element::element(element&& rhs) noexcept :
     }
 
 // Copy assignment operator
-element& element::operator=(const element& rhs) {
+Element& Element::operator=(const Element& rhs) {
     if (this != &rhs) {
         _id_ = rhs._id_;
-        _index_ = rhs._index_;
+        _index_ = 0;
         _properties_ = rhs._properties_;
         _update_pointers();
     }
@@ -65,7 +74,7 @@ element& element::operator=(const element& rhs) {
 }
 
 // Move assignment operator
-element& element::operator=(element&& rhs) noexcept {
+Element& Element::operator=(Element&& rhs) noexcept {
     if (this != &rhs) {
         _id_ = std::move(rhs._id_);
         _index_ = rhs._index_;
@@ -75,20 +84,20 @@ element& element::operator=(element&& rhs) noexcept {
     return *this;
 }
 
-element::~element() {
+Element::~Element() {
     _properties_.clear();
 }
 
-bool element::operator==(const element& rhs) const {
+bool Element::operator==(const Element& rhs) const {
     return _id_ == rhs._id_;
 }
 
-void element::_update_pointers() {
+void Element::_update_pointers() {
     // If in derived classes you have pointers to properties or results,
     // you should override this function and update them here.
 }
 
-void element::_add_properties() {
+void Element::_add_properties() {
     // If in derived classes you have properties, you should override this 
     // function and add them here.
     _properties_.clear();

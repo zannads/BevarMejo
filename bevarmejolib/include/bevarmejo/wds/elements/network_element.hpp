@@ -16,7 +16,7 @@
 namespace bevarmejo {
 namespace wds {
 
-class network_element : public element {
+class network_element : public Element {
     // WDS ancestor object
     /************************************************************************
      * The bevarmejo::wds::network_element class is the ancestor of networks 
@@ -24,7 +24,7 @@ class network_element : public element {
     */
 
     public:
-        using inherited= element;
+        using inherited= Element;
 
     /*--- Attributes ---*/
     private:

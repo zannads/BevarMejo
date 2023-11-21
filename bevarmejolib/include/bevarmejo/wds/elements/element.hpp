@@ -51,10 +51,10 @@ static const unsigned int ELEMENT_FCV= 34;
 static const unsigned int ELEMENT_TCV= 35;
 static const unsigned int ELEMENT_GPV= 36;
 
-class element {
+class Element {
     // WDS ancestor object
     /************************************************************************
-     * The bevarmejo::wds::element class is the ancestor of all the elements
+     * The bevarmejo::wds::Element class is the ancestor of all the elements
      * of the WDS. It is a pure virtual class, so it cannot be instantiated.
     */
 
@@ -86,28 +86,28 @@ class element {
     /*--- Constructors ---*/
     public:
         /// @brief Default constructor
-        element();
+        Element();
 
-        element(const std::string& id);
+        Element(const std::string& id);
 
         // Copy constructor
-        element(const element& other);
+        Element(const Element& other);
 
         // Move constructor
-        element(element&& rhs) noexcept;
+        Element(Element&& rhs) noexcept;
 
         // Copy assignment operator
-        element& operator=(const element& rhs);
+        Element& operator=(const Element& rhs);
 
         // Move assignment operator
-        element& operator=(element&& rhs) noexcept;
+        Element& operator=(Element&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~element();
+        virtual ~Element();
 
     /*--- Operators ---*/
     public:
-        bool operator==(const element& rhs) const;
+        bool operator==(const Element& rhs) const;
         
     /*--- Getters and setters ---*/
     public:

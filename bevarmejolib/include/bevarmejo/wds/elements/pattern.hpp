@@ -15,9 +15,9 @@ namespace wds {
 
 static const std::string LNAME_PATTERN= "Pattern";
 
-class pattern : public element {
+class pattern : public Element {
     public:
-        using inherited= element;
+        using inherited= Element;
         using container= std::vector<double>;
 
     /*--- Attributes ---*/
