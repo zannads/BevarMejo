@@ -21,7 +21,7 @@ class Demand {
 /*--- Attributes ---*/
 private:
     vars::var_real _base_dem_;
-    std::shared_ptr<pattern> _pattern_;
+    std::shared_ptr<Pattern> _pattern_;
     std::string _category_;
 
 /*--- Constructors ---*/
@@ -35,7 +35,7 @@ public:
         _pattern_(nullptr),
         _category_(a_category) {}
 
-    Demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern) : 
+    Demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) : 
         _base_dem_(vars::L_M3_PER_S, a_base_dem), 
         _pattern_(a_pattern),
         _category_(a_category) {}
@@ -75,8 +75,8 @@ public:
     vars::var_real& base_demand() { return _base_dem_; }
     void base_demand(double bd) { _base_dem_.value(bd); }
 
-    std::shared_ptr<pattern> who_is_yr_pattern() const {return _pattern_;}
-    void change_pattern(std::shared_ptr<pattern> a_pattern) {_pattern_ = a_pattern;}
+    std::shared_ptr<Pattern> who_is_yr_pattern() const {return _pattern_;}
+    void change_pattern(std::shared_ptr<Pattern> a_pattern) {_pattern_ = a_pattern;}
     const std::string& category() const {return _category_;}
     void category(const std::string& a_category) {_category_ = a_category;}
 

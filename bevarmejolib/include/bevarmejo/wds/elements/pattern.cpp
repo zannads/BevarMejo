@@ -11,34 +11,34 @@
 namespace bevarmejo {
 namespace wds {
 
-pattern::pattern(const std::string& id) : 
+Pattern::Pattern(const std::string& id) : 
     inherited(id), 
     _multipliers_(),
     _start_time_s_(0),
     _step_s_(3600) { }
 
-pattern::pattern(const std::string &id, long a_start_time_s, long a_step_s) :
+Pattern::Pattern(const std::string &id, long a_start_time_s, long a_step_s) :
     inherited(id),
     _multipliers_(),
     _start_time_s_(a_start_time_s),
     _step_s_(a_step_s) { }
 
 // Copy constructor
-pattern::pattern(const pattern& other) :
+Pattern::Pattern(const Pattern& other) :
     inherited(other), 
     _multipliers_(other._multipliers_),
     _start_time_s_(other._start_time_s_),
     _step_s_(other._step_s_) { }
 
 // Move constructor
-pattern::pattern(pattern&& rhs) noexcept : 
+Pattern::Pattern(Pattern&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _multipliers_(std::move(rhs._multipliers_)),
     _start_time_s_(rhs._start_time_s_),
     _step_s_(rhs._step_s_) { }
 
 // Copy assignment operator
-pattern& pattern::operator=(const pattern& rhs) {
+Pattern& Pattern::operator=(const Pattern& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _multipliers_ = rhs._multipliers_;
@@ -48,7 +48,7 @@ pattern& pattern::operator=(const pattern& rhs) {
 }
 
 // Move assignment operator
-pattern& pattern::operator=(pattern&& rhs) noexcept {
+Pattern& Pattern::operator=(Pattern&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _multipliers_ = std::move(rhs._multipliers_);
@@ -57,7 +57,7 @@ pattern& pattern::operator=(pattern&& rhs) noexcept {
     return *this;
 }
 
-void pattern::retrieve_index(EN_Project ph) {
+void Pattern::retrieve_index(EN_Project ph) {
     int en_index = 0;
     int errorcode = EN_getpatternindex(ph, id().c_str(), &en_index);
     if (errorcode > 100) {
@@ -66,7 +66,7 @@ void pattern::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void pattern::retrieve_properties(EN_Project ph) {
+void Pattern::retrieve_properties(EN_Project ph) {
     assert(index()!= 0);
 
     int en_index = 0;

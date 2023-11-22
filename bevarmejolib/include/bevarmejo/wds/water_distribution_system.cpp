@@ -192,11 +192,11 @@ void water_distribution_system::init(){
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<pattern>(pattern_id));
+        _elements_.push_back(std::make_shared<Pattern>(pattern_id));
         delete[] pattern_id;
 
         // Save it in _patterns_ too
-        _patterns_.push_back(std::dynamic_pointer_cast<pattern>(_elements_.back()));
+        _patterns_.push_back(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
     }
 
     // [4/6] Curves

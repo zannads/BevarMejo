@@ -15,7 +15,7 @@ namespace wds {
 
 static const std::string LNAME_PATTERN= "Pattern";
 
-class pattern : public Element {
+class Pattern : public Element {
     public:
         using inherited= Element;
         using container= std::vector<double>;
@@ -32,25 +32,25 @@ class pattern : public Element {
      /*--- Constructors ---*/
     public: 
         // Default constructor
-        pattern() = delete;
+        Pattern() = delete;
 
-        pattern(const std::string& id);
+        Pattern(const std::string& id);
 
-        pattern(const std::string& id, long a_start_time_s, long a_step_s);
+        Pattern(const std::string& id, long a_start_time_s, long a_step_s);
 
         // Copy constructor
-        pattern(const pattern& other);
+        Pattern(const Pattern& other);
 
         // Move constructor
-        pattern(pattern&& rhs) noexcept;
+        Pattern(Pattern&& rhs) noexcept;
 
         // Copy assignment operator
-        pattern& operator=(const pattern& rhs);
+        Pattern& operator=(const Pattern& rhs);
 
         // Move assignment operator
-        pattern& operator=(pattern&& rhs) noexcept;
+        Pattern& operator=(Pattern&& rhs) noexcept;
 
-        virtual ~pattern() { _multipliers_.clear(); }
+        virtual ~Pattern() { _multipliers_.clear(); }
 
     /*--- Getters and setters ---*/
     public:
@@ -81,7 +81,7 @@ class pattern : public Element {
         void retrieve_index(EN_Project ph) override;
         void retrieve_properties(EN_Project ph) override;
 
-}; // class pattern
+}; // class Pattern
 
 } // namespace wds
 } // namespace bevarmejo

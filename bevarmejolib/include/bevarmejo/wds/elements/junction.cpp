@@ -88,7 +88,7 @@ Demand& Junction::demand(const std::string &a_category) {
     }
 }
 
-void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern) {
+void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) {
     _demands_.emplace_back(Demand(a_category, a_base_dem, a_pattern));
 }
 
@@ -111,7 +111,7 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>> &patterns) {
+void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>> &patterns) {
     int errorcode;
     int n_demands;
     errorcode = EN_getnumdemands(ph, this->index(), &n_demands);
@@ -126,7 +126,7 @@ void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<patte
         errorcode = EN_getdemandpattern(ph, this->index(), i, &pattern_index);
         assert(errorcode < 100);
         // look for the pattern in the _patterns_ vector
-        std::shared_ptr<pattern> p_pattern = nullptr;
+        std::shared_ptr<Pattern> p_pattern = nullptr;
         for (auto& pattern : patterns) {
             if (pattern->index() == pattern_index) {
                 p_pattern = pattern;

@@ -82,7 +82,7 @@ public:
     Demand& demand(const std::string& a_category);
 
     void add_demand(const Demand& a_demand) {_demands_.push_back(a_demand);}
-    void add_demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern);
+    void add_demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern);
     void remove_demand(const std::string& a_category);
 private:
     auto _find_demand(const std::string& a_category) const;
@@ -97,7 +97,7 @@ private:
 /*--- Methods ---*/
 public:
     const bool has_demand() const override;
-    void retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>>& patterns);
+    void retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>>& patterns);
 
 /*--- Pure virtual methods override---*/
 public:
