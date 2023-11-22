@@ -6,6 +6,7 @@
 //
 
 #include <assert.h>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <stdio.h>
@@ -30,10 +31,14 @@ water_distribution_system::water_distribution_system(){
 
 //water_distribution_system::water_distribution_system(const std::filesystem::path& inp_path){};
 
-water_distribution_system::water_distribution_system(std::string inp_filename){
+water_distribution_system::water_distribution_system(const std::string& inp_filename){
     this->set_inpfile(inp_filename);
     
     this->init();
+
+    // shoudl add classic subnetworks here
+    // Demand nodes 
+    // Subgroups e.g., pipes, pumps, etc, 
 }
 
 // Copy constructor
@@ -52,6 +57,7 @@ water_distribution_system::water_distribution_system(water_distribution_system &
     ph_ = src.ph_;
     src.ph_ = nullptr;
 
+    _elements_ = std::move(src._elements_);
     _subnetworks_ = std::move(src._subnetworks_);
 }
 
@@ -61,6 +67,7 @@ water_distribution_system& water_distribution_system::operator=(const water_dist
         ph_ = temp.ph_;
         temp.ph_ = nullptr;
         std::swap(_inp_filename_, temp._inp_filename_);
+        std::swap(_elements_, temp._elements_);
         std::swap(_subnetworks_, temp._subnetworks_);
     }
     return *this;
@@ -71,6 +78,7 @@ water_distribution_system& water_distribution_system::operator=(water_distributi
     rhs.ph_ = nullptr;
     
     _inp_filename_ = std::move(rhs._inp_filename_);
+    _elements_ = std::move(rhs._elements_);
     _subnetworks_ = std::move(rhs._subnetworks_);
     return *this;
 }
@@ -99,6 +107,157 @@ void water_distribution_system::init(){
     }
     
     EN_setreport(ph_, "MESSAGES NO");
+
+    // Populate the elements vector
+    // [1/6] Nodes
+    int n_nodes;
+    errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
+    assert(errorcode < 100);
+    _elements_.reserve(n_nodes);
+    _nodes_.reserve(n_nodes);
+     
+    for (int i = 1; i <= n_nodes; ++i) {
+        char* node_id = new char[EN_MAXID];
+        errorcode = EN_getnodeid(ph_, i, node_id);
+        assert(errorcode < 100);
+
+        int node_type;
+        errorcode = EN_getnodetype(ph_, i, &node_type);
+        assert(errorcode < 100);
+
+        if (node_type == EN_JUNCTION){
+            _elements_.push_back(std::make_shared<Junction>(node_id));
+
+            // Save it in _junctions_ too
+            _junctions_.push_back(std::dynamic_pointer_cast<Junction>(_elements_.back()));
+        }
+        else if (node_type == EN_RESERVOIR){
+            // TODO: _elements_.push_back(std::make_shared<reservoir>(node_id));
+            stream_out(std::cout, "Reservoirs not implemented yet\n");
+        }
+        else if (node_type == EN_TANK){
+            _elements_.push_back(std::make_shared<Tank>(node_id));
+        }
+        else {
+            throw std::runtime_error("Unknown node type\n");
+        }
+        delete[] node_id;
+
+        // Save it in _nodes_ too
+        _nodes_.push_back(std::dynamic_pointer_cast<Node>(_elements_.back()));
+    }
+
+    // [2/6] Links
+    int n_links;
+    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
+    assert(errorcode < 100);
+    _elements_.reserve(n_links);
+    _links_.reserve(n_links);
+
+    for (int i = 1; i <= n_links; ++i) {
+        char* link_id = new char[EN_MAXID];
+        errorcode = EN_getlinkid(ph_, i, link_id);
+        assert(errorcode < 100);
+
+        int link_type;
+        errorcode = EN_getlinktype(ph_, i, &link_type);
+        assert(errorcode < 100);
+
+        if (link_type == EN_PIPE) {
+            _elements_.push_back(std::make_shared<Pipe>(link_id));
+        }
+        else if (link_type == EN_PUMP) {
+            // TODO: _elements_.push_back(std::make_shared<pump>(link_id));
+            stream_out(std::cout, "Pumps not implemented yet\n");
+        }
+        else { //TODO: all sorts of valves if (link_type == EN_VALVE) {
+            //_elements_.push_back(std::make_shared<valve>(link_id));
+            stream_out(std::cout, "Valves not implemented yet or unknown link type\n");
+        }
+        delete[] link_id;
+
+        // Save it in _links_ too
+        _links_.push_back(std::dynamic_pointer_cast<Link>(_elements_.back()));
+    }
+
+    // [3/6] Patterns
+    int n_patterns;
+    errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
+    assert(errorcode < 100);
+    _elements_.reserve(n_patterns);
+    _patterns_.reserve(n_patterns);
+
+    for (int i = 1; i <= n_patterns; ++i) {
+        char* pattern_id = new char[EN_MAXID];
+        errorcode = EN_getpatternid(ph_, i, pattern_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<Pattern>(pattern_id));
+        delete[] pattern_id;
+
+        // Save it in _patterns_ too
+        _patterns_.push_back(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
+    }
+
+    // [4/6] Curves
+    int n_curves;
+    errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_curves; ++i) {
+        /*char* curve_id = new char[EN_MAXID];
+        errorcode = EN_getcurveid(ph_, i, curve_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<curve>(curve_id));
+        delete[] curve_id;
+        */
+        stream_out(std::cout, "Curves not implemented yet\n");
+    }
+
+    // [5/6] Controls (simple control)
+    int n_controls;
+    errorcode = EN_getcount(ph_, EN_CONTROLCOUNT, &n_controls);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_controls; ++i) {
+        /*char* control_id = new char[EN_MAXID];
+        errorcode = EN_getcontrol(ph_, i, control_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<control>(control_id));
+        delete[] control_id;
+        */
+        stream_out(std::cout, "Controls not implemented yet\n");
+    }
+
+    // [6/6] Rules (control rules)
+    int n_rules;
+    errorcode = EN_getcount(ph_, EN_RULECOUNT, &n_rules);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_rules; ++i) {
+        /*char* rule_id = new char[EN_MAXID];
+        errorcode = EN_getrule(ph_, i, rule_id);
+        assert(errorcode < 100);
+
+        _elements_.push_back(std::make_shared<rule>(rule_id));
+        delete[] rule_id;
+        */
+        stream_out(std::cout, "Rules not implemented yet\n");
+    }
+
+    // Fill the data from EPANET. Use polymorphism in the right way :)
+    for (auto& element : _elements_) {
+        element->retrieve_index(ph_);
+        element->retrieve_properties(ph_);
+    }
+
+    // Nodes have pointers to demands and to links. Links have pointers to nodes. 
+    // I couldn't create this relationships inside the element as it has no idea of the other elements.
+    // So I create them here.
+    // connect_network(ph_);
+    for (auto& junction : _junctions_) {
+        junction->retrieve_demands(ph_, _patterns_);
+    }
+
 }
 
 void water_distribution_system::set_inpfile(const std::string inp_filename){
@@ -109,18 +268,23 @@ std::string water_distribution_system::get_inpfile() const{
     return _inp_filename_;
 }
 
-std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hydraulics() const
-{
-    // Empty 3d vector of results
-    std::vector<std::vector<std::vector<double>>> results;
+void water_distribution_system::cache_indices() const {
+    for (auto& element : _elements_) {
+        element->retrieve_index(ph_);
+    }
+}
 
+void water_distribution_system::run_hydraulics() const{
+    // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
     if (errorcode >= 100)
-        return results;
+        return; // I don't think I need to close it here
 
     errorcode = EN_initH(ph_, 10);
-    if (errorcode >= 100)
-        return results;
+    if (errorcode >= 100) {
+        int errorcode2 = EN_closeH(ph_);
+        throw std::runtime_error("Hydraulic initialization failed.");
+    }
 
     // if the inp file is correct these errors should be always 0
     long h_step;
@@ -135,36 +299,11 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
 
     long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
 
-    // here I should build the the 3 objects a priori 
-    // in the future with subnetworks I could remove this complex data retrival
-    int n_nodes;
-    errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
-    assert(errorcode < 100);
-
-    int n_links;
-    errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
-    assert(errorcode < 100);
-
-    int n_pumps{ 0 };
-    for (int i = 1; i <= n_links; ++i) {
-        int link_type;
-        errorcode = EN_getlinktype(ph_, i, &link_type);
-        assert(errorcode < 100);
-        if (link_type == EN_PUMP)
-            n_pumps++;
-    }
-
-    std::vector<std::vector<double>> pressures(n_reports, std::vector<double>(n_nodes));
-    std::vector<std::vector<double>> flows    (n_reports, std::vector<double>(n_links));
-    std::vector<std::vector<double>> energies (n_reports, std::vector<double>(n_pumps, 0.));
-
-
     bool solution_has_failed = false;
     bool scheduled; // is the current time a reporting time?
     long t{ 0 }; // current time
     long delta_t{ 0 }; // real hydraulic time step
-    unsigned int r_iter{ 0 }; // index of the current report
-
+    
     do {
         errorcode = EN_runH(ph_, &t);
         if (errorcode >= 100) {
@@ -173,62 +312,28 @@ std::vector<std::vector<std::vector<double>>> water_distribution_system::run_hyd
             // I don'return because I need to close the hydraulics
         }
 
-        errorcode = EN_nextH(ph_, &delta_t);
-        assert(errorcode < 100);
-
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
         if (scheduled) {
-            // save pressures and flows
-            for (int j = 1; j <= n_nodes; ++j) {
-                errorcode = EN_getnodevalue(ph_, j, EN_PRESSURE, &pressures[r_iter][j - 1]);
-                assert(errorcode < 100);
+            // Use polymorphism to get the results from EPANET
+            for (auto node : _nodes_) {
+                node->retrieve_results(ph_, t);
             }
-            for (int j = 1; j <= n_links; ++j) {
-                errorcode = EN_getlinkvalue(ph_, j, EN_FLOW, &flows[r_iter][j - 1]);
-                assert(errorcode < 100);
-            }
-            // at scheduled time step, i.e., when I save the report, I should save the energy 
-            // of this instant in the next reporting time step. So I increment r_iter before 
-            // saving the energy 
-            ++r_iter;
-        }
-
-        // always add energy (at the next one) but be careful of the last step
-        if (n_pumps > 0 && r_iter < n_reports) {
-            int pump_iter = 0;
-            for (int j = 1; j <= n_links; ++j) {
-
-                int link_type;
-                errorcode = EN_getlinktype(ph_, j, &link_type);
-                assert(errorcode < 100);
-                if (link_type == EN_PUMP) {
-                    double instant_energy;
-                    errorcode = EN_getlinkvalue(ph_, j, EN_ENERGY, &instant_energy);
-                    assert(errorcode < 100);
-
-                    energies[r_iter][pump_iter] += instant_energy * delta_t;
-                    ++pump_iter;
-                }
+            for (auto link : _links_) {
+                link->retrieve_results(ph_, t);
             }
         }
 
-        // get ready for the next step
-        t += delta_t;
+        errorcode = EN_nextH(ph_, &delta_t);
+        assert(errorcode < 100);
+
     } while (delta_t > 0);
 
     errorcode = EN_closeH(ph_);
     assert(errorcode < 100);
 
     if (solution_has_failed)
-        return results;
-
-    // if the solution is correct, I return the whole results
-    results.push_back(pressures);
-    results.push_back(flows);
-    results.push_back(energies);
-
-    return results;
+        throw std::runtime_error("Hydraulic solution failed.");
 }
 
 void water_distribution_system::add_subnetwork(const std::filesystem::path& subnetwork_filename) {

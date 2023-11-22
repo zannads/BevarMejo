@@ -8,10 +8,12 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
+
+#include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/variable.hpp"
 #include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/results.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -49,66 +51,86 @@ static const unsigned int ELEMENT_FCV= 34;
 static const unsigned int ELEMENT_TCV= 35;
 static const unsigned int ELEMENT_GPV= 36;
 
-class element {
+class Element {
     // WDS ancestor object
     /************************************************************************
-     * The bevarmejo::wds::element class is the ancestor of all the elements
+     * The bevarmejo::wds::Element class is the ancestor of all the elements
      * of the WDS. It is a pure virtual class, so it cannot be instantiated.
     */
 
+   /*--- Attributes ---*/
     private:
+        /*--- Properties ---*/
         std::string _id_; // Human readable id (EPANET ID too)
+        int _index_; // Index in the EPANET project for cache purposes
 
         //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
         // don't use strings for now
-        using PropertiesTypes = std::variant<vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
+        using PropertiesTypes = std::variant<
+            vars::var_int, 
+            vars::var_real, 
+            vars::var_tseries_int, 
+            vars::var_tseries_real>;
         using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
         
         PropertiesMap _properties_; // Properties of the element
-        results _results_; // Results of the last simulation, will be filled in the derived class at construction.
-
-
+        
     protected:
         virtual void _add_properties();
-        virtual void _add_results(); 
 
         /* should be called every time you add a variable to the results, so that, if you have a property
          * in the derived class that is a pointer to a variable in the results, you can update it. 
          */   
         virtual void _update_pointers(); 
         
+    /*--- Constructors ---*/
     public:
         /// @brief Default constructor
-        element();
+        Element();
 
-        element(const std::string& id);
+        Element(const std::string& id);
 
         // Copy constructor
-        element(const element& other);
+        Element(const Element& other);
 
         // Move constructor
-        element(element&& rhs) noexcept;
+        Element(Element&& rhs) noexcept;
 
         // Copy assignment operator
-        element& operator=(const element& rhs);
+        Element& operator=(const Element& rhs);
 
         // Move assignment operator
-        element& operator=(element&& rhs) noexcept;
+        Element& operator=(Element&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~element();
+        virtual ~Element();
 
-        bool operator==(const element& rhs) const;
+    /*--- Operators ---*/
+    public:
+        bool operator==(const Element& rhs) const;
         
-        // getters
+    /*--- Getters and setters ---*/
+    public:
+        /*--- Properties ---*/
         const std::string& id() const {return _id_;}
         void id(const std::string& id) {_id_ = id;}
-
-        virtual const std::string& element_name() const = 0;
-        virtual const unsigned int& element_type() const = 0;
+        int index() const {return _index_;}
+        void index(const int index) {_index_ = index;}
 
         PropertiesMap& properties() {return _properties_;}
-        results& results() {return _results_;}
+
+    /*--- Pure virtual methods ---*/
+    public:
+        /*--- Properties ---*/
+        virtual const std::string& element_name() const = 0;
+        virtual const unsigned int element_type() const = 0;
+
+    /*-- EPANET-dependent PVMs --*/
+    public:
+        /*--- Properties ---*/
+        virtual void retrieve_index(EN_Project ph) = 0;
+        virtual void retrieve_properties(EN_Project ph) = 0;
+   
 };
 
 } // namespace wds

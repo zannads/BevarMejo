@@ -21,7 +21,6 @@
 #include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/resilience_index.hpp"
 
 #include "model_anytown.hpp"
 
@@ -161,11 +160,14 @@ namespace bevarmejo {
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dv);
 
-		auto res = _anytown_->run_hydraulics();
-		if (res.empty()) {
-			// something went wrong
-			// TODO: handle this error
+		try {
+			_anytown_->run_hydraulics();
 		}
+		catch (const std::exception& ex) {
+			std::cout << ex.what();
+			return std::vector<double>(n_fit, std::numeric_limits<double>::max());
+		}
+		
 
 		reset_dv( _anytown_, dv, old_HW_coeffs);
 
@@ -173,26 +175,12 @@ namespace bevarmejo {
 		std::vector<double> fitv(n_fit, 0);
 
 		// NPV of the solution (negative as both initial investement and cash flows are negative)
-		fitv[0] = -cost(dv, res[2]);
-		std::vector<double> hourly_Ir(res[0].size(), 0.0);
-		std::vector<bool> min_pressure_constraint(res[0].size(), false);
-		for (std::size_t t = 0; t<res[0].size(); ++t) {
-			// compute the resilience index for each hour
-			// temporary work-around
-			// convert from vector of vector of vector to resilience index struct
-			auto network_results = this->convert_to_netdata_4_Ir(res[0][t], res[1][t], res[2][t], "possible_tank_locations", "possible_tank_locations");
-			//netdata_4_Ir network_results{{1},{1},{0},{2},{1},{0}};
-			// TODO: translate min pressure psi in head 
-			// TODO: convert units in metric system
-			hourly_Ir[t] += bevarmejo::resilience_index(network_results, bevarmejo::min_pressure_psi);
-
-			// TODO: convert units in metric system 
-			min_pressure_constraint[t] = bevarmejo::minimum_pressure_satisfied(network_results.head_at_dnodes, bevarmejo::min_pressure_psi);
-		}
-		// average through the day Index of resilience
-		// minuse beacuse we want to maximize
-		fitv[1] = -std::accumulate(hourly_Ir.begin(), hourly_Ir.end(), 0.0) / hourly_Ir.size();
-
+		//I need to extract pump energies from the network
+		std::vector<std::vector<double>> res(25, std::vector<double>(3, 1.0));
+		fitv[0] = -cost(dv, res);
+		// Resilience index 
+		auto ir_daily = resilience_index(_anytown_.get(), min_pressure_psi);
+		fitv[1] = -1; //-ir_daily.mean();
         return fitv;
     }
 
@@ -439,6 +427,29 @@ namespace bevarmejo {
 			assert(errorcode <= 100);
 		}
 	
+		// 3. pumps
+		// first is all 1s, second all 0s except at 3h,9h, 15h, 21h, 
+		// third has the first 6h 1s and the rest 0s
+		std::vector<std::vector<double>> patterns (3, std::vector<double>(24));
+		patterns[0] = std::vector<double>(24, 1.0);
+		patterns[1] = std::vector<double>(24, 0.0);
+		patterns[1][3] = 1.0; patterns[1][9] = 1.0; patterns[1][15] = 1.0; patterns[1][21] = 1.0;
+		patterns[2] = std::vector<double>(24, 0.0);
+		for (std::size_t i = 0; i < 6; ++i) {
+			patterns[2][i] = 1.0;
+		}
+
+		for (std::size_t i = 0; i < 3; ++i) {
+			// I know pump patterns IDs are from 2, 3, and 4
+			int pump_idx = i + 2;
+			std::string pump_id = std::to_string(pump_idx);
+			int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
+			assert(errorcode <= 100);
+
+			// set the pattern
+			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
+			assert(errorcode <= 100);
+		}
 	}
 
     std::vector<std::vector<double>> ModelAnytown::decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const {
@@ -464,47 +475,6 @@ namespace bevarmejo {
 		}
 
 		return patterns;
-    }
-
-    bevarmejo::netdata_4_Ir ModelAnytown::convert_to_netdata_4_Ir(const std::vector<double> &heads, const std::vector<double> &flows, const std::vector<double> &energies, 
-				const std::string& dnodes_subnet_name, const std::string& res_subnet_name) const
-    {
-		bevarmejo::netdata_4_Ir network_data{std::vector<double>(_anytown_->get_subnetwork(dnodes_subnet_name).size(),0.0),
-								std::vector<double>(_anytown_->get_subnetwork(dnodes_subnet_name).size(),0.0),
-								std::vector<double>(_anytown_->get_subnetwork(res_subnet_name).size(),0.0),
-								std::vector<double>(_anytown_->get_subnetwork(res_subnet_name).size(),0.0),
-								std::vector<double>(energies.size(),0.0)};
-
-		// 1. flows and heads at demand nodes
-		for (std::size_t i = 0; i < _anytown_->get_subnetwork(dnodes_subnet_name).size(); ++i) {
-			std::string node_id = _anytown_->get_subnetwork(dnodes_subnet_name).at(i);
-			int node_idx = 0;
-			int errorcode = EN_getnodeindex(_anytown_->ph_, node_id.c_str(), &node_idx);
-			assert(errorcode <= 100);
-
-			network_data.flow_at_dnodes.at(i) = flows.at(node_idx);
-			network_data.head_at_dnodes.at(i) = heads.at(node_idx);
-		}
-		// 2. flows and heads at reservoirs
-		for (std::size_t i = 0; i < _anytown_->get_subnetwork(res_subnet_name).size(); ++i) {
-			std::string node_id = _anytown_->get_subnetwork(res_subnet_name).at(i);
-			int node_idx = 0;
-			int errorcode = EN_getnodeindex(_anytown_->ph_, node_id.c_str(), &node_idx);
-			assert(errorcode <= 100);
-
-			network_data.flow_out_reservoirs.at(i) = flows.at(node_idx);
-			network_data.head_at_reservoirs.at(i) = heads.at(node_idx);
-		}
-		// 3. power at pumps
-		// get the step size to move from energy to power
-		long delta_t = 0;
-		int errorcode = EN_gettimeparam(_anytown_->ph_, EN_HYDSTEP, &delta_t);
-		assert(errorcode <= 100);
-		for (std::size_t i = 0; i < energies.size(); ++i) {
-			network_data.power_at_pumps.at(i) = energies.at(i) / delta_t;
-		}
-
-        return network_data;
     }
 
 } /* namespace bevarmejo */

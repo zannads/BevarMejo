@@ -12,33 +12,33 @@
 namespace bevarmejo {
 namespace wds {
 
-/// WDS tank
+/// WDS Tank
 /*******************************************************************************
- * The wds::junction class represents a tank in the network. It is a dynamic element.
+ * The wds::junction class represents a Tank in the network. It is a dynamic element.
  ******************************************************************************/
 
 static const std::string LNAME_TANK= "Tank";
 static const std::string LVOLUME = "Volume";
 
-class tank : public source {
+class Tank : public Source {
 
 public:
-    using inherited= source;
+    using inherited= Source;
 
 protected:
 
 public:
-    tank() = delete;
-    tank(const std::string& id) : inherited(id) { }
+    Tank() = delete;
+    Tank(const std::string& id) : inherited(id) { }
 
     // Copy constructor
-    tank(const tank& other) : inherited(other) { }
+    Tank(const Tank& other) : inherited(other) { }
 
     // Move constructor
-    tank(tank&& rhs) noexcept : inherited(std::move(rhs)) { }
+    Tank(Tank&& rhs) noexcept : inherited(std::move(rhs)) { }
 
     // Copy assignment operator
-    tank& operator=(const tank& rhs) {
+    Tank& operator=(const Tank& rhs) {
         if (this != &rhs) {
             inherited::operator=(rhs);
         }
@@ -46,7 +46,7 @@ public:
     }
 
     // Move assignment operator
-    tank& operator=(tank&& rhs) noexcept {
+    Tank& operator=(Tank&& rhs) noexcept {
         if (this != &rhs) {
             inherited::operator=(std::move(rhs));
         }
@@ -54,11 +54,11 @@ public:
     }
 
     // Destructor
-    ~tank() override { }
+    ~Tank() override { }
 
     // ----- override inherited pure virtual methods ----- // 
     const std::string& element_name() const override { return LNAME_TANK; }
-    const unsigned int& element_type() const override { return ELEMENT_TANK; }
+    const unsigned int element_type() const override { return ELEMENT_TANK; }
 
 };
 
