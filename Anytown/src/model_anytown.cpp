@@ -427,6 +427,29 @@ namespace bevarmejo {
 			assert(errorcode <= 100);
 		}
 	
+		// 3. pumps
+		// first is all 1s, second all 0s except at 3h,9h, 15h, 21h, 
+		// third has the first 6h 1s and the rest 0s
+		std::vector<std::vector<double>> patterns (3, std::vector<double>(24));
+		patterns[0] = std::vector<double>(24, 1.0);
+		patterns[1] = std::vector<double>(24, 0.0);
+		patterns[1][3] = 1.0; patterns[1][9] = 1.0; patterns[1][15] = 1.0; patterns[1][21] = 1.0;
+		patterns[2] = std::vector<double>(24, 0.0);
+		for (std::size_t i = 0; i < 6; ++i) {
+			patterns[2][i] = 1.0;
+		}
+
+		for (std::size_t i = 0; i < 3; ++i) {
+			// I know pump patterns IDs are from 2, 3, and 4
+			int pump_idx = i + 2;
+			std::string pump_id = std::to_string(pump_idx);
+			int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
+			assert(errorcode <= 100);
+
+			// set the pattern
+			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
+			assert(errorcode <= 100);
+		}
 	}
 
     std::vector<std::vector<double>> ModelAnytown::decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const {

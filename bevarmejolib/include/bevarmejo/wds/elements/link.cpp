@@ -19,7 +19,7 @@
 namespace bevarmejo {
 namespace wds {
 
-link::link(const std::string& id) : 
+Link::Link(const std::string& id) : 
     inherited(id),
     _node_start_(nullptr),
     _node_end_(nullptr),
@@ -32,7 +32,7 @@ link::link(const std::string& id) :
     }
 
 // Copy constructor
-link::link(const link& other) : 
+Link::Link(const Link& other) : 
     inherited(other),
     _node_start_(nullptr),
     _node_end_(nullptr),
@@ -43,7 +43,7 @@ link::link(const link& other) :
     }
 
 // Move constructor
-link::link(link&& rhs) noexcept : 
+Link::Link(Link&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _node_start_(nullptr),
     _node_end_(nullptr),
@@ -54,7 +54,7 @@ link::link(link&& rhs) noexcept :
     }
 
 // Copy assignment operator
-link& link::operator=(const link& rhs) {
+Link& Link::operator=(const Link& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _update_pointers();
@@ -63,7 +63,7 @@ link& link::operator=(const link& rhs) {
 }
 
 // Move assignment operator
-link& link::operator=(link&& rhs) noexcept {
+Link& Link::operator=(Link&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _update_pointers();
@@ -71,21 +71,21 @@ link& link::operator=(link&& rhs) noexcept {
     return *this;
 }
 
-link::~link() {/* results are cleared when the inherited destructor is called*/ }
+Link::~Link() {/* results are cleared when the inherited destructor is called*/ }
 
-void link::_add_properties() {
+void Link::_add_properties() {
     inherited::_add_properties();
 
     properties().emplace(L_INITIAL_STATUS, vars::var_int(vars::L_DIMLESS, 0)); 
 }
 
-void link::_add_results() {
+void Link::_add_results() {
     inherited::_add_results();
 
     results().emplace(L_FLOW, vars::var_tseries_real(vars::L_M3_PER_S));
 }
 
-void link::_update_pointers() {
+void Link::_update_pointers() {
     inherited::_update_pointers();
 
     _initial_status_ = &std::get<vars::var_int>(properties().at(L_INITIAL_STATUS));
@@ -93,7 +93,7 @@ void link::_update_pointers() {
     _flow_ = &std::get<vars::var_tseries_real>(results().at(L_FLOW));
 }
 
-void link::from_node(Node* a_node) {
+void Link::from_node(Node* a_node) {
     if (_node_start_ != nullptr)
         _node_start_->remove_link(this);
 
@@ -103,7 +103,7 @@ void link::from_node(Node* a_node) {
         _node_start_->add_link(this);
 }
 
-void link::to_node(Node* a_node) {
+void Link::to_node(Node* a_node) {
     if (_node_end_ != nullptr)
         _node_end_->remove_link(this);
 
@@ -113,7 +113,7 @@ void link::to_node(Node* a_node) {
         _node_end_->add_link(this);
 }
 
-void link::retrieve_index(EN_Project ph) {
+void Link::retrieve_index(EN_Project ph) {
     int en_index = 0;
     int errorcode = 0;
     errorcode = EN_getlinkindex(ph, id().c_str(), &en_index);
@@ -123,7 +123,7 @@ void link::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void link::retrieve_properties(EN_Project ph) {
+void Link::retrieve_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;
 
@@ -139,7 +139,7 @@ void link::retrieve_properties(EN_Project ph) {
     // So I have to do it in the network class.
 }
 
-void link::retrieve_results(EN_Project ph, long t) {
+void Link::retrieve_results(EN_Project ph, long t) {
     assert(index() != 0);
     int errorcode = 0;
     double d_flow = 0;

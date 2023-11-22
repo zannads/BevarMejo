@@ -164,7 +164,7 @@ void water_distribution_system::init(){
         assert(errorcode < 100);
 
         if (link_type == EN_PIPE) {
-            _elements_.push_back(std::make_shared<pipe>(link_id));
+            _elements_.push_back(std::make_shared<Pipe>(link_id));
         }
         else if (link_type == EN_PUMP) {
             // TODO: _elements_.push_back(std::make_shared<pump>(link_id));
@@ -177,7 +177,7 @@ void water_distribution_system::init(){
         delete[] link_id;
 
         // Save it in _links_ too
-        _links_.push_back(std::dynamic_pointer_cast<link>(_elements_.back()));
+        _links_.push_back(std::dynamic_pointer_cast<Link>(_elements_.back()));
     }
 
     // [3/6] Patterns

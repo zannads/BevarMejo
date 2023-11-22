@@ -93,12 +93,12 @@ Node::~Node() {
     // is called.
 }
 
-void Node::add_link(link *a_link) {
+void Node::add_link(Link *a_link) {
     if (a_link != nullptr)
         _links_.insert(a_link);
 }
 
-void Node::remove_link(link *a_link) {
+void Node::remove_link(Link *a_link) {
     if (a_link != nullptr)
         _links_.erase(a_link);
 }

@@ -17,7 +17,7 @@
 namespace bevarmejo {
 namespace wds {
 
-dimensioned_link::dimensioned_link(const std::string& id) : 
+DimensionedLink::DimensionedLink(const std::string& id) : 
     inherited(id),
     _diameter_(nullptr),
     _roughness_(nullptr),
@@ -32,7 +32,7 @@ dimensioned_link::dimensioned_link(const std::string& id) :
     }
 
 // Copy constructor
-dimensioned_link::dimensioned_link(const dimensioned_link& other) : 
+DimensionedLink::DimensionedLink(const DimensionedLink& other) : 
     inherited(other),
     _diameter_(nullptr),
     _roughness_(nullptr),
@@ -45,7 +45,7 @@ dimensioned_link::dimensioned_link(const dimensioned_link& other) :
     }
 
 // Move constructor
-dimensioned_link::dimensioned_link(dimensioned_link&& rhs) noexcept : 
+DimensionedLink::DimensionedLink(DimensionedLink&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _diameter_(nullptr),
     _roughness_(nullptr),
@@ -58,7 +58,7 @@ dimensioned_link::dimensioned_link(dimensioned_link&& rhs) noexcept :
     }
 
 // Copy assignment operator
-dimensioned_link& dimensioned_link::operator=(const dimensioned_link& rhs) {
+DimensionedLink& DimensionedLink::operator=(const DimensionedLink& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _update_pointers();
@@ -67,7 +67,7 @@ dimensioned_link& dimensioned_link::operator=(const dimensioned_link& rhs) {
 }
 
 // Move assignment operator
-dimensioned_link& dimensioned_link::operator=(dimensioned_link&& rhs) noexcept {
+DimensionedLink& DimensionedLink::operator=(DimensionedLink&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _update_pointers();
@@ -75,9 +75,9 @@ dimensioned_link& dimensioned_link::operator=(dimensioned_link&& rhs) noexcept {
     return *this;
 }
 
-dimensioned_link::~dimensioned_link() {/* results are cleared when the inherited destructor is called*/ }
+DimensionedLink::~DimensionedLink() {/* results are cleared when the inherited destructor is called*/ }
 
-void dimensioned_link::retrieve_properties(EN_Project ph) {
+void DimensionedLink::retrieve_properties(EN_Project ph) {
     inherited::retrieve_properties(ph);
     
     assert(index()!=0);
@@ -111,7 +111,7 @@ void dimensioned_link::retrieve_properties(EN_Project ph) {
     _wall_coeff_->value(val);
 }
 
-void dimensioned_link::retrieve_results(EN_Project ph, long t) {
+void DimensionedLink::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
 
     int errorcode = 0;  
@@ -122,7 +122,7 @@ void dimensioned_link::retrieve_results(EN_Project ph, long t) {
     this->_velocity_->value().insert(std::make_pair(t, d_velocity));
 }
 
-void dimensioned_link::_add_properties() {
+void DimensionedLink::_add_properties() {
     inherited::_add_properties();
 
     properties().emplace(L_DIAMETER, vars::var_real(vars::L_METER, kmin_diameter));
@@ -132,13 +132,13 @@ void dimensioned_link::_add_properties() {
     properties().emplace(L_WALL_COEFF, vars::var_real(vars::L_DIMLESS, 0));
 }
 
-void dimensioned_link::_add_results() {
+void DimensionedLink::_add_results() {
     inherited::_add_results();
 
     results().emplace(L_VELOCITY, vars::var_tseries_real("m/s"));
 }
 
-void dimensioned_link::_update_pointers() {
+void DimensionedLink::_update_pointers() {
     inherited::_update_pointers();
 
     _diameter_ = &std::get<vars::var_real>(properties().at(L_DIAMETER));

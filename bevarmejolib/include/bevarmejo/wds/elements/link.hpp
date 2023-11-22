@@ -15,9 +15,9 @@
 namespace bevarmejo {
 namespace wds {
 
-/// WDS link
+/// WDS Link
 /*******************************************************************************
- * The wds::link class represents a link in the network.
+ * The wds::Link class represents a link in the network.
  ******************************************************************************/
 
 static const std::string L_INITIAL_STATUS= "Initial Status";
@@ -25,7 +25,7 @@ static const std::string L_FLOW= "Flow";
 
 class Node; // forward declaration
 
-class link : public NetworkElement {
+class Link : public NetworkElement {
 
 public:
     using inherited= NetworkElement;
@@ -49,24 +49,24 @@ protected:
 
 /*--- Constructors ---*/
 public:
-    link() = delete;
+    Link() = delete;
 
-    link(const std::string& id);
+    Link(const std::string& id);
 
     // Copy constructor
-    link(const link& other);
+    Link(const Link& other);
 
     // Move constructor
-    link(link&& rhs) noexcept;
+    Link(Link&& rhs) noexcept;
 
     // Copy assignment operator
-    link& operator=(const link& rhs);
+    Link& operator=(const Link& rhs);
 
     // Move assignment operator
-    link& operator=(link&& rhs) noexcept;
+    Link& operator=(Link&& rhs) noexcept;
 
     // Destructor
-    virtual ~link();
+    virtual ~Link();
 
 /*--- Getters and setters ---*/
 public:
@@ -90,7 +90,7 @@ public:
     void retrieve_properties(EN_Project ph) override;
     void retrieve_results(EN_Project ph, long t) override;
 
-}; // class link
+}; // class Link
 
 } // namespace wds
 } // namespace bevarmejo

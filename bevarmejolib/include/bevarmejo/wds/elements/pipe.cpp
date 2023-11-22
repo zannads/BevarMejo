@@ -17,7 +17,7 @@
 namespace bevarmejo {
 namespace wds {
 
-pipe::pipe(const std::string& id) : 
+Pipe::Pipe(const std::string& id) : 
     inherited(id),
     _length_(nullptr)
     {
@@ -27,7 +27,7 @@ pipe::pipe(const std::string& id) :
     }
 
 // Copy constructor
-pipe::pipe(const pipe& other) : 
+Pipe::Pipe(const Pipe& other) : 
     inherited(other),
     _length_(nullptr)
     {
@@ -35,7 +35,7 @@ pipe::pipe(const pipe& other) :
     }
 
 // Move constructor
-pipe::pipe(pipe&& rhs) noexcept : 
+Pipe::Pipe(Pipe&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _length_(nullptr)
     {
@@ -43,7 +43,7 @@ pipe::pipe(pipe&& rhs) noexcept :
     }
 
 // Copy assignment operator
-pipe& pipe::operator=(const pipe& rhs) {
+Pipe& Pipe::operator=(const Pipe& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _update_pointers();
@@ -52,7 +52,7 @@ pipe& pipe::operator=(const pipe& rhs) {
 }
 
 // Move assignment operator
-pipe& pipe::operator=(pipe&& rhs) noexcept {
+Pipe& Pipe::operator=(Pipe&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _update_pointers();
@@ -61,11 +61,11 @@ pipe& pipe::operator=(pipe&& rhs) noexcept {
 }
 
 // Destructor
-pipe::~pipe() {
+Pipe::~Pipe() {
     // delete _length_;
 }
 
-void pipe::retrieve_properties(EN_Project ph) {
+void Pipe::retrieve_properties(EN_Project ph) {
     inherited::retrieve_properties(ph);
     assert(index()!= 0);
 
@@ -77,13 +77,13 @@ void pipe::retrieve_properties(EN_Project ph) {
     _length_->value(length);
 }
 
-void pipe::_add_properties() {
+void Pipe::_add_properties() {
     inherited::_add_properties();
 
     properties().emplace(L_LENGTH, vars::var_real(vars::L_METER, 0.0));
 }
 
-void pipe::_update_pointers() {
+void Pipe::_update_pointers() {
     inherited::_update_pointers();
 
     _length_= &std::get<vars::var_real>(properties().at(L_LENGTH));

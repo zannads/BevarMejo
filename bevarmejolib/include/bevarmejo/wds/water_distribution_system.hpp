@@ -50,7 +50,7 @@ protected:
     
     // Class-specific collections of elements
     std::vector<std::shared_ptr<Node>> _nodes_;
-    std::vector<std::shared_ptr<link>> _links_;
+    std::vector<std::shared_ptr<Link>> _links_;
     std::vector<std::shared_ptr<pattern>> _patterns_;
     std::vector<std::shared_ptr<Junction>> _junctions_;
 

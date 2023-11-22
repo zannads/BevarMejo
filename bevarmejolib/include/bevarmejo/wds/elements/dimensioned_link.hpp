@@ -15,9 +15,9 @@
 namespace bevarmejo {
 namespace wds {
 
-/// WDS dimensioned link
+/// WDS dimensioned Link
 /*******************************************************************************
- * The wds::dimensioned_link class represents a dimensioned link in the network.
+ * The wds::DimensionedLink class represents a dimensioned link in the network.
  ******************************************************************************/
 
 static const std::string L_DIAMETER= "Diameter";
@@ -28,10 +28,10 @@ static const std::string L_BULK_COEFF= "Bulk Coefficient";
 static const std::string L_WALL_COEFF= "Wall Coefficient";
 static const std::string L_VELOCITY= "Velocity";
 
-class dimensioned_link : public link {
+class DimensionedLink : public Link {
 
 public:
-    using inherited= link;
+    using inherited= Link;
 
 /*--- Attributes ---*/
 protected:
@@ -52,23 +52,23 @@ protected:
 
 /*--- Constructors ---*/
 public:
-    dimensioned_link() = delete;
-    dimensioned_link(const std::string& id);
+    DimensionedLink() = delete;
+    DimensionedLink(const std::string& id);
 
     // Copy constructor
-    dimensioned_link(const dimensioned_link& other);
+    DimensionedLink(const DimensionedLink& other);
 
     // Move constructor
-    dimensioned_link(dimensioned_link&& rhs) noexcept;
+    DimensionedLink(DimensionedLink&& rhs) noexcept;
 
     // Copy assignment operator
-    dimensioned_link& operator=(const dimensioned_link& rhs);
+    DimensionedLink& operator=(const DimensionedLink& rhs);
 
     // Move assignment operator
-    dimensioned_link& operator=(dimensioned_link&& rhs) noexcept;
+    DimensionedLink& operator=(DimensionedLink&& rhs) noexcept;
 
     // Destructor
-    virtual ~dimensioned_link();
+    virtual ~DimensionedLink();
 
 /*--- Getters and setters ---*/
 public:

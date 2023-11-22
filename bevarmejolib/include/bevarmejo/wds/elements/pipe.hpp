@@ -16,18 +16,18 @@
 namespace bevarmejo {
 namespace wds {
 
-/// WDS pipe
+/// WDS Pipe
 /*******************************************************************************
- * The wds::pipe class represents a pipe in the network.
+ * The wds::Pipe class represents a pipe in the network.
  ******************************************************************************/
 
 static const std::string LNAME_PIPE= "Pipe";
 static const std::string L_LENGTH= "Length";
 
-class pipe : public dimensioned_link {
+class Pipe : public DimensionedLink {
 
 public:
-    using inherited= dimensioned_link;
+    using inherited= DimensionedLink;
 
  /*--- Attributes ---*/
     protected:
@@ -42,24 +42,24 @@ protected:
 
 /*--- Constructors ---*/
 public:
-    pipe() = delete;
+    Pipe() = delete;
 
-    pipe(const std::string& id);
+    Pipe(const std::string& id);
 
     // Copy constructor
-    pipe(const pipe& other);
+    Pipe(const Pipe& other);
 
     // Move constructor
-    pipe(pipe&& rhs) noexcept;
+    Pipe(Pipe&& rhs) noexcept;
 
     // Copy assignment operator
-    pipe& operator=(const pipe& rhs);
+    Pipe& operator=(const Pipe& rhs);
 
     // Move assignment operator
-    pipe& operator=(pipe&& rhs) noexcept;
+    Pipe& operator=(Pipe&& rhs) noexcept;
 
     // Destructor
-    virtual ~pipe();
+    virtual ~Pipe();
 
 /*--- Getters and setters ---*/
 public:

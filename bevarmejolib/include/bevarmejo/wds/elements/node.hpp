@@ -31,7 +31,7 @@ const std::string LABEL_PRESSURE=       "Pressure";
 const std::string LABEL_PRESSURE_UNITS= "m";
 const std::string LABEL_HEAD=           "Head";
 
-class link;
+class Link;
 
 class Node : public NetworkElement {
     
@@ -45,7 +45,7 @@ class Node : public NetworkElement {
         double _x_coord_;
         double _y_coord_;
 
-        std::unordered_set<link*> _links_;
+        std::unordered_set<Link*> _links_;
 
         // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
@@ -96,9 +96,9 @@ class Node : public NetworkElement {
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
         // TODO: See Issue #32
-        std::unordered_set<link*>& connected_links() {return _links_;}
-        void add_link(link* a_link);
-        void remove_link(link* a_link);
+        std::unordered_set<Link*>& connected_links() {return _links_;}
+        void add_link(Link* a_link);
+        void remove_link(Link* a_link);
 
         const double z_coord() const {return _elevation_;}
         const double elevation() const {return _elevation_;}
