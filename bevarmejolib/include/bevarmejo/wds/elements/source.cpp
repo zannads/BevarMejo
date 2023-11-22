@@ -11,7 +11,7 @@
 namespace bevarmejo {
 namespace wds {
 
-source::source(const std::string& id) : 
+Source::Source(const std::string& id) : 
     inherited(id), 
     _inflow_(nullptr),
     _source_elevation_(nullptr) 
@@ -21,7 +21,7 @@ source::source(const std::string& id) :
     }
 
 // Copy constructor
-source::source(const source& other) : 
+Source::Source(const Source& other) : 
     inherited(other), 
     _inflow_(nullptr),
     _source_elevation_(nullptr) 
@@ -30,7 +30,7 @@ source::source(const source& other) :
     }
 
 // Move constructor
-source::source(source&& rhs) noexcept : 
+Source::Source(Source&& rhs) noexcept : 
     inherited(std::move(rhs)), 
     _inflow_(nullptr),
     _source_elevation_(nullptr) 
@@ -39,7 +39,7 @@ source::source(source&& rhs) noexcept :
     }
 
 // Copy assignment operator
-source& source::operator=(const source& rhs) {
+Source& Source::operator=(const Source& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _update_pointers();
@@ -48,7 +48,7 @@ source& source::operator=(const source& rhs) {
 }
 
 // Move assignment operator
-source& source::operator=(source&& rhs) noexcept {
+Source& Source::operator=(Source&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _update_pointers();
@@ -56,9 +56,9 @@ source& source::operator=(source&& rhs) noexcept {
     return *this;
 }
 
-source::~source() {/* results are cleared when the inherited destructor is called*/ }
+Source::~Source() {/* results are cleared when the inherited destructor is called*/ }
 
-void source::retrieve_results(EN_Project ph, long t) {
+void Source::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
     assert(index()!= 0);
 
@@ -75,14 +75,14 @@ void source::retrieve_results(EN_Project ph, long t) {
     this->_source_elevation_->value().insert(std::make_pair(t, val));
 }
 
-void source::_add_results() {
+void Source::_add_results() {
     inherited::_add_results();
 
     results().emplace(LINFLOW, vars::var_tseries_real(vars::L_M3_PER_S));
     results().emplace(LSOURCE_ELEV, vars::var_tseries_real(vars::L_METER));
 }
 
-void source::_update_pointers() {
+void Source::_update_pointers() {
     inherited::_update_pointers();
 
     _inflow_ = &std::get<vars::var_tseries_real>(results().at(LINFLOW));

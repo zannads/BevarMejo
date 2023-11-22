@@ -52,7 +52,7 @@ protected:
     std::vector<std::shared_ptr<Node>> _nodes_;
     std::vector<std::shared_ptr<link>> _links_;
     std::vector<std::shared_ptr<pattern>> _patterns_;
-    std::vector<std::shared_ptr<junction>> _junctions_;
+    std::vector<std::shared_ptr<Junction>> _junctions_;
 
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;

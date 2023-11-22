@@ -126,17 +126,17 @@ void water_distribution_system::init(){
         assert(errorcode < 100);
 
         if (node_type == EN_JUNCTION){
-            _elements_.push_back(std::make_shared<junction>(node_id));
+            _elements_.push_back(std::make_shared<Junction>(node_id));
 
             // Save it in _junctions_ too
-            _junctions_.push_back(std::dynamic_pointer_cast<junction>(_elements_.back()));
+            _junctions_.push_back(std::dynamic_pointer_cast<Junction>(_elements_.back()));
         }
         else if (node_type == EN_RESERVOIR){
             // TODO: _elements_.push_back(std::make_shared<reservoir>(node_id));
             stream_out(std::cout, "Reservoirs not implemented yet\n");
         }
         else if (node_type == EN_TANK){
-            _elements_.push_back(std::make_shared<tank>(node_id));
+            _elements_.push_back(std::make_shared<Tank>(node_id));
         }
         else {
             throw std::runtime_error("Unknown node type\n");

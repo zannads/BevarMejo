@@ -21,7 +21,7 @@
 namespace bevarmejo {
 namespace wds {
 
-junction::junction(const std::string& id) : 
+Junction::Junction(const std::string& id) : 
     inherited(id),
     _demands_(),
     _demand_constant_(nullptr),
@@ -35,7 +35,7 @@ junction::junction(const std::string& id) :
     }
 
 // Copy constructor
-junction::junction(const junction& other) : 
+Junction::Junction(const Junction& other) : 
     inherited(other),
     _demands_(other._demands_),
     _demand_constant_(nullptr),
@@ -47,7 +47,7 @@ junction::junction(const junction& other) :
     }
 
 // Move constructor
-junction::junction(junction&& rhs) noexcept : 
+Junction::Junction(Junction&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _demands_(std::move(rhs._demands_)),
     _demand_constant_(nullptr),
@@ -59,7 +59,7 @@ junction::junction(junction&& rhs) noexcept :
     }
 
 // Copy assignment operator
-junction& junction::operator=(const junction& rhs) {
+Junction& Junction::operator=(const Junction& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _demands_ = rhs._demands_;
@@ -69,7 +69,7 @@ junction& junction::operator=(const junction& rhs) {
 }
 
 // Move assignment operator
-junction& junction::operator=(junction&& rhs) noexcept {
+Junction& Junction::operator=(Junction&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _demands_ = std::move(rhs._demands_);
@@ -78,9 +78,9 @@ junction& junction::operator=(junction&& rhs) noexcept {
     return *this;
 }
 
-junction::~junction() { /* Everything is deleted by the inherited destructor */ }
+Junction::~Junction() { /* Everything is deleted by the inherited destructor */ }
 
-Demand& junction::demand(const std::string &a_category) {
+Demand& Junction::demand(const std::string &a_category) {
     for (auto& d : _demands_) {
         if (d.category() == a_category) {
             return d;
@@ -88,11 +88,11 @@ Demand& junction::demand(const std::string &a_category) {
     }
 }
 
-void junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern) {
+void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<pattern> a_pattern) {
     _demands_.emplace_back(Demand(a_category, a_base_dem, a_pattern));
 }
 
-auto junction::_find_demand(const std::string &a_category) const {
+auto Junction::_find_demand(const std::string &a_category) const {
     for (auto it = _demands_.begin(); it != _demands_.end(); ++it) {
         if (it->category() == a_category) {
             return it;
@@ -100,18 +100,18 @@ auto junction::_find_demand(const std::string &a_category) const {
     }
 }
 
-void junction::remove_demand(const std::string &a_category) {
+void Junction::remove_demand(const std::string &a_category) {
     auto d_p_demand = _find_demand(a_category);
     if (d_p_demand != _demands_.end()) {
         _demands_.erase(d_p_demand);
     }
 }
 
-const bool junction::has_demand() const {
+const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>> &patterns) {
+void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<pattern>> &patterns) {
     int errorcode;
     int n_demands;
     errorcode = EN_getnumdemands(ph, this->index(), &n_demands);
@@ -145,14 +145,14 @@ void junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<patte
     }
 }
 
-void junction::retrieve_properties(EN_Project ph)
+void Junction::retrieve_properties(EN_Project ph)
 {
     inherited::retrieve_properties(ph);
 
     //TODO: get the demands
 }
 
-void junction::retrieve_results(EN_Project ph, long t=0) {
+void Junction::retrieve_results(EN_Project ph, long t=0) {
     inherited::retrieve_results(ph, t);
 
     int errorcode;
@@ -170,13 +170,13 @@ void junction::retrieve_results(EN_Project ph, long t=0) {
     this->_demand_delivered_->value().insert(std::make_pair(t, d_demand_requested - d_demand_undelivered));
 }
 
-void junction::_add_properties() {
+void Junction::_add_properties() {
     inherited::_add_properties();
 
     properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::L_M3_PER_S,0));
 }
 
-void junction::_add_results() {
+void Junction::_add_results() {
     inherited::_add_results();
 
     results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::L_M3_PER_S));
@@ -184,7 +184,7 @@ void junction::_add_results() {
     results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::L_M3_PER_S));
 }
 
-void junction::_update_pointers() {
+void Junction::_update_pointers() {
     inherited::_update_pointers();
 
     _demand_constant_ = &std::get<vars::var_real>(properties().at(LDEMAND_CONSTANT));

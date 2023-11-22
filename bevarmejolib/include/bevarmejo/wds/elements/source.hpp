@@ -11,16 +11,16 @@
 namespace bevarmejo {
 namespace wds {
 
-/// WDS source
+/// WDS Source
 /*******************************************************************************
- * The wds::source class represents a fix pressure node in the network. 
+ * The wds::Source class represents a fix pressure node in the network. 
  * It can either be a tank or a reservoir.
  ******************************************************************************/
 
 static const std::string LSOURCE_ELEV= "Source Elevation";
 static const std::string LINFLOW= "Inflow";
 
-class source : public Node {
+class Source : public Node {
 
 public:
     using inherited= Node;
@@ -39,23 +39,23 @@ protected:
 
 /*--- Constructors ---*/
 public:
-    source() = delete;
-    source(const std::string& id);
+    Source() = delete;
+    Source(const std::string& id);
 
     // Copy constructor
-    source(const source& other);
+    Source(const Source& other);
 
     // Move constructor
-    source(source&& rhs) noexcept;
+    Source(Source&& rhs) noexcept;
 
     // Copy assignment operator
-    source& operator=(const source& rhs);
+    Source& operator=(const Source& rhs);
 
     // Move assignment operator
-    source& operator=(source&& rhs) noexcept;
+    Source& operator=(Source&& rhs) noexcept;
 
     // Destructor
-    virtual ~source();
+    virtual ~Source();
 
 /*--- Getters and setters ---*/
 public:

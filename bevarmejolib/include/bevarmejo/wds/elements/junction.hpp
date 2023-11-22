@@ -25,14 +25,14 @@ static const std::string LDEMAND_REQUESTED= "Demand (requested)";
 static const std::string LDEMAND_DELIVERED= "Demand (delivered)";
 static const std::string LDEMAND_UNDELIVERED= "Demand (undelivered)";
 
-/// WDS junction
+/// WDS Junction
 /*******************************************************************************
- * The wds::junction class represents a demand node in the network.
+ * The wds::Junction class represents a demand node in the network.
  ******************************************************************************/
 
 static const std::string LNAME_JUNCTION= "Junction";
 
-class junction : public Node {    
+class Junction : public Node {    
 public:
     using inherited= Node;
     using DemandContainer = std::vector<Demand>;
@@ -56,22 +56,22 @@ protected:
 
  /*--- Constructors ---*/
 public:
-    junction() = delete;
-    junction(const std::string& id);
+    Junction() = delete;
+    Junction(const std::string& id);
 
     // Copy constructor
-    junction(const junction& other);
+    Junction(const Junction& other);
 
     // Move constructor
-    junction(junction&& rhs) noexcept;
+    Junction(Junction&& rhs) noexcept;
 
     // Copy assignment operator
-    junction& operator=(const junction& rhs);
+    Junction& operator=(const Junction& rhs);
 
     // Move assignment operator
-    junction& operator=(junction&& rhs) noexcept;
+    Junction& operator=(Junction&& rhs) noexcept;
 
-    ~junction() override;
+    ~Junction() override;
     
 /*--- Getters and setters ---*/
 public:
@@ -113,7 +113,7 @@ public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;
 
-}; // class junction
+}; // class Junction
 
 } // namespace wds
 } // namespace bevarmejo
