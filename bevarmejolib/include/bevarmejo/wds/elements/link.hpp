@@ -23,7 +23,7 @@ namespace wds {
 static const std::string L_INITIAL_STATUS= "Initial Status";
 static const std::string L_FLOW= "Flow";
 
-class node; // forward declaration
+class Node; // forward declaration
 
 class link : public NetworkElement {
 
@@ -33,8 +33,8 @@ public:
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    node* _node_start_;
-    node* _node_end_;
+    Node* _node_start_;
+    Node* _node_end_;
 
     vars::var_int* _initial_status_;
 
@@ -71,11 +71,11 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    node* from_node() const { return _node_start_; }
-    void from_node(node* a_node);
+    Node* from_node() const { return _node_start_; }
+    void from_node(Node* a_node);
 
-    node* to_node() const { return _node_end_; }
-    void to_node(node* a_node);
+    Node* to_node() const { return _node_end_; }
+    void to_node(Node* a_node);
 
     vars::var_int& initial_status() const { return *_initial_status_; }
 

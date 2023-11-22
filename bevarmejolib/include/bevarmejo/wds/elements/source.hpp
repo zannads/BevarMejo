@@ -20,10 +20,10 @@ namespace wds {
 static const std::string LSOURCE_ELEV= "Source Elevation";
 static const std::string LINFLOW= "Inflow";
 
-class source : public node {
+class source : public Node {
 
 public:
-    using inherited= node;
+    using inherited= Node;
 
 /*--- Attributes ---*/
 protected:

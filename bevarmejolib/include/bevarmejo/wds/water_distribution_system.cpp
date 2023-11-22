@@ -144,7 +144,7 @@ void water_distribution_system::init(){
         delete[] node_id;
 
         // Save it in _nodes_ too
-        _nodes_.push_back(std::dynamic_pointer_cast<node>(_elements_.back()));
+        _nodes_.push_back(std::dynamic_pointer_cast<Node>(_elements_.back()));
     }
 
     // [2/6] Links

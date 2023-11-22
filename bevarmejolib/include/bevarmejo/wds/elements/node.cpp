@@ -22,10 +22,11 @@
 namespace bevarmejo {
 namespace wds {
 
-node::node(const std::string& id) : 
+Node::Node(const std::string& id) : 
     inherited(id),
     _x_coord_(0.0),
     _y_coord_(0.0),
+    _links_(),
     _elevation_(0.0),
     _head_(nullptr),
     _pressure_(nullptr)
@@ -35,11 +36,20 @@ node::node(const std::string& id) :
         _update_pointers();
     }
 
+// Copy and Move constructors and assignment operators
+// 
+// Copy operations invalidate the set of links. This because the links refer to
+// a set of links that were connect to the previous node. A new node is used, to
+// copy the properties (ID too), maybe for another network. Hence, with different
+// connections. ON the other hand, the move operations takes ownership of the
+// node, thus it replaces it also in connections to the liks.
+
 // Copy constructor
-node::node(const node& other) : 
+Node::Node(const Node& other) : 
     inherited(other),
     _x_coord_(other._x_coord_),
     _y_coord_(other._y_coord_),
+    _links_(), 
     _elevation_(other._elevation_),
     _head_(nullptr),
     _pressure_(nullptr)
@@ -48,11 +58,12 @@ node::node(const node& other) :
     }
 
 // Move constructor
-node::node(node&& rhs) noexcept : 
+Node::Node(Node&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _x_coord_(std::move(rhs._x_coord_)),
-    _y_coord_(std::move(rhs._y_coord_)),
-    _elevation_(std::move(rhs._elevation_)),
+    _x_coord_(rhs._x_coord_),
+    _y_coord_(rhs._y_coord_),
+    _links_(std::move(rhs._links_)),
+    _elevation_(rhs._elevation_),
     _head_(nullptr),
     _pressure_(nullptr)
     {
@@ -60,11 +71,12 @@ node::node(node&& rhs) noexcept :
     }
 
 // Copy assignment operator
-node& node::operator=(const node& rhs) {
+Node& Node::operator=(const Node& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
+        _links_.clear();
         _elevation_ = rhs._elevation_;
         _update_pointers();
     }
@@ -72,7 +84,7 @@ node& node::operator=(const node& rhs) {
 }
 
 // Move assignment operator
-node& node::operator=(node&& rhs) noexcept {
+Node& Node::operator=(Node&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _x_coord_ = std::move(rhs._x_coord_);
@@ -83,26 +95,26 @@ node& node::operator=(node&& rhs) noexcept {
     return *this;
 }
 
-node::~node() {
+Node::~Node() {
     // Both properties and results are cleared when the inherited destructor 
     // is called.
 }
 
-void node::add_link(link *a_link)
+void Node::add_link(link *a_link)
 {
     if (a_link != nullptr) {
         _links_.insert(a_link);
     }
 }
 
-void node::remove_link(link *a_link)
+void Node::remove_link(link *a_link)
 {
     if (a_link != nullptr) {
         _links_.erase(a_link);
     }
 }
 
-void node::retrieve_index(EN_Project ph) {
+void Node::retrieve_index(EN_Project ph) {
     int en_index;
     int errorcode = 0;
     errorcode = EN_getnodeindex(ph, id().c_str(), &en_index);
@@ -112,7 +124,7 @@ void node::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void node::retrieve_properties(EN_Project ph) {
+void Node::retrieve_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;    
     double x, y, z;
@@ -127,7 +139,7 @@ void node::retrieve_properties(EN_Project ph) {
     this->elevation(z);
 }
 
-void node::retrieve_results(EN_Project ph, long t=0) {
+void Node::retrieve_results(EN_Project ph, long t=0) {
     assert(index() != 0);
     int errorcode = 0;
     double d_head, d_pressure;
@@ -141,19 +153,19 @@ void node::retrieve_results(EN_Project ph, long t=0) {
     this->_pressure_->value().insert(std::make_pair(t, d_pressure));
 }
 
-void node::_add_properties() {
+void Node::_add_properties() {
     inherited::_add_properties();
     // no properties to add
 }
 
-void node::_add_results() {
+void Node::_add_results() {
     inherited::_add_results();
 
     results().emplace(LABEL_PRESSURE, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
     results().emplace(LABEL_HEAD, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
 }
 
-void node::_update_pointers() {
+void Node::_update_pointers() {
     inherited::_update_pointers();
 
     _head_ = &std::get<vars::var_tseries_real>(results().at(LABEL_HEAD));

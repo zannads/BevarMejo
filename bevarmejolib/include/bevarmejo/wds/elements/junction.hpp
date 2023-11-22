@@ -32,9 +32,9 @@ static const std::string LDEMAND_UNDELIVERED= "Demand (undelivered)";
 
 static const std::string LNAME_JUNCTION= "Junction";
 
-class junction : public node {    
+class junction : public Node {    
 public:
-    using inherited= node;
+    using inherited= Node;
     using DemandContainer = std::vector<Demand>;
 
 /*--- Attributes ---*/

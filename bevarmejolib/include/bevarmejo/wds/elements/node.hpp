@@ -24,7 +24,7 @@ namespace wds {
 
 // Node object
 /************************************************************************
- * The bevarmejo::wds::node class is the ancestor of all the nodes
+ * The bevarmejo::wds::Node class is the ancestor of all the nodes
  * of the WDS. It should be a pure virtual class, so it cannot be instantiated.
  */
 const std::string LABEL_PRESSURE=       "Pressure";
@@ -33,7 +33,7 @@ const std::string LABEL_HEAD=           "Head";
 
 class link;
 
-class node : public NetworkElement {
+class Node : public NetworkElement {
     
     public:
         using inherited= NetworkElement;
@@ -64,24 +64,24 @@ class node : public NetworkElement {
     /*--- Constructors ---*/
     public:
         /// @brief Default constructor
-        node() = delete;
+        Node() = delete;
 
-        node(const std::string& id);
+        Node(const std::string& id);
 
         // Copy constructor
-        node(const node& other);
+        Node(const Node& other);
 
         // Move constructor
-        node(node&& rhs) noexcept;
+        Node(Node&& rhs) noexcept;
 
         // Copy assignment operator
-        node& operator=(const node& rhs);
+        Node& operator=(const Node& rhs);
 
         // Move assignment operator
-        node& operator=(node&& rhs) noexcept;
+        Node& operator=(Node&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~node();
+        virtual ~Node();
 
     /*--- Getters and setters ---*/
     public:
@@ -92,6 +92,7 @@ class node : public NetworkElement {
         const double y_coord() const {return _y_coord_;}
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
+        // TODO: See Issue #32
         std::unordered_set<link*>& connected_links() {return _links_;}
         void add_link(link* a_link);
         void remove_link(link* a_link);
@@ -116,7 +117,7 @@ class node : public NetworkElement {
         void retrieve_properties(EN_Project ph) override;
         void retrieve_results(EN_Project ph, long t) override;
 
-}; // class node
+}; // class Node
 
 } // namespace wds
 } // namespace bevarmejo
