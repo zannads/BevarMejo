@@ -35,19 +35,10 @@ Element::Element(const std::string& id) :
         _update_pointers();
     }
 
-// Copy and Move constructors and assignment operators
-// 
-// Copy operations invalidate the index. This because the index refers to the
-// location of that element in the equations of a specific EPANET project.
-// Thus, the index is like a pointer and it becomes invalid as we assume that 
-// with a copy operation we will have a new element that will change the order
-// in the equations inside the EPANET project. 
-// This will not be true for the move operations as we are transferring ownership.
-
 // Copy constructor
 Element::Element(const Element& other) :
     _id_(other._id_),
-    _index_(0),
+    _index_(other._index_),
     _properties_(other._properties_)
     {
         _update_pointers();
@@ -66,7 +57,7 @@ Element::Element(Element&& rhs) noexcept :
 Element& Element::operator=(const Element& rhs) {
     if (this != &rhs) {
         _id_ = rhs._id_;
-        _index_ = 0;
+        _index_ = rhs._index_;
         _properties_ = rhs._properties_;
         _update_pointers();
     }

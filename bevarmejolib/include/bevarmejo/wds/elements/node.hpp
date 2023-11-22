@@ -50,6 +50,9 @@ class Node : public NetworkElement {
         // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
 
+        // TODO: add a parameter(option) that when true also forces the deletion
+        // of the links connected to the node.
+
         /*---  Results   ---*/ 
         // pointer to the result property in the results object
         vars::var_tseries_real* _head_;

@@ -36,20 +36,12 @@ Node::Node(const std::string& id) :
         _update_pointers();
     }
 
-// Copy and Move constructors and assignment operators
-// 
-// Copy operations invalidate the set of links. This because the links refer to
-// a set of links that were connect to the previous node. A new node is used, to
-// copy the properties (ID too), maybe for another network. Hence, with different
-// connections. ON the other hand, the move operations takes ownership of the
-// node, thus it replaces it also in connections to the liks.
-
 // Copy constructor
 Node::Node(const Node& other) : 
     inherited(other),
     _x_coord_(other._x_coord_),
     _y_coord_(other._y_coord_),
-    _links_(), 
+    _links_(other._links_), 
     _elevation_(other._elevation_),
     _head_(nullptr),
     _pressure_(nullptr)
@@ -76,7 +68,7 @@ Node& Node::operator=(const Node& rhs) {
         inherited::operator=(rhs);
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
-        _links_.clear();
+        _links_ = rhs._links_;
         _elevation_ = rhs._elevation_;
         _update_pointers();
     }
@@ -87,9 +79,10 @@ Node& Node::operator=(const Node& rhs) {
 Node& Node::operator=(Node&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        _x_coord_ = std::move(rhs._x_coord_);
-        _y_coord_ = std::move(rhs._y_coord_);
-        _elevation_ = std::move(rhs._elevation_);
+        _x_coord_ = rhs._x_coord_;
+        _y_coord_ = rhs._y_coord_;
+        _links_ = std::move(rhs._links_);
+        _elevation_ = rhs._elevation_;
         _update_pointers();
     }
     return *this;
@@ -100,18 +93,14 @@ Node::~Node() {
     // is called.
 }
 
-void Node::add_link(link *a_link)
-{
-    if (a_link != nullptr) {
+void Node::add_link(link *a_link) {
+    if (a_link != nullptr)
         _links_.insert(a_link);
-    }
 }
 
-void Node::remove_link(link *a_link)
-{
-    if (a_link != nullptr) {
+void Node::remove_link(link *a_link) {
+    if (a_link != nullptr)
         _links_.erase(a_link);
-    }
 }
 
 void Node::retrieve_index(EN_Project ph) {
