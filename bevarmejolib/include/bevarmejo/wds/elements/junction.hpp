@@ -86,7 +86,7 @@ public:
     void remove_demand(const std::string& a_category);
 private:
     auto _find_demand(const std::string& a_category) const;
-    
+public:    
     vars::var_real& demand_constant() {return *_demand_constant_;}
 
     /*---  Results   ---*/

@@ -50,7 +50,7 @@ add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(bemelib PUBLIC Pagmo::pagmo)
+target_link_libraries(bemelib PUBLIC Pagmo::pagmo epanet)
 
 target_include_directories(bemelib PUBLIC
                             "include"

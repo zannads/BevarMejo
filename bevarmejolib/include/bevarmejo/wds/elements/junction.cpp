@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -86,6 +87,7 @@ Demand& Junction::demand(const std::string &a_category) {
             return d;
         }
     }
+    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
 }
 
 void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) {
@@ -98,6 +100,7 @@ auto Junction::_find_demand(const std::string &a_category) const {
             return it;
         }
     }
+    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
 }
 
 void Junction::remove_demand(const std::string &a_category) {
@@ -173,15 +176,15 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
 void Junction::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::L_M3_PER_S,0));
+    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::l_L_per_s,0));
 }
 
 void Junction::_add_results() {
     inherited::_add_results();
 
-    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::L_M3_PER_S));
-    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::L_M3_PER_S));
-    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::L_M3_PER_S));
+    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::l_L_per_s));
+    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::l_L_per_s));
+    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::l_L_per_s));
 }
 
 void Junction::_update_pointers() {

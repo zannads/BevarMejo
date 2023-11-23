@@ -15,10 +15,16 @@ namespace wds {
 namespace vars {
 
 static const std::string L_DIMLESS = "";
+static const std::string l_DIMLESS = "";
 static const std::string L_METER = "m";
+static const std::string l_m = "m";
+static const std::string l_m3_per_s = "m3/s";
 static const std::string L_M3_PER_S = "m/s";
+static const std::string l_L_per_s = "L/s";
 static const std::string L_KWH = "kWh";
+static const std::string l_kWh = "kWh";
 static const std::string L_JOUL = "J";
+static const std::string l_J = "J";
 
 class variable_core
 {
@@ -111,6 +117,7 @@ class variable : public variable_core {
         virtual ~variable() {}
 
         VT& value() {return _value_;}
+        const VT& value() const {return _value_;}
         void value(const VT& value) {_value_ = value;}
         VT& operator()() {return _value_;} 
 
