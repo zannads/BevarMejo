@@ -11,7 +11,6 @@
 
 #include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/variables.hpp"
 
 template <typename T>
 class CTest {
@@ -39,169 +38,96 @@ class CTest2 {
     }
 };
 
-TEST(TemporalTest, DefaultConstructor) {
-    bevarmejo::wds::vars::temporal<int> t;
-    EXPECT_TRUE(t.empty());
-}
+TEST(TemporalT, Constructors) {
+    bevarmejo::wds::vars::temporal<int> t_empty;
+    EXPECT_TRUE(t_empty.empty());
 
-TEST(TemporalTest, ValueConstructor) {
-    bevarmejo::wds::vars::temporal<int> t(42);
-    EXPECT_EQ(1, t.size());
-    EXPECT_EQ(42, t[0]);
-}
+    bevarmejo::wds::vars::temporal<int> t_int(42);
+    EXPECT_EQ(1, t_int.size());
+    EXPECT_EQ(42, t_int[0]); // also if it is not set to 0 this would fail
 
-TEST(TemporalTest, TimeValueConstructor) {
-    bevarmejo::wds::vars::temporal<int> t(10, 42);
-    EXPECT_EQ(1, t.size());
-    EXPECT_EQ(42, t[10]);
-}
+    bevarmejo::wds::vars::temporal<int> t_int_time(10, 42);
+    EXPECT_EQ(1, t_int_time.size() );
+    EXPECT_EQ(42, t_int_time.at(10) );
 
-TEST(TemporalTest, TimeValueConstructorWithParams) {
-    bevarmejo::wds::vars::temporal<CTest<int>> t(10, 3);
-    EXPECT_EQ(1, t.size());
-    EXPECT_EQ(CTest<int>(3), t[10]);
-    EXPECT_EQ(3, t[10]._t);
-}
+    bevarmejo::wds::vars::temporal<CTest<int>> t_class1(10, 3);
+    EXPECT_EQ(1, t_class1.size());
+    EXPECT_EQ(CTest<int>(3), t_class1[10]);
+    EXPECT_EQ(3, t_class1[10]._t);
 
-TEST(TemporalTest, TimeValueConstructorWithNoParams) {
-    bevarmejo::wds::vars::temporal<CTest<int>> t(10);
-    EXPECT_EQ(1, t.size());
-    EXPECT_EQ(CTest<int>(), t[10] );
-    EXPECT_EQ(0, t[10]._t);
-}
+    bevarmejo::wds::vars::temporal<CTest<int>> t_class0(10);
+    EXPECT_EQ(1, t_class0.size());
+    EXPECT_EQ(CTest<int>(), t_class0[10] );
+    EXPECT_EQ(0, t_class0[10]._t);
 
-TEST(TemporalTest, TimeValueConstructorWithMultiParams) {
-    bevarmejo::wds::vars::temporal<CTest2<double, std::string>> t(10, 3, "hello worlds");
-    EXPECT_EQ(1, t.size());
+    bevarmejo::wds::vars::temporal<CTest2<double, std::string>> t_class2(
+        10, 3, "hello worlds");
+    EXPECT_EQ(1, t_class2.size());
     CTest2<double,std::string> m(3.0, "hello worlds");
-    EXPECT_EQ(m, t[10]);
-    EXPECT_EQ(3, t[10]._t);
-    EXPECT_EQ("hello worlds", t[10]._u);
+    EXPECT_EQ(m, t_class2.at(10) );
+    EXPECT_EQ(3, t_class2[10]._t);
+    EXPECT_EQ("hello worlds", t_class2[10]._u);
 }
 
-TEST(TemporalTest, WhenFunction) {
+TEST(TemporalT, Methods) {
     bevarmejo::wds::vars::temporal<int> t(10, 42);
     EXPECT_EQ(42, t.when(10));
-}
-
-TEST(TemporalTest, WhenFunctionThrows) {
-    bevarmejo::wds::vars::temporal<int> t(10, 42);
     EXPECT_THROW(t.when(20), std::out_of_range);
 }
 
 // NEW CLASS UNDER TEST
 // variable.hpp
 
-TEST(VariableTest, Constructor_Default) {
-    bevarmejo::wds::vars::variable<int> v;
-    EXPECT_EQ("", v.unit());
-    EXPECT_EQ(0, v.value());
-}
+TEST(VariableT, Constructors ) {
+    bevarmejo::wds::vars::variable<int> v_empty;
+    EXPECT_EQ("", v_empty.unit());
+    EXPECT_EQ(0, v_empty.value());
 
-TEST(VariableTest, Constructor_Unit) {
-    bevarmejo::wds::vars::variable<int> v("m");
-    EXPECT_EQ("m", v.unit());
-    EXPECT_EQ(0, v.value());
-}
+    bevarmejo::wds::vars::variable<int> v_unit("m");
+    EXPECT_EQ("m", v_unit.unit());
+    EXPECT_EQ(0, v_unit.value());
 
-TEST(VariableTest, Constructor_Value) {
-    bevarmejo::wds::vars::variable<int> v(42);
-    EXPECT_EQ("", v.unit());
-    EXPECT_EQ(42, v.value());
-}
+    bevarmejo::wds::vars::variable<int> v_val(42);
+    EXPECT_EQ("", v_val.unit());
+    EXPECT_EQ(42, v_val.value());
 
-TEST(VariableTest, Constructor_UnitValue) {
-    bevarmejo::wds::vars::variable<int> v("m", 42);
-    EXPECT_EQ("m", v.unit());
-    EXPECT_EQ(42, v.value());
-}
+    bevarmejo::wds::vars::variable<int> v_complete("m", 42);
+    EXPECT_EQ("m", v_complete.unit());
+    EXPECT_EQ(42, v_complete.value());
 
-TEST(TemporalTest, UnitValueConstructorWithParams) {
-    bevarmejo::wds::vars::variable<CTest<int>> v("", 10);
-    EXPECT_EQ(CTest<int>(10), v.value());
-}
+    bevarmejo::wds::vars::variable<CTest<int>> v_variadic1("", 10);
+    EXPECT_EQ(CTest<int>(10), v_variadic1.value());
 
-TEST(TemporalTest, UnitValueConstructorWithNoParams) {
-    bevarmejo::wds::vars::variable<CTest<int>> v;
-    EXPECT_EQ(CTest<int>(), v.value() );
-}
+    bevarmejo::wds::vars::variable<CTest<int>> v_variadic0;
+    EXPECT_EQ(CTest<int>(), v_variadic0.value() );
 
-TEST(TemporalTest, UnitValueConstructorWithMultiParams) {
-    bevarmejo::wds::vars::variable<CTest2<double, std::string>> v("m", 3, "hello worlds");
+    bevarmejo::wds::vars::variable<CTest2<double, std::string>> v_variadic2(
+        "m", 3, "hello worlds");
     CTest2<double,std::string> m(3.0, "hello worlds");
-    EXPECT_EQ(m, v.value());
+    EXPECT_EQ(m, v_variadic2.value());
 }
 
-TEST(VariableTest, Function_Value) {
+TEST(VariableT, Methods) {
     bevarmejo::wds::vars::variable<int> v("m", 42);
     EXPECT_EQ(42, v.value());
-}
 
-TEST(VariableTest, Function_Assignment) {
-    bevarmejo::wds::vars::variable<int> v("m", 42);
     v.value(10);
     EXPECT_EQ(10, v.value());
-}
 
-TEST(VariableTest, Operator_Parentheses) {
-    bevarmejo::wds::vars::variable<int> v("m", 42);
-    EXPECT_EQ(42, v());
-}
+    EXPECT_EQ(10, v());
 
-// NEW CLASS UNDER TEST
-// variables.hpp
+    EXPECT_EQ("m", v.unit());
 
-TEST(VariablesTest, DefaultConstructor) {
-    bevarmejo::wds::vars::variables<int> vars;
-    EXPECT_EQ(0, vars.size());
-}
-
-TEST(VariablesTest, NameValueConstructor) {
-    bevarmejo::wds::vars::variables<int> vars("x", 42);
-    EXPECT_EQ(1, vars.size());
-    EXPECT_EQ(42, vars["x"]);
-}
-
-TEST(VariablesTest, NameValueConstructorWithParams) {
-    bevarmejo::wds::vars::variables<CTest<int>> vars("x", 3);
-    EXPECT_EQ(1, vars.size());
-    EXPECT_EQ(CTest<int>(3), vars["x"]);
-}
-
-TEST(VariableTest, NameValueConstructorWithNoParams) {
-    bevarmejo::wds::vars::variables<CTest<int>> vars("x");
-    EXPECT_EQ(1, vars.size());
-    EXPECT_EQ(CTest<int>(), vars["x"]);
-}
-
-TEST(VariableTest, NameValueConstructorWithMultiParams) {
-    bevarmejo::wds::vars::variables<CTest2<double, std::string>> vars("x", 3, "hello worlds");
-    EXPECT_EQ(1, vars.size());
-    CTest2<double,std::string> m(3.0, "hello worlds");
-    EXPECT_EQ(m, vars["x"]);
-}
-
-TEST(VariablesTest, GetFunction) {
-    bevarmejo::wds::vars::variables<int> vars("x", 42);
-    EXPECT_EQ(42, vars.at("x"));
-}
-
-TEST(VariablesTest, GetFunctionThrows) {
-    bevarmejo::wds::vars::variables<int> vars("x", 42);
-    EXPECT_THROW(vars.at("y"), std::out_of_range);
+    // no set operator for unit
 }
 
 // COMBINATION OF CLASSES UNDER TEST
 // variable<temporal>
-// variables<variable>
-// variables<variable<temporal>>
 
-TEST(VarsCombinedTest, FinalCombinedConstructor) {
-    bevarmejo::wds::vars::variables<bevarmejo::wds::vars::variable<bevarmejo::wds::vars::temporal<CTest2<int,std::string>>>> vars("PRES", "m", 10, 42, "yeaaah");
-    EXPECT_EQ(1, vars.size());
-    EXPECT_EQ("m", vars["PRES"].unit());
-    EXPECT_EQ(1, vars["PRES"].value().size());
-    EXPECT_EQ(42, vars["PRES"]().when(10)._t);
-    EXPECT_EQ("yeaaah", vars["PRES"]().when(10)._u);
-    EXPECT_EQ(vars.get("PRES").when(10)._t, vars["PRES"]().when(10)._t);
+TEST(VariableTemporalT, All) {
+    bevarmejo::wds::vars::variable<bevarmejo::wds::vars::temporal<CTest2<int,std::string>>> var("m", 10, 42, "yeaaah");
+    EXPECT_EQ("m", var.unit());
+    EXPECT_EQ(1, var.value().size());
+    EXPECT_EQ(42, var().when(10)._t);
+    EXPECT_EQ("yeaaah", var().when(10)._u);
 }
