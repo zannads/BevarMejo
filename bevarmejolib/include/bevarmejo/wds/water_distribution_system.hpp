@@ -26,8 +26,10 @@
 #include "bevarmejo/wds/elements/junction.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 #include "bevarmejo/wds/elements/tank.hpp"
+#include "bevarmejo/wds/elements/reservoir.hpp"
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
+#include "bevarmejo/wds/elements/pump.hpp"
 
 #include "bevarmejo/wds/subnetwork.hpp"
 
@@ -53,6 +55,11 @@ protected:
     std::vector<std::shared_ptr<Link>> _links_;
     std::vector<std::shared_ptr<Pattern>> _patterns_;
     std::vector<std::shared_ptr<Junction>> _junctions_;
+    //std::vector<std::shared_ptr<Source>> _sources_;
+    std::vector<std::shared_ptr<Tank>> _tanks_;
+    std::vector<std::shared_ptr<Reservoir>> _reservoirs_;
+    std::vector<std::shared_ptr<Pipe>> _pipes_;
+    std::vector<std::shared_ptr<Pump>> _pumps_;
 
     // Subnetworks of IDs
     std::unordered_set<subnetwork> _subnetworks_;

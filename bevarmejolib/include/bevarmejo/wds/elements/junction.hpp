@@ -4,6 +4,7 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
+#include <vector>
 
 #include "epanet2_2.h"
 

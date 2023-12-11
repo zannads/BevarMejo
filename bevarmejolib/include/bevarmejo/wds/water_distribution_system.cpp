@@ -39,6 +39,7 @@ water_distribution_system::water_distribution_system(const std::string& inp_file
     // shoudl add classic subnetworks here
     // Demand nodes 
     // Subgroups e.g., pipes, pumps, etc, 
+    subnetwork demand_nodes(l__DEMAND_NODES);
 }
 
 // Copy constructor
@@ -132,11 +133,16 @@ void water_distribution_system::init(){
             _junctions_.push_back(std::dynamic_pointer_cast<Junction>(_elements_.back()));
         }
         else if (node_type == EN_RESERVOIR){
-            // TODO: _elements_.push_back(std::make_shared<reservoir>(node_id));
-            stream_out(std::cout, "Reservoirs not implemented yet\n");
+            _elements_.push_back(std::make_shared<Reservoir>(node_id));
+            
+            // Save it in _reservoirs_ too
+            _reservoirs_.push_back(std::dynamic_pointer_cast<Reservoir>(_elements_.back()));
         }
         else if (node_type == EN_TANK){
             _elements_.push_back(std::make_shared<Tank>(node_id));
+
+            // Save it in _tanks_ too
+            _tanks_.push_back(std::dynamic_pointer_cast<Tank>(_elements_.back()));
         }
         else {
             throw std::runtime_error("Unknown node type\n");
@@ -165,10 +171,15 @@ void water_distribution_system::init(){
 
         if (link_type == EN_PIPE) {
             _elements_.push_back(std::make_shared<Pipe>(link_id));
+
+            // Save it in _pipes_ too
+            _pipes_.push_back(std::dynamic_pointer_cast<Pipe>(_elements_.back()));
         }
         else if (link_type == EN_PUMP) {
-            // TODO: _elements_.push_back(std::make_shared<pump>(link_id));
-            stream_out(std::cout, "Pumps not implemented yet\n");
+            _elements_.push_back(std::make_shared<Pump>(link_id));
+
+            // Save it in _pumps_ too
+            _pumps_.push_back(std::dynamic_pointer_cast<Pump>(_elements_.back()));
         }
         else { //TODO: all sorts of valves if (link_type == EN_VALVE) {
             //_elements_.push_back(std::make_shared<valve>(link_id));
@@ -258,6 +269,14 @@ void water_distribution_system::init(){
         junction->retrieve_demands(ph_, _patterns_);
     }
 
+    // here do the same for the links 
+
+    // here I do the same for the pump 
+    for (auto& pump : _pumps_) {
+        pump->retrieve_patterns(ph_, _patterns_);
+    }
+
+return;
 }
 
 void water_distribution_system::set_inpfile(const std::string inp_filename){

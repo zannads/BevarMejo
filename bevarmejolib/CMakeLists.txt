@@ -24,13 +24,15 @@ set(WDS_FILES   "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}
                 "${WDS_INC_ROOT}/elements/network_element.hpp" "${WDS_INC_ROOT}/elements/network_element.cpp"
 )
 set(WDS_NODES   "${WDS_INC_ROOT}/elements/junction.hpp" "${WDS_INC_ROOT}/elements/junction.cpp"
-                "${WDS_INC_ROOT}/elements/tank.hpp"
+                "${WDS_INC_ROOT}/elements/tank.hpp" "${WDS_INC_ROOT}/elements/tank.cpp"
+                "${WDS_INC_ROOT}/elements/reservoir.hpp" "${WDS_INC_ROOT}/elements/reservoir.cpp"
                 "${WDS_INC_ROOT}/elements/source.hpp" "${WDS_INC_ROOT}/elements/source.cpp"
                 "${WDS_INC_ROOT}/elements/node.hpp" "${WDS_INC_ROOT}/elements/node.cpp"
 )
 set(WDS_LINKS   "${WDS_INC_ROOT}/elements/pipe.hpp" "${WDS_INC_ROOT}/elements/pipe.cpp"
                 "${WDS_INC_ROOT}/elements/dimensioned_link.hpp" "${WDS_INC_ROOT}/elements/dimensioned_link.cpp"
                 "${WDS_INC_ROOT}/elements/link.hpp" "${WDS_INC_ROOT}/elements/link.cpp"
+                "${WDS_INC_ROOT}/elements/pump.hpp" "${WDS_INC_ROOT}/elements/pump.cpp"
 )
 set(WDS_VARS    "${WDS_INC_ROOT}/elements/variable.hpp"
                 "${WDS_INC_ROOT}/elements/temporal.hpp"

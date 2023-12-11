@@ -17,14 +17,17 @@ namespace vars {
 static const std::string L_DIMLESS = "";
 static const std::string l_DIMLESS = "";
 static const std::string L_METER = "m";
-static const std::string l_m = "m";
-static const std::string l_m3_per_s = "m3/s";
+static const std::string l__m = "m";
+static const std::string l__m3 = "m3";
+static const std::string l__m3_per_s = "m3/s";
 static const std::string L_M3_PER_S = "m/s";
 static const std::string l_L_per_s = "L/s";
 static const std::string L_KWH = "kWh";
 static const std::string l_kWh = "kWh";
 static const std::string L_JOUL = "J";
-static const std::string l_J = "J";
+static const std::string l__J = "J";
+static const std::string l__W = "W";
+static const std::string l__Euro = "€";
 
 class variable_core
 {

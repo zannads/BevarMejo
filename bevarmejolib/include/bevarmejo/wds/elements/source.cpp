@@ -69,7 +69,7 @@ void Source::retrieve_results(EN_Project ph, long t) {
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
     this->_inflow_->value().insert(std::make_pair(t, val));
 
-    errorcode = EN_getnodevalue(ph, index(), EN_ELEVATION, &val);
+    errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving elevation for node " + id()+"\n");
     this->_source_elevation_->value().insert(std::make_pair(t, val));
