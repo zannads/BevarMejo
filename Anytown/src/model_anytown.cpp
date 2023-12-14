@@ -55,9 +55,8 @@ namespace bevarmejo {
 		fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
 		inp_filename = input_directory / inp_filename;
 
-		_anytown_ = std::make_shared<wds_>();
-		_anytown_->set_inpfile(inp_filename.string());
-		_anytown_->init();
+		_anytown_ = std::make_shared<WDS>(inp_filename);
+		//_anytown_->init();
 
 		// Load subnetworks 
 		for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
@@ -74,6 +73,9 @@ namespace bevarmejo {
 				std::cout << ex.what();
 			}
 		}
+
+		// Custom made subnetworks
+		std::string name = "Demand Nodes";
 
 		// Load Pipe rehabilitation alternative costs 
 		fsys::path prac_filename{settings.child_value("avDiams")};
@@ -165,10 +167,10 @@ namespace bevarmejo {
 		}
 		catch (const std::exception& ex) {
 			std::cout << ex.what();
+			reset_dv( _anytown_, dv, old_HW_coeffs);
 			return std::vector<double>(n_fit, std::numeric_limits<double>::max());
 		}
 		
-
 		reset_dv( _anytown_, dv, old_HW_coeffs);
 
 		// Compute OF on res. 
@@ -179,7 +181,7 @@ namespace bevarmejo {
 		std::vector<std::vector<double>> res(25, std::vector<double>(3, 1.0));
 		fitv[0] = -cost(dv, res);
 		// Resilience index 
-		auto ir_daily = resilience_index(_anytown_.get(), min_pressure_psi);
+		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi);
 		fitv[1] = -1; //-ir_daily.mean();
         return fitv;
     }
@@ -221,12 +223,18 @@ namespace bevarmejo {
     double ModelAnytown::cost(const std::vector<double> &dv, const std::vector<std::vector<double>> &energy) const {
         double design_cost = 0.0;
 		// 35 pipes x [action, prc]
-		for (std::size_t i = 0; i < 35; ++i) {
-			if (dv[i*2] == 0)
+		std::size_t i = 0;
+		auto current_existing_pipe = _anytown_->subnetwork("existing_pipes").begin();
+		
+		while (i < 35) {
+			if (dv[i*2] == 0){
+				++i;
+				++current_existing_pipe;
 				continue;
+			}
 
-			std::string link_id = _anytown_->get_subnetwork("existing_pipes").at(i);
-			bool city = _anytown_->is_in_subnetork("city_pipes", link_id);
+			std::string link_id = (*current_existing_pipe)->id();
+			bool city = _anytown_->subnetwork("city_pipes").contains(link_id);
 			// I assume is in the residential as they are mutually exclusive
 
 			if (dv[i*2] == 1) { // duplicate
@@ -261,7 +269,11 @@ namespace bevarmejo {
 				else
 					design_cost += pipe_alt_costs.clean_residential;
 			}
+
+			++i;
+			++current_existing_pipe;
 		}
+
 		// 6 pipes x [prc]
 		for (std::size_t i = 0; i < 6; ++i) {
 			// dv[i] is the row of the _pipes_alt_costs_ table
@@ -280,22 +292,24 @@ namespace bevarmejo {
 		// TODO: tanks costs
 
 		return bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
-	
     }
 
-    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<wds_> anytown, const std::vector<double> &dv) const
-    {
+    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dv) const {
+		// I need to return the old HW coefficients to reset them later
 		std::vector<double> old_HW_coeffs;
+
 		// 1. existing pipes
-		for (std::size_t i = 0; i < 35; ++i) {
+		std::size_t i = 0;
+		auto current_existing_pipe = anytown->subnetwork("existing_pipes").begin();
+		assert(*current_existing_pipe != nullptr); // I know there are 35 existing pipes
+		int errorcode = 0;
+		
+		while (i < 35) {
 			// if dv[i*2] == 0 do nothing
 			if (dv[i*2] != 0 ){
-				// retrieve the link ID
-				std::string link_id = anytown->get_subnetwork("existing_pipes").at(i); 
-				// now the index associated with the link ID
-				int link_idx = 0;
-				int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
-				assert(errorcode <= 100);
+				// retrieve the link ID and index
+				std::string link_id = (*current_existing_pipe)->id();
+				int link_idx = (*current_existing_pipe)->index();
 
 				if (dv[i*2] == 1) { // duplicate
 					// new name is Dxx where xx is the original pipe name
@@ -341,22 +355,28 @@ namespace bevarmejo {
 					assert(errorcode <= 100); 
 				}
 			}
+
+			++i;
+			++current_existing_pipe;
 		}
 
 		// 2. new pipes
-		for (std::size_t i = 0; i < 6; ++i) {
+		i = 0;
+		auto current_new_pipe = anytown->subnetwork("new_pipes").begin();
+
+		while (i < 6) {
 			// retrieve the link ID from the subnetwork
-			std::string link_id = anytown->get_subnetwork("new_pipes").at(i);
-			// now the index associated with the link ID
-			int link_idx = 0;
-			int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
-			assert(errorcode <= 100);
+			std::string link_id = (*current_new_pipe)->id();
+			int link_idx = (*current_new_pipe)->index();
 
 			// change the new pipe properties:
 			// diameter =  row dv[70+i] column diameter of _pipes_alt_costs_
 			double diameter = _pipes_alt_costs_.at(dv[70+i]).diameter;
-			errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter);
+			int errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
+
+			++i;
+			++current_new_pipe;
 		}
 
 		// 3. pumps
@@ -376,20 +396,21 @@ namespace bevarmejo {
         return old_HW_coeffs;
     }
 
-    void ModelAnytown::reset_dv(std::shared_ptr<wds_> anytown, const std::vector<double> &dv, const std::vector<double> &old_HW_coeffs) const {
+    void ModelAnytown::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dv, const std::vector<double> &old_HW_coeffs) const {
 		// Do the opposite operations of apply_dv 
 		std::vector<const double>::iterator old_HW_coeffs_iter = old_HW_coeffs.begin();
 
 		// 1. existing pipes
-		for (std::size_t i = 0; i <35; ++i ) {
+		std::size_t i = 0;
+		auto current_existing_pipe = anytown->subnetwork("existing_pipes").begin();
+
+		while( i <35 ) {
 			// if dv[i*2] == 0 do nothing
 			if (dv[i*2] != 0) {
 				// retrieve the link ID
-				std::string link_id = anytown->get_subnetwork("existing_pipes").at(i);
-				// now the index associated with the link ID
-				int link_idx = 0;
-				int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
-				assert(errorcode <= 100);
+				std::string link_id = (*current_existing_pipe)->id();
+				int link_idx = (*current_existing_pipe)->index();
+				int errorcode = 0;
 
 				if (dv[i*2] == 1) { // remove duplicate
 					// duplicate pipe has been named Dxx where xx is the original pipe name
@@ -410,21 +431,27 @@ namespace bevarmejo {
 					old_HW_coeffs_iter++;
 				}
 			}
+			
+			++i;
+			++current_existing_pipe;
 		}
 
 		// 2. new pipes
-		for (std::size_t i = 0; i < 6; ++i) {
-			// retrieve the link ID from the subnetwork
-			std::string link_id = anytown->get_subnetwork("new_pipes").at(i);
-			// now the index associated with the link ID
-			int link_idx = 0;
-			int errorcode = EN_getlinkindex(anytown->ph_, link_id.c_str(), &link_idx);
-			assert(errorcode <= 100);
+		i = 0;
+		auto current_new_pipe = anytown->subnetwork("new_pipes").begin();
+
+		while (i < 6) {
+			// retrieve the link ID and idx from the subnetwork
+			std::string link_id = (*current_new_pipe)->id();
+			int link_idx = (*current_new_pipe)->index();
 
 			// change the new pipe properties:
 			double diameter = _nonexisting_pipe_diam_ft;
-			errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
+			int errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
+
+			++i;
+			++current_new_pipe;
 		}
 	
 		// 3. pumps

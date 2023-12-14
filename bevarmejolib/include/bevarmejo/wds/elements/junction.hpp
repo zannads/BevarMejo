@@ -98,8 +98,7 @@ public:
 /*--- Methods ---*/
 public:
     const bool has_demand() const override;
-    void retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>>& patterns);
-
+    
 /*--- Pure virtual methods override---*/
 public:
     /*--- Properties ---*/

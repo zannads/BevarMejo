@@ -25,64 +25,39 @@
 namespace bevarmejo {
 namespace wds {
 
-water_distribution_system::water_distribution_system(){
-    ph_ = nullptr;
-}
+water_distribution_system::water_distribution_system() :
+    ph_(nullptr),
+    _inp_file_(),
+    _elements_(),
+    _nodes_(),
+    _links_(),
+    _patterns_(),
+    _junctions_(),
+    _tanks_(),
+    _reservoirs_(),
+    _pipes_(),
+    _pumps_(),
+    _subnetworks_(),
+    _groups_() 
+    { }
 
-//water_distribution_system::water_distribution_system(const std::filesystem::path& inp_path){};
-
-water_distribution_system::water_distribution_system(const std::string& inp_filename){
-    this->set_inpfile(inp_filename);
-    
-    this->init();
-
-    // shoudl add classic subnetworks here
-    // Demand nodes 
-    // Subgroups e.g., pipes, pumps, etc, 
-    subnetwork demand_nodes(l__DEMAND_NODES);
-}
-
-// Copy constructor
-// this is not actually a copy constructor but rather a reinitialization one because I'm starting drom the inp file every time.
-water_distribution_system::water_distribution_system(const water_distribution_system &src){
-    _inp_filename_ = src._inp_filename_;
-    
-    init();
-
-    _subnetworks_ = src._subnetworks_;
-}
-
-water_distribution_system::water_distribution_system(water_distribution_system &&src) noexcept{
-    _inp_filename_ = std::move(src._inp_filename_);
-
-    ph_ = src.ph_;
-    src.ph_ = nullptr;
-
-    _elements_ = std::move(src._elements_);
-    _subnetworks_ = std::move(src._subnetworks_);
-}
-
-water_distribution_system& water_distribution_system::operator=(const water_distribution_system& rhs) {
-    if (this != &rhs){
-        water_distribution_system temp(rhs);
-        ph_ = temp.ph_;
-        temp.ph_ = nullptr;
-        std::swap(_inp_filename_, temp._inp_filename_);
-        std::swap(_elements_, temp._elements_);
-        std::swap(_subnetworks_, temp._subnetworks_);
+water_distribution_system::water_distribution_system(const std::filesystem::path& inp_file) :
+    ph_(nullptr),
+    _inp_file_(inp_file),
+    _elements_(),
+    _nodes_(),
+    _links_(),
+    _patterns_(),
+    _junctions_(),
+    _tanks_(),
+    _reservoirs_(),
+    _pipes_(),
+    _pumps_(),
+    _subnetworks_(),
+    _groups_()
+    {
+        init();
     }
-    return *this;
-}
-
-water_distribution_system& water_distribution_system::operator=(water_distribution_system &&rhs) noexcept {
-    ph_ = rhs.ph_;
-    rhs.ph_ = nullptr;
-    
-    _inp_filename_ = std::move(rhs._inp_filename_);
-    _elements_ = std::move(rhs._elements_);
-    _subnetworks_ = std::move(rhs._subnetworks_);
-    return *this;
-}
 
 water_distribution_system::~water_distribution_system(){
     if (ph_!=nullptr){
@@ -93,13 +68,48 @@ water_distribution_system::~water_distribution_system(){
     }
 }
 
+void water_distribution_system::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
+    _subnetworks_.emplace(std::make_pair(name, subnetwork));
+}
+
+void water_distribution_system::add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork){
+    _subnetworks_.insert(subnetwork);
+}
+
+void water_distribution_system::add_subnetwork(const std::filesystem::path &filename) {
+    add_subnetwork( load_egroup_from_file<NetworkElement>(filename) );
+}
+
+Subnetwork& water_distribution_system::subnetwork(const std::string& name) {
+    auto it = _subnetworks_.find(name);
+    if (it != _subnetworks_.end())
+        return it->second;
+    else
+        throw std::runtime_error("Subnetwork with name " + name + " not found.");
+}
+
+const Subnetwork& water_distribution_system::subnetwork(const std::string& name) const {
+    auto it = _subnetworks_.find(name);
+    if (it != _subnetworks_.end())
+        return it->second;
+    else
+        throw std::runtime_error("Subnetwork with name " + name + " not found.");
+}
+
+void water_distribution_system::remove_subnetwork(const std::string& name){
+    auto it = _subnetworks_.find(name);
+    if (it != _subnetworks_.end())
+        _subnetworks_.erase(it);
+    // else no problem, it's not there
+}
+
 void water_distribution_system::init(){
-    assert(!_inp_filename_.empty());
+    assert(!_inp_file_.empty());
     
     int errorcode = EN_createproject(&ph_);
     assert(errorcode<100);
     
-    errorcode = EN_open(ph_, _inp_filename_.c_str(), "", ""); // with '\0' doesn't work. WHy?
+    errorcode = EN_open(ph_, _inp_file_.c_str(), "", ""); // with '\0' doesn't work. WHy?
     if (errorcode>100){
         EN_deleteproject(ph_);
         std::string error_message = "Error opening the .inp file with code: ";
@@ -107,7 +117,7 @@ void water_distribution_system::init(){
         throw std::runtime_error(error_message);
     }
     
-    EN_setreport(ph_, "MESSAGES NO");
+    errorcode = EN_setreport(ph_, "MESSAGES NO");
 
     // Populate the elements vector
     // [1/6] Nodes
@@ -130,19 +140,19 @@ void water_distribution_system::init(){
             _elements_.push_back(std::make_shared<Junction>(node_id));
 
             // Save it in _junctions_ too
-            _junctions_.push_back(std::dynamic_pointer_cast<Junction>(_elements_.back()));
+            _junctions_.insert(std::dynamic_pointer_cast<Junction>(_elements_.back()));
         }
         else if (node_type == EN_RESERVOIR){
             _elements_.push_back(std::make_shared<Reservoir>(node_id));
             
             // Save it in _reservoirs_ too
-            _reservoirs_.push_back(std::dynamic_pointer_cast<Reservoir>(_elements_.back()));
+            _reservoirs_.insert(std::dynamic_pointer_cast<Reservoir>(_elements_.back()));
         }
         else if (node_type == EN_TANK){
             _elements_.push_back(std::make_shared<Tank>(node_id));
 
             // Save it in _tanks_ too
-            _tanks_.push_back(std::dynamic_pointer_cast<Tank>(_elements_.back()));
+            _tanks_.insert(std::dynamic_pointer_cast<Tank>(_elements_.back()));
         }
         else {
             throw std::runtime_error("Unknown node type\n");
@@ -150,7 +160,7 @@ void water_distribution_system::init(){
         delete[] node_id;
 
         // Save it in _nodes_ too
-        _nodes_.push_back(std::dynamic_pointer_cast<Node>(_elements_.back()));
+        _nodes_.insert(std::dynamic_pointer_cast<Node>(_elements_.back()));
     }
 
     // [2/6] Links
@@ -173,13 +183,13 @@ void water_distribution_system::init(){
             _elements_.push_back(std::make_shared<Pipe>(link_id));
 
             // Save it in _pipes_ too
-            _pipes_.push_back(std::dynamic_pointer_cast<Pipe>(_elements_.back()));
+            _pipes_.insert(std::dynamic_pointer_cast<Pipe>(_elements_.back()));
         }
         else if (link_type == EN_PUMP) {
             _elements_.push_back(std::make_shared<Pump>(link_id));
 
             // Save it in _pumps_ too
-            _pumps_.push_back(std::dynamic_pointer_cast<Pump>(_elements_.back()));
+            _pumps_.insert(std::dynamic_pointer_cast<Pump>(_elements_.back()));
         }
         else { //TODO: all sorts of valves if (link_type == EN_VALVE) {
             //_elements_.push_back(std::make_shared<valve>(link_id));
@@ -188,7 +198,7 @@ void water_distribution_system::init(){
         delete[] link_id;
 
         // Save it in _links_ too
-        _links_.push_back(std::dynamic_pointer_cast<Link>(_elements_.back()));
+        _links_.insert(std::dynamic_pointer_cast<Link>(_elements_.back()));
     }
 
     // [3/6] Patterns
@@ -207,7 +217,7 @@ void water_distribution_system::init(){
         delete[] pattern_id;
 
         // Save it in _patterns_ too
-        _patterns_.push_back(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
+        _patterns_.insert(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
     }
 
     // [4/6] Curves
@@ -265,31 +275,72 @@ void water_distribution_system::init(){
     // I couldn't create this relationships inside the element as it has no idea of the other elements.
     // So I create them here.
     // connect_network(ph_);
-    for (auto& junction : _junctions_) {
-        junction->retrieve_demands(ph_, _patterns_);
-    }
+    assign_demands_EN();
+    assign_patterns_EN();
+    // assign_curves_EN();
 
-    // here do the same for the links 
-
-    // here I do the same for the pump 
-    for (auto& pump : _pumps_) {
-        pump->retrieve_patterns(ph_, _patterns_);
-    }
-
-return;
-}
-
-void water_distribution_system::set_inpfile(const std::string inp_filename){
-    _inp_filename_ = inp_filename;
-}
-
-std::string water_distribution_system::get_inpfile() const{
-    return _inp_filename_;
+    return;
 }
 
 void water_distribution_system::cache_indices() const {
     for (auto& element : _elements_) {
         element->retrieve_index(ph_);
+    }
+}
+
+void water_distribution_system::assign_patterns_EN() {
+    // Pumps have patterns inside them, so I need to assign them first
+    for (auto& pump : _pumps_) {
+        int errorcode = 0;
+        double val = 0.0;
+        errorcode = EN_getlinkvalue(ph_, pump->index(), EN_LINKPATTERN, &val);
+        assert(errorcode < 100);
+
+        char* __pattern_id = new char[EN_MAXID];
+        errorcode = EN_getpatternid(ph_, static_cast<int>(val), __pattern_id);
+        std::string pattern_id(__pattern_id);
+        delete[] __pattern_id;
+
+        auto it = _patterns_.find(pattern_id);
+        assert(it != _patterns_.end());
+        
+        pump->speed_pattern((*it));
+    }
+}
+
+void water_distribution_system::assign_demands_EN() {
+    // each junction has a list of demands that add up
+    for (auto& junction : _junctions_ ) {
+        int errorcode = 0;
+        int n_demands = 0;
+        errorcode = EN_getnumdemands(ph_, junction->index(), &n_demands);
+        assert(errorcode < 100);
+
+        for (int i = 1; i <= n_demands; ++i) {
+            double d_base_demand;
+            errorcode = EN_getbasedemand(ph_, junction->index(), i, &d_base_demand);
+            assert(errorcode < 100);
+
+            int pattern_index;
+            errorcode = EN_getdemandpattern(ph_, junction->index(), i, &pattern_index);
+            assert(errorcode < 100);
+            
+            char* __pattern_id = new char[EN_MAXID];
+            errorcode = EN_getpatternid(ph_, pattern_index, __pattern_id);
+            std::string pattern_id(__pattern_id);
+            delete[] __pattern_id;
+
+            char* d_category_ = new char[EN_MAXID];
+            errorcode = EN_getdemandname(ph_, junction->index(), i, d_category_);
+            assert(errorcode < 100);
+            std::string d_category(d_category_);
+            delete[] d_category_;
+
+            auto it = _patterns_.find(pattern_id);
+            assert(it != _patterns_.end());
+
+            junction->add_demand(d_category, d_base_demand, *it);
+        }
     }
 }
 
@@ -355,34 +406,10 @@ void water_distribution_system::run_hydraulics() const{
         throw std::runtime_error("Hydraulic solution failed.");
 }
 
-void water_distribution_system::add_subnetwork(const std::filesystem::path& subnetwork_filename) {
-    // simply a wrapper as all chekc operations are done inside the class
-    _subnetworks_.insert(subnetwork(subnetwork_filename));
-}
 
-bevarmejo::wds::subnetwork water_distribution_system::get_subnetwork(const std::string &name) const
-{
-    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
-    if (subnet_it == _subnetworks_.end())
-        throw std::runtime_error("Subnetwork not found");
-    return *subnet_it;
-}
 
-bool water_distribution_system::is_in_subnetork(const std::string &name, const std::string &id) const {
-    bool found = false;
-    
-    auto subnet_it = _subnetworks_.find(bevarmejo::wds::subnetwork(name));
-    if (subnet_it == _subnetworks_.end())
-        throw std::runtime_error("Subnetwork not found");
-    for (std::size_t i = 0; i < subnet_it->size(); ++i){
-        if (subnet_it->at(i) == id){
-            found = true;
-            break;
-        }
-    }
 
-    return found;
-}
+
 
 std::string water_distribution_system::get_node_id(int index) const {
     char* node_id = new char[EN_MAXID];
@@ -395,5 +422,6 @@ std::string water_distribution_system::get_node_id(int index) const {
     return node_id_str;
 }
 
+
 } // namespace wds
-} // namespace bevarmejo 
+} // namespace bevarmejo

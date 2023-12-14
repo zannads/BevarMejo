@@ -100,9 +100,6 @@ public:
 
 /*--- Methods ---*/
 public:
-    void retrieve_patterns(EN_Project ph, std::vector<std::shared_ptr<Pattern>>& patterns);
-    // TODO: void retrieve_curves(EN_Project ph, std::vector<std::shared_ptr<Curve>>& curves);
-
 
 /*--- Pure virtual methods override---*/
 public:

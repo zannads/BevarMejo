@@ -165,44 +165,6 @@ void Pump::_update_pointers() {
     _efficiency_ = &std::get<vars::var_tseries_real>(results().at(l__EFFICIENCY));
 }
 
-void Pump::retrieve_patterns(EN_Project ph, std::vector<std::shared_ptr<Pattern>>& patterns) {
-    int errorcode;
-    double pattern_index;
-
-    errorcode = EN_getlinkvalue(ph, index(), EN_LINKPATTERN, &pattern_index);
-    if (errorcode > 100) 
-        throw std::runtime_error("Error retrieving speed pattern for pump " + id());
-
-    // look for the pattern in the patterns vector
-    for (auto& pattern : patterns) {
-        if (pattern->index() == pattern_index) {
-            _speed_pattern_ = pattern;
-            break;
-        }
-    }
-    // speed pattern can not be 0 (no pattern)
-    assert(_speed_pattern_ != nullptr);
-
-    // Do the curves here
-
-    errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_EPAT, &pattern_index);
-    if (errorcode > 100) 
-        throw std::runtime_error("Error retrieving energy cost pattern for pump " + id());
-
-    if (pattern_index == 0) {
-        _energy_cost_pattern_ = nullptr;
-        return;
-    }
-    // look for the pattern in the patterns vector
-    for (auto& pattern : patterns) {
-        if (pattern->index() == pattern_index) {
-            _energy_cost_pattern_ = pattern;
-            break;
-        }
-    }
-    assert(_energy_cost_pattern_ != nullptr);
-    
-}
 
 } // namespace wds
 } // namespace bevarmejo

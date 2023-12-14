@@ -2,33 +2,32 @@
 #include <vector>
 
 #include "bevarmejo/constants.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "hydraulic_functions.hpp"
 
 namespace bevarmejo {
-    wds::vars::timeseries_real resilience_index(wds::water_distribution_system* a_wds,
+    wds::vars::timeseries_real resilience_index(const wds::water_distribution_system& a_wds,
                                                 const double req_head_dnodes) {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
     // Calculate the resilience index at each time step and return it as a timeseries
-    wds::vars::temporal<std::vector<double>> flows_dnodes;
-    wds::vars::temporal<std::vector<double>> heads_dnodes;
-    wds::vars::temporal<std::vector<double>> flows_out_reservoirs;
-    wds::vars::temporal<std::vector<double>> heads_reservoirs;
-    wds::vars::temporal<std::vector<double>> powers_pumps;
+    wds::vars::temporal<std::vector<double>> flows_dnodes(a_wds.junctions().size()+a_wds.tanks().size());
+    wds::vars::temporal<std::vector<double>> heads_dnodes(a_wds.junctions().size()+a_wds.tanks().size());
+    wds::vars::temporal<std::vector<double>> flows_out_reservoirs(a_wds.reservoirs().size());
+    wds::vars::temporal<std::vector<double>> heads_reservoirs(a_wds.reservoirs().size());
+    wds::vars::temporal<std::vector<double>> powers_pumps(a_wds.pumps().size());
 
-    std::vector<double> req_heads_dnodes(a_wds->get_subnetwork("Demand nodes").size(), req_head_dnodes);
+    std::vector<double> req_heads_dnodes(a_wds.junctions().size()+a_wds.tanks().size(), req_head_dnodes);
 
-    try {
-        // get a property from a subnetworks create a whole new object
-        // if the property is a number it will return a vector
-        // if it is timeseries, it will return a timeseries of vector
-        //flow_at_dnodes = a_wds.get_subnetwork("Demand nodes").get("Flow");
-    } catch (std::runtime_error& e) {
-        // Add info and throw again
+    for (const auto& junction : a_wds.junctions()) {
+        if (junction->has_demand()){
+            continue;
+        }
     }
+    
 
     wds::vars::timeseries_real res_index;
     // It may be that they all have different lengths... we try at each time step 

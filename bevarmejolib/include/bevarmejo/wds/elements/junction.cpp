@@ -114,40 +114,6 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>> &patterns) {
-    int errorcode;
-    int n_demands;
-    errorcode = EN_getnumdemands(ph, this->index(), &n_demands);
-    assert(errorcode < 100);
-
-    for (int i=1; i<= n_demands; ++i) {
-        double d_base_demand;
-        errorcode = EN_getbasedemand(ph, this->index(), i, &d_base_demand);
-        assert(errorcode < 100);
-
-        int pattern_index;
-        errorcode = EN_getdemandpattern(ph, this->index(), i, &pattern_index);
-        assert(errorcode < 100);
-        // look for the pattern in the _patterns_ vector
-        std::shared_ptr<Pattern> p_pattern = nullptr;
-        for (auto& pattern : patterns) {
-            if (pattern->index() == pattern_index) {
-                p_pattern = pattern;
-                break;
-            }
-        }
-        assert(p_pattern != nullptr);
-        
-        char* d_category_ = new char[EN_MAXID];
-        errorcode = EN_getdemandname(ph, this->index(), i, d_category_);
-        assert(errorcode < 100);
-        std::string d_category(d_category_);
-        delete[] d_category_;
-
-        this->add_demand(d_category, d_base_demand, p_pattern);
-    }
-}
-
 void Junction::retrieve_properties(EN_Project ph)
 {
     inherited::retrieve_properties(ph);
