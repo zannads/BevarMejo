@@ -118,7 +118,7 @@ namespace bevarmejo {
         std::vector<tanks_costs> _tanks_costs_;
 
         /* Anytown specific functions */
-        double cost(const std::vector<double>& dv, const std::vector<std::vector<double>>& energy) const;
+        double cost(const std::vector<double>& dv, const double energy_cost_per_day) const;
         
         /* Helper functions */
         std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::water_distribution_system> anytown, const std::vector<double>& dv) const;
