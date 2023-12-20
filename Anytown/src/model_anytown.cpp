@@ -174,15 +174,32 @@ namespace bevarmejo {
 		reset_dv( _anytown_, dv, old_HW_coeffs);
 
 		// Compute OF on res. 
-		std::vector<double> fitv(n_fit, 0);
+		std::vector<double> fitv(n_fit, 0.0);
 
 		// NPV of the solution (negative as both initial investement and cash flows are negative)
 		//I need to extract pump energies from the network
-		std::vector<std::vector<double>> res(25, std::vector<double>(3, 1.0));
-		fitv[0] = -cost(dv, res);
+		double total_ene_cost_per_day = 0.0;
+		for (const auto& pump : _anytown_->pumps() ) {
+			unsigned long t_prec = 0;
+			for (const auto& [t, power_kWh] : pump->instant_energy().value() ) {
+				total_ene_cost_per_day += power_kWh * (t - t_prec) * energy_cost_kWh ; 
+				t_prec = t;
+			}
+		}
+
+		fitv[0] = -cost(dv, total_ene_cost_per_day);
 		// Resilience index 
 		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi);
-		fitv[1] = -1; //-ir_daily.mean();
+		//fitv[1] = -1; //-ir_daily.mean();
+		fitv[1] = 0.0;
+		unsigned long t_prec = 0;
+		for (const auto& [t, ir] : ir_daily) {
+			fitv[1] += ir*(t - t_prec);
+			t_prec = t;
+		}
+		auto& t_total = t_prec; // at the end of the loop t_prec is the last time step
+		fitv[1] /= t_total;
+
         return fitv;
     }
 
@@ -220,7 +237,7 @@ namespace bevarmejo {
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
     }
 
-    double ModelAnytown::cost(const std::vector<double> &dv, const std::vector<std::vector<double>> &energy) const {
+    double ModelAnytown::cost(const std::vector<double> &dv, const double energy_cost_per_day) const {
         double design_cost = 0.0;
 		// 35 pipes x [action, prc]
 		std::size_t i = 0;
@@ -281,13 +298,8 @@ namespace bevarmejo {
 			design_cost += pipe_alt_costs.new_cost;
 		}
 		// energy from pumps 
-		double total_energy_Wh_perDay = 0.0;
-		for (auto& hour : energy) {
-			for (auto& pump_energy : hour) {
-				total_energy_Wh_perDay += pump_energy;
-			}
-		}
-		double yearly_energy_cost = total_energy_Wh_perDay * energy_cost_kWh / 1000 * bevarmejo::days_per_year;
+		
+		double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 		
 		// TODO: tanks costs
 

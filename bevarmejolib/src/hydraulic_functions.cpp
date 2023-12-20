@@ -14,17 +14,70 @@ namespace bevarmejo {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
     // Calculate the resilience index at each time step and return it as a timeseries
-    wds::vars::temporal<std::vector<double>> flows_dnodes(a_wds.junctions().size()+a_wds.tanks().size());
-    wds::vars::temporal<std::vector<double>> heads_dnodes(a_wds.junctions().size()+a_wds.tanks().size());
-    wds::vars::temporal<std::vector<double>> flows_out_reservoirs(a_wds.reservoirs().size());
-    wds::vars::temporal<std::vector<double>> heads_reservoirs(a_wds.reservoirs().size());
-    wds::vars::temporal<std::vector<double>> powers_pumps(a_wds.pumps().size());
+    wds::vars::temporal<std::vector<double>> flows_dnodes;
+    wds::vars::temporal<std::vector<double>> heads_dnodes;
+    wds::vars::temporal<std::vector<double>> flows_out_reservoirs;
+    wds::vars::temporal<std::vector<double>> heads_reservoirs;
+    wds::vars::temporal<std::vector<double>> powers_pumps;
 
     std::vector<double> req_heads_dnodes(a_wds.junctions().size()+a_wds.tanks().size(), req_head_dnodes);
 
-    for (const auto& junction : a_wds.junctions()) {
-        if (junction->has_demand()){
-            continue;
+    /* I will implement here the logic that I will probably move later to the ElementGroup
+      * class: i.e., extract from a subnetwork all the results in a single variable
+      * object. E.g. for all the flows instead of having a vector of temporal of 
+      * double, I will have a temporal of vector of doubles so that the results
+      * are sync at the same time steps.
+    */
+
+   auto p_first_junc = *a_wds.junctions().begin();
+   for (const auto& [t, flow] : p_first_junc->demand_delivered().value() ) {
+        flows_dnodes.insert(std::make_pair(t, std::vector<double>() ) );
+        flows_dnodes.at(t).reserve(a_wds.junctions().size()+a_wds.tanks().size());
+        heads_dnodes.insert(std::make_pair(t, std::vector<double>() ) );
+        heads_dnodes.at(t).reserve(a_wds.junctions().size()+a_wds.tanks().size());
+   }
+
+   for (const auto& junction : a_wds.junctions() ) {
+        for (const auto& [t, flow] : junction->demand_delivered().value() ) {
+            flows_dnodes.at(t).push_back(flow);
+        }
+        for (const auto& [t, head] : junction->head().value() ) {
+            heads_dnodes.at(t).push_back(head);
+        }
+   }
+   for (const auto& tank : a_wds.tanks() ) {
+          for (const auto& [t, flow] : tank->inflow().value() ) {
+                flows_dnodes.at(t).push_back(flow);
+          }
+          for (const auto& [t, head] : tank->head().value() ) {
+                heads_dnodes.at(t).push_back(head);
+          }
+    }
+
+    auto p_first_res = *a_wds.reservoirs().begin();
+    for (const auto& [t, flow] : p_first_res->inflow().value() ) {
+        flows_out_reservoirs.insert(std::make_pair(t, std::vector<double>() ) );
+        flows_out_reservoirs.at(t).reserve(a_wds.reservoirs().size());
+        heads_reservoirs.insert(std::make_pair(t, std::vector<double>() ) );
+        heads_reservoirs.at(t).reserve(a_wds.reservoirs().size());
+    }
+    for (const auto& reservoir : a_wds.reservoirs() ) {
+        for (const auto& [t, flow] : reservoir->inflow().value() ) {
+            flows_out_reservoirs.at(t).push_back(flow);
+        }
+        for (const auto& [t, head] : reservoir->head().value() ) {
+            heads_reservoirs.at(t).push_back(head);
+        }
+    }
+
+    auto p_first_pump = *a_wds.pumps().begin();
+    for (const auto& [t, power] : p_first_pump->instant_energy().value() ) {
+        powers_pumps.insert(std::make_pair(t, std::vector<double>() ) );
+        powers_pumps.at(t).reserve(a_wds.pumps().size());
+    }
+    for (const auto& pump : a_wds.pumps() ) {
+        for (const auto& [t, power] : pump->instant_energy().value() ) {
+            powers_pumps.at(t).push_back(power);
         }
     }
     
@@ -32,14 +85,14 @@ namespace bevarmejo {
     wds::vars::timeseries_real res_index;
     // It may be that they all have different lengths... we try at each time step 
     try {
-        for (const auto& [time, flow_dnodes] : flows_dnodes) {
-            res_index.insert(std::make_pair(time, 
-                            resilience_index(   flow_dnodes, 
-                                                heads_dnodes.at(time),
-                                                flows_out_reservoirs.at(time),
-                                                heads_reservoirs.at(time),
-                                                powers_pumps.at(time),
-                                                req_heads_dnodes)));
+        for (const auto& [t, flow_dnodes] : flows_dnodes ) {
+            res_index.insert(std::make_pair(t, 
+                        resilience_index(   flow_dnodes, 
+                                            heads_dnodes.at(t),
+                                            flows_out_reservoirs.at(t),
+                                            heads_reservoirs.at(t),
+                                            powers_pumps.at(t),
+                                            req_heads_dnodes)));
         }
     } catch (std::runtime_error& e) {
         // No need to add any value at that time (not all time steps have all the data)
