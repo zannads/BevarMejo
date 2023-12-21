@@ -56,7 +56,7 @@ water_distribution_system::water_distribution_system(const std::filesystem::path
     _subnetworks_(),
     _groups_()
     {
-        init();
+        load_from_inp_file(inp_file);
     }
 
 water_distribution_system::~water_distribution_system(){
@@ -103,7 +103,8 @@ void water_distribution_system::remove_subnetwork(const std::string& name){
     // else no problem, it's not there
 }
 
-void water_distribution_system::init(){
+void water_distribution_system::load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf){
+    _inp_file_ = inp_file;
     assert(!_inp_file_.empty());
     
     int errorcode = EN_createproject(&ph_);
@@ -118,6 +119,10 @@ void water_distribution_system::init(){
     }
     
     errorcode = EN_setreport(ph_, "MESSAGES NO");
+
+    // Do everything you need to do on your Project before loading the network
+    if (preprocessf)
+        preprocessf(ph_);
 
     // Populate the elements vector
     // [1/6] Nodes

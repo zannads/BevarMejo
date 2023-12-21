@@ -9,6 +9,7 @@
 #define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdio.h>
@@ -88,7 +89,7 @@ public:
     ~water_distribution_system();
     
     // Equivalent to constuctor from .inp file
-    void init();
+    void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
     
 /*--- Getters and setters ---*/
 public:

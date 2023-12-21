@@ -55,8 +55,28 @@ namespace bevarmejo {
 		fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
 		inp_filename = input_directory / inp_filename;
 
-		_anytown_ = std::make_shared<WDS>(inp_filename);
-		//_anytown_->init();
+		/* Fix the bug where the curve 2 (i.e., the pump characteristic curve
+		 * is uploaded as a generic curve and not as a pump curve). 
+		 * Thus instead of the automatic constructor from inp file: 
+		 * _anytown_ = std::make_shared<WDS>(inp_filename);
+		 * I create an empty one first, add the inp file, modify it thorugh the lambda
+		 * and then use init(). 
+		*/
+		_anytown_ = std::make_shared<WDS>();
+		
+		// change curve ID 2 to a pump curve
+		auto change_curve_type = [](EN_Project ph) {
+			assert(ph != nullptr);
+			std::string curve_id = "2";
+			int curve_idx = 0;
+			int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
+			assert(errorcode <= 100);
+
+			errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
+			assert(errorcode <= 100);
+		};
+
+		_anytown_->load_from_inp_file(inp_filename, change_curve_type);
 
 		// Load subnetworks 
 		for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
