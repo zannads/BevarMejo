@@ -30,6 +30,9 @@
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements/pump.hpp"
+#include "bevarmejo/wds/elements/curve.hpp"
+#include "bevarmejo/wds/elements/curves.hpp"
+#include "bevarmejo/wds/elements/pattern.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 
@@ -67,6 +70,7 @@ protected:
     Reservoirs _reservoirs_;
     Pipes _pipes_;
     Pumps _pumps_;
+    Curves _curves_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
     // while groups can be defined for any type of element.
@@ -101,6 +105,7 @@ public:
     const Reservoirs& reservoirs() const {return _reservoirs_;};
     const Pipes& pipes() const {return _pipes_;};
     const Pumps& pumps() const {return _pumps_;};
+    const Curves& curves() const {return _curves_;};
 
     /*--- User-defined Subnetworks ---*/
     SubnetworksMap& subnetworks() {return _subnetworks_;};
@@ -122,6 +127,7 @@ public:
     void cache_indices() const;
     void assign_patterns_EN();
     void assign_demands_EN();
+    void assign_curves_EN();
     void connect_network_EN();
     
     void run_hydraulics() const;

@@ -225,14 +225,33 @@ void water_distribution_system::init(){
     errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
     assert(errorcode < 100);
     for (int i = 1; i <= n_curves; ++i) {
-        /*char* curve_id = new char[EN_MAXID];
-        errorcode = EN_getcurveid(ph_, i, curve_id);
+        char* __curve_id = new char[EN_MAXID];
+        errorcode = EN_getcurveid(ph_, i, __curve_id);
+        assert(errorcode < 100);
+        std::string curve_id(__curve_id);
+        delete[] __curve_id;
+
+        int curve_type;
+        errorcode = EN_getcurvetype(ph_, i, &curve_type);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<curve>(curve_id));
-        delete[] curve_id;
-        */
-        stream_out(std::cout, "Curves not implemented yet\n");
+        if (curve_type == EN_GENERIC_CURVE) {
+            _elements_.push_back(std::make_shared<GenericCurve>(curve_id));
+            std::cout << "Curve with ID \""+curve_id+"\" is a generic curve and will not link to anything.\n";
+        }
+        else if (curve_type == EN_VOLUME_CURVE)
+            _elements_.push_back(std::make_shared<VolumeCurve>(curve_id));
+        else if (curve_type == EN_PUMP_CURVE)
+            _elements_.push_back(std::make_shared<PumpCurve>(curve_id));
+        else if (curve_type == EN_EFFIC_CURVE)
+            _elements_.push_back(std::make_shared<EfficiencyCurve>(curve_id));
+        else if (curve_type == EN_HLOSS_CURVE)
+            _elements_.push_back(std::make_shared<HeadlossCurve>(curve_id));
+        else 
+            throw std::runtime_error("Unknown curve type\n");
+    
+        // Save it in _curves_ too
+        _curves_.insert(std::dynamic_pointer_cast<Curve>(_elements_.back()));
     }
 
     // [5/6] Controls (simple control)
@@ -277,7 +296,7 @@ void water_distribution_system::init(){
     // connect_network(ph_);
     assign_demands_EN();
     assign_patterns_EN();
-    // assign_curves_EN();
+    assign_curves_EN();
 
     return;
 }
@@ -342,6 +361,53 @@ void water_distribution_system::assign_demands_EN() {
             junction->add_demand(d_category, d_base_demand, *it);
         }
     }
+}
+
+void water_distribution_system::assign_curves_EN() {
+    // Tanks and pumps have curves inside them, so I need to assign them first
+
+    // Pumps have two types of curves: pump curve and efficiency curve
+    for (auto& pump : _pumps_) {
+        // First the pump curve
+        assert(pump->index() > 0);
+        double val = 0.0;
+        pump->retrieve_index(ph_);
+        int errco = EN_getlinkvalue(ph_, pump->index(), EN_PUMP_HCURVE, &val);
+        assert(errco <= 100);
+
+        if (val != 0.0) {
+            char* __curve_id = new char[EN_MAXID];
+            errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
+            assert(errco <= 100);
+            std::string curve_id(__curve_id);
+            delete[] __curve_id;
+
+            auto it = _curves_.find(curve_id);
+            assert(it != _curves_.end());
+
+            pump->pump_curve(std::dynamic_pointer_cast<PumpCurve>(*it) );
+        }
+        else pump->pump_curve(nullptr);
+
+        // Finally the efficiency curve 
+        errco = EN_getlinkvalue(ph_, pump->index(), EN_PUMP_ECURVE, &val);
+        assert(errco <= 100);
+        
+        if (val != 0.0) {
+            char* __curve_id = new char[EN_MAXID];
+            errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
+            std::string curve_id(__curve_id);
+            delete[] __curve_id;
+
+            auto it = _curves_.find(curve_id);
+            assert(it != _curves_.end());
+
+            pump->efficiency_curve(std::dynamic_pointer_cast<EfficiencyCurve>(*it) );
+        }
+        else pump->efficiency_curve(nullptr);
+    }
+
+    // TODO: tanks have a level vs volume curve
 }
 
 void water_distribution_system::run_hydraulics() const{

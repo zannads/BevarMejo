@@ -30,6 +30,9 @@
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements/pump.hpp"
+//#include "bevarmejo/wds/elements/valve.hpp"
+#include "bevarmejo/wds/elements/pattern.hpp"
+#include "bevarmejo/wds/elements/curve.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -243,7 +246,7 @@ using Pipes = ElementsGroup<Pipe>;
 using Pumps = ElementsGroup<Pump>;
 // using Valves = ElementsGroup<Valve>;
 using Patterns = ElementsGroup<Pattern>;
-// using Curves = ElementsGroup<Curve>;
+using Curves = ElementsGroup<Curve>;
 // using Controls = ElementsGroup<Control>;
 // using Rules = ElementsGroup<Rule>;
 

@@ -14,6 +14,8 @@
 #include "bevarmejo/wds/elements/link.hpp"
 
 #include "bevarmejo/wds/elements/pattern.hpp"
+#include "bevarmejo/wds/elements/curve.hpp"
+#include "bevarmejo/wds/elements/curves.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -44,9 +46,10 @@ protected:
     vars::var_real* _energy_cost_;
 
     std::shared_ptr<Pattern> _speed_pattern_;
-    // Curve H-Q
-    // Curve E-Q
     std::shared_ptr<Pattern> _energy_cost_pattern_;
+    std::shared_ptr<PumpCurve> _pump_curve_;
+    std::shared_ptr<EfficiencyCurve> _efficiency_curve_;
+    
     
     /*---  Results   ---*/
     vars::var_tseries_real* _instant_energy_;
@@ -92,6 +95,10 @@ public:
     void speed_pattern(const std::shared_ptr<Pattern> a_speed_pattern) { _speed_pattern_ = a_speed_pattern; }
     std::shared_ptr<Pattern> energy_cost_pattern() const { return _energy_cost_pattern_; }
     void energy_cost_pattern(const std::shared_ptr<Pattern> a_energy_cost_pattern) { _energy_cost_pattern_ = a_energy_cost_pattern; }
+    std::shared_ptr<PumpCurve> pump_curve() const { return _pump_curve_; }
+    void pump_curve(const std::shared_ptr<PumpCurve> a_pump_curve) { _pump_curve_ = a_pump_curve; }
+    std::shared_ptr<EfficiencyCurve> efficiency_curve() const { return _efficiency_curve_; }
+    void efficiency_curve(const std::shared_ptr<EfficiencyCurve> a_efficiency_curve) { _efficiency_curve_ = a_efficiency_curve; }
 
     /*---  Results   ---*/
     const vars::var_tseries_real& instant_energy() const { return *_instant_energy_; }

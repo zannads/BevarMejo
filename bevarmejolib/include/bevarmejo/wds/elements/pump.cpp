@@ -29,6 +29,8 @@ namespace wds {
         _energy_cost_(nullptr),
         _speed_pattern_(nullptr),
         _energy_cost_pattern_(nullptr),
+        _pump_curve_(nullptr),
+        _efficiency_curve_(nullptr),
         _instant_energy_(nullptr),
         _state_(nullptr),
         _efficiency_(nullptr)
@@ -46,6 +48,8 @@ namespace wds {
         _energy_cost_(nullptr),
         _speed_pattern_(other._speed_pattern_),
         _energy_cost_pattern_(other._energy_cost_pattern_),
+        _pump_curve_(other._pump_curve_),
+        _efficiency_curve_(other._efficiency_curve_),
         _instant_energy_(nullptr),
         _state_(nullptr),
         _efficiency_(nullptr)
@@ -61,6 +65,8 @@ namespace wds {
         _energy_cost_(nullptr),
         _speed_pattern_(std::move(rhs._speed_pattern_)),
         _energy_cost_pattern_(std::move(rhs._energy_cost_pattern_)),
+        _pump_curve_(std::move(rhs._pump_curve_)),
+        _efficiency_curve_(std::move(rhs._efficiency_curve_)),
         _instant_energy_(nullptr),
         _state_(nullptr),
         _efficiency_(nullptr)
@@ -74,6 +80,9 @@ namespace wds {
             inherited::operator=(rhs);
             _speed_pattern_ = rhs._speed_pattern_;
             _energy_cost_pattern_ = rhs._energy_cost_pattern_;
+            _pump_curve_ = rhs._pump_curve_;
+            _efficiency_curve_ = rhs._efficiency_curve_;
+            
             _update_pointers();
         }
         return *this;
@@ -85,6 +94,9 @@ namespace wds {
             inherited::operator=(std::move(rhs));
             _speed_pattern_ = std::move(rhs._speed_pattern_);
             _energy_cost_pattern_ = std::move(rhs._energy_cost_pattern_);
+            _pump_curve_ = std::move(rhs._pump_curve_);
+            _efficiency_curve_ = std::move(rhs._efficiency_curve_);
+            
             _update_pointers();
         }
         return *this;
