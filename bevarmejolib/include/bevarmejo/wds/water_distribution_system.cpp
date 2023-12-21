@@ -369,14 +369,13 @@ void water_distribution_system::assign_demands_EN() {
 }
 
 void water_distribution_system::assign_curves_EN() {
-    // Tanks and pumps have curves inside them, so I need to assign them first
+    // Tanks, pumps and valves have curves inside them, so I need to assign them
 
     // Pumps have two types of curves: pump curve and efficiency curve
     for (auto& pump : _pumps_) {
         // First the pump curve
         assert(pump->index() > 0);
         double val = 0.0;
-        pump->retrieve_index(ph_);
         int errco = EN_getlinkvalue(ph_, pump->index(), EN_PUMP_HCURVE, &val);
         assert(errco <= 100);
 
@@ -401,6 +400,7 @@ void water_distribution_system::assign_curves_EN() {
         if (val != 0.0) {
             char* __curve_id = new char[EN_MAXID];
             errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
+            assert(errco <= 100);
             std::string curve_id(__curve_id);
             delete[] __curve_id;
 
@@ -412,7 +412,31 @@ void water_distribution_system::assign_curves_EN() {
         else pump->efficiency_curve(nullptr);
     }
 
-    // TODO: tanks have a level vs volume curve
+    for (auto& tank : _tanks_){
+        assert(tank->index() > 0);
+
+        double val = 0.0;
+        int errco = EN_getnodevalue(ph_, tank->index(), EN_VOLCURVE, &val);
+        assert(errco <= 100);
+
+        tank->volume_curve(nullptr);
+        if (val == 0.0)
+            continue;
+        
+        char* __curve_id = new char[EN_MAXID+1];
+        errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
+        assert(errco <= 100);
+        std::string curve_id(__curve_id);
+        delete[] __curve_id;
+
+        auto it = _curves_.find(curve_id);
+        assert(it != _curves_.end());
+
+        tank->volume_curve(std::dynamic_pointer_cast<VolumeCurve>(*it) );
+    }
+
+    // TODO: valves
+
 }
 
 void water_distribution_system::run_hydraulics() const{

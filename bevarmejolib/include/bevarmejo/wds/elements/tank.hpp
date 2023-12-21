@@ -13,6 +13,8 @@
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
+#include "bevarmejo/wds/elements/curves.hpp"
+
 namespace bevarmejo {
 namespace wds {
 
@@ -23,14 +25,16 @@ namespace wds {
 
 static const std::string l__NAME_TANK= "Tank";
 
-static const std::string l__MIN_VOLUME = "MinVolume";
-static const std::string l__MIN_LEVEL = "MinLevel";
-static const std::string l__MAX_LEVEL = "MaxLevel";
-static const std::string l__INITIAL_LEVEL = "InitLevel";
-static const std::string l__LEVEL = "Level";
-static const std::string l__INITIAL_VOLUME = "InitVolume";
-static const std::string l__VOLUME = "Volume";
-static const std::string l__MAX_VOLUME = "MaxVolume";
+static const std::string l__DIAMETER = "Diameter";
+static const std::string l__INITIAL_LEVEL = "InitL";
+static const std::string l__MIN_LEVEL = "MinL";
+static const std::string l__LEVEL = "L";
+static const std::string l__MAX_LEVEL = "MaxL";
+static const std::string l__INITIAL_VOLUME = "InitV";
+static const std::string l__MIN_VOLUME = "MinV";
+static const std::string l__VOLUME = "V";
+static const std::string l__MAX_VOLUME = "MaxV";
+static const std::string l__CAN_OVERFLOW = "Overf";
 
 class Tank : public Source {
 
@@ -41,14 +45,14 @@ public:
 protected:
     /*--- Properties ---*/
     //MIXMODEL
-    //TANKDIAM
+    vars::var_real* _diameter_;
     vars::var_real* _min_volume_;
-    //VOLCURVE
+    std::shared_ptr<VolumeCurve> _volume_curve_;
     vars::var_real* _min_level_;
     vars::var_real* _max_level_;
     //MIXFRACTION
     //TANK_KBULK
-    //CANOVERFLOW
+    vars::var_int* _can_overflow_;
     vars::var_real* _initial_level_;
 
     /*---  Results   ---*/
@@ -86,8 +90,12 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
+    vars::var_real& diameter() const { return *_diameter_; }
+    void diameter(const double a_diameter) { *_diameter_ = a_diameter; }
     vars::var_real& min_volume() const { return *_min_volume_; }
     void min_volume(const double a_min_volume) { *_min_volume_ = a_min_volume; }
+    std::shared_ptr<VolumeCurve> volume_curve() const { return _volume_curve_; }
+    void volume_curve(const std::shared_ptr<VolumeCurve> a_volume_curve) { _volume_curve_ = a_volume_curve; }
     vars::var_real& min_level() const { return *_min_level_; }
     void min_level(const double a_min_level) { *_min_level_ = a_min_level; }
     vars::var_real& max_level() const { return *_max_level_; }

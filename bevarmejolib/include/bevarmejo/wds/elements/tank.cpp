@@ -22,9 +22,12 @@ namespace wds {
 
 Tank::Tank(const std::string& id) :
     inherited(id),
+    _diameter_(nullptr),
     _min_volume_(nullptr),
+    _volume_curve_(nullptr),
     _min_level_(nullptr),
     _max_level_(nullptr),
+    _can_overflow_(nullptr),
     _initial_level_(nullptr),
     _level_(nullptr),
     _initial_volume_(nullptr),
@@ -39,9 +42,12 @@ Tank::Tank(const std::string& id) :
 // Copy constructor
 Tank::Tank(const Tank& other) : 
     inherited(other),
+    _diameter_(nullptr),
     _min_volume_(nullptr),
+    _volume_curve_(other._volume_curve_),
     _min_level_(nullptr),
     _max_level_(nullptr),
+    _can_overflow_(nullptr),
     _initial_level_(nullptr),
     _level_(nullptr),
     _initial_volume_(nullptr),
@@ -54,11 +60,14 @@ Tank::Tank(const Tank& other) :
 // Move constructor
 Tank::Tank(Tank&& rhs) noexcept : 
     inherited(std::move(rhs)),
+    _diameter_(nullptr),
     _min_volume_(nullptr),
+    _volume_curve_(std::move(rhs._volume_curve_)),
     _min_level_(nullptr),
     _max_level_(nullptr),
     _initial_level_(nullptr),
     _level_(nullptr),
+    _can_overflow_(nullptr),
     _initial_volume_(nullptr),
     _volume_(nullptr),
     _max_volume_(nullptr)
@@ -91,6 +100,11 @@ void Tank::retrieve_properties(EN_Project ph) {
 
     int errorcode;
     double val;
+    errorcode = EN_getnodevalue(ph, index(), EN_DIAMETER, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving diameter for node " + id()+"\n");
+    this->_diameter_->value(val);
+
     errorcode = EN_getnodevalue(ph, index(), EN_MINVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving min volume for node " + id()+"\n");
@@ -105,6 +119,11 @@ void Tank::retrieve_properties(EN_Project ph) {
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving max level for node " + id()+"\n");
     this->_max_level_->value(val);
+
+    errorcode = EN_getnodevalue(ph, index(), EN_CANOVERFLOW, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving can overflow for node " + id()+"\n");
+    this->_can_overflow_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_TANKLEVEL, &val);
     if (errorcode > 100)
@@ -141,9 +160,11 @@ void Tank::retrieve_results(EN_Project ph, long t) {
 void Tank::_add_properties() {
     inherited::_add_properties();
 
+    properties().emplace(l__DIAMETER, vars::var_real(vars::l__m,0));
     properties().emplace(l__MIN_VOLUME, vars::var_real(vars::l__m3,0));
     properties().emplace(l__MIN_LEVEL, vars::var_real(vars::l__m,0));
     properties().emplace(l__MAX_LEVEL, vars::var_real(vars::l__m,0));
+    properties().emplace(l__CAN_OVERFLOW, vars::var_int(vars::L_DIMLESS,0));
     properties().emplace(l__INITIAL_LEVEL, vars::var_real(vars::l__m,0));
 }
 
@@ -159,9 +180,11 @@ void Tank::_add_results() {
 void Tank::_update_pointers() {
     inherited::_update_pointers();
 
+    _diameter_ = &std::get<vars::var_real>(properties().at(l__DIAMETER));
     _min_volume_ = &std::get<vars::var_real>(properties().at(l__MIN_VOLUME));
     _min_level_ = &std::get<vars::var_real>(properties().at(l__MIN_LEVEL));
     _max_level_ = &std::get<vars::var_real>(properties().at(l__MAX_LEVEL));
+    _can_overflow_ = &std::get<vars::var_int>(properties().at(l__CAN_OVERFLOW));
     _initial_level_ = &std::get<vars::var_real>(properties().at(l__INITIAL_LEVEL));
 
     _level_ = &std::get<vars::var_tseries_real>(results().at(l__LEVEL));
