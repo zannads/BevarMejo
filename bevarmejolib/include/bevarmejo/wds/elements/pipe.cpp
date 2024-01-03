@@ -65,7 +65,23 @@ Pipe::~Pipe() {
     // delete _length_;
 }
 
-void Pipe::retrieve_properties(EN_Project ph) {
+std::shared_ptr<Pipe> Pipe::duplicate() const {
+    std::shared_ptr<Pipe> p_pipe = std::make_shared<Pipe>(*this);
+    std::string new_id = "D"+ this->id();
+    p_pipe->id(new_id);
+    p_pipe->index(0);
+    return p_pipe;
+}
+
+std::shared_ptr<Pipe> Pipe::duplicate(const std::string& id) const {
+    std::shared_ptr<Pipe> p_pipe = std::make_shared<Pipe>(*this);
+    p_pipe->id(id);
+    p_pipe->index(0);
+    return p_pipe;
+}
+
+void Pipe::retrieve_properties(EN_Project ph)
+{
     inherited::retrieve_properties(ph);
     assert(index()!= 0);
 

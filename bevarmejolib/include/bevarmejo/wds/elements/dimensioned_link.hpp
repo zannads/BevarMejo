@@ -74,7 +74,9 @@ public:
 public:
     /*--- Properties ---*/
     vars::var_real& diameter() const { return *_diameter_; }
+    void diameter(const double a_diameter) { _diameter_->value(a_diameter); }
     vars::var_real& roughness() const { return *_roughness_; }
+    void roughness(const double a_roughness) { _roughness_->value(a_roughness); }
     vars::var_real& minor_loss() const { return *_minor_loss_; }
     vars::var_real& bulk_coeff() const { return *_bulk_coeff_; }
     vars::var_real& wall_coeff() const { return *_wall_coeff_; }

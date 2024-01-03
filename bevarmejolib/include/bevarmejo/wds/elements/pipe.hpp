@@ -68,6 +68,16 @@ public:
 
     /*---  Results   ---*/
 
+/*--- Methods ---*/
+public:
+    /*--- Properties ---*/
+    
+    /*---  Results   ---*/
+
+    /*---   Other    ---*/
+    std::shared_ptr<Pipe> duplicate() const;
+    std::shared_ptr<Pipe> duplicate(const std::string& id) const;
+
 /*--- Pure virtual methods ---*/
 public:
     /*--- Properties ---*/

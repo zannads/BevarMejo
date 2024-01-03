@@ -63,14 +63,18 @@ protected:
     
     // Class-specific collections of elements
     Nodes _nodes_;
-    Links _links_;
-    Patterns _patterns_;
     Junctions _junctions_;
     // Sources _sources_;
     Tanks _tanks_;
     Reservoirs _reservoirs_;
-    Pipes _pipes_;
+
+    Links _links_;
     Pumps _pumps_;
+    // DimensionedLinks _dimensioned_links_;
+    Pipes _pipes_;
+    // Valves _valves_;
+
+    Patterns _patterns_;
     Curves _curves_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
@@ -132,6 +136,14 @@ public:
     void connect_network_EN();
     
     void run_hydraulics() const;
+
+    /*--- ?? ---*/
+    template <typename T>
+    std::vector<std::shared_ptr<Element>>::iterator insert(const std::shared_ptr<T>& a_element);
+
+    template <typename T>
+    std::vector<std::shared_ptr<Element>>::iterator remove(const std::shared_ptr<T>& a_element);
+
 private:
     template <typename T>
     std::pair<std::string, ElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
@@ -151,6 +163,110 @@ using WDS = wds::water_distribution_system; // short name for water_distribution
 
 } // namespace bevarmejo
 
+
+/*--- Implementation ---*/
+template <typename T>
+typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::water_distribution_system::insert(const std::shared_ptr<T>& a_element) {
+    if (a_element == nullptr)
+        return _elements_.end();
+
+    // TODO: I should in some way, check if the element is already in the network.
+
+    _elements_.push_back(std::static_pointer_cast<bevarmejo::wds::Element, T>(a_element));
+
+    // now, based on the type of T, I should add the element to the specific container.
+    // if Element, nothing else to do.
+    // If other types, add to the specific container.
+    if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
+        _nodes_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
+        _nodes_.insert(a_element);
+        _junctions_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Tank>) {
+        _nodes_.insert(a_element);
+        _tanks_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Reservoir>) {
+        _nodes_.insert(a_element);
+        _reservoirs_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Link>) {
+        _links_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pipe>) {
+        _links_.insert(a_element);
+        _pipes_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pump>) {
+        _links_.insert(a_element);
+        _pumps_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
+        _patterns_.insert(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
+        _curves_.insert(a_element);
+    } else {
+        // Handle other types
+        // ...
+        // good question, for sure I don't add it to anything else, 
+        // but if I'm here I will be here at compile time so maybe warning??
+    }
+
+    // Make sure EPANET indices are always updated (may throw an error if the element is not in the network
+    // doesn't exist yet)
+    this->cache_indices();
+
+    return _elements_.end() - 1;
+}
+
+template <typename T>
+typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::water_distribution_system::remove(const std::shared_ptr<T>& a_element) {
+    if (a_element == nullptr)
+        return _elements_.end();
+
+    // first of all remove it from the specific containers
+    if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
+        _nodes_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
+        _nodes_.remove(a_element);
+        _junctions_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Tank>) {
+        _nodes_.remove(a_element);
+        _tanks_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Reservoir>) {
+        _nodes_.remove(a_element);
+        _reservoirs_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Link>) {
+        _links_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pipe>) {
+        _links_.remove(a_element);
+        _pipes_.remove(a_element);
+
+        // TODO: the same thing but for all types!
+        // FIX: when I will connect the network, I will have to remove the links from the nodes.
+        //a_element->from_node()->remove_link(a_element.get());
+        //a_element->to_node()->remove_link(a_element.get());
+
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pump>) {
+        _links_.remove(a_element);
+        _pumps_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
+        _patterns_.remove(a_element);
+    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
+        _curves_.remove(a_element);
+    } else {
+        // Handle other types
+        // ...
+        // good question, for sure I don't add it to anything else, 
+        // but if I'm here I will be here at compile time so maybe warning??
+    }
+
+    // now remove it from the general container
+    std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator next_it;
+    auto it = std::find(_elements_.begin(), _elements_.end(), a_element);
+    if (it != _elements_.end())
+        next_it = _elements_.erase(it);
+
+    // Make sure EPANET indices are always updated
+    this->cache_indices();
+
+    return next_it;
+}
 
 template <typename T>
 std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::water_distribution_system::load_egroup_from_file(const std::filesystem::path& file_path) {

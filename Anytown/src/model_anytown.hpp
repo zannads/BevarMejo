@@ -77,6 +77,8 @@ namespace bevarmejo {
 
     constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
+static const std::string l__TEMP_ELEMS = "TempEs";
+
     // Here the problem is actually construted.
 	class ModelAnytown {
 	public: 
@@ -113,7 +115,7 @@ namespace bevarmejo {
 
     private: 
         /* Anytonw specific data */
-        std::shared_ptr<bevarmejo::wds::water_distribution_system> _anytown_;
+        mutable std::shared_ptr<bevarmejo::wds::water_distribution_system> _anytown_;
         std::vector<pipes_alt_costs> _pipes_alt_costs_;
         std::vector<tanks_costs> _tanks_costs_;
 
