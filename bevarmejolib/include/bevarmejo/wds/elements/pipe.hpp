@@ -61,6 +61,8 @@ public:
     // Destructor
     virtual ~Pipe();
 
+    std::unique_ptr<Pipe> clone() const;
+
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
@@ -75,8 +77,8 @@ public:
     /*---  Results   ---*/
 
     /*---   Other    ---*/
-    std::shared_ptr<Pipe> duplicate() const;
-    std::shared_ptr<Pipe> duplicate(const std::string& id) const;
+    std::unique_ptr<Pipe> duplicate() const;
+    std::unique_ptr<Pipe> duplicate(const std::string& id) const;
 
 /*--- Pure virtual methods ---*/
 public:

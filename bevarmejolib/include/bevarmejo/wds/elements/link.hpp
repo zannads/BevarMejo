@@ -72,10 +72,9 @@ public:
 public:
     /*--- Properties ---*/
     Node* from_node() const { return _node_start_; }
-    void from_node(Node* a_node);
-
+    void start_node(Node* a_node) { _node_start_ = a_node; }
     Node* to_node() const { return _node_end_; }
-    void to_node(Node* a_node);
+    void end_node(Node* a_node) { _node_end_ = a_node; }
 
     vars::var_int& initial_status() const { return *_initial_status_; }
 

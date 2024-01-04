@@ -177,6 +177,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
     // now, based on the type of T, I should add the element to the specific container.
     // if Element, nothing else to do.
     // If other types, add to the specific container.
+    // TODO: links should also register themselves to the nodes.
     if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
         _nodes_.insert(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
@@ -210,6 +211,9 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
     // Make sure EPANET indices are always updated (may throw an error if the element is not in the network
     // doesn't exist yet)
     this->cache_indices();
+
+    // Since I modified the network, I should reset all the results as they were
+    // for a previous simulation.
 
     return _elements_.end() - 1;
 }

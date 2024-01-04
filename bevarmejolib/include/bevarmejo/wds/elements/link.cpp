@@ -93,26 +93,6 @@ void Link::_update_pointers() {
     _flow_ = &std::get<vars::var_tseries_real>(results().at(L_FLOW));
 }
 
-void Link::from_node(Node* a_node) {
-    if (_node_start_ != nullptr)
-        _node_start_->remove_link(this);
-
-    _node_start_ = a_node;
-
-    if (_node_start_ != nullptr)
-        _node_start_->add_link(this);
-}
-
-void Link::to_node(Node* a_node) {
-    if (_node_end_ != nullptr)
-        _node_end_->remove_link(this);
-
-    _node_end_ = a_node;
-
-    if (_node_end_ != nullptr)
-        _node_end_->add_link(this);
-}
-
 void Link::retrieve_index(EN_Project ph) {
     int en_index = 0;
     int errorcode = 0;

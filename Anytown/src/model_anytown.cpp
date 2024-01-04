@@ -397,6 +397,7 @@ namespace bevarmejo {
 
 
 				// DUPLICATE on my network object 
+				// ok, the unique_ptr is passed as rvalue reference, so I can't use it anymore
 				std::shared_ptr<wds::Pipe> dup_pipe = curr_pipe->duplicate();
 				// ADD to the network (should be fine doing it in the loop 
 				// as I am not using any iterator of the standard groups
