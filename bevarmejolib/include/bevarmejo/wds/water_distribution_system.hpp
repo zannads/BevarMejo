@@ -210,10 +210,6 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         // but if I'm here I will be here at compile time so maybe warning??
     }
 
-    // Make sure EPANET indices are always updated (may throw an error if the element is not in the network
-    // doesn't exist yet)
-    this->cache_indices();
-
     // Since I modified the network, I should reset all the results as they were
     // for a previous simulation.
 
@@ -268,9 +264,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
     if (it != _elements_.end())
         next_it = _elements_.erase(it);
 
-    // Make sure EPANET indices are always updated
-    this->cache_indices();
-
+    
     return next_it;
 }
 

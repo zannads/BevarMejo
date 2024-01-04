@@ -44,6 +44,10 @@ public:
         return *this;
     }
     virtual ~Curve() {}
+    std::unique_ptr<Curve> clone() const { return std::unique_ptr<Curve>(this->__clone()); }
+
+private:
+    virtual Curve* __clone() const = 0;  
 
 /*--- Pure virtual methods override---*/
 public:
@@ -72,24 +76,29 @@ protected:
 public:
     SpecificCurve() = delete;
     SpecificCurve(const std::string& id) :
-        inherited(id) {}
+        inherited(id),
+        _curve_() {}
     SpecificCurve(const SpecificCurve& other) :
-        inherited(other) {}
-    SpecificCurve(SpecificCurve&& rhs) noexcept :  
-        inherited(std::move(rhs)) {}
+        inherited(other),
+        _curve_(other._curve_) {}
+    SpecificCurve(SpecificCurve&& other) noexcept :  
+        inherited(std::move(other)),
+        _curve_(std::move(other._curve_)) {}
     SpecificCurve& operator=(const SpecificCurve& rhs) {
         if (this != &rhs) {
             inherited::operator=(rhs);
+            _curve_ = rhs._curve_;
         }
         return *this;
     }
     SpecificCurve& operator=(SpecificCurve&& rhs) noexcept {
         if (this != &rhs) {
             inherited::operator=(std::move(rhs));
+            _curve_ = std::move(rhs._curve_);
         }
         return *this;
     }
-    virtual ~SpecificCurve() {}
+    virtual ~SpecificCurve() { _curve_.clear(); }
 
 /*--- Element Access ---*/
 public:

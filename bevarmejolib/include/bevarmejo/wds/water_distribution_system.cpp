@@ -73,6 +73,10 @@ std::unique_ptr<water_distribution_system> water_distribution_system::clone() co
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
+    for (auto& old_curve : _curves_) {
+        std::shared_ptr<Curve> curve_clone = old_curve->clone();
+        wds_clone->insert(curve_clone);
+    }
 
     // The nodes can be complitely defined thanks to nodes and patterns, so it's
     // their moment
