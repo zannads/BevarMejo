@@ -298,11 +298,11 @@ void water_distribution_system::load_from_inp_file(const std::filesystem::path& 
     // Nodes have pointers to demands and to links. Links have pointers to nodes. 
     // I couldn't create this relationships inside the element as it has no idea of the other elements.
     // So I create them here.
-    // connect_network(ph_);
     assign_demands_EN();
     assign_patterns_EN();
     assign_curves_EN();
-
+    connect_network_EN();
+    
     return;
 }
 
@@ -439,6 +439,35 @@ void water_distribution_system::assign_curves_EN() {
 
 }
 
+void water_distribution_system::connect_network_EN() {
+    for (auto& link : _links_) {
+        // retrieve the old property of the already existing pipe
+		assert(link->index() != 0);
+        int errorcode = 0;
+        int out_node1_idx = 0;
+		int out_node2_idx = 0;
+		errorcode = EN_getlinknodes(ph_, link->index(), &out_node1_idx, &out_node2_idx);
+		assert(errorcode <= 100);
+
+        std::string out_node1_id = get_node_id(out_node1_idx);
+        std::string out_node2_id = get_node_id(out_node2_idx);
+        
+        // find the nodes in the network
+        auto it1 = _nodes_.find(out_node1_id);
+        assert(it1 != _nodes_.end());
+        auto it2 = _nodes_.find(out_node2_id);
+        assert(it2 != _nodes_.end());
+
+        // assign the nodes to the link
+        link->start_node((*it1).get());
+        link->end_node((*it2).get());
+
+        // assign the link to the nodes
+        (*it1)->add_link(link.get());
+        (*it2)->add_link(link.get());
+    }
+}
+
 void water_distribution_system::run_hydraulics() const{
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
@@ -507,7 +536,7 @@ void water_distribution_system::run_hydraulics() const{
 
 
 std::string water_distribution_system::get_node_id(int index) const {
-    char* node_id = new char[EN_MAXID];
+    char* node_id = new char[EN_MAXID+1];
     int errorcode = EN_getnodeid(ph_, index, node_id);
     assert(errorcode <= 100);
     
