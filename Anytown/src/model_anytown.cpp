@@ -184,6 +184,7 @@ namespace bevarmejo {
 		// For new pipes and pumps (dv from 71 onwards) I don't need to reset them as they are always overwritten.
 
 		// 1. EPS
+		auto anytown_temp = _anytown_->clone();
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dv);
 

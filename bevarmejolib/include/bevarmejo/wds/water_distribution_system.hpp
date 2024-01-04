@@ -91,6 +91,8 @@ public:
     water_distribution_system(const std::filesystem::path& inp_file);
     
     ~water_distribution_system();
+
+    std::unique_ptr<water_distribution_system> clone() const;
     
     // Equivalent to constuctor from .inp file
     void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});

@@ -68,6 +68,42 @@ water_distribution_system::~water_distribution_system(){
     }
 }
 
+std::unique_ptr<water_distribution_system> water_distribution_system::clone() const {
+    std::unique_ptr<water_distribution_system> wds_clone = std::make_unique<water_distribution_system>();
+
+    // Clone the elements
+    // I start from curves and patterns since the other depende on them
+
+    // The nodes can be complitely defined thanks to nodes and patterns, so it's
+    // their moment
+
+    // Finally once everything is in place I can copy the links and connect the
+    // the network
+
+    for (auto& old_pipe : _pipes_) {
+        std::shared_ptr<Pipe> pipe_clone = old_pipe->clone();
+
+        // Get what re the IDS of the nodes to which it was connected.
+        std::string start_node_id = old_pipe->from_node()->id();
+        std::string end_node_id = old_pipe->to_node()->id();
+
+        // Find the nodes in the new network
+        auto it1 = wds_clone->nodes().find(start_node_id);
+        assert(it1 != wds_clone->nodes().end());
+        auto it2 = wds_clone->nodes().find(end_node_id);
+        assert(it2 != wds_clone->nodes().end());
+
+        // Assign the nodes to the pipe
+        pipe_clone->start_node((*it1).get());
+        pipe_clone->end_node((*it2).get());
+
+        wds_clone->insert(pipe_clone);
+
+        // let's assume it also added the link to the nodes
+    }
+    return wds_clone;
+}
+
 void water_distribution_system::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
     _subnetworks_.emplace(std::make_pair(name, subnetwork));
 }
