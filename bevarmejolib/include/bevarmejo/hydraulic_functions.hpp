@@ -44,9 +44,9 @@ namespace bevarmejo {
 
     // Resilience index as defined in Todini (2000)
     // Both for single value of minimum pressure and not
-    wds::vars::timeseries_real resilience_index(const wds::water_distribution_system& a_wds,
+    wds::vars::timeseries_real resilience_index(const wds::WaterDistributionSystem& a_wds,
                                                 const double req_head_dnodes=20.0);
-    /*wds::vars::timeseries_real resilience_index(wds::water_distribution_system* a_wds,
+    /*wds::vars::timeseries_real resilience_index(wds::WaterDistributionSystem* a_wds,
                                                 const std::vector<double>& req_head_dnodes);
     double resilience_index(const std::vector<double>& flow_dnodes, 
                             const std::vector<double>& head_dnodes,

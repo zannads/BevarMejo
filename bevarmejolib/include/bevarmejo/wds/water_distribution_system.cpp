@@ -25,7 +25,7 @@
 namespace bevarmejo {
 namespace wds {
 
-water_distribution_system::water_distribution_system() :
+WaterDistributionSystem::WaterDistributionSystem() :
     ph_(nullptr),
     _inp_file_(),
     _elements_(),
@@ -41,7 +41,7 @@ water_distribution_system::water_distribution_system() :
     _groups_() 
     { }
 
-water_distribution_system::water_distribution_system(const std::filesystem::path& inp_file) :
+WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& inp_file) :
     ph_(nullptr),
     _inp_file_(inp_file),
     _elements_(),
@@ -59,7 +59,7 @@ water_distribution_system::water_distribution_system(const std::filesystem::path
         load_from_inp_file(inp_file);
     }
 
-water_distribution_system::~water_distribution_system(){
+WaterDistributionSystem::~WaterDistributionSystem(){
     if (ph_!=nullptr){
         EN_close(ph_);
         EN_deleteproject(ph_);
@@ -68,8 +68,8 @@ water_distribution_system::~water_distribution_system(){
     }
 }
 
-std::unique_ptr<water_distribution_system> water_distribution_system::clone() const {
-    std::unique_ptr<water_distribution_system> wds_clone = std::make_unique<water_distribution_system>();
+std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const {
+    std::unique_ptr<WaterDistributionSystem> wds_clone = std::make_unique<WaterDistributionSystem>();
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
@@ -108,19 +108,19 @@ std::unique_ptr<water_distribution_system> water_distribution_system::clone() co
     return wds_clone;
 }
 
-void water_distribution_system::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
+void WaterDistributionSystem::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
     _subnetworks_.emplace(std::make_pair(name, subnetwork));
 }
 
-void water_distribution_system::add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork){
+void WaterDistributionSystem::add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork){
     _subnetworks_.insert(subnetwork);
 }
 
-void water_distribution_system::add_subnetwork(const std::filesystem::path &filename) {
+void WaterDistributionSystem::add_subnetwork(const std::filesystem::path &filename) {
     add_subnetwork( load_egroup_from_file<NetworkElement>(filename) );
 }
 
-Subnetwork& water_distribution_system::subnetwork(const std::string& name) {
+Subnetwork& WaterDistributionSystem::subnetwork(const std::string& name) {
     auto it = _subnetworks_.find(name);
     if (it != _subnetworks_.end())
         return it->second;
@@ -128,7 +128,7 @@ Subnetwork& water_distribution_system::subnetwork(const std::string& name) {
         throw std::runtime_error("Subnetwork with name " + name + " not found.");
 }
 
-const Subnetwork& water_distribution_system::subnetwork(const std::string& name) const {
+const Subnetwork& WaterDistributionSystem::subnetwork(const std::string& name) const {
     auto it = _subnetworks_.find(name);
     if (it != _subnetworks_.end())
         return it->second;
@@ -136,14 +136,14 @@ const Subnetwork& water_distribution_system::subnetwork(const std::string& name)
         throw std::runtime_error("Subnetwork with name " + name + " not found.");
 }
 
-void water_distribution_system::remove_subnetwork(const std::string& name){
+void WaterDistributionSystem::remove_subnetwork(const std::string& name){
     auto it = _subnetworks_.find(name);
     if (it != _subnetworks_.end())
         _subnetworks_.erase(it);
     // else no problem, it's not there
 }
 
-void water_distribution_system::load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf){
+void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf){
     _inp_file_ = inp_file;
     assert(!_inp_file_.empty());
     
@@ -346,13 +346,13 @@ void water_distribution_system::load_from_inp_file(const std::filesystem::path& 
     return;
 }
 
-void water_distribution_system::cache_indices() const {
+void WaterDistributionSystem::cache_indices() const {
     for (auto& element : _elements_) {
         element->retrieve_index(ph_);
     }
 }
 
-void water_distribution_system::assign_patterns_EN() {
+void WaterDistributionSystem::assign_patterns_EN() {
     // Pumps have patterns inside them, so I need to assign them first
     for (auto& pump : _pumps_) {
         int errorcode = 0;
@@ -372,7 +372,7 @@ void water_distribution_system::assign_patterns_EN() {
     }
 }
 
-void water_distribution_system::assign_demands_EN() {
+void WaterDistributionSystem::assign_demands_EN() {
     // each junction has a list of demands that add up
     for (auto& junction : _junctions_ ) {
         int errorcode = 0;
@@ -408,7 +408,7 @@ void water_distribution_system::assign_demands_EN() {
     }
 }
 
-void water_distribution_system::assign_curves_EN() {
+void WaterDistributionSystem::assign_curves_EN() {
     // Tanks, pumps and valves have curves inside them, so I need to assign them
 
     // Pumps have two types of curves: pump curve and efficiency curve
@@ -479,7 +479,7 @@ void water_distribution_system::assign_curves_EN() {
 
 }
 
-void water_distribution_system::connect_network_EN() {
+void WaterDistributionSystem::connect_network_EN() {
     for (auto& link : _links_) {
         // retrieve the old property of the already existing pipe
 		assert(link->index() != 0);
@@ -508,7 +508,7 @@ void water_distribution_system::connect_network_EN() {
     }
 }
 
-void water_distribution_system::run_hydraulics() const{
+void WaterDistributionSystem::run_hydraulics() const{
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
     if (errorcode >= 100)

@@ -44,7 +44,7 @@ namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
 
-class water_distribution_system {
+class WaterDistributionSystem {
 
     /*--- Attributes ---*/
 public:
@@ -87,13 +87,13 @@ protected:
 /*--- Constructors ---*/ 
 public:
     // Default constructor
-    water_distribution_system();
+    WaterDistributionSystem();
     
-    water_distribution_system(const std::filesystem::path& inp_file);
+    WaterDistributionSystem(const std::filesystem::path& inp_file);
     
-    ~water_distribution_system();
+    ~WaterDistributionSystem();
 
-    std::unique_ptr<water_distribution_system> clone() const;
+    std::unique_ptr<WaterDistributionSystem> clone() const;
     
     // Equivalent to constuctor from .inp file
     void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
@@ -151,18 +151,18 @@ private:
     template <typename T>
     std::pair<std::string, ElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
 
-}; // class water_distribution_system
+}; // class WaterDistributionSystem
 
 } // namespace wds
 
-using WDS = wds::water_distribution_system; // short name for water_distribution_system
+using WDS = wds::WaterDistributionSystem; // short name for WaterDistributionSystem
 
 } // namespace bevarmejo
 
 
 /*--- Implementation ---*/
 template <typename T>
-typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::water_distribution_system::insert(const std::shared_ptr<T>& a_element) {
+typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::insert(const std::shared_ptr<T>& a_element) {
     if (a_element == nullptr)
         return _elements_.end();
 
@@ -211,7 +211,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::water_distribution_system::remove(const std::shared_ptr<T>& a_element) {
+typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::remove(const std::shared_ptr<T>& a_element) {
     if (a_element == nullptr)
         return _elements_.end();
 
@@ -263,7 +263,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::water_distribution_system::load_egroup_from_file(const std::filesystem::path& file_path) {
+std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const std::filesystem::path& file_path) {
 	
 	// A group of elements is completely defined by the following attributes:
 	// 0. The name (the name of the file)

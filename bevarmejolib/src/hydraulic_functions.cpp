@@ -9,7 +9,7 @@
 #include "hydraulic_functions.hpp"
 
 namespace bevarmejo {
-    wds::vars::timeseries_real resilience_index(const wds::water_distribution_system& a_wds,
+    wds::vars::timeseries_real resilience_index(const wds::WaterDistributionSystem& a_wds,
                                                 const double req_head_dnodes) {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
