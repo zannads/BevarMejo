@@ -125,7 +125,7 @@ static const std::string l__TEMP_ELEMS = "TempEs";
         /* Helper functions */
         std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
         void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
-        std::vector<std::vector<double>> decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const;
+        std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const;
 
 	}; /* class ModelAnytown*/
  
