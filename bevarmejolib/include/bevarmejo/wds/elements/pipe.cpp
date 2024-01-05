@@ -127,15 +127,15 @@ void Pipe::retrieve_properties(EN_Project ph)
     assert(index()!= 0);
 
     int errorode = 0;
-    double length = 0.0;
+    double val = 0.0;
 
-    errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &length);
+    errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &val);
     if (errorode != 0)
         throw std::runtime_error("Error retrieving pipe length");
 
     if(ph->parser.Unitsflag == US)
-        length *= MperFT;
-    _length_->value(length);
+        val *= MperFT; // from ft to m
+    _length_->value(val);
 }
 
 void Pipe::_add_properties() {

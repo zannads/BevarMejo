@@ -90,7 +90,7 @@ void DimensionedLink::retrieve_properties(EN_Project ph) {
         throw std::runtime_error("Error retrieving the diameter of link "+id()+" from EPANET project.");
 
     if (ph->parser.Unitsflag == US)
-        val *= MperFT/1000; // from ft to mm
+        val = val/12*MperFT*1000; // from inches to ft, then to m, finally to mm
     _diameter_->value(val);
 
     errorcode = EN_getlinkvalue(ph, index(), EN_ROUGHNESS, &val);
@@ -126,16 +126,16 @@ void DimensionedLink::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
 
     int errorcode = 0;  
-    double d_velocity = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &d_velocity);
+    double val = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the velocity of link "+id()+" from EPANET project.");
 
     // Before saving I need to conver it to m/s
     if (ph->parser.Unitsflag == US)
-        d_velocity *= MperFT; // from ft/s to m/s
+        val = val*MperFT; // from ft/s to m/s
 
-    this->_velocity_->value().insert(std::make_pair(t, d_velocity));
+    this->_velocity_->value().insert(std::make_pair(t, val));
 }
 
 void DimensionedLink::_add_properties() {
