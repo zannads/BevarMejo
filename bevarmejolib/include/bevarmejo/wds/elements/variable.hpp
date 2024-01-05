@@ -14,17 +14,14 @@ namespace bevarmejo {
 namespace wds {
 namespace vars {
 
-static const std::string L_DIMLESS = "";
-static const std::string l_DIMLESS = "";
-static const std::string L_METER = "m";
+static const std::string l__DIMLESS = "";
 static const std::string l__m = "m";
+static const std::string l__mm = "mm";
 static const std::string l__m3 = "m3";
+static const std::string l__m_per_s = "m/s";
 static const std::string l__m3_per_s = "m3/s";
-static const std::string L_M3_PER_S = "m/s";
-static const std::string l_L_per_s = "L/s";
-static const std::string L_KWH = "kWh";
-static const std::string l_kWh = "kWh";
-static const std::string L_JOUL = "J";
+static const std::string l__L_per_s = "L/s";
+static const std::string l__kWh = "kWh";
 static const std::string l__J = "J";
 static const std::string l__W = "W";
 static const std::string l__Euro = "€";
@@ -34,7 +31,7 @@ class variable_core
 private:
     std::string _unit_; // TODO: see if it possible to convert to boost.units
 public:
-    variable_core() : _unit_(L_DIMLESS) {}
+    variable_core() : _unit_(l__DIMLESS) {}
 
     variable_core(const std::string& unit): _unit_(unit){}
 

@@ -116,30 +116,50 @@ void Node::retrieve_index(EN_Project ph) {
 void Node::retrieve_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;    
-    double x, y, z;
+    double x=0,
+           y=0,
+           z=0;
+
     errorcode = EN_getcoord(ph, index(), &x, &y);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving coordinates of node " + id() + " from EPANET project.");
+
+    if (ph->parser.Unitsflag == US) {
+        x *= MperFT;
+        y *= MperFT;
+    }
     this->x_coord(x);
     this->y_coord(y);
+
     errorcode = EN_getnodevalue(ph, index(), EN_ELEVATION, &z);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving elevation of node " + id() + " from EPANET project.");
+    
+    if (ph->parser.Unitsflag == US)
+        z *= MperFT;
     this->elevation(z);
 }
 
 void Node::retrieve_results(EN_Project ph, long t=0) {
     assert(index() != 0);
     int errorcode = 0;
-    double d_head, d_pressure;
-    errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &d_head);
+    double val = 0;
+
+    errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving head of node " + id() + " from EPANET project.");
-    this->_head_->value().insert(std::make_pair(t, d_head));
-    errorcode = EN_getnodevalue(ph, index(), EN_PRESSURE, &d_pressure);
+    
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
+    this->_head_->value().insert(std::make_pair(t, val));
+
+    errorcode = EN_getnodevalue(ph, index(), EN_PRESSURE, &val);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving pressure of node " + id() + " from EPANET project.");
-    this->_pressure_->value().insert(std::make_pair(t, d_pressure));
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT/PSIperFT;
+    this->_pressure_->value().insert(std::make_pair(t, val));
 }
 
 void Node::_add_properties() {

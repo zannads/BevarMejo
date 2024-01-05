@@ -26,17 +26,17 @@ private:
 
 /*--- Constructors ---*/
 public:
-    Demand() :  _base_dem_(vars::L_M3_PER_S, 0.0), 
+    Demand() :  _base_dem_(vars::l__L_per_s, 0.0), 
                 _pattern_(nullptr),
                 _category_("") {}
 
     Demand(const std::string& a_category) :
-        _base_dem_(vars::L_M3_PER_S, 0.0),
+        _base_dem_(vars::l__L_per_s, 0.0),
         _pattern_(nullptr),
         _category_(a_category) {}
 
     Demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) : 
-        _base_dem_(vars::L_M3_PER_S, a_base_dem), 
+        _base_dem_(vars::l__L_per_s, a_base_dem), 
         _pattern_(a_pattern),
         _category_(a_category) {}
     

@@ -25,6 +25,7 @@
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/epanet_helpers/en_helpers.hpp"
 
 #include "model_anytown.hpp"
 
@@ -184,7 +185,9 @@ namespace bevarmejo {
 		// For new pipes and pumps (dv from 71 onwards) I don't need to reset them as they are always overwritten.
 
 		// 1. EPS
-		auto anytown_temp = _anytown_->clone();
+		//auto anytown_temp = _anytown_->clone(); 
+		// in the future this will be a perfect copy and I will be able to call 
+		// everything in a new thread and then simply discard it.
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dv);
 
@@ -374,8 +377,8 @@ namespace bevarmejo {
 				errorcode = EN_getlinknodes(anytown->ph_, link_idx, &out_node1_idx, &out_node2_idx);
 				assert(errorcode <= 100);
 
-				std::string out_node1_id = anytown->get_node_id(out_node1_idx);
-				std::string out_node2_id = anytown->get_node_id(out_node2_idx);
+				std::string out_node1_id = epanet::get_node_id(anytown->ph_, out_node1_idx);
+				std::string out_node2_id = epanet::get_node_id(anytown->ph_, out_node2_idx);
 				
 				// create the new pipe
 				errorcode = EN_addlink(anytown->ph_, new_link_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &new_link_idx);
@@ -405,6 +408,7 @@ namespace bevarmejo {
 				// this holds as long as I don't add it to existing_pipes or if 
 				// I add them after this loop)
 				anytown->insert(dup_pipe);
+				anytown->cache_indices();
 				// add to the set of the "to be removed" elements
 				anytown->subnetwork(l__TEMP_ELEMS).insert(dup_pipe);
 				// Since I duplicated the pipe every property is the same except:
@@ -444,7 +448,7 @@ namespace bevarmejo {
 			double diameter = _pipes_alt_costs_.at(dv[70+i]).diameter;
 			int errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
-			curr_pipe->diameter(diameter);
+			curr_pipe->diameter(diameter*MperFT/1000); //save in mm
 
 			++i;
 			++curr_exist_net_ele;
@@ -533,7 +537,7 @@ namespace bevarmejo {
 			double diameter = _nonexisting_pipe_diam_ft;
 			int errorcode = EN_setlinkvalue(_anytown_->ph_, link_idx, EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
-			curr_pipe->diameter(_nonexisting_pipe_diam_ft);
+			curr_pipe->diameter(_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
 
 			++i;
 			++curr_exist_net_ele;

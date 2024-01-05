@@ -4,6 +4,9 @@
 #include <string>
 
 #include "epanet2_2.h"
+#include "types.h"
+
+#include "bevarmejo/epanet_helpers/en_helpers.hpp"
 
 #include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"

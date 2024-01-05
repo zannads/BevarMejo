@@ -100,34 +100,52 @@ void Tank::retrieve_properties(EN_Project ph) {
 
     int errorcode;
     double val;
+
     errorcode = EN_getnodevalue(ph, index(), EN_DIAMETER, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving diameter for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_diameter_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_MINVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving min volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
     this->_min_volume_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_MINLEVEL, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving min level for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_min_level_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_MAXLEVEL, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving max level for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_max_level_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_CANOVERFLOW, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving can overflow for node " + id()+"\n");
+
+    // DIMLESS
     this->_can_overflow_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_TANKLEVEL, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving initial level for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_initial_level_->value(val);
 }
 
@@ -136,24 +154,37 @@ void Tank::retrieve_results(EN_Project ph, long t) {
 
     int errorcode;
     double val;
+
     errorcode = EN_getnodevalue(ph, index(), EN_TANKLEVEL, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving level for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_level_->value().insert(std::make_pair(t, val));
 
     errorcode = EN_getnodevalue(ph, index(), EN_INITVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving initial volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
     this->_initial_volume_->value(val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_TANKVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
     this->_volume_->value().insert(std::make_pair(t, val));
 
     errorcode = EN_getnodevalue(ph, index(), EN_MAXVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving max volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
     this->_max_volume_->value(val);
 }
 
@@ -164,7 +195,7 @@ void Tank::_add_properties() {
     properties().emplace(l__MIN_VOLUME, vars::var_real(vars::l__m3,0));
     properties().emplace(l__MIN_LEVEL, vars::var_real(vars::l__m,0));
     properties().emplace(l__MAX_LEVEL, vars::var_real(vars::l__m,0));
-    properties().emplace(l__CAN_OVERFLOW, vars::var_int(vars::L_DIMLESS,0));
+    properties().emplace(l__CAN_OVERFLOW, vars::var_int(vars::l__DIMLESS,0));
     properties().emplace(l__INITIAL_LEVEL, vars::var_real(vars::l__m,0));
 }
 

@@ -19,6 +19,7 @@
 
 #include "epanet2_2.h"
 
+#include "bevarmejo/epanet_helpers/en_helpers.hpp"
 #include "bevarmejo/io.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
@@ -149,13 +150,6 @@ public:
 private:
     template <typename T>
     std::pair<std::string, ElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
-
-
-
-
-
-public:
-    std::string get_node_id(int index) const;
 
 }; // class water_distribution_system
 
