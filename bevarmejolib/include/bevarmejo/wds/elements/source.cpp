@@ -64,22 +64,29 @@ void Source::retrieve_results(EN_Project ph, long t) {
 
     int errorcode = 0;
     double val = 0.0;
+
     errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
+
+    if (ph->parser.Flowflag != LPS)
+        val = epanet::convert_flow_to_L_per_s(ph, val);
     this->_inflow_->value().insert(std::make_pair(t, val));
 
     errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving elevation for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
     this->_source_elevation_->value().insert(std::make_pair(t, val));
 }
 
 void Source::_add_results() {
     inherited::_add_results();
 
-    results().emplace(LINFLOW, vars::var_tseries_real(vars::L_M3_PER_S));
-    results().emplace(LSOURCE_ELEV, vars::var_tseries_real(vars::L_METER));
+    results().emplace(LINFLOW, vars::var_tseries_real(vars::l__L_per_s));
+    results().emplace(LSOURCE_ELEV, vars::var_tseries_real(vars::l__m));
 }
 
 void Source::_update_pointers() {

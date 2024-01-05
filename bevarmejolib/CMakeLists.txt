@@ -46,6 +46,7 @@ add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
                     "src/hydraulic_functions.cpp" "include/bevarmejo/hydraulic_functions.hpp"
+                    "include/bevarmejo/epanet_helpers/en_helpers.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
                     ${WDS_LINKS}
@@ -62,4 +63,5 @@ target_include_directories(bemelib PUBLIC
                             "include/bevarmejo/wds"
                             "${PUGIXML_ROOT}"
                             "${EPANET_ROOT}/include"
+                            "${EPANET_ROOT}/src/"
 )

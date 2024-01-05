@@ -489,8 +489,8 @@ void water_distribution_system::connect_network_EN() {
 		errorcode = EN_getlinknodes(ph_, link->index(), &out_node1_idx, &out_node2_idx);
 		assert(errorcode <= 100);
 
-        std::string out_node1_id = get_node_id(out_node1_idx);
-        std::string out_node2_id = get_node_id(out_node2_idx);
+        std::string out_node1_id = epanet::get_node_id(ph_, out_node1_idx);
+        std::string out_node2_id = epanet::get_node_id(ph_, out_node2_idx);
         
         // find the nodes in the network
         auto it1 = _nodes_.find(out_node1_id);
@@ -569,23 +569,6 @@ void water_distribution_system::run_hydraulics() const{
     if (solution_has_failed)
         throw std::runtime_error("Hydraulic solution failed.");
 }
-
-
-
-
-
-
-std::string water_distribution_system::get_node_id(int index) const {
-    char* node_id = new char[EN_MAXID+1];
-    int errorcode = EN_getnodeid(ph_, index, node_id);
-    assert(errorcode <= 100);
-    
-    std::string node_id_str(node_id);
-    delete[] node_id;
-
-    return node_id_str;
-}
-
 
 } // namespace wds
 } // namespace bevarmejo

@@ -6,6 +6,9 @@
 #include <variant>
 
 #include "epanet2_2.h"
+#include "types.h"
+
+#include "bevarmejo/epanet_helpers/en_helpers.hpp"
 
 #include "bevarmejo/wds/elements/temporal.hpp"
 #include "bevarmejo/wds/elements/variable.hpp"
@@ -76,13 +79,13 @@ Link::~Link() {/* results are cleared when the inherited destructor is called*/ 
 void Link::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(L_INITIAL_STATUS, vars::var_int(vars::L_DIMLESS, 0)); 
+    properties().emplace(L_INITIAL_STATUS, vars::var_int(vars::l__DIMLESS, 0)); 
 }
 
 void Link::_add_results() {
     inherited::_add_results();
 
-    results().emplace(L_FLOW, vars::var_tseries_real(vars::L_M3_PER_S));
+    results().emplace(L_FLOW, vars::var_tseries_real(vars::l__L_per_s));
 }
 
 void Link::_update_pointers() {
@@ -126,6 +129,10 @@ void Link::retrieve_results(EN_Project ph, long t) {
     errorcode = EN_getlinkvalue(ph, index(), EN_FLOW, &d_flow);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving flow of link " + id() + " from EPANET project.");
+    
+    if (ph->parser.Flowflag != LPS)
+        d_flow = epanet::convert_flow_to_L_per_s(ph, d_flow);
+
     this->_flow_->value().insert(std::make_pair(t, d_flow));
 }
 

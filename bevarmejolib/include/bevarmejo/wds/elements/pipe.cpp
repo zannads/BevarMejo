@@ -128,16 +128,20 @@ void Pipe::retrieve_properties(EN_Project ph)
 
     int errorode = 0;
     double length = 0.0;
+
     errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &length);
     if (errorode != 0)
         throw std::runtime_error("Error retrieving pipe length");
+
+    if(ph->parser.Unitsflag == US)
+        length *= MperFT;
     _length_->value(length);
 }
 
 void Pipe::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(L_LENGTH, vars::var_real(vars::L_METER, 0.0));
+    properties().emplace(L_LENGTH, vars::var_real(vars::l__m, 0.0));
 }
 
 void Pipe::_update_pointers() {

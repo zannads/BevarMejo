@@ -146,12 +146,17 @@ namespace wds {
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving efficiency for pump " + id());
         this->_efficiency_->value().emplace(std::make_pair(t, value));
+
+        // Note on conversions:
+        // // Instantenous Energy is always in kW (even if they say kWh)        
+        // // Status is dimensionless
+        // // Efficiency is dimensionless
 }
 
 void Pump::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(l__INIT_SETTINGS, vars::var_int(vars::l_DIMLESS, 0));
+    properties().emplace(l__INIT_SETTINGS, vars::var_int(vars::l__DIMLESS, 0));
     properties().emplace(l__POWER_RATING, vars::var_real(vars::l__W, 0));
     properties().emplace(l__ENERGY_COST, vars::var_real(vars::l__Euro, 0));
 
@@ -161,8 +166,8 @@ void Pump::_add_results() {
     inherited::_add_results();
 
     results().emplace(l__INSTANT_ENERGY, vars::var_tseries_real(vars::l__W));
-    results().emplace(l__STATE, vars::var_tseries_int(vars::l_DIMLESS));
-    results().emplace(l__EFFICIENCY, vars::var_tseries_real(vars::l_DIMLESS));
+    results().emplace(l__STATE, vars::var_tseries_int(vars::l__DIMLESS));
+    results().emplace(l__EFFICIENCY, vars::var_tseries_real(vars::l__DIMLESS));
 }
 
 void Pump::_update_pointers() {

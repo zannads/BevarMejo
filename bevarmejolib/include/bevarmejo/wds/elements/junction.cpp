@@ -124,33 +124,39 @@ void Junction::retrieve_properties(EN_Project ph)
 void Junction::retrieve_results(EN_Project ph, long t=0) {
     inherited::retrieve_results(ph, t);
 
-    int errorcode;
-    double d_demand_requested, d_demand_undelivered;
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &d_demand_requested);
+    int errorcode = 0;
+    double val = 0;
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
-    this->_demand_requested_->value().insert(std::make_pair(t, d_demand_requested));
 
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_demand_undelivered);
+    if (ph->parser.Unitsflag != LPS)
+        val = epanet::convert_flow_to_L_per_s(ph, val);
+    this->_demand_requested_->value().insert(std::make_pair(t, val));
+
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand deficit for node " + id()+"\n");
-    this->_demand_undelivered_->value().insert(std::make_pair(t, d_demand_undelivered));
 
-    this->_demand_delivered_->value().insert(std::make_pair(t, d_demand_requested - d_demand_undelivered));
+    if (ph->parser.Unitsflag != LPS)
+        val = epanet::convert_flow_to_L_per_s(ph, val);
+    this->_demand_undelivered_->value().insert(std::make_pair(t, val));
+
+    //this->_demand_delivered_->value().insert(std::make_pair(t, d_demand_requested - d_demand_undelivered));
 }
 
 void Junction::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::l_L_per_s,0));
+    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::l__L_per_s,0));
 }
 
 void Junction::_add_results() {
     inherited::_add_results();
 
-    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::l_L_per_s));
-    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::l_L_per_s));
-    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::l_L_per_s));
+    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::l__L_per_s));
+    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::l__L_per_s));
+    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::l__L_per_s));
 }
 
 void Junction::_update_pointers() {
