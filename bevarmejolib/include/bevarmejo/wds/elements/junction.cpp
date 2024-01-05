@@ -142,7 +142,8 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
         val = epanet::convert_flow_to_L_per_s(ph, val);
     this->_demand_undelivered_->value().insert(std::make_pair(t, val));
 
-    //this->_demand_delivered_->value().insert(std::make_pair(t, d_demand_requested - d_demand_undelivered));
+    this->_demand_delivered_->value().insert(std::make_pair(t, 
+        _demand_requested_->value().at(t) - _demand_undelivered_->value().at(t)));
 }
 
 void Junction::_add_properties() {

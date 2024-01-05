@@ -507,6 +507,7 @@ namespace bevarmejo {
 
 				// remove the new pipe from my network object
 				anytown->remove(nxt_pipe_to_remove);
+				anytown->cache_indices();
 				// remove the new pipe from the set of the "to be removed" elements
 				anytown->subnetwork(l__TEMP_ELEMS).remove(nxt_pipe_to_remove);
 			}
