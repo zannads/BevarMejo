@@ -90,7 +90,20 @@ public:
     WaterDistributionSystem();
     
     WaterDistributionSystem(const std::filesystem::path& inp_file);
-    
+
+    // Copy constructor
+    WaterDistributionSystem(const WaterDistributionSystem& other);
+
+    // Move constructor
+    WaterDistributionSystem(WaterDistributionSystem&& other) noexcept;
+
+    // Copy assignment operator
+    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs);
+
+    // Move assignment operator
+    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept;
+
+    // Destructor
     ~WaterDistributionSystem();
 
     std::unique_ptr<WaterDistributionSystem> clone() const;

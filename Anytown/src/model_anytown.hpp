@@ -85,6 +85,21 @@ static const std::string l__TEMP_ELEMS = "TempEs";
 		ModelAnytown() = default;
 		ModelAnytown(fsys::path input_directory, pugi::xml_node settings);
 
+        // Copy constructor
+        ModelAnytown(const ModelAnytown& other) = default;
+
+        // Move constructor
+        ModelAnytown(ModelAnytown&& other) noexcept = default;
+
+        // Copy assignment operator
+        ModelAnytown& operator=(const ModelAnytown& rhs) = default;
+
+        // Move assignment operator
+        ModelAnytown& operator=(ModelAnytown&& rhs) noexcept = default;
+
+        // Destructor
+        ~ModelAnytown() = default;
+
 		// Try to have copy and move constructor automatically created
 
 		/* PUBLIC functions for Pagmo Algorihtm */

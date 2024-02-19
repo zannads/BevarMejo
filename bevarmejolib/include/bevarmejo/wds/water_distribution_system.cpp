@@ -59,6 +59,76 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         load_from_inp_file(inp_file);
     }
 
+    WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
+        ph_(other.ph_),
+        _inp_file_(other._inp_file_),
+        _elements_(other._elements_),
+        _nodes_(other._nodes_),
+        _links_(other._links_),
+        _patterns_(other._patterns_),
+        _junctions_(other._junctions_),
+        _tanks_(other._tanks_),
+        _reservoirs_(other._reservoirs_),
+        _pipes_(other._pipes_),
+        _pumps_(other._pumps_),
+        _subnetworks_(other._subnetworks_),
+        _groups_(other._groups_)
+        { }
+
+    WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem&& other) noexcept :
+        ph_(other.ph_),
+        _inp_file_(std::move(other._inp_file_)),
+        _elements_(std::move(other._elements_)),
+        _nodes_(std::move(other._nodes_)),
+        _links_(std::move(other._links_)),
+        _patterns_(std::move(other._patterns_)),
+        _junctions_(std::move(other._junctions_)),
+        _tanks_(std::move(other._tanks_)),
+        _reservoirs_(std::move(other._reservoirs_)),
+        _pipes_(std::move(other._pipes_)),
+        _pumps_(std::move(other._pumps_)),
+        _subnetworks_(std::move(other._subnetworks_)),
+        _groups_(std::move(other._groups_))
+        { }
+
+    WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
+        if (this != &rhs) {
+            ph_ = rhs.ph_;
+            _inp_file_ = rhs._inp_file_;
+            _elements_ = rhs._elements_;
+            _nodes_ = rhs._nodes_;
+            _links_ = rhs._links_;
+            _patterns_ = rhs._patterns_;
+            _junctions_ = rhs._junctions_;
+            _tanks_ = rhs._tanks_;
+            _reservoirs_ = rhs._reservoirs_;
+            _pipes_ = rhs._pipes_;
+            _pumps_ = rhs._pumps_;
+            _subnetworks_ = rhs._subnetworks_;
+            _groups_ = rhs._groups_;
+        }
+        return *this;
+    }
+
+    WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSystem&& rhs) noexcept {
+        if (this != &rhs) {
+            ph_ = rhs.ph_;
+            _inp_file_ = std::move(rhs._inp_file_);
+            _elements_ = std::move(rhs._elements_);
+            _nodes_ = std::move(rhs._nodes_);
+            _links_ = std::move(rhs._links_);
+            _patterns_ = std::move(rhs._patterns_);
+            _junctions_ = std::move(rhs._junctions_);
+            _tanks_ = std::move(rhs._tanks_);
+            _reservoirs_ = std::move(rhs._reservoirs_);
+            _pipes_ = std::move(rhs._pipes_);
+            _pumps_ = std::move(rhs._pumps_);
+            _subnetworks_ = std::move(rhs._subnetworks_);
+            _groups_ = std::move(rhs._groups_);
+        }
+        return *this;
+    }
+
 WaterDistributionSystem::~WaterDistributionSystem(){
     if (ph_!=nullptr){
         EN_close(ph_);
