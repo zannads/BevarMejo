@@ -216,7 +216,7 @@ namespace bevarmejo {
 
 		fitv[0] = -cost(dvs, total_ene_cost_per_day);
 		// Resilience index 
-		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi);
+		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi*MperFT/PSIperFT);
 		//fitv[1] = -1; //-ir_daily.mean();
 		fitv[1] = 0.0;
 		unsigned long t_prec = 0;
@@ -226,7 +226,7 @@ namespace bevarmejo {
 		}
 		auto& t_total = t_prec; // at the end of the loop t_prec is the last time step
 		fitv[1] /= t_total;
-
+		fitv[1] = -fitv[1]; // I want to maximize the resilience index
 
 		reset_dv( _anytown_, dvs, old_HW_coeffs);
         return fitv;
