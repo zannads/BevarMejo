@@ -72,6 +72,7 @@ class NetworkElement : public Element {
 
         /*---  Results   ---*/
         ResultsMap& results() { return _results_; }
+        void clear_results();
 
     /*--- Pure virtual methods ---*/
     public:

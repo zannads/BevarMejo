@@ -578,7 +578,17 @@ void WaterDistributionSystem::connect_network_EN() {
     }
 }
 
+void WaterDistributionSystem::clear_results() const {
+    for (auto& node: nodes()) {
+        node->clear_results();
+    }
+    for (auto& link: links()) {
+        link->clear_results();
+    }
+}
+
 void WaterDistributionSystem::run_hydraulics() const{
+    this->clear_results();
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
     if (errorcode >= 100)

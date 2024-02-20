@@ -121,6 +121,8 @@ class variable : public variable_core {
         void value(const VT& value) {_value_ = value;}
         VT& operator()() {return _value_;} 
 
+        void clear() {_value_ = VT();}
+
 }; // class variable
 
 using var_int= variable<int>;

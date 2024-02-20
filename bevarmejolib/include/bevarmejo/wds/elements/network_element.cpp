@@ -63,6 +63,12 @@ NetworkElement::~NetworkElement() {
     _results_.clear();
 }
 
+void NetworkElement::clear_results() {
+    for (auto& [key, value] : _results_) {
+        std::visit([](auto&& arg) { arg.clear(); }, value);
+    }
+}
+
 void NetworkElement::_add_properties() {
     inherited::_add_properties();
 }

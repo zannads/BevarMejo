@@ -150,6 +150,8 @@ public:
     void assign_demands_EN();
     void assign_curves_EN();
     void connect_network_EN();
+
+    void clear_results() const;
     
     void run_hydraulics() const;
 
