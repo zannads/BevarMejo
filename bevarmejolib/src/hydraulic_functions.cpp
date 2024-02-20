@@ -114,7 +114,7 @@ double resilience_index(const std::vector<double>& flow_dnodes,
     // numerator: sum_{i=1}^{n_dnodes}(q_i*(h_i-h_i^req))
     double numerator = 0.0;
     for (std::size_t i = 0; i < flow_dnodes.size(); ++i) {
-        numerator += flow_dnodes[i] * (head_dnodes[i] - req_head_dnodes[i]);
+        numerator += flow_dnodes[i] * (head_dnodes[i] - req_head_dnodes[i]) / 1000; // from L/s to M^3/s
     }
 
     // denominator: 
@@ -123,16 +123,17 @@ double resilience_index(const std::vector<double>& flow_dnodes,
     // -sum_{i=1}^{n_dnodes}(q_i*h_i^req)
     double denominator = 0.0;
     for (std::size_t i = 0; i < flow_reserv.size(); ++i) {
-        denominator += flow_reserv[i] * head_reserv[i];
+        denominator += -flow_reserv[i] * head_reserv[i] / 1000; // Power entering the system, water leaving the reservoir so the flow is negative
     }
     for (std::size_t i = 0; i < power_pumps.size(); ++i) {
-        denominator += power_pumps[i]/bevarmejo::water_specific_weight_N_per_m3;
+        denominator += power_pumps[i]/bevarmejo::water_specific_weight_N_per_m3*1000; // Power is already positive as it represents the energy consumed
     } 
     for (std::size_t i = 0; i < flow_dnodes.size(); ++i) {
-        denominator -= flow_dnodes[i] * req_head_dnodes[i];
+        denominator -= flow_dnodes[i] * req_head_dnodes[i] / 1000;
     }
 
-    return numerator/denominator;
+    // return the Ir if the denominator is not 0 otherwise return - infinity (min of double)
+    return denominator > 0 ? numerator/denominator : std::numeric_limits<double>::min();
 }
     
 } // namespace bevarmejo

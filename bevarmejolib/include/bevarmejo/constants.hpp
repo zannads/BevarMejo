@@ -15,6 +15,7 @@ constexpr double gravity_m_per_s2 = 9.81;
 constexpr double water_specific_weight_N_per_m3 = water_density_kg_per_m3 * gravity_m_per_s2;
 
 constexpr int k__days_ina_year = 365;
+constexpr int k__sec_per_hour = 3600;
 
 } // namespace bevamejo
 #endif // BEVARMEJOLIB__CONSTANTS_HPP

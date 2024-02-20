@@ -69,8 +69,8 @@ namespace bevarmejo {
 		*/
 		_anytown_ = std::make_shared<WDS>();
 		
-		// change curve ID 2 to a pump curve
-		auto change_curve_type = [](EN_Project ph) {
+		auto fix_inp = [](EN_Project ph) {
+			// change curve ID 2 to a pump curve
 			assert(ph != nullptr);
 			std::string curve_id = "2";
 			int curve_idx = 0;
@@ -79,9 +79,14 @@ namespace bevarmejo {
 
 			errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
 			assert(errorcode <= 100);
+
+
+			// simulation time step to 1 hour
+			errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
+			assert(errorcode <= 100);
 		};
 
-		_anytown_->load_from_inp_file(inp_filename, change_curve_type);
+		_anytown_->load_from_inp_file(inp_filename, fix_inp);
 
 		// Load subnetworks 
 		for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
@@ -208,13 +213,16 @@ namespace bevarmejo {
 		double total_ene_cost_per_day = 0.0;
 		for (const auto& pump : _anytown_->pumps() ) {
 			unsigned long t_prec = 0;
-			for (const auto& [t, power_kWh] : pump->instant_energy().value() ) {
-				total_ene_cost_per_day += power_kWh * (t - t_prec) * energy_cost_kWh ; 
+			double power_kW_prec = 0.0;
+			// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
+			for (const auto& [t, power_kW] : pump->instant_energy().value() ) {
+				total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * energy_cost_kWh ; 
 				t_prec = t;
+				power_kW_prec = power_kW;
 			}
 		}
 
-		fitv[0] = -cost(dvs, total_ene_cost_per_day);
+		fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 		// Resilience index 
 		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi*MperFT/PSIperFT);
 		//fitv[1] = -1; //-ir_daily.mean();
@@ -339,7 +347,8 @@ namespace bevarmejo {
 		
 		// TODO: tanks costs
 
-		return bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
+		// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
+		return -bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
     }
 
     std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs) const {
@@ -361,8 +370,7 @@ namespace bevarmejo {
 			// something needs to be changed 
 			// retrieve the link ID and index
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-			if (curr_pipe == nullptr)
-				throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
+			assert(curr_pipe != nullptr);
 			std::string link_id = curr_pipe->id();
 			int link_idx = curr_pipe->index();
 
@@ -422,7 +430,7 @@ namespace bevarmejo {
 				// the new pipe may have a different diameter and
 				// the new pipe MUST have the roughness of a new pipe.
 				assert(dup_pipe->index() != 0);
-				dup_pipe->diameter(_pipes_alt_costs_.at(*(curr_dv+1)).diameter);
+				dup_pipe->diameter(_pipes_alt_costs_.at(*(curr_dv+1)).diameter*MperFT/1000);
 				dup_pipe->roughness(coeff_HW_new);
 			}
 			else if (*curr_dv == 2) { // clean
@@ -535,8 +543,7 @@ namespace bevarmejo {
 		for (auto& curr_net_ele : anytown->subnetwork("new_pipes") ) {
 			// retrieve the link ID and idx from the subnetwork
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-			if (curr_pipe == nullptr)
-				throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
+			assert(curr_pipe != nullptr);
 
 			// change the new pipe properties:
 			double diameter = _nonexisting_pipe_diam_ft;

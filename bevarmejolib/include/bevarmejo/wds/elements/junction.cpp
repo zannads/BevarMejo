@@ -125,22 +125,27 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     inherited::retrieve_results(ph, t);
 
     int errorcode = 0;
-    double val = 0;
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
+    double d_demand = 0;
+    double d_dem_deficit = 0;
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &d_demand);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
 
     if (ph->parser.Unitsflag != LPS)
-        val = epanet::convert_flow_to_L_per_s(ph, val);
-    this->_demand_requested_->value().insert(std::make_pair(t, val));
+        d_demand = epanet::convert_flow_to_L_per_s(ph, d_demand);
+    this->_demand_requested_->value().insert(std::make_pair(t, d_demand));
 
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &val);
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_dem_deficit);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand deficit for node " + id()+"\n");
 
     if (ph->parser.Unitsflag != LPS)
-        val = epanet::convert_flow_to_L_per_s(ph, val);
-    this->_demand_undelivered_->value().insert(std::make_pair(t, val));
+        d_dem_deficit = epanet::convert_flow_to_L_per_s(ph, d_dem_deficit);
+    // IF DDA is on and head is negative, the demand was not satisfied and it should go as a demand undelivered
+    if (/*Assume we know it is DDA*/ this->_head_->value().at(t) < 0)
+        this->_demand_undelivered_->value().insert(std::make_pair(t, d_demand));
+    else
+        this->_demand_undelivered_->value().insert(std::make_pair(t, d_dem_deficit));
 
     this->_demand_delivered_->value().insert(std::make_pair(t, 
         _demand_requested_->value().at(t) - _demand_undelivered_->value().at(t)));
