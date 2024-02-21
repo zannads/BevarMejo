@@ -20,6 +20,8 @@
 namespace fsys = std::filesystem;
 namespace bevarmejo {
     // Data of Anytown: hard coded as they don't change for now.
+
+namespace anytown {
     
     // Dimensions of the problem.
     constexpr std::size_t n_obj = 2u;
@@ -78,7 +80,7 @@ namespace bevarmejo {
     constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
 static const std::string l__TEMP_ELEMS = "TempEs";
-
+}
     // Here the problem is actually construted.
 	class ModelAnytown {
 	public: 
@@ -131,8 +133,8 @@ static const std::string l__TEMP_ELEMS = "TempEs";
     private: 
         /* Anytonw specific data */
         mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> _anytown_;
-        std::vector<pipes_alt_costs> _pipes_alt_costs_;
-        std::vector<tanks_costs> _tanks_costs_;
+        std::vector<anytown::pipes_alt_costs> _pipes_alt_costs_;
+        std::vector<anytown::tanks_costs> _tanks_costs_;
 
         /* Anytown specific functions */
         double cost(const std::vector<double>& dv, const double energy_cost_per_day) const;

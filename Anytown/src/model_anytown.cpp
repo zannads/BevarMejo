@@ -32,7 +32,7 @@
 namespace fsys = std::filesystem;
 namespace bevarmejo {
 
-	std::istream& operator>>(std::istream& is, tanks_costs& tc)
+	std::istream& anytown::operator>>(std::istream& is, anytown::tanks_costs& tc)
 	{
 		stream_in(is, tc.volume); is.ignore(1000, ';');
 		stream_in(is, tc.cost);
@@ -40,7 +40,7 @@ namespace bevarmejo {
 		return is;
 	}
 
-	std::istream& operator >> (std::istream& is, pipes_alt_costs& pac) {
+	std::istream& anytown::operator>>(std::istream& is, anytown::pipes_alt_costs& pac) {
 		stream_in(is, pac.diameter); is.ignore(1000, ';');
 
 		stream_in(is, pac.new_cost); is.ignore(1000, ';');
@@ -106,7 +106,7 @@ namespace bevarmejo {
 
 		// Custom made subnetworks
 		wds::Subnetwork temp_elements;
-		_anytown_->add_subnetwork(l__TEMP_ELEMS, temp_elements);
+		_anytown_->add_subnetwork(anytown::l__TEMP_ELEMS, temp_elements);
 
 		// Load Pipe rehabilitation alternative costs 
 		fsys::path prac_filename{settings.child_value("avDiams")};
@@ -138,22 +138,22 @@ namespace bevarmejo {
 
     std::vector<double>::size_type ModelAnytown::get_nobj() const {
 		// Cost and reliability
-        return n_obj;
+        return anytown::n_obj;
     }
 
     std::vector<double>::size_type ModelAnytown::get_nec() const {
 		// NO equality constraints
-        return n_ec;
+        return anytown::n_ec;
     }
 
     std::vector<double>::size_type ModelAnytown::get_nic() const {
 		// NO inequality constraints
-        return n_ic;
+        return anytown::n_ic;
     }
 
     std::vector<double>::size_type ModelAnytown::get_nix() const {
 		// For now they are all integers. //Tanks will be added in the future
-        return n_ix;
+        return anytown::n_ix;
     }
 
     std::string ModelAnytown::get_extra_info() const {
@@ -202,11 +202,11 @@ namespace bevarmejo {
 		catch (const std::exception& ex) {
 			std::cout << ex.what();
 			reset_dv( _anytown_, dvs, old_HW_coeffs);
-			return std::vector<double>(n_fit, std::numeric_limits<double>::max());
+			return std::vector<double>(anytown::n_fit, std::numeric_limits<double>::max());
 		}
 		
 		// Compute OF on res. 
-		std::vector<double> fitv(n_fit, 0.0);
+		std::vector<double> fitv(anytown::n_fit, 0.0);
 
 		// NPV of the solution (negative as both initial investement and cash flows are negative)
 		//I need to extract pump energies from the network
@@ -216,7 +216,7 @@ namespace bevarmejo {
 			double power_kW_prec = 0.0;
 			// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
 			for (const auto& [t, power_kW] : pump->instant_energy().value() ) {
-				total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * energy_cost_kWh ; 
+				total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * anytown::energy_cost_kWh ; 
 				t_prec = t;
 				power_kW_prec = power_kW;
 			}
@@ -224,7 +224,7 @@ namespace bevarmejo {
 
 		fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 		// Resilience index 
-		auto ir_daily = resilience_index(*_anytown_, min_pressure_psi*MperFT/PSIperFT);
+		auto ir_daily = resilience_index(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
 		//fitv[1] = -1; //-ir_daily.mean();
 		fitv[1] = 0.0;
 		unsigned long t_prec = 0;
@@ -248,8 +248,8 @@ namespace bevarmejo {
 		// npr: 4 options indicate the number of pumps running -> 0 - 3
 		//TODO: add tanks and risers.
 
-		std::vector<double> lb(n_dv);
-		std::vector<double> ub(n_dv);
+		std::vector<double> lb(anytown::n_dv);
+		std::vector<double> ub(anytown::n_dv);
 
 		// 35 pipes x [action, prc]
 		for (std::size_t i = 0; i < 35; ++i) {
@@ -308,7 +308,7 @@ namespace bevarmejo {
 				// I can't use dvs[i*2+1] to get the costs, but I have to search 
 				// for the diameter in the table.
 				auto it = std::find_if(_pipes_alt_costs_.begin(), _pipes_alt_costs_.end(), 
-					[&curr_pipe](const pipes_alt_costs& pac) { 
+					[&curr_pipe](const anytown::pipes_alt_costs& pac) { 
 						return std::abs(pac.diameter*MperFT/12*1000 - curr_pipe->diameter().value()) < 0.0001; 
 					});
 
@@ -348,7 +348,7 @@ namespace bevarmejo {
 		// TODO: tanks costs
 
 		// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
-		return -bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
+		return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
     }
 
     std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs) const {
@@ -425,13 +425,13 @@ namespace bevarmejo {
 				anytown->insert(dup_pipe);
 				anytown->cache_indices();
 				// add to the set of the "to be removed" elements
-				anytown->subnetwork(l__TEMP_ELEMS).insert(dup_pipe);
+				anytown->subnetwork(anytown::l__TEMP_ELEMS).insert(dup_pipe);
 				// Since I duplicated the pipe every property is the same except:
 				// the new pipe may have a different diameter and
 				// the new pipe MUST have the roughness of a new pipe.
 				assert(dup_pipe->index() != 0);
 				dup_pipe->diameter(_pipes_alt_costs_.at(*(curr_dv+1)).diameter*MperFT/1000);
-				dup_pipe->roughness(coeff_HW_new);
+				dup_pipe->roughness(anytown::coeff_HW_new);
 			}
 			else if (*curr_dv == 2) { // clean
 				// retrieve and save the old HW coefficients
@@ -439,9 +439,9 @@ namespace bevarmejo {
 				old_HW_coeffs.push_back(old_pipe_roughness);
 			
 				// set the new HW coefficients
-				errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, coeff_HW_cleaned);	
+				errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, anytown::coeff_HW_cleaned);	
 				assert(errorcode <= 100);
-				curr_pipe->roughness(coeff_HW_cleaned);
+				curr_pipe->roughness(anytown::coeff_HW_cleaned);
 			}
 
 			++curr_dv;
@@ -508,7 +508,7 @@ namespace bevarmejo {
 			if (*curr_dv == 1) { // remove duplicate
 				// duplicate pipe has been named Dxx where xx is the original pipe name
 				// they are also saved in the subnetwork l__TEMP_ELEMS
-				auto it = std::find_if(anytown->subnetwork(l__TEMP_ELEMS).begin(), anytown->subnetwork(l__TEMP_ELEMS).end(), 
+				auto it = std::find_if(anytown->subnetwork(anytown::l__TEMP_ELEMS).begin(), anytown->subnetwork(anytown::l__TEMP_ELEMS).end(), 
 					[&curr_pipe](const std::shared_ptr<wds::NetworkElement>& ne) { 
 						return ne->id() == "D"+curr_pipe->id(); 
 					});
@@ -523,7 +523,7 @@ namespace bevarmejo {
 				anytown->remove(dup_pipe_to_rem);
 				anytown->cache_indices();
 				// remove the new pipe from the set of the "to be removed" elements
-				anytown->subnetwork(l__TEMP_ELEMS).remove(dup_pipe_to_rem);
+				anytown->subnetwork(anytown::l__TEMP_ELEMS).remove(dup_pipe_to_rem);
 			}
 			else if (*curr_dv == 2) { // reset clean
 				// re set the HW coefficients
@@ -546,11 +546,11 @@ namespace bevarmejo {
 			assert(curr_pipe != nullptr);
 
 			// change the new pipe properties:
-			double diameter = _nonexisting_pipe_diam_ft;
+			double diameter = anytown::_nonexisting_pipe_diam_ft;
 			int errorcode = EN_setlinkvalue(_anytown_->ph_, curr_pipe->index(), EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
 
-			curr_pipe->diameter(_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
+			curr_pipe->diameter(anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
 
 			++curr_dv;
 		}
