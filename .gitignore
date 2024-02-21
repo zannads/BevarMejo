@@ -408,3 +408,5 @@ buildXCode/
 # For vscode 
 .vscode/
 /build-vs-code
+
+build-XCode/
