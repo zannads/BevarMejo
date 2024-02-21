@@ -246,7 +246,8 @@ namespace bevarmejo {
 		// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
 		// prc: 10 options in pipe_rehab_cost -> 0 - 9 
 		// npr: 4 options indicate the number of pumps running -> 0 - 3
-		//TODO: add tanks and risers.
+		// tav: x possible tank nodes positions
+		// tvol: 5 discrete tank volume possible -> 0 - 4 (to be transformed in continuous between the limits)
 
 		std::vector<double> lb(anytown::n_dv);
 		std::vector<double> ub(anytown::n_dv);
@@ -269,6 +270,14 @@ namespace bevarmejo {
 		for (std::size_t i = 0; i < 24; ++i) {
 			lb[76 + i] = 0;
 			ub[76 + i] = 3;
+		}
+
+		// 2 x [tav] x [tvol]
+		for (std::size_t i = 0; i < 2; ++i) {
+			lb[100 + i*2] = 0.;
+			ub[100 + i*2] = 16.;
+			lb[100 + i*2 + 1] = 0.;
+			ub[100 + i*2 + 1] = 4.;
 		}
 
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);

@@ -28,8 +28,8 @@ namespace anytown {
     constexpr std::size_t n_ec = 0u;
     constexpr std::size_t n_ic = 0u;
     constexpr std::size_t n_fit = n_obj + n_ec + n_ic;
-    constexpr std::size_t n_dv = 100u;
-    constexpr std::size_t n_ix = 100u;
+    constexpr std::size_t n_dv = 104u;
+    constexpr std::size_t n_ix = 104u; // Will transform the tank volume to a continuous variable in the future.
     constexpr std::size_t n_cx = n_dv-n_ix;
 
     // Other constants always valid.
