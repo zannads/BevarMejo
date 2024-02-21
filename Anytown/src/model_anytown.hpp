@@ -60,6 +60,9 @@ namespace anytown {
     constexpr double _riser_length_1_ft = 100.0;
     constexpr double _riser_length_2_ft = 1.0; 
 
+    // "Constants" representing the actions we can do on the network.
+    constexpr std::size_t max_n_installable_tanks = 2;
+    
     // Structs for reading data from file.
     struct pipes_alt_costs {
         double diameter;

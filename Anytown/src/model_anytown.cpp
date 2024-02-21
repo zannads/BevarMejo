@@ -244,41 +244,62 @@ namespace bevarmejo {
 		// Structure of the decision variables
 		// [35 pipes x [action, prc], 6 pipes x [prc], 24 hours x [npr] ] 
 		// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
-		// prc: 10 options in pipe_rehab_cost -> 0 - 9 
+		// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
 		// npr: 4 options indicate the number of pumps running -> 0 - 3
 		// tav: x possible tank nodes positions
 		// tvol: 5 discrete tank volume possible -> 0 - 4 (to be transformed in continuous between the limits)
 
-		std::vector<double> lb(anytown::n_dv);
+		// All decision variables are integers values indicating the index of a table/vector
+		// thus the lower bound is only made of 0. The upper bound on the other hand changes 
+		// based on the space of that dv.
+		std::vector<double> lb(anytown::n_dv, 0.0);
 		std::vector<double> ub(anytown::n_dv);
 
-		// 35 pipes x [action, prc]
-		for (std::size_t i = 0; i < 35; ++i) {
-			lb[i*2] = 0;
-			ub[i*2] = 2;
-			lb[i*2 + 1] = 0;
-			ub[i*2 + 1] = 9;
+		// Let's start iterating over the upper bound
+		auto it = ub.begin();
+		auto curr_dv_chunk_end = ub.begin();
+
+		// 35 pipes x [action, pra]
+		assert(_anytown_->subnetwork("existing_pipes").size() == 35);
+		curr_dv_chunk_end += _anytown_->subnetwork("existing_pipes").size()*2; // move forward by 70
+		assert(this->_pipes_alt_costs_.size() == 10);
+		double n_pra = this->_pipes_alt_costs_.size();
+		while( it !=  curr_dv_chunk_end) {
+			*it = 2.;
+			++it;
+			*it = n_pra-1;
+			++it;
 		}
 
-		// 6 pipes x [prc]
-		for (std::size_t i = 0; i < 6; ++i) {
-			lb[70 + i] = 0;
-			ub[70 + i] = 9;
+		// 6 pipes x [pra]
+		assert(_anytown_->subnetwork("new_pipes").size() == 6);
+		curr_dv_chunk_end += _anytown_->subnetwork("new_pipes").size(); 
+		while (it != curr_dv_chunk_end) {
+			*it = n_pra-1;
+			++it;
 		}
 
 		// 24 hours x [npr]
-		for (std::size_t i = 0; i < 24; ++i) {
-			lb[76 + i] = 0;
-			ub[76 + i] = 3;
+		// this is subnetworks independent
+		curr_dv_chunk_end += 24; // hours in a day
+		while (it != curr_dv_chunk_end) {
+			*it = 3.;
+			++it;
 		}
 
 		// 2 x [tav] x [tvol]
-		for (std::size_t i = 0; i < 2; ++i) {
-			lb[100 + i*2] = 0.;
-			ub[100 + i*2] = 16.;
-			lb[100 + i*2 + 1] = 0.;
-			ub[100 + i*2 + 1] = 4.;
+		double n_possible_locs = _anytown_->subnetwork("possible_tank_locations").size();
+		assert( n_possible_locs == 17. );
+		double n_tank_sizes = this->_tanks_costs_.size();
+		assert( n_tank_sizes == 5. );
+		curr_dv_chunk_end += 2*anytown::max_n_installable_tanks; // the number of possible installable tanks is 2
+		while (it != curr_dv_chunk_end) {
+			*it = n_possible_locs-1;
+			++it;
+			*it = n_tank_sizes-1;
+			++it;
 		}
+		assert(it == ub.end());
 
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
     }
