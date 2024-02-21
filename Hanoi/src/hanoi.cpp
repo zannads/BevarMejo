@@ -13,7 +13,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/water_distribution_system.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "hanoi.hpp"
 

@@ -40,7 +40,7 @@ Experiment::Experiment(fsys::path experiment_folder,
     // check that the root folder exist
     if (!fsys::exists(_root_experiment_folder_) ||
         !fsys::is_directory(_root_experiment_folder_) ){
-        throw std::runtime_error("\nExperiment folder not located\nMake sure it exists.\n");
+        throw std::runtime_error("\nExperiment folder "+_root_experiment_folder_.string()+" not located\nMake sure it exists.\n");
     }
     
     // check that every folder inside exist as it should, otherwise fix it

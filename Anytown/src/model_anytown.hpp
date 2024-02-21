@@ -15,8 +15,7 @@
 
 #include "pugixml.hpp"
 
-#include "bevarmejo/water_distribution_system.hpp"
-#include "bevarmejo/resilience_index.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
@@ -78,11 +77,28 @@ namespace bevarmejo {
 
     constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
+static const std::string l__TEMP_ELEMS = "TempEs";
+
     // Here the problem is actually construted.
 	class ModelAnytown {
 	public: 
 		ModelAnytown() = default;
 		ModelAnytown(fsys::path input_directory, pugi::xml_node settings);
+
+        // Copy constructor
+        ModelAnytown(const ModelAnytown& other) = default;
+
+        // Move constructor
+        ModelAnytown(ModelAnytown&& other) noexcept = default;
+
+        // Copy assignment operator
+        ModelAnytown& operator=(const ModelAnytown& rhs) = default;
+
+        // Move assignment operator
+        ModelAnytown& operator=(ModelAnytown&& rhs) noexcept = default;
+
+        // Destructor
+        ~ModelAnytown() = default;
 
 		// Try to have copy and move constructor automatically created
 
@@ -112,25 +128,19 @@ namespace bevarmejo {
         std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
 
-/* temp helper functions until I fix the runHydraulics data extraction */
-        bevarmejo::netdata_4_Ir convert_to_netdata_4_Ir(
-            const std::vector<double>& pressures, const std::vector<double>& flows, const std::vector<double>& energies, 
-            const std::string& dnodes_subnet_name, const std::string& res_subnet_name) const;
-
     private: 
         /* Anytonw specific data */
-        std::shared_ptr<bevarmejo::WaterDistributionSystem> _anytown_;
+        mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> _anytown_;
         std::vector<pipes_alt_costs> _pipes_alt_costs_;
         std::vector<tanks_costs> _tanks_costs_;
 
         /* Anytown specific functions */
-        double cost(const std::vector<double>& dv, const std::vector<std::vector<double>>& energy) const;
-        double resilience_index(const std::vector<double>& pressures, const std::vector<double>& flows) const;
-
+        double cost(const std::vector<double>& dv, const double energy_cost_per_day) const;
+        
         /* Helper functions */
-        std::vector<double> apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
-        void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
-        std::vector<std::vector<double>> decompose_pump_pattern(std::vector<const double>::iterator begin, const std::vector<const double>::iterator end) const;
+        std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
+        void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
+        std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const;
 
 	}; /* class ModelAnytown*/
  

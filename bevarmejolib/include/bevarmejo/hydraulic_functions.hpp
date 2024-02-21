@@ -10,6 +10,9 @@
 #include <iostream>
 #include <vector>
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "bevarmejo/wds/elements/temporal.hpp"
+
 namespace bevarmejo {
     
     template <typename T>
@@ -39,8 +42,25 @@ namespace bevarmejo {
 
     // TODO: functions not returning a bool but a value propotional to the mismatch between the minimum pressure and the actual pressure
 
-    // TODO: move resilience_index here
-
+    // Resilience index as defined in Todini (2000)
+    // Both for single value of minimum pressure and not
+    wds::vars::timeseries_real resilience_index(const wds::WaterDistributionSystem& a_wds,
+                                                const double req_head_dnodes=20.0);
+    /*wds::vars::timeseries_real resilience_index(wds::WaterDistributionSystem* a_wds,
+                                                const std::vector<double>& req_head_dnodes);
+    double resilience_index(const std::vector<double>& flow_dnodes, 
+                            const std::vector<double>& head_dnodes,
+                            const std::vector<double>& flow_reserv, 
+                            const std::vector<double>& head_reserv,
+                            const std::vector<double>& power_pumps,
+                            const double req_head_dnodes=20.0);*/
+    double resilience_index(const std::vector<double>& flow_dnodes, 
+                            const std::vector<double>& head_dnodes,
+                            const std::vector<double>& flow_reserv, 
+                            const std::vector<double>& head_reserv,
+                            const std::vector<double>& power_pumps,
+                            const std::vector<double>& req_head_dnodes);
+ 
 } // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__HYDRAULIC_FUNCTIONS_HPP
