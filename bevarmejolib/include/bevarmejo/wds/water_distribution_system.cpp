@@ -20,6 +20,9 @@
 
 #include "io.hpp"
 
+
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
 #include "water_distribution_system.hpp"
 
 namespace bevarmejo {

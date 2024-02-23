@@ -82,7 +82,7 @@ public:
 	// TODO: set with operator=?
 
 	// Destructor
-	~ElementsGroup() { _elements_.clear(); }
+	virtual ~ElementsGroup() = default;
 
 /*--- Getters and setters ---*/
 public:
@@ -223,7 +223,6 @@ int _is_en_object_type_valid(const std::string& en_object_type);
 
 std::tuple<int, std::vector<std::string>, std::string> __load_egroup_data_from_stream(std::istream& is);
 
-using Subnetwork = ElementsGroup<NetworkElement>;
 using Nodes = ElementsGroup<Node>;
 using Links = ElementsGroup<Link>;
 using Junctions = ElementsGroup<Junction>;

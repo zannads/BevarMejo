@@ -18,6 +18,7 @@ set(WDS_INC_ROOT    "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
 )
 set(WDS_FILES   "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}/water_distribution_system.hpp" 
                 "${WDS_INC_ROOT}/elements_group.hpp" "${WDS_INC_ROOT}/elements_group.cpp"
+                "${WDS_INC_ROOT}/user_defined_elements_group.hpp"
                 "${WDS_INC_ROOT}/elements/demand.hpp"
                 "${WDS_INC_ROOT}/elements/curve.hpp"
                 "${WDS_INC_ROOT}/elements/curves.hpp" "${WDS_INC_ROOT}/elements/curves.cpp"

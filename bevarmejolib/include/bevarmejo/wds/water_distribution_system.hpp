@@ -37,9 +37,9 @@
 #include "bevarmejo/wds/elements/pattern.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
 
 namespace bevarmejo {
-
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
@@ -53,7 +53,7 @@ public:
     // it is just faster than doing create an interface. I will be careful.
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
-    using ElemGroupsMap = std::unordered_map<std::string, ElementsGroup<Element>>;
+    using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
 
     
 protected:
@@ -81,7 +81,7 @@ protected:
     // User defined groups of elements (subnetworks is only for nodes and links)
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
-    std::unordered_map<std::string, ElementsGroup<Element>> _groups_;
+    std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
     
 
 /*--- Constructors ---*/ 
@@ -164,7 +164,7 @@ public:
 
 private:
     template <typename T>
-    std::pair<std::string, ElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
+    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
 
 }; // class WaterDistributionSystem
 
@@ -278,7 +278,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const std::filesystem::path& file_path) {
+std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const std::filesystem::path& file_path) {
 	
 	// A group of elements is completely defined by the following attributes:
 	// 0. The name (the name of the file)
@@ -323,7 +323,10 @@ std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::WaterDi
 	// If we arrived here it means that the file has been loaded correctly
 	// and we can create the group.
 
-	ElementsGroup<T> elements_group;
+	UserDefinedElementsGroup<T> elements_group;
+
+    elements_group.reserve(ids_list.size());
+    elements_group.comment(comment);
 
     for (const auto& id : ids_list ) {
 
