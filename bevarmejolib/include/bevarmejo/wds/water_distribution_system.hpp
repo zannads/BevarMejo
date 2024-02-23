@@ -324,8 +324,6 @@ std::pair<std::string, bevarmejo::wds::ElementsGroup<T>> bevarmejo::wds::WaterDi
 	// and we can create the group.
 
 	ElementsGroup<T> elements_group;
-	
-	elements_group.comment(comment);
 
     for (const auto& id : ids_list ) {
 

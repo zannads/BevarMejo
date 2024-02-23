@@ -44,7 +44,6 @@ class ElementsGroup {
 protected:
 	using Container = std::unordered_set<std::shared_ptr<T>>;
 	Container _elements_; 
-	std::string _comment_; // Description 
 
 	// On the motivation of using a set instead of a vector:
 	// 1. I want to avoid duplicates
@@ -56,25 +55,18 @@ protected:
 
 /*--- Constructors ---*/
 public:
-	ElementsGroup() : 
-		_elements_(), 
-		_comment_() { }
+	ElementsGroup() : _elements_() { }
 
 	// Copy constructor
-	ElementsGroup(const ElementsGroup& other) : 
-		_elements_(other._elements_), 
-		_comment_(other._comment_) { }
+	ElementsGroup(const ElementsGroup& other) : _elements_(other._elements_) { }
 
 	// Move constructor
-	ElementsGroup(ElementsGroup&& other) noexcept :
-		_elements_(std::move(other._elements_)), 
-		_comment_(std::move(other._comment_)) { }
+	ElementsGroup(ElementsGroup&& other) noexcept :_elements_(std::move(other._elements_)) { }
 
 	// Copy assignment operator
 	ElementsGroup& operator=(const ElementsGroup& rhs) {
 		if (this != &rhs) {
 			_elements_ = rhs._elements_;
-			_comment_ = rhs._comment_;
 		}
 		return *this;
 	}
@@ -83,7 +75,6 @@ public:
 	ElementsGroup& operator=(ElementsGroup&& rhs) noexcept {
 		if (this != &rhs) {
 			_elements_ = std::move(rhs._elements_);
-			_comment_ = std::move(rhs._comment_);
 		}
 		return *this;
 	}
@@ -95,8 +86,6 @@ public:
 
 /*--- Getters and setters ---*/
 public:
-	std::string& comment() const { return _comment_; }
-	void comment(const std::string& comment) { _comment_ = comment; }
 	
 /*--- Methods ---*/
 public:
@@ -115,7 +104,7 @@ public:
 
 /*--- Modifiers ---*/
 	void clear_elements() noexcept { _elements_.clear(); }
-	void clear () noexcept { clear_elements(); _comment_ = ""; }
+	void clear () noexcept { clear_elements(); }
 	
 	std::pair<typename Container::iterator, bool> insert(const std::shared_ptr<T>& element) {
     	if (element != nullptr) {
