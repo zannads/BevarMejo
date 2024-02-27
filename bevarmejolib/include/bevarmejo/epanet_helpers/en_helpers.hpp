@@ -7,6 +7,8 @@
 #include "epanet2_2.h"
 #include "types.h"
 
+#include "bevarmejo/io.hpp"
+
 namespace bevarmejo {
 namespace epanet {
 
@@ -73,6 +75,30 @@ inline std::string get_node_id(EN_Project ph, int index) {
     delete[] node_id;
 
     return node_id_str;
+}
+
+inline int is_string_en_object_type(const std::string& en_obj_string) {
+
+	int en_object_type = 0;
+	if (en_obj_string == "EN_NODE")
+		en_object_type = EN_NODE;
+	else if (en_obj_string == "EN_LINK")
+		en_object_type = EN_LINK;
+	else if (en_obj_string == "EN_TIMEPAT")
+		en_object_type = EN_TIMEPAT;
+	else if (en_obj_string == "EN_CURVE")
+		en_object_type = EN_CURVE;
+	else if (en_obj_string == "EN_CONTROL")
+		en_object_type = EN_CONTROL;
+	else if (en_obj_string == "EN_RULE")
+		en_object_type = EN_RULE;
+	else {
+		std::ostringstream oss;
+		stream_out(oss, "Invalid EN object type: ", en_obj_string, "\n");
+		throw std::runtime_error(oss.str());
+	}
+
+	return en_object_type;
 }
 
 } // namespace epanet

@@ -42,7 +42,8 @@ protected:
 
 // Since the Elements Group is a set, the order of the elements is not guaranteed.
 // I may want to access the elements in the order they were loaded from file.
-// To guarantee this behaviour, I will store the ids in a vector.
+// To guarantee this behaviour, I will store the ids in a vector. However, I need to 
+// change the whole behaviour of the class.
 
 /*--- Constructors ---*/
 public:
@@ -96,6 +97,8 @@ public:
 /*--- Methods ---*/
 
 }; // class UserDefinedElementsGroup
+
+std::tuple<int, std::vector<std::string>, std::string> __load_egroup_data_from_stream(std::istream& is);
 
 using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
 
