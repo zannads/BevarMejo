@@ -294,7 +294,7 @@ namespace bevarmejo {
 		assert( n_tank_sizes == 5. );
 		curr_dv_chunk_end += 2*anytown::max_n_installable_tanks; // the number of possible installable tanks is 2
 		while (it != curr_dv_chunk_end) {
-			*it = n_possible_locs-1;
+			*it = n_possible_locs; // no minus -1 because also option "don't install" is valid (option 0)
 			++it;
 			*it = n_tank_sizes-1;
 			++it;
@@ -309,13 +309,14 @@ namespace bevarmejo {
 		// 35 pipes x [action, prc]
 		auto curr_dv = dvs.begin();
 		
-		for(auto& curr_net_ele : _anytown_->subnetwork("existing_pipes")) {
+		for(auto& wp_curr_net_ele : _anytown_->subnetwork("existing_pipes")) {
 			if (*curr_dv == 0){
 				++curr_dv;
 				++curr_dv;
 				continue;
 			}
 
+			auto curr_net_ele = wp_curr_net_ele.lock();
 			std::string link_id = curr_net_ele->id();
 			bool city = _anytown_->subnetwork("city_pipes").contains(link_id);
 			// I assume is in the residential as they are mutually exclusive
@@ -360,7 +361,8 @@ namespace bevarmejo {
 		}
 
 		// 6 pipes x [prc]
-		for (const auto& curr_net_ele : _anytown_->subnetwork("new_pipes")) {
+		for (const auto& wp_curr_net_ele : _anytown_->subnetwork("new_pipes")) {
+			auto curr_net_ele = wp_curr_net_ele.lock();
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
 			if (curr_pipe == nullptr)
 				throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
@@ -375,7 +377,18 @@ namespace bevarmejo {
 		
 		double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 		
-		// TODO: tanks costs
+		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
+			// Check if the tanks is going to be installed
+			if (*curr_dv == 0.) {
+				// don't install skip the location and the volume
+				++curr_dv;
+				++curr_dv;
+				continue;
+			}
+
+			//int new_tank_loc_idx = *curr_dv;
+			//auto p_new_tank_installation_node = _anytown_->subnetwork("possible_tank_locations").begin();
+		}
 
 		// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
 		return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
@@ -389,7 +402,7 @@ namespace bevarmejo {
 		int errorcode = 0;
 
 		// 1. existing pipes
-		for (auto& curr_net_ele : anytown->subnetwork("existing_pipes")) {
+		for (auto& wp_curr_net_ele : anytown->subnetwork("existing_pipes")) {
 			// if dvs[i*2] == 0 do nothing
 			if (*curr_dv == 0){
 				++curr_dv;
@@ -398,6 +411,7 @@ namespace bevarmejo {
 			}
 
 			// something needs to be changed 
+			auto curr_net_ele = wp_curr_net_ele.lock();
 			// retrieve the link ID and index
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
 			assert(curr_pipe != nullptr);
@@ -479,7 +493,8 @@ namespace bevarmejo {
 		}
 
 		// 2. new pipes
-		for (const auto& curr_net_ele : _anytown_->subnetwork("new_pipes")) {	
+		for (const auto& wp_curr_net_ele : _anytown_->subnetwork("new_pipes")) {
+			auto curr_net_ele = wp_curr_net_ele.lock();	
 			// retrieve the link ID from the subnetwork
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
 			if (curr_pipe == nullptr)
@@ -523,7 +538,7 @@ namespace bevarmejo {
 		int errorcode = 0;
 
 		// 1. existing pipes
-		for (auto& curr_net_ele : anytown->subnetwork("existing_pipes")) {
+		for (auto& wp_curr_net_ele : anytown->subnetwork("existing_pipes")) {
 			// if dvs[i*2] == 0 do nothing
 			if (*curr_dv == 0){
 				++curr_dv;
@@ -531,6 +546,7 @@ namespace bevarmejo {
 				continue;
 			}
 
+			auto curr_net_ele = wp_curr_net_ele.lock();
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
 			if (curr_pipe == nullptr)
 				throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
@@ -539,11 +555,14 @@ namespace bevarmejo {
 				// duplicate pipe has been named Dxx where xx is the original pipe name
 				// they are also saved in the subnetwork l__TEMP_ELEMS
 				auto it = std::find_if(anytown->subnetwork(anytown::l__TEMP_ELEMS).begin(), anytown->subnetwork(anytown::l__TEMP_ELEMS).end(), 
-					[&curr_pipe](const std::shared_ptr<wds::NetworkElement>& ne) { 
-						return ne->id() == "D"+curr_pipe->id(); 
+					[&curr_pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
+						auto ne_ptr = ne.lock();
+						if (ne_ptr == nullptr)
+							return false; // it didn't found it, meaning it doesn't exist anymore!
+						return ne_ptr->id() == "D"+curr_pipe->id(); 
 					});
 
-				std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(*it);
+				std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
 
 				// remove the new pipe
 				errorcode = EN_deletelink(anytown->ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
@@ -570,7 +589,8 @@ namespace bevarmejo {
 		}
 
 		// 2. new pipes
-		for (auto& curr_net_ele : anytown->subnetwork("new_pipes") ) {
+		for (auto& wp_curr_net_ele : anytown->subnetwork("new_pipes") ) {
+			auto curr_net_ele = wp_curr_net_ele.lock();
 			// retrieve the link ID and idx from the subnetwork
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
 			assert(curr_pipe != nullptr);
