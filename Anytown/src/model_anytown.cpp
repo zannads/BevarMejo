@@ -21,6 +21,13 @@
 #include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/demand.hpp"
+#include "bevarmejo/wds/elements/source.hpp"
+#include "bevarmejo/wds/elements/tank.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
@@ -361,6 +368,7 @@ namespace bevarmejo {
 		}
 
 		// 6 pipes x [prc]
+		// This must be installed, thus minimum cost will never be 0.
 		for (const auto& wp_curr_net_ele : _anytown_->subnetwork("new_pipes")) {
 			auto curr_net_ele = wp_curr_net_ele.lock();
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
@@ -374,20 +382,27 @@ namespace bevarmejo {
 			++curr_dv;
 		}
 		// energy from pumps 
-		
+		curr_dv += 24; // 24 hours x [npr]
 		double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 		
 		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// Check if the tanks is going to be installed
-			if (*curr_dv == 0.) {
+			// You can't install two tanks on the same locations so I discard the second one 
+			if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
 				// don't install skip the location and the volume
 				++curr_dv;
 				++curr_dv;
 				continue;
 			}
 
-			//int new_tank_loc_idx = *curr_dv;
-			//auto p_new_tank_installation_node = _anytown_->subnetwork("possible_tank_locations").begin();
+			// I don't care where I place it, the cost is always dependent on the volume [dv+1]
+			++curr_dv;
+			// as of this version I can only choose the specific volume of the table and not intermediate values.
+			double tank_cost = _tanks_costs_.at(*curr_dv).cost;
+			design_cost += tank_cost;
+			// TODO: decide how to add the cost of the riser (for now I take 16 inches as the standard riser diam)
+			design_cost += _pipes_alt_costs_.at(5).new_cost*anytown::riser_length_ft; // no need to go back to meters because everything here is in foot
+			++curr_dv;
 		}
 
 		// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
