@@ -138,6 +138,7 @@ WaterDistributionSystem::~WaterDistributionSystem(){
         EN_deleteproject(ph_);
         
         ph_ = nullptr;
+        std::cout << "EPANET project deleted\n";
     }
 }
 
@@ -592,10 +593,11 @@ void WaterDistributionSystem::clear_results() const {
 
 void WaterDistributionSystem::run_hydraulics() const{
     this->clear_results();
+    assert(ph_ != nullptr);
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
     if (errorcode >= 100)
-        return; // I don't think I need to close it here
+        throw std::runtime_error("Hydraulic opening failed."); // I don't think I need to close it here
 
     errorcode = EN_initH(ph_, 10);
     if (errorcode >= 100) {

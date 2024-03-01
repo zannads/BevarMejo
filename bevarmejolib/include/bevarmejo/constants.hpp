@@ -8,6 +8,8 @@
 #ifndef BEVARMEJOLIB__CONSTANTS_HPP
 #define BEVARMEJOLIB__CONSTANTS_HPP
 
+#include <cmath>
+
 namespace bevarmejo {
 
 constexpr double water_density_kg_per_m3 = 1000.0;
@@ -16,6 +18,8 @@ constexpr double water_specific_weight_N_per_m3 = water_density_kg_per_m3 * grav
 
 constexpr int k__days_ina_year = 365;
 constexpr int k__sec_per_hour = 3600;
+
+constexpr double k__pi = M_PI;
 
 } // namespace bevamejo
 #endif // BEVARMEJOLIB__CONSTANTS_HPP

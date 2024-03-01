@@ -67,6 +67,7 @@ public:
 public:
     /*--- Properties ---*/
     vars::var_real& length() const { return *_length_; }
+    void length(const double a_length) { _length_->value(a_length);}
 
     /*---  Results   ---*/
 

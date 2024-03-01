@@ -202,7 +202,7 @@ namespace bevarmejo {
 		// everything in a new thread and then simply discard it.
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dvs);
-
+		bevarmejo::stream_out(std::cout, dvs, "\n");
 		try {
 			_anytown_->run_hydraulics();
 		}
@@ -508,7 +508,7 @@ namespace bevarmejo {
 		}
 
 		// 2. new pipes
-		for (const auto& wp_curr_net_ele : _anytown_->subnetwork("new_pipes")) {
+		for (const auto& wp_curr_net_ele : anytown->subnetwork("new_pipes")) {
 			auto curr_net_ele = wp_curr_net_ele.lock();	
 			// retrieve the link ID from the subnetwork
 			std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
@@ -540,6 +540,100 @@ namespace bevarmejo {
 			// set the pattern
 			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
 			assert(errorcode <= 100);
+		}
+
+		curr_dv += 24; // 24 hours x [npr]
+
+		// 4. tanks
+		for(std::size_t tank_idx = 3; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
+			// 0 counts as "don't install" and I can't install two tanks on the same location
+			if ((int)*curr_dv == 0 || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
+				// don't install skip the location and the volume
+				++curr_dv;
+				++curr_dv;
+				continue;
+			}
+			
+			int new_tank_loc_shift = *curr_dv-1; // minus one because of the zero option! This indicates the index of the subnetwork
+			assert(new_tank_loc_shift >= 0 && new_tank_loc_shift < anytown->subnetwork("possible_tank_locations").size() );
+			auto wp_ne = anytown->subnetwork("possible_tank_locations").begin() + new_tank_loc_shift;
+			auto new_tnk_instal_netel = wp_ne->lock(); // as a pointer to network element
+			if (new_tnk_instal_netel == nullptr)
+				throw std::runtime_error("Could not retrieve the Node, did you delete it?");
+			auto new_tank_install_node = std::dynamic_pointer_cast<wds::Node, wds::NetworkElement>(new_tnk_instal_netel); 
+			assert(new_tank_install_node != nullptr);
+			
+			/* Should I create a fake node with a zero demand?
+			 * No, this is done for the two tanks in the original file only for 
+			 * the purpose of graphic representation on EPANET.
+			*/
+
+			// I should create a new tank at that position and with that volume
+			double tank_volume_gal = _tanks_costs_.at(*(curr_dv+1)).volume;
+			double tank_volume_m = tank_volume_gal * 0.00378541;
+			std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx));
+			// elevation , min and max level are the same as in the original tanks
+			// Ideally same coordinates of the junction, but I move it slightly in case I want to save the result to file and visualize it
+			// diameter from volume divided by the fixed ratio
+			auto origin_tank = *anytown->tanks().begin();
+			double elev = origin_tank->elevation();
+			double min_lev = origin_tank->min_level().value();
+			double min_vol = origin_tank->min_volume().value();
+			new_tank->elevation(elev);
+			new_tank->initial_level(min_lev);
+			new_tank->min_level(min_lev);
+			new_tank->min_volume(min_vol);
+			new_tank->x_coord(new_tank_install_node->x_coord());
+			new_tank->y_coord(new_tank_install_node->y_coord()+anytown::riser_length_ft); 
+			// We assume d = h for a cilindrical tank, thus V = \pi d^2 /4 * h = \pi d^3 / 4
+			// given that this is a fixed value we could actually have it as a parameter to reduce computational expenses. 
+			double diam_m = std::pow(tank_volume_m*4/k__pi, 1.0/3); // TODO: fix based on whatever ratio I want
+			new_tank->diameter(diam_m);
+			double max_lev = diam_m;
+			new_tank->max_level(max_lev);
+			// do it again in EPANET
+			int new_tank_idx = 0; 
+			int errco = EN_addnode(anytown->ph_, new_tank->id().c_str(), EN_TANK, &new_tank_idx);
+			assert(errco <= 100);
+			errco = EN_settankdata(anytown->ph_, new_tank_idx, 
+				elev/MperFT, 
+				min_lev/MperFT, 
+				min_lev/MperFT, 
+				max_lev/MperFT, 
+				diam_m/MperFT, 
+				min_vol/M3perFT3, 
+				"");
+			assert(errco <= 100);
+			anytown->insert(new_tank);
+
+			// The riser has a well defined length, diameter could be a dv, but I fix it to 16 inches for now
+			std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx));
+			riser->diameter(16.0*MperFT/1000);
+			riser->length(anytown::riser_length_ft*MperFT);
+			riser->start_node(new_tank.get());
+			riser->end_node(new_tank_install_node.get());
+			riser->roughness(anytown::coeff_HW_new);
+			anytown->insert(riser);
+			// do it again in EPANET
+			int riser_idx = 0;
+			errco = EN_addlink(anytown->ph_, riser->id().c_str(), EN_PIPE, new_tank->id().c_str(), new_tank_install_node->id().c_str(), &riser_idx);
+			assert(errco <= 100);
+			errco = EN_setpipedata(anytown->ph_, riser_idx,
+				anytown::riser_length_ft,
+				16.0,
+				anytown::coeff_HW_new,
+				0.0
+			);
+			assert(errco <= 100);
+
+			anytown->cache_indices();
+
+			// add them to the "TBR" net
+			anytown->subnetwork(anytown::l__TEMP_ELEMS).insert(new_tank);
+			anytown->subnetwork(anytown::l__TEMP_ELEMS).insert(riser);
+
+			++curr_dv;
+			++curr_dv;
 		}
 
         return old_HW_coeffs;
@@ -612,7 +706,7 @@ namespace bevarmejo {
 
 			// change the new pipe properties:
 			double diameter = anytown::_nonexisting_pipe_diam_ft;
-			int errorcode = EN_setlinkvalue(_anytown_->ph_, curr_pipe->index(), EN_DIAMETER, diameter);
+			int errorcode = EN_setlinkvalue(anytown->ph_, curr_pipe->index(), EN_DIAMETER, diameter);
 			assert(errorcode <= 100);
 
 			curr_pipe->diameter(anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
@@ -643,6 +737,52 @@ namespace bevarmejo {
 			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
 			assert(errorcode <= 100);
 		}
+
+		curr_dv += 24; // 24 hours x [npr]
+
+		// 4. tanks
+		for(std::size_t tank_idx = 3; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
+			// 0 counts as "don't install" and I can't install two tanks on the same location
+			if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
+				// don't install skip the location and the volume
+				++curr_dv;
+				++curr_dv;
+				continue;
+			}
+			
+			// remove the new tank and the riser 
+			auto itt = anytown->tanks().find("T"+std::to_string(tank_idx));
+			if (itt == anytown->tanks().end())
+				throw std::runtime_error("Could not find the tank to remove.");
+			auto new_tank_to_rem = *itt;
+			auto itr = anytown->pipes().find("Ris_"+std::to_string(tank_idx));
+			if (itr == anytown->pipes().end())
+				throw std::runtime_error("Could not find the riser to remove.");
+			auto riser_to_rem = *itr;
+
+			// from my network object I can simply do 
+			anytown->remove(new_tank_to_rem);
+			anytown->remove(riser_to_rem);
+
+			// remove them from the set of the "to be removed" elements
+			anytown->subnetwork(anytown::l__TEMP_ELEMS).remove(new_tank_to_rem);
+			anytown->subnetwork(anytown::l__TEMP_ELEMS).remove(riser_to_rem);
+
+			// and the objects still exist because I am holding it in the shared_ptr here (new_tank_to_rem, riser_to_rem)
+			anytown->cache_indices();
+			// remove the new tank and the the riser is automatically deleted 
+			errorcode = EN_deletelink(anytown->ph_, riser_to_rem->index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+			anytown->cache_indices();
+			errorcode = EN_deletenode(anytown->ph_, new_tank_to_rem->index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+
+			anytown->cache_indices();
+
+			++curr_dv;
+			++curr_dv;
+		}
+		anytown->cache_indices();
 	}
 
     std::vector<std::vector<double>> ModelAnytown::decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const {
