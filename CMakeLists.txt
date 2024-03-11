@@ -1,4 +1,4 @@
-# CMakeList.txt : Top-level CMake project file, do global configuration
+﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.8)
@@ -47,6 +47,18 @@ ENDIF()
 
 # Look for an installation of pagmo in the system.
 find_package(Pagmo REQUIRED)
+
+# Look for an installation of nlohmann json in the system.
+IF(DEFINED ENV{JSON_ROOT})
+  set( JSON_ROOT "$ENV{JSON_ROOT}" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env found, using ${JSON_ROOT}")
+ELSE()
+  set( JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env NOT found, using ${JSON_ROOT}")
+ENDIF()
+# Include in the cmake prefix path 
+list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
+find_package(nlohmann_json 3.2.0 REQUIRED)
 
 # "Look" for an installation of EPANET in the system.
 IF(WIN32)

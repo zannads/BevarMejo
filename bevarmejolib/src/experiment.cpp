@@ -6,6 +6,7 @@
 //
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -16,6 +17,9 @@
 #include "pagmo/population.hpp"
 
 #include "pugixml.hpp"
+
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
 
@@ -86,8 +90,54 @@ void Experiment::finished(){
     _end_time_ = std::chrono::system_clock::to_time_t(now);
 }
 
-void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &algo){
+void Experiment::save_runtime_result(pagmo::population &pop) {
+    // If it does not exist, create the file. 
+    // If it exist, load it, add the new info and then save it again.
+   
+    auto currtime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::stringstream ss;
+    ss << std::put_time(std::localtime(&currtime), "%c"); // Convert to string without the final newline
+    std::string currtime_str = ss.str();
+
+    std::ifstream ifs(runtime_file());
+    json j;
+    if (ifs.is_open()) {
+        ifs >> j;
+        ifs.close();
+    }
+
+    json jpop;
+
+    // Add the info of each population
+    jpop = {
+        {"Evaluations", pop.get_problem().get_fevals()},
+        {"Current time", currtime_str},
+        {"Population size", pop.size()},
+        {"Seed", pop.get_seed()}
+    };
     
+    // Add the info of each individual
+    auto population_ids = pop.get_ID();
+    auto pop_dvs        = pop.get_x();
+    auto pop_fitnesses  = pop.get_f();
+    for (auto individual = 0u; individual<pop.size(); ++individual){
+        jpop["Individuals"].push_back({
+            {"ID", population_ids[individual]},
+            {"Decision vector", pop_dvs[individual]},
+            {"Fitness vector", pop_fitnesses[individual]}
+        });
+    }
+
+    j["Generations"].push_back(jpop);
+
+    // Save the file
+    std::ofstream ofs(runtime_file());
+    ofs << j.dump(4);
+}
+
+void Experiment::save_final_result(pagmo::population &pop, pagmo::algorithm &algo)
+{
+
     // open and create the file
     std::ofstream ofs(output_file());
     if (!ofs.is_open())
@@ -161,6 +211,15 @@ fsys::path Experiment::runtime_dir(){
 fsys::path Experiment::settings_file(){
     return input_dir()/_settings_filename_;
 }
+
+fsys::path Experiment::runtime_file() {
+    fsys::path outtemp_filename = output_dir()/_name_;
+    outtemp_filename += "_";
+    outtemp_filename += std::to_string(_seed_);
+    outtemp_filename += ".json";
+    return outtemp_filename;
+}
+
 fsys::path Experiment::output_file()
 {
     fsys::path output_filename = output_dir()/_name_;

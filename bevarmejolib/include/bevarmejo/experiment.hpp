@@ -18,6 +18,8 @@
 
 #include "pugixml.hpp"
 
+#include "nlohmann/json.hpp"
+
 namespace bevarmejo {
 
 namespace fsys = std::filesystem;
@@ -59,7 +61,7 @@ public:
     // Save end time of the experiment
     void finished();
     
-    
+    void save_runtime_result(pagmo::population &pop);
     void save_final_result(pagmo::population &pop, pagmo::algorithm &algo);
     
     /* Setters and getters */
@@ -73,6 +75,7 @@ public:
     fsys::path runtime_dir();
     fsys::path settings_file();
     fsys::path output_file();
+    fsys::path runtime_file();
 
     pugi::xml_node algorithm_settings() const;
     // TODO: overload for multiple algorithms
