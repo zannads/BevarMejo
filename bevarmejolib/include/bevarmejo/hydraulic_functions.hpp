@@ -11,9 +11,18 @@
 #include <vector>
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
 #include "bevarmejo/wds/elements/temporal.hpp"
 
 namespace bevarmejo {
+
+    // Function that checks if a junction satisfies the minimum pressure
+    bool is_head_deficient(const wds::Junction& a_junction, const double min_head=14.0 /* circa 20 psi */);
+    wds::vars::timeseries_real head_deficiency(const wds::Junction& a_junction, const double min_head=14.0 /* circa 20 psi */);
+    wds::vars::timeseries_real head_deficiency(const wds::WaterDistributionSystem& a_wds, const double min_head=14.0 /* circa 20 psi */);
+    // TODO: correct definition of head_deficiency would be for a (ordered) vector of junctions and a (ordered) vector of min_head
+    // wds::vars::timeseries_real head_deficiency(const wds::UserDefinedElementsGroup<wds::Junction>& a_junctions, const double min_head); // calling the vectorized version
+    // wds::vars::timeseries_real head_deficiency(const wds::UserDefinedElementsGroup<wds::Junction>& a_junctions, const std::vector<double>& min_head);
     
     template <typename T>
     bool minimum_pressure_satisfied(const std::vector<T>& head_at_dnodes, T min_head_at_dnodes=20.0){

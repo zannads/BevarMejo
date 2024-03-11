@@ -9,6 +9,49 @@
 #include "hydraulic_functions.hpp"
 
 namespace bevarmejo {
+
+bool is_head_deficient(const wds::Junction& a_junction, const double min_head) { 
+    for (const auto& [t, head] : a_junction.head().value() ) {
+        if (head < min_head) {
+            return true;
+        }
+    }
+    return false;
+}
+
+wds::vars::timeseries_real head_deficiency(const wds::Junction &a_junction, const double min_head) {
+    wds::vars::timeseries_real deficiency;
+
+    for (const auto& [t, head] : a_junction.head().value() ) {
+        if (head < min_head) 
+            deficiency.insert(std::make_pair(t, min_head - head));
+        else
+            deficiency.insert(std::make_pair(t, 0.0));
+    }
+
+    return deficiency;
+}
+
+wds::vars::timeseries_real head_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_head) {
+    wds::vars::timeseries_real deficiency;
+
+    // just allocate the memory for the timeseries
+    auto first_junc = *a_wds.junctions().begin();
+    for (const auto& [t, head] : first_junc->head().value() ) {
+        deficiency.insert(std::make_pair(t, 0.0));
+    }
+
+    // cumulative deficiency of each junction
+    for (const auto& junction : a_wds.junctions() ) {
+        for (const auto& [t, head] : junction->head().value() ) {
+            if (head < min_head) 
+                deficiency.at(t) += min_head - head;
+        }
+    }
+    
+    return deficiency;
+}
+
     wds::vars::timeseries_real resilience_index(const wds::WaterDistributionSystem& a_wds,
                                                 const double req_head_dnodes) {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"

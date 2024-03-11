@@ -243,6 +243,14 @@ namespace bevarmejo {
 		fitv[1] /= t_total;
 		fitv[1] = -fitv[1]; // I want to maximize the resilience index
 
+		auto deficit_daily = head_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
+		double cum_daily_deficit = 0.0;
+		for (const auto& [t, deficit] : deficit_daily) {
+			cum_daily_deficit += deficit;
+		}
+		// cum daily deficit is positive when the pressure is below the minimum, so minimize it means getting it to zero 
+		fitv[1] += cum_daily_deficit; // Ideally this is 0.0 when I satisfy the minimum pressure constraint
+
 		reset_dv( _anytown_, dvs, old_HW_coeffs);
         return fitv;
     }
