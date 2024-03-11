@@ -231,25 +231,62 @@ namespace bevarmejo {
 
 		fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 		// Resilience index 
-		auto ir_daily = resilience_index(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
+		auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
 		//fitv[1] = -1; //-ir_daily.mean();
 		fitv[1] = 0.0;
 		unsigned long t_prec = 0;
+		double ir_prec = 0.0;
 		for (const auto& [t, ir] : ir_daily) {
-			fitv[1] += ir*(t - t_prec);
+			fitv[1] += ir_prec*(t - t_prec); // same as energy I need a "forward" weighted sum
 			t_prec = t;
+			ir_prec = ir;
 		}
 		auto& t_total = t_prec; // at the end of the loop t_prec is the last time step
 		fitv[1] /= t_total;
 		fitv[1] = -fitv[1]; // I want to maximize the resilience index
 
-		auto deficit_daily = head_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
-		double cum_daily_deficit = 0.0;
-		for (const auto& [t, deficit] : deficit_daily) {
-			cum_daily_deficit += deficit;
+		// ---------------------------------------------------
+		// Constraints 
+		// Ir goes from 0 to -1, and the algo tries to minimize going towards -1.
+		// The constraint are here to reduce this effect. However, if reliability is 0, it means that the pressure constraint
+		// is not satisfied and I still want to pass this info to the opt algo in some way. So if the reliability is 0, I 
+		// pass the absolute value of the pressure deficit, which is positve, so the worse is the pressure deficit, the worse 
+		// the objective. I don't even add the tanks because it is the least of my problems.
+		// When there is a little bit of reliability, the pressure constraint can be normalized so I get a value from 0 to inf
+		// and that is 1 when the pressure at the node is exactly zero. So if I multiply the reliability by 1 minus the 
+		// normalized pressure deficit, I get a value that is the reliability when I satisfy the constraint, reduced by 
+		// a little bit when some nodes have a pressurede deficit, and it even changes sign when the pressure deficit is
+		// large (pdef > 1 i.e. p < 0).
+
+		if (fitv[1] == 0.0) {
+			auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ false);
+
+			// just accumulate through the day, no need to average it out
+			for (const auto& [t, deficit] : normdeficit_daily) {
+				fitv[1] += deficit;
+			}
 		}
-		// cum daily deficit is positive when the pressure is below the minimum, so minimize it means getting it to zero 
-		fitv[1] += cum_daily_deficit; // Ideally this is 0.0 when I satisfy the minimum pressure constraint
+		else {
+			auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+			t_prec = 0;
+			double pdef_prec = 0.0;
+			double mean_norm_daily_deficit = 0.0;
+			for (const auto& [t, deficit] : normdeficit_daily) {
+				mean_norm_daily_deficit += pdef_prec*(t - t_prec); // same as energy I need a "forward" weighted sum
+				t_prec = t;
+				pdef_prec = deficit;
+			}
+			t_total = t_prec; 
+			mean_norm_daily_deficit /= t_total;
+			// cum daily deficit is positive when the pressure is below the minimum, so minimize it means getting it to zero 
+			fitv[1] *= (1-mean_norm_daily_deficit); // Ideally this is 0.0 when I satisfy the minimum pressure constraint
+
+			if (mean_norm_daily_deficit < 1.0 ) {
+				// Tanks constraint
+				double tank_cnstr = tanks_operational_levels_use(_anytown_->tanks());
+				fitv[1] *= (1-tank_cnstr); // tank constraint is 0.0 when I satisfy the tank constraints, and since it is between 0 and 1 I can use it as a weight.
+			}
+		}
 
 		reset_dv( _anytown_, dvs, old_HW_coeffs);
         return fitv;
