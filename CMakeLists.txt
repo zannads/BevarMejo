@@ -1,4 +1,4 @@
-﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.8)
@@ -58,10 +58,50 @@ IF(WIN32)
 ENDIF(WIN32)
 
 IF(APPLE)
-  add_library(epanet SHARED IMPORTED)
-  set_target_properties(epanet PROPERTIES
-             IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
-             )
+  set(EPANET_FILES 
+  "${EPANET_ROOT}/src/enumstxt.h"
+  "${EPANET_ROOT}/src/epanet.c" 
+  "${EPANET_ROOT}/src/epanet2.c" 
+  "${EPANET_ROOT}/src/errors.dat" 
+  "${EPANET_ROOT}/src/funcs.h" 
+  "${EPANET_ROOT}/src/genmmd.c" 
+  "${EPANET_ROOT}/src/hash.c" 
+  "${EPANET_ROOT}/src/hash.h" 
+  "${EPANET_ROOT}/src/hydcoeffs.c" 
+  "${EPANET_ROOT}/src/hydraul.c" 
+  "${EPANET_ROOT}/src/hydsolver.c" 
+  "${EPANET_ROOT}/src/hydstatus.c" 
+  "${EPANET_ROOT}/src/inpfile.c" 
+  "${EPANET_ROOT}/src/input1.c" 
+  "${EPANET_ROOT}/src/input2.c" 
+  "${EPANET_ROOT}/src/input3.c" 
+  "${EPANET_ROOT}/src/mempool.c" 
+  "${EPANET_ROOT}/src/mempool.h" 
+  "${EPANET_ROOT}/src/output.c" 
+  "${EPANET_ROOT}/src/project.c" 
+  "${EPANET_ROOT}/src/quality.c" 
+  "${EPANET_ROOT}/src/qualreact.c" 
+  "${EPANET_ROOT}/src/qualroute.c" 
+  "${EPANET_ROOT}/src/report.c" 
+  "${EPANET_ROOT}/src/rules.c" 
+  "${EPANET_ROOT}/src/smatrix.c" 
+  "${EPANET_ROOT}/src/text.h" 
+  "${EPANET_ROOT}/src/types.h" 
+  "${EPANET_ROOT}/src/validate.c"
+  "${EPANET_ROOT}/src/util/cstr_helper.c"
+  "${EPANET_ROOT}/src/util/cstr_helper.h"
+  "${EPANET_ROOT}/src/util/errormanager.c"
+  "${EPANET_ROOT}/src/util/errormanager.h"
+  "${EPANET_ROOT}/src/util/filemanager.c"
+  "${EPANET_ROOT}/src/util/filemanager.h"
+)
+  add_library(epanet ${EPANET_FILES})
+  target_include_directories(epanet PUBLIC "${EPANET_ROOT}/include")
+
+  #add_library(epanet SHARED IMPORTED)
+  #set_target_properties(epanet PROPERTIES
+   #          IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
+    #         )
 ENDIF(APPLE)
 
 IF(LINUX)
@@ -73,7 +113,6 @@ ENDIF(LINUX)
 
 # Include my library
 add_subdirectory("bevarmejolib")
-#add_subdirectory ("lib")
 
 # Include sub-projects.
 add_subdirectory ("Hanoi")

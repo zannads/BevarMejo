@@ -202,16 +202,16 @@ namespace bevarmejo {
 		// everything in a new thread and then simply discard it.
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dvs);
-		bevarmejo::stream_out(std::cout, dvs, "\n");
+		//bevarmejo::stream_out(std::cout, dvs, "\n");
 		try {
 			_anytown_->run_hydraulics();
-		}
-		catch (const std::exception& ex) {
-			std::cout << ex.what();
-			reset_dv( _anytown_, dvs, old_HW_coeffs);
+		} catch (...) {
+			std::cout << "An error occurred during hydraulic simulation.";
+			reset_dv(_anytown_, dvs, old_HW_coeffs);
 			return std::vector<double>(anytown::n_fit, std::numeric_limits<double>::max());
 		}
-		
+
+
 		// Compute OF on res. 
 		std::vector<double> fitv(anytown::n_fit, 0.0);
 
@@ -545,7 +545,7 @@ namespace bevarmejo {
 		curr_dv += 24; // 24 hours x [npr]
 
 		// 4. tanks
-		for(std::size_t tank_idx = 3; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
+		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// 0 counts as "don't install" and I can't install two tanks on the same location
 			if ((int)*curr_dv == 0 || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
 				// don't install skip the location and the volume
@@ -627,6 +627,7 @@ namespace bevarmejo {
 			assert(errco <= 100);
 
 			anytown->cache_indices();
+			assert(riser->index() != 0 && riser->index() == riser_idx);
 
 			// add them to the "TBR" net
 			anytown->subnetwork(anytown::l__TEMP_ELEMS).insert(new_tank);
@@ -741,7 +742,7 @@ namespace bevarmejo {
 		curr_dv += 24; // 24 hours x [npr]
 
 		// 4. tanks
-		for(std::size_t tank_idx = 3; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
+		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// 0 counts as "don't install" and I can't install two tanks on the same location
 			if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
 				// don't install skip the location and the volume
@@ -769,11 +770,13 @@ namespace bevarmejo {
 			anytown->subnetwork(anytown::l__TEMP_ELEMS).remove(riser_to_rem);
 
 			// and the objects still exist because I am holding it in the shared_ptr here (new_tank_to_rem, riser_to_rem)
-			anytown->cache_indices();
 			// remove the new tank and the the riser is automatically deleted 
+			riser_to_rem->retrieve_index(anytown->ph_);
 			errorcode = EN_deletelink(anytown->ph_, riser_to_rem->index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
-			anytown->cache_indices();
+			
+			new_tank_to_rem->retrieve_index(anytown->ph_);
+			
 			errorcode = EN_deletenode(anytown->ph_, new_tank_to_rem->index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
