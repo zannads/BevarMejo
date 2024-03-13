@@ -6,6 +6,7 @@
 
 #ifndef ANYTOWNORIGINALTEST__MODELANYTOWN_HPP
 #define ANYTOWNORIGINALTEST__MODELANYTOWN_HPP
+//#define DEBUGSIM
 
 #include <iostream>
 #include <filesystem>
@@ -65,7 +66,7 @@ namespace anytown {
     
     // Structs for reading data from file.
     struct pipes_alt_costs {
-        double diameter;
+        double diameter_in;
         double new_cost;
         double dup_city;
         double dup_residential;
@@ -75,7 +76,7 @@ namespace anytown {
     std::istream& operator >> (std::istream& is, pipes_alt_costs& pac);
 
     struct tanks_costs {
-        double volume;
+        double volume_gal;
         double cost;
     };
     std::istream& operator >> (std::istream& is, tanks_costs& tc);

@@ -18,7 +18,7 @@
 #include "bevarmejo/experiment.hpp"
 #include "bevarmejo/nsga2_helper.hpp"
 
-#include "src/model_anytown.hpp"
+#include "model_anytown.hpp"
 
 #include "bevarmejo/io.hpp"
 

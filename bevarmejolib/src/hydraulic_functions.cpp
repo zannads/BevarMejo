@@ -147,138 +147,100 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
     // Calculate the resilience index at each time step and return it as a timeseries
-    wds::vars::temporal<std::vector<double>> flows_dnodes;
-    wds::vars::temporal<std::vector<double>> heads_dnodes;
-    wds::vars::temporal<std::vector<double>> flows_sources;
-    wds::vars::temporal<std::vector<double>> heads_sources;
-    wds::vars::temporal<std::vector<double>> powers_pumps;
 
     std::vector<double> req_heads_dnodes_m(a_wds.junctions().size(), min_press_dnodes_m);
 
-    /* I will implement here the logic that I will probably move later to the ElementGroup
-      * class: i.e., extract from a subnetwork all the results in a single variable
-      * object. E.g. for all the flows instead of having a vector of temporal of 
-      * double, I will have a temporal of vector of doubles so that the results
-      * are sync at the same time steps.
-    */
-
+    // add the elevation to the min pressure to get the required head.
     auto itj = a_wds.junctions().begin();
     auto ith = req_heads_dnodes_m.begin();
     while (itj != a_wds.junctions().end()) {
-        // add the elevation to the min pressure to get the required head.
+        
         *ith += (*itj)->elevation();
-
-        if ( itj == a_wds.junctions().begin() ) {
-            for (const auto& [t, flow] : (*itj)->demand_delivered().value() ) {
-                flows_dnodes.insert(std::make_pair(t, std::vector<double>() ) );
-                flows_dnodes.at(t).reserve(a_wds.junctions().size());
-                heads_dnodes.insert(std::make_pair(t, std::vector<double>() ) );
-                heads_dnodes.at(t).reserve(a_wds.junctions().size());
-            }
-        }
-
-        for (const auto& [t, flow] : (*itj)->demand_delivered().value() ) {
-            flows_dnodes.at(t).push_back(flow);
-        }
-        for (const auto& [t, head] : (*itj)->head().value() ) {
-            heads_dnodes.at(t).push_back(head);
-        }
 
         ++itj;
         ++ith;
     }
 
-    auto p_first_res = *a_wds.reservoirs().begin();
-    for (const auto& [t, flow] : p_first_res->inflow().value() ) {
-        flows_sources.insert(std::make_pair(t, std::vector<double>() ) );
-        flows_sources.at(t).reserve(a_wds.reservoirs().size() + a_wds.tanks().size() );
-        heads_sources.insert(std::make_pair(t, std::vector<double>() ) );
-        heads_sources.at(t).reserve(a_wds.reservoirs().size() + a_wds.tanks().size() );
-    }
-    for (const auto& reservoir : a_wds.reservoirs() ) {
-        for (const auto& [t, flow] : reservoir->inflow().value() ) {
-            flows_sources.at(t).push_back(flow);
-        }
-        for (const auto& [t, head] : reservoir->head().value() ) {
-            heads_sources.at(t).push_back(head);
-        }
-    }
-    for (const auto& tank : a_wds.tanks() ) {
-          for (const auto& [t, flow] : tank->inflow().value() ) {
-                flows_sources.at(t).push_back(flow);
-          }
-          for (const auto& [t, head] : tank->head().value() ) {
-                heads_sources.at(t).push_back(head);
-          }
-    }
-
-    auto p_first_pump = *a_wds.pumps().begin();
-    for (const auto& [t, power] : p_first_pump->instant_energy().value() ) {
-        powers_pumps.insert(std::make_pair(t, std::vector<double>() ) );
-        powers_pumps.at(t).reserve(a_wds.pumps().size());
-    }
-    for (const auto& pump : a_wds.pumps() ) {
-        for (const auto& [t, power] : pump->instant_energy().value() ) {
-            powers_pumps.at(t).push_back(power);
-        }
-    }
-
     wds::vars::timeseries_real res_index;
-    // It may be that they all have different lengths... we try at each time step 
-    try {
-        for (const auto& [t, flow_dnodes] : flows_dnodes ) {
-            res_index.insert(std::make_pair(t, 
-                        resilience_index(   flow_dnodes, 
-                                            heads_dnodes.at(t),
-                                            flows_sources.at(t),
-                                            heads_sources.at(t),
-                                            powers_pumps.at(t),
-                                            req_heads_dnodes_m)));
+    for (const auto& [t, temp] : (*a_wds.junctions().begin())->demand_requested().value() ) {
+ 
+        std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.junctions().size());
+        std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.junctions().size());
+        std::vector<double> flows_sources;      flows_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
+        std::vector<double> heads_sources;      heads_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
+        std::vector<double> powers_pumps;       powers_pumps.reserve(a_wds.pumps().size());
+
+        for (const auto& junction : a_wds.junctions() ) {
+            req_flows_dnodes.push_back(junction->demand_requested().value().at(t));
+            heads_dnodes.push_back(junction->head().value().at(t));
         }
-    } catch (std::runtime_error& e) {
-        // No need to add any value at that time (not all time steps have all the data)
-    } catch (std::out_of_range& e) { // this is more likely to happen
-        // No need to add any value at that time (not all time steps have all the data)
+        for (const auto& reservoir : a_wds.reservoirs() ) {
+            flows_sources.push_back(reservoir->inflow().value().at(t));
+            heads_sources.push_back(reservoir->head().value().at(t));
+        }
+        for (const auto& tank : a_wds.tanks() ) {
+            flows_sources.push_back(tank->inflow().value().at(t));
+            heads_sources.push_back(tank->head().value().at(t));
+        }
+        for (const auto& pump : a_wds.pumps() ) {
+            powers_pumps.push_back(pump->instant_energy().value().at(t));
+        }
+
+
+        res_index.insert(std::make_pair(t, 
+                    resilience_index(   req_flows_dnodes, 
+                                        heads_dnodes,
+                                        req_heads_dnodes_m,
+                                        flows_sources,
+                                        heads_sources,
+                                        powers_pumps
+                                    )));
+        
     }
+
     return res_index;
 }
 
-double resilience_index(const std::vector<double>& flow_dnodes, 
-                        const std::vector<double>& head_dnodes,
-                        const std::vector<double>& flow_reserv, 
-                        const std::vector<double>& head_reserv,
-                        const std::vector<double>& power_pumps,
-                        const std::vector<double>& req_head_dnodes) {
+// follows the same orderd you find in the formula in Todini (2000)
+double resilience_index(const std::vector<double>& req_flows_dnodes_lps, 
+                        const std::vector<double>& head_dnodes_m,
+                        const std::vector<double>& req_head_dnodes_m,
+                        const std::vector<double>& flow_reserv_lps, 
+                        const std::vector<double>& head_reserv_m,
+                        const std::vector<double>& power_pumps_kw) {
 
-    assert(flow_dnodes.size() == head_dnodes.size());
-    assert(flow_reserv.size() == head_reserv.size());
-    assert(flow_dnodes.size() == req_head_dnodes.size());
+    assert(req_flows_dnodes_lps.size() == head_dnodes_m.size());
+    assert(head_dnodes_m.size() == req_head_dnodes_m.size());
+    assert(flow_reserv_lps.size() == head_reserv_m.size());
 
 
     // numerator: sum_{i=1}^{n_dnodes}(q_i*(h_i-h_i^req))
+    bool dda_invalidate = false;
     double numerator = 0.0;
-    for (std::size_t i = 0; i < flow_dnodes.size(); ++i) {
-        // if the head is lower than the required head I don't want to count it, if you need to pass this info use minimum pressure function
-        double head_diff = head_dnodes[i] - req_head_dnodes[i];
-        if (head_diff < 0)
-            head_diff = 0.0; 
-
-        numerator += flow_dnodes[i] * head_diff / 1000; // from L/s to M^3/s
+    for (std::size_t i = 0; ( !dda_invalidate ) && ( i < req_flows_dnodes_lps.size() ); ++i) {
+        // if the head is lower than zero, and the demand is not zero, then the head is not enough, the results are 
+        // coming from a Demand Driven Analysis. By the definition, you are not 
+        // satisfying the demand, so the Ir is 0. We just need one case.
+        if (head_dnodes_m[i] < 0 && req_flows_dnodes_lps[i] > 0)
+            dda_invalidate = true;
+        else
+            numerator += req_flows_dnodes_lps[i] * (head_dnodes_m[i] - req_head_dnodes_m[i]) / 1000; // from L/s to M^3/s
     }
+    if (dda_invalidate) return 0.0;
 
     // denominator: 
     // sum_{i=1}^{n_reservoirs}(q_i*h_i)
     // +sum_{i=1}^{n_pumps}(p_i/\lambda)
     // -sum_{i=1}^{n_dnodes}(q_i*h_i^req)
     double denominator = 0.0;
-    for (std::size_t i = 0; i < flow_reserv.size(); ++i) {
-        denominator += -flow_reserv[i] * head_reserv[i] / 1000; // Power entering the system, water leaving the reservoir so the flow is negative
+    for (std::size_t i = 0; i < flow_reserv_lps.size(); ++i) {
+        denominator += -flow_reserv_lps[i] * head_reserv_m[i] / 1000; // Power entering the system, water leaving the reservoir so the flow is negative
     }
-    for (std::size_t i = 0; i < power_pumps.size(); ++i) {
-        denominator += power_pumps[i]/bevarmejo::water_specific_weight_N_per_m3*1000; // Power is already positive as it represents the energy consumed
+    for (std::size_t i = 0; i < power_pumps_kw.size(); ++i) {
+        denominator += power_pumps_kw[i]/bevarmejo::water_specific_weight_N_per_m3*1000; // Power is already positive as it represents the energy consumed
     } 
-    for (std::size_t i = 0; i < flow_dnodes.size(); ++i) {
-        denominator -= flow_dnodes[i] * req_head_dnodes[i] / 1000;
+    for (std::size_t i = 0; i < req_flows_dnodes_lps.size(); ++i) {
+        denominator -= req_flows_dnodes_lps[i] * req_head_dnodes_m[i] / 1000;
     }
 
     // return the Ir if the denominator is not 0 otherwise return - infinity (min of double)

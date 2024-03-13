@@ -41,14 +41,14 @@ namespace bevarmejo {
 
 	std::istream& anytown::operator>>(std::istream& is, anytown::tanks_costs& tc)
 	{
-		stream_in(is, tc.volume); is.ignore(1000, ';');
+		stream_in(is, tc.volume_gal); is.ignore(1000, ';');
 		stream_in(is, tc.cost);
 
 		return is;
 	}
 
 	std::istream& anytown::operator>>(std::istream& is, anytown::pipes_alt_costs& pac) {
-		stream_in(is, pac.diameter); is.ignore(1000, ';');
+		stream_in(is, pac.diameter_in); is.ignore(1000, ';');
 
 		stream_in(is, pac.new_cost); is.ignore(1000, ';');
 		stream_in(is, pac.dup_city); is.ignore(1000, ';');
@@ -256,11 +256,13 @@ namespace bevarmejo {
 		// and that is 1 when the pressure at the node is exactly zero. So if I multiply the reliability by 1 minus the 
 		// normalized pressure deficit, I get a value that is the reliability when I satisfy the constraint, reduced by 
 		// a little bit when some nodes have a pressurede deficit, and it even changes sign when the pressure deficit is
-		// large (pdef > 1 i.e. p < 0).
+		// large (pdef > 1 i.e. p < 0). However, if the reliability is bigger than zero, i.e., the solution run correctly
+		// also the mean_norm_daily_deficit is between 0 and 1 and it works perfectly as a weight.
 
-		if (fitv[1] == 0.0) {
-			auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ false);
-
+		if (fitv[1] >= 0.0) { // I consider invalid solutions (0.0) and solutions with negative reliability ???
+			// reset reliability, forget about this
+			fitv[1] = 0.0;
+			auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 			// just accumulate through the day, no need to average it out
 			for (const auto& [t, deficit] : normdeficit_daily) {
 				fitv[1] += deficit;
@@ -281,11 +283,11 @@ namespace bevarmejo {
 			// cum daily deficit is positive when the pressure is below the minimum, so minimize it means getting it to zero 
 			fitv[1] *= (1-mean_norm_daily_deficit); // Ideally this is 0.0 when I satisfy the minimum pressure constraint
 
-			if (mean_norm_daily_deficit < 1.0 ) {
+			/*if (mean_norm_daily_deficit < 1.0 ) {
 				// Tanks constraint
 				double tank_cnstr = tanks_operational_levels_use(_anytown_->tanks());
 				fitv[1] *= (1-tank_cnstr); // tank constraint is 0.0 when I satisfy the tank constraints, and since it is between 0 and 1 I can use it as a weight.
-			}
+			}*/
 		}
 
 		reset_dv( _anytown_, dvs, old_HW_coeffs);
@@ -381,18 +383,12 @@ namespace bevarmejo {
 			if (curr_pipe == nullptr)
 				throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
 
-			if (*curr_dv == 1) { // duplicate
-				if (city) 
-					pipe_cost_per_ft = _pipes_alt_costs_.at(*(curr_dv+1)).dup_city;
-				else
-					pipe_cost_per_ft = _pipes_alt_costs_.at(*(curr_dv+1)).dup_residential;
-			}
-			else if (*curr_dv == 2) { // clean
+			if (*curr_dv == 1) { // clean
 				// I can't use dvs[i*2+1] to get the costs, but I have to search 
 				// for the diameter in the table.
 				auto it = std::find_if(_pipes_alt_costs_.begin(), _pipes_alt_costs_.end(), 
 					[&curr_pipe](const anytown::pipes_alt_costs& pac) { 
-						return std::abs(pac.diameter*MperFT/12*1000 - curr_pipe->diameter().value()) < 0.0001; 
+						return std::abs(pac.diameter_in*MperFT/12*1000 - curr_pipe->diameter().value()) < 0.0001; 
 					});
 
 				// Check I actually found it 
@@ -404,6 +400,12 @@ namespace bevarmejo {
 				else
 					pipe_cost_per_ft = (*it).clean_residential;
 			}
+			else if (*curr_dv == 2) { // duplicate
+				if (city) 
+					pipe_cost_per_ft = _pipes_alt_costs_.at(*(curr_dv+1)).dup_city;
+				else
+					pipe_cost_per_ft = _pipes_alt_costs_.at(*(curr_dv+1)).dup_residential;
+			} 
 
 			design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value(); 
 			// again I save the length in mm, but the table is in $/ft
@@ -467,6 +469,9 @@ namespace bevarmejo {
 			if (*curr_dv == 0){
 				++curr_dv;
 				++curr_dv;
+#ifdef DEBUGSIM
+				std::cout << "No action for pipe " << wp_curr_net_ele.lock()->id() << "\n";
+#endif
 				continue;
 			}
 
@@ -478,7 +483,20 @@ namespace bevarmejo {
 			std::string link_id = curr_pipe->id();
 			int link_idx = curr_pipe->index();
 
-			if (*curr_dv == 1) { // duplicate
+			if (*curr_dv == 1) { // clean
+				// retrieve and save the old HW coefficients
+				double old_pipe_roughness = curr_pipe->roughness().value();
+				old_HW_coeffs.push_back(old_pipe_roughness);
+#ifdef DEBUGSIM
+				std::cout << "Cleaning pipe " << link_id << "\n";
+#endif
+			
+				// set the new HW coefficients
+				errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, anytown::coeff_HW_cleaned);	
+				assert(errorcode <= 100);
+				curr_pipe->roughness(anytown::coeff_HW_cleaned);
+			}
+			else if (*curr_dv == 2) { // duplicate
 				// Ideally I would just need to modify my network object and then
 				// this changed would be refelected automatically on the EPANET 
 				// project. However, this requires some work, so I will do it the 
@@ -507,8 +525,8 @@ namespace bevarmejo {
 				// 1. diameter =  row dvs[i*2+1] column diameter of _pipes_alt_costs_
 				// 2. roughness = coeff_HV_new
 				// 3. length  = value of link_idx
-				double diameter = _pipes_alt_costs_.at(*(curr_dv+1)).diameter;
-				errorcode = EN_setlinkvalue(anytown->ph_, dup_pipe_idx, EN_DIAMETER, diameter);
+				double diameter_in = _pipes_alt_costs_.at(*(curr_dv+1)).diameter_in;
+				errorcode = EN_setlinkvalue(anytown->ph_, dup_pipe_idx, EN_DIAMETER, diameter_in);
 				assert(errorcode <= 100);
 				// errorcode = EN_setlinkvalue(anytown->ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
 				// assert(errorcode <= 100);
@@ -534,18 +552,12 @@ namespace bevarmejo {
 				// the new pipe may have a different diameter and
 				// the new pipe MUST have the roughness of a new pipe.
 				assert(dup_pipe->index() != 0);
-				dup_pipe->diameter(_pipes_alt_costs_.at(*(curr_dv+1)).diameter*MperFT/1000);
+				dup_pipe->diameter(_pipes_alt_costs_.at(*(curr_dv+1)).diameter_in*MperFT/12*1000);
 				dup_pipe->roughness(anytown::coeff_HW_new);
-			}
-			else if (*curr_dv == 2) { // clean
-				// retrieve and save the old HW coefficients
-				double old_pipe_roughness = curr_pipe->roughness().value();
-				old_HW_coeffs.push_back(old_pipe_roughness);
-			
-				// set the new HW coefficients
-				errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_ROUGHNESS, anytown::coeff_HW_cleaned);	
-				assert(errorcode <= 100);
-				curr_pipe->roughness(anytown::coeff_HW_cleaned);
+
+#ifdef DEBUGSIM
+				std::cout << "Duplicated pipe " << link_id << " with diam " << _pipes_alt_costs_.at(*(curr_dv+1)).diameter_in <<"in (" <<dup_pipe->diameter()() << " mm)\n";
+#endif
 			}
 
 			++curr_dv;
@@ -565,10 +577,14 @@ namespace bevarmejo {
 
 			// change the new pipe properties:
 			// diameter =  row dvs[70+i] column diameter of _pipes_alt_costs_
-			double diameter = _pipes_alt_costs_.at(*curr_dv).diameter;
-			int errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter);
+			double diameter_in = _pipes_alt_costs_.at(*curr_dv).diameter_in;
+			int errorcode = EN_setlinkvalue(anytown->ph_, link_idx, EN_DIAMETER, diameter_in);
 			assert(errorcode <= 100);
-			curr_pipe->diameter(diameter*MperFT/1000); //save in mm
+			curr_pipe->diameter(diameter_in*MperFT/12*1000); //save in mm
+
+#ifdef DEBUGSIM
+			std::cout << "New pipe with ID " << link_id << " installed with diam of " << diameter_in << " in (" <<curr_pipe->diameter()() <<" mm)\n";
+#endif
 
 			++curr_dv;
 		}
@@ -596,6 +612,9 @@ namespace bevarmejo {
 				// don't install skip the location and the volume
 				++curr_dv;
 				++curr_dv;
+#ifdef DEBUGSIM
+				std::cout << "No action for tank " << tank_idx+1 << "\n";
+#endif
 				continue;
 			}
 			
@@ -614,8 +633,8 @@ namespace bevarmejo {
 			*/
 
 			// I should create a new tank at that position and with that volume
-			double tank_volume_gal = _tanks_costs_.at(*(curr_dv+1)).volume;
-			double tank_volume_m = tank_volume_gal * 0.00378541;
+			double tank_volume_gal = _tanks_costs_.at(*(curr_dv+1)).volume_gal;
+			double tank_volume_m3 = tank_volume_gal * 0.00378541;
 			std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx));
 			// elevation , min and max level are the same as in the original tanks
 			// Ideally same coordinates of the junction, but I move it slightly in case I want to save the result to file and visualize it
@@ -632,7 +651,7 @@ namespace bevarmejo {
 			new_tank->y_coord(new_tank_install_node->y_coord()+anytown::riser_length_ft); 
 			// We assume d = h for a cilindrical tank, thus V = \pi d^2 /4 * h = \pi d^3 / 4
 			// given that this is a fixed value we could actually have it as a parameter to reduce computational expenses. 
-			double diam_m = std::pow(tank_volume_m*4/k__pi, 1.0/3); // TODO: fix based on whatever ratio I want
+			double diam_m = std::pow(tank_volume_m3*4/k__pi, 1.0/3); // TODO: fix based on whatever ratio I want
 			new_tank->diameter(diam_m);
 			double max_lev = diam_m;
 			new_tank->max_level(max_lev);
@@ -653,7 +672,7 @@ namespace bevarmejo {
 
 			// The riser has a well defined length, diameter could be a dv, but I fix it to 16 inches for now
 			std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx));
-			riser->diameter(16.0*MperFT/1000);
+			riser->diameter(14.0*MperFT/12*1000);
 			riser->length(anytown::riser_length_ft*MperFT);
 			riser->start_node(new_tank.get());
 			riser->end_node(new_tank_install_node.get());
@@ -680,6 +699,12 @@ namespace bevarmejo {
 
 			++curr_dv;
 			++curr_dv;
+
+#ifdef DEBUGSIM
+			stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+			" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
+			" Elev ", elev, " Min level ", min_lev, " Max lev ", max_lev, " Diam ", diam_m, "\n");
+#endif
 		}
 
         return old_HW_coeffs;
@@ -706,7 +731,16 @@ namespace bevarmejo {
 			if (curr_pipe == nullptr)
 				throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
 			
-			if (*curr_dv == 1) { // remove duplicate
+			if (*curr_dv == 1) { // reset clean
+				// re set the HW coefficients
+				errorcode = EN_setlinkvalue(anytown->ph_, curr_pipe->index(), EN_ROUGHNESS, *old_HW_coeffs_iter);
+				assert(errorcode <= 100);
+
+				curr_pipe->roughness(*old_HW_coeffs_iter);
+
+				++old_HW_coeffs_iter;
+			}
+			else if (*curr_dv == 2) { // remove duplicate
 				// duplicate pipe has been named Dxx where xx is the original pipe name
 				// they are also saved in the subnetwork l__TEMP_ELEMS
 				auto it = std::find_if(anytown->subnetwork(anytown::l__TEMP_ELEMS).begin(), anytown->subnetwork(anytown::l__TEMP_ELEMS).end(), 
@@ -728,16 +762,7 @@ namespace bevarmejo {
 				anytown->cache_indices();
 				// remove the new pipe from the set of the "to be removed" elements
 				anytown->subnetwork(anytown::l__TEMP_ELEMS).remove(dup_pipe_to_rem);
-			}
-			else if (*curr_dv == 2) { // reset clean
-				// re set the HW coefficients
-				errorcode = EN_setlinkvalue(anytown->ph_, curr_pipe->index(), EN_ROUGHNESS, *old_HW_coeffs_iter);
-				assert(errorcode <= 100);
-
-				curr_pipe->roughness(*old_HW_coeffs_iter);
-
-				++old_HW_coeffs_iter;
-			}
+			} 
 			
 			++curr_dv;
 			++curr_dv;

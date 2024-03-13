@@ -37,21 +37,14 @@ namespace bevarmejo {
     // Resilience index as defined in Todini (2000)
     // Both for single value of minimum pressure and not
     wds::vars::timeseries_real resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
-                                                const double min_press_dnodes=14.0);
-    /*wds::vars::timeseries_real resilience_index(wds::WaterDistributionSystem* a_wds,
-                                                const std::vector<double>& req_head_dnodes);
-    double resilience_index(const std::vector<double>& flow_dnodes, 
-                            const std::vector<double>& head_dnodes,
-                            const std::vector<double>& flow_reserv, 
-                            const std::vector<double>& head_reserv,
-                            const std::vector<double>& power_pumps,
-                            const double req_head_dnodes=20.0);*/
-    double resilience_index(const std::vector<double>& flow_dnodes, 
-                            const std::vector<double>& head_dnodes,
-                            const std::vector<double>& flow_reserv, 
-                            const std::vector<double>& head_reserv,
-                            const std::vector<double>& power_pumps,
-                            const std::vector<double>& req_head_dnodes);
+                                                const double min_press_dnodes_m=14.0);
+    
+    double resilience_index(const std::vector<double>& req_flows_dnodes_lps, 
+                            const std::vector<double>& head_dnodes_m,
+                            const std::vector<double>& req_head_dnodes_m,
+                            const std::vector<double>& flow_reserv_lps, 
+                            const std::vector<double>& head_reserv_m,
+                            const std::vector<double>& power_pumps_kw);
  
 } // namespace bevarmejo
 
