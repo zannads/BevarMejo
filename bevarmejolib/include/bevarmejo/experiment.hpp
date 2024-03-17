@@ -43,12 +43,19 @@ protected:
     
 
 private: 
+    // Name of the experiment
     std::string m_name;
+    // Archipelago to run the experiment
     pagmo::archipelago m_archipelago;
+    // Filenames for runtime and final results saving for each island
     std::vector<fsys::path> m_islands_filenames;
     // TODO: add the settings for each independent island
-    
-    
+
+    // Flag for resuming the experiment.
+    bool m_resume{false};
+    // Flag to perform a deep copy of the experiment folder.
+    bool m_deep_copy{false};
+
 public:
     /* Constructors */
     // Default constructor
@@ -77,14 +84,15 @@ public:
 
 /*--- Methods ---*/
 
-    // Construct the experiment from the command line arguments
-    void build(int argc, char* argv[]);
+    // Construct the experiment from the settings 
+    // TEMP: algo and pop, in the future some struct with the settings
+    void build(pagmo::algorithm &algo, pagmo::population &pop);
 
     // Run the experiment
     // TEMP: the inputs are not necessary, everything will be loaded from the
     // archipelago inside the class but for now let's use the objects constructed
     // in the main
-    void run(pagmo::algorithm &algo, pagmo::population &pop, unsigned int n_generations);
+    void run(unsigned int n_generations);
 
     // void finalize_with_error ?
 

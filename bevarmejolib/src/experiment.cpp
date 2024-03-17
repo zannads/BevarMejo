@@ -68,15 +68,26 @@ Experiment::Experiment(std::string a_name,
         throw std::runtime_error(result.description());
     }
 
-    // TEMP: // Instead of actually creating the islands well, just add here the filename
-    //       // and then save the final result in the same file
-
-    m_islands_filenames.push_back(runtime_file()); 
-    // fake island so that the assert does not fail
-    m_archipelago.push_back(pagmo::island());
 }
 
-void Experiment::run(pagmo::algorithm &algom, pagmo::population &pop, unsigned int n_generations) {
+void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop) {
+    // TEMP: the set and the inputs of this function will be removed once the 
+    // islands are created in the build method. The pop and algo will be created 
+    // there.
+    m_archipelago.push_back(algo, pop);
+    m_islands_filenames.push_back(runtime_file());
+    // TODO: the name is based on the input files when multiple islands are used
+
+    // Are we resuming or not? if not, clear or create the runtime file
+    if (!m_resume) {
+        std::ofstream ofs(runtime_file());
+        if (!ofs.is_open())
+            throw std::runtime_error("Could not create the runtime file " + runtime_file().string() + "\n");
+        ofs.close();
+    }
+}
+
+void Experiment::run(unsigned int n_generations) {
 
     // This is where the magic happens, for now I deal with only one island, but
     // in the future I will have to deal with multiple islands and the archipelago
@@ -85,15 +96,7 @@ void Experiment::run(pagmo::algorithm &algom, pagmo::population &pop, unsigned i
     // and save the results between each call and at the beginning for the init
     // population.
 
-    
-    // TEMP: the set and the inputs of this function will be removed once the 
-    // islands are created in the build method. The pop and algo will be created 
-    // there, while the n_generations, which is a param of the islands, will also
-    // be knwon.
-    m_archipelago.begin()->set_population(pop);
-    m_archipelago.begin()->set_algorithm(algom);
-    
-    // This should be a loop over the islands
+    // This should be a loop over the islands or a simple archipelago.evolve(n_generations)
    {
         auto island = *m_archipelago.begin();
         auto island_filename = *m_islands_filenames.begin();
@@ -279,8 +282,13 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
     // 1. Load the file to see what was there before
     std::ifstream ifs(filename);
     json j;
-    if (ifs.is_open()) {
-        ifs >> j;
+    if (ifs.is_open()  ) {
+        if (!ifs.eof() && json::accept(ifs)) {
+            // I most likely consumed the stream already with accept so I have 
+            // to go back to the beginning
+            ifs.seekg(0, std::ios::beg);
+            ifs >> j;
+        }
         ifs.close();
     }
 

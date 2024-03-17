@@ -45,7 +45,9 @@ int main(int argc, char* argv[]) {
     pagmo::population pop{ std::move(p), settings_nsgaII.pop_size, settings_nsgaII.seed };
 
     try {
-        experiment.run(algo, pop, ceil(settings_nsgaII.nfe/settings_nsgaII.report_nfe));
+        experiment.build(algo, pop);
+
+        experiment.run(ceil(settings_nsgaII.nfe/settings_nsgaII.report_nfe));
     }
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
