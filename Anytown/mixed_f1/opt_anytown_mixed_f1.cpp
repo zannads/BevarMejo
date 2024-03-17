@@ -31,8 +31,7 @@ int main(int argc, char* argv[]) {
     unsigned int seed = std::stoi(argv[4]);
     
     // Create an experiment object to handle results and settings
-    bevarmejo::Experiment experiment(experiment_folder, seed);
-    experiment.set_name("anytown_nsga2");
+    bevarmejo::Experiment experiment("anytown_nsga2", experiment_folder, seed);
 
     // Construct a pagmo::problem for ANYTOWN model
     pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };
@@ -45,16 +44,16 @@ int main(int argc, char* argv[]) {
     // Instantiate population
     pagmo::population pop{ std::move(p), settings_nsgaII.pop_size, settings_nsgaII.seed };
 
-    // Evolve
-    for (unsigned int i = 0; i * settings_nsgaII.report_nfe < settings_nsgaII.nfe; ++i) {
-        experiment.save_runtime_result(pop); // save first so that I have starting one and the final one is on a different file
-        std::cout << "Starting generation " << i+1 <<"/" << floor(settings_nsgaII.nfe/settings_nsgaII.report_nfe) << std::endl;
-        // Pop
-        pop = algo.evolve(pop);
-     }
-    // Save final result and end time
-    experiment.finished();
-    experiment.save_final_result(pop, algo);
+    try {
+        experiment.run(algo, pop, ceil(settings_nsgaII.nfe/settings_nsgaII.report_nfe));
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        experiment.save_outcome();
+        return 1;
+    }
+
+    experiment.save_outcome();
     
     return 0;
 }

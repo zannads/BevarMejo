@@ -4,7 +4,7 @@
 
 # PUGIXML library
 IF(DEFINED ENV{PUGIXML_ROOT})
-    set( PUGIXML_ROOT "$ENV{PUGIXML_ROOT}" CACHE PATH "Path to the rootfolder to pugiXML" )
+    set( PUGIXML_ROOT "$ENV{PUGIXML_ROOT}/src" CACHE PATH "Path to the rootfolder to pugiXML" )
     message(STATUS "PUGIXML_ROOT environmental variable found, using ${PUGIXML_ROOT}" )
 ELSE()
     set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")

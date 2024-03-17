@@ -13,8 +13,12 @@
 #include <filesystem>
 #include <string>
 
+#include "pagmo/archipelago.hpp"
+#include "pagmo/island.hpp"
 #include "pagmo/algorithm.hpp"
 #include "pagmo/population.hpp"
+#include "pagmo/problem.hpp"
+
 
 #include "pugixml.hpp"
 
@@ -34,47 +38,30 @@ protected:
     unsigned int _seed_{0};
     // Ideally, here I change all the settings of the algorithm and the model
     
-    std::time_t _start_time_{0}; // start time is always init within the constuctor
-    std::time_t _end_time_{0}; // call finished method
-    
-    // For now they are here I will think what to do with them and how to handle the construction in the future.
-    std::string _name_;
-    std::string _user_custom_info_;
+
+private: 
+    std::string m_name;
+    pagmo::archipelago m_archipelago;
+    std::vector<fsys::path> m_islands_filenames;
+    // TODO: add the settings for each independent island
     
     
 public:
     /* Constructors */
     // Default constructor
-    Experiment(){ };
+    Experiment() = default;
     // Starting from path to root folder and filename
-    Experiment(fsys::path experiment_folder,
+    Experiment(std::string a_name, 
+            fsys::path experiment_folder,
                unsigned int seed,
                fsys::path settings_filename = "beme_settings.xml");
     
-    /* Methods */
-    
-    // Check complaiance of root folder
-    bool is_compliant();
-    // Make root folder complaiant
-    void make_compliant();
-    
-    // Save end time of the experiment
-    void finished();
-    
-    void save_runtime_result(pagmo::population &pop);
-    void save_final_result(pagmo::population &pop, pagmo::algorithm &algo);
-    
     /* Setters and getters */
-    void set_name(std::string name);
-    std::string get_name();
-    std::string get_extra_info();
-    //void set_settings_filename(std::string& filename);
+    const std::string& get_name() const;
     
-    fsys::path input_dir();
-    fsys::path output_dir();
-    fsys::path runtime_dir();
+    fsys::path input_dir() const ;
+    fsys::path output_dir() const ;
     fsys::path settings_file();
-    fsys::path output_file();
     fsys::path runtime_file();
 
     pugi::xml_node algorithm_settings() const;
@@ -82,7 +69,40 @@ public:
 
     pugi::xml_node model_settings() const;
     // TODO :overload for multiple models
-};
-}
+
+
+
+/*--- Methods ---*/
+
+    // Construct the experiment from the command line arguments
+    void build(int argc, char* argv[]);
+
+    // Run the experiment
+    // TEMP: the inputs are not necessary, everything will be loaded from the
+    // archipelago inside the class but for now let's use the objects constructed
+    // in the main
+    void run(pagmo::algorithm &algo, pagmo::population &pop, unsigned int n_generations);
+
+    // void finalize_with_error ?
+
+    // Save the outcome of the experiment
+    void save_outcome();
+
+    // Helper to standardize the output filename
+    fsys::path main_filename() const;
+
+private:
+    // Save the final results of all the islands in the archipelago independently
+    std::pair<std::vector<std::string>, std::string> save_final_results() const;
+
+    // Save the final result of a single island (called by save_final_results())
+    fsys::path save_final_result(const pagmo::island &isl, const fsys::path& filename) const;
+
+    // Save the runtime result of a single island (called by run())
+    bool save_runtime_result(const pagmo::island &isl, const fsys::path& filename) const;
+    
+}; // class Experiment
+
+} // namespace bevarmejo
 
 #endif /* BEMELIB_EXPERIMENT_HPP */
