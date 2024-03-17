@@ -18,6 +18,48 @@
 
 namespace bevarmejo {
 
+namespace label {
+    // Final part of the main filename for the experiment outcome
+    const std::string __beme_suffix = "__bemeexp.json";
+
+    // Every user defined class has the follwing labels
+    // Name of the class
+    const std::string __name = "Name";
+    // To list internal parameters of the class (e.g., mutation rate)
+    const std::string __params = "Parameters";
+    // To print extra info of the class (e.g., string with the formulation of the problem)
+    const std::string __extra_info = "Extra info";
+
+    // Labels for the json object of the main files
+    const std::string __archi = "Archipelago";
+    const std::string __topology = "Topology";
+    const std::string __islands = "Islands";
+    const std::string __errors = "Errors";
+
+    // Labels for the json object of the islands (static and dynamic)
+    const std::string __island = "Island";
+    const std::string __pop_seed = "Population seed";
+    const std::string __algorithm = "Algorithm";
+    const std::string __problem = "Problem";
+    const std::string __r_policy = "Replacement policy";
+    const std::string __s_policy = "Selection policy";
+    const std::string __generations = "Generations";
+
+    // Labels for the json object of the islands (only dynamic part)
+    const std::string __fevals = "Fitness evaluations";
+    const std::string __currtime = "Current time";
+    const std::string __individuals = "Individuals";
+    const std::string __id = "ID";
+    const std::string __dv = "Decision vector";
+    const std::string __fv = "Fitness vector";
+    const std::string __gevals = "Gradient evaluations";
+    const std::string __hevals = "Hessian evaluations";
+
+
+    const std::string __system = "System";
+    //const std::string __libraries = "Libraries";
+}
+
 namespace detail {
 
 /* Arithmetic symbols that indicate the presence of a number other than a digit:

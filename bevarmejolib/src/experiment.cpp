@@ -15,15 +15,16 @@
 #include <string>
 #include <utility>
 
-#include "pagmo/algorithm.hpp"
-#include "pagmo/population.hpp"
+#include <pagmo/algorithm.hpp>
+#include <pagmo/population.hpp>
 
-#include "pugixml.hpp"
+#include <pugixml.hpp>
 
-#include "nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/pagmo_helpers.hpp"
 
 #include "experiment.hpp"
 
@@ -47,7 +48,10 @@ Experiment::Experiment(std::string a_name,
         throw std::runtime_error("\nExperiment folder "+_root_experiment_folder_.string()+" not located\nMake sure it exists.\n");
     }
     
-    // TODO: check output directory and create it if it does not exist
+    // check that the output folder exist, otherwise create it
+    if (!fsys::exists(output_dir()))
+        fsys::create_directory(output_dir());
+    
     
     // look for the settings file
     if (!fsys::exists(settings_file()) || !fsys::is_regular_file(settings_file())){
@@ -122,24 +126,25 @@ void Experiment::save_outcome()
 
     json jarchipelago; // 
     // TODO: for now it is default, actually use what is stored in Experiment
-    jarchipelago["Topology"] = json { {"Name", "Unconnected"} /* Extra info none */};
+    jarchipelago[label::__topology] = json { 
+        {label::__name, label::pagmodefault::__topology} /* Extra info none */};
 
     // 2. Load the runtime data of each island (final population already in) and
     //    add the static part of the island (i.e., common parameters between the
     //    generations) and save the file.
     auto [saved_islands, errors] = save_final_results();
 
-    jarchipelago["Islands"] = json::array();
+    jarchipelago[label::__islands] = json::array();
     for (auto& s_island : saved_islands){
-        jarchipelago["Islands"].push_back(s_island);
+        jarchipelago[label::__islands].push_back(s_island);
     }
     if (!errors.empty())
-        jarchipelago["Errors"] = errors;
+        jarchipelago[label::__errors] = errors;
 
     // 3. Save the file
     json jout = {
-        {"System", jsys},
-        {"Archipelago", jarchipelago}
+        {label::__system, jsys},
+        {label::__archi, jarchipelago}
     };
     ofs << jout.dump(4);
     ofs.close();
@@ -147,7 +152,7 @@ void Experiment::save_outcome()
 
 fsys::path Experiment::main_filename() const {
     fsys::path outtemp_filename = output_dir()/m_name;
-    outtemp_filename += "__bmexp.json";
+    outtemp_filename += label::__beme_suffix;
     return outtemp_filename;
 }
 
@@ -208,41 +213,41 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
     json jstat;
     // 2.2.1. The User Defined Island infos 
     // TODO: extra info in some way
-    jstat["Island"] = {{ "Name", isl.get_name() }};
+    jstat[label::__island] = {{ label::__name, isl.get_name() }};
     // check it has extra info 
     // TODO: kind of an automatic extraction, something like get_static_jsoninfo(algo)
     if ( !isl.get_extra_info().empty() )
-        jstat["Island"]["Extra info"] = isl.get_extra_info();
-    jstat["Island"]["Population Seed"] = isl.get_population().get_seed();
+        jstat[label::__island][label::__extra_info] = isl.get_extra_info();
+    jstat[label::__island][label::__pop_seed] = isl.get_population().get_seed();
 
 
     // 2.2.2. The User Defined Algorithm infos
     // see pattern above 2.2.1.
-    jstat["Algorithm"] = {{ "Name", isl.get_algorithm().get_name() }};
+    jstat[label::__algorithm] = {{label::__name, isl.get_algorithm().get_name() }};
     if ( !isl.get_algorithm().get_extra_info().empty() )
-        jstat["Algorithm"]["Extra info"] = isl.get_algorithm().get_extra_info();
+        jstat[label::__algorithm][label::__extra_info] = isl.get_algorithm().get_extra_info();
 
     // 2.2.3. The User Defined Problem infos
     // see pattern above 2.2.1.
-    jstat["Problem"] = {{ "Name", isl.get_population().get_problem().get_name() }};
+    jstat[label::__problem] = {{ label::__name, isl.get_population().get_problem().get_name() }};
     if ( !isl.get_population().get_problem().get_extra_info().empty() )
-        jstat["Problem"]["Extra info"] = isl.get_population().get_problem().get_extra_info();
+        jstat[label::__problem][label::__extra_info] = isl.get_population().get_problem().get_extra_info();
     
     // 2.2.4. The User Defined Replacement Policy infos
     // see pattern above 2.2.1.
-    jstat["Replacement Policy"] = {{ "Name", isl.get_r_policy().get_name() }};
+    jstat[label::__r_policy] = {{ label::__name, isl.get_r_policy().get_name() }};
     if ( !isl.get_r_policy().get_extra_info().empty() )
-        jstat["Replacement Policy"]["Extra info"] = isl.get_r_policy().get_extra_info();
+        jstat[label::__r_policy][label::__extra_info] = isl.get_r_policy().get_extra_info();
 
     // 2.2.5. The User Defined Selection Policy infos
     // see pattern above 2.2.1.
-    jstat["Selection Policy"] = {{ "Name", isl.get_s_policy().get_name() }};
+    jstat[label::__s_policy] = {{ label::__name, isl.get_s_policy().get_name() }};
     if ( !isl.get_s_policy().get_extra_info().empty() )
-        jstat["Selection Policy"]["Extra info"] = isl.get_s_policy().get_extra_info();
+        jstat[label::__s_policy][label::__extra_info] = isl.get_s_policy().get_extra_info();
 
     // 2.3. Save the file
     json& jout = jstat;
-    jout["Generations"] = jdyn["Generations"];
+    jout[label::__generations] = jdyn[label::__generations];
 
     std::ofstream ofs(filename);
     if (!ofs.is_open()) {
@@ -281,8 +286,8 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
     // 2. Add the info of each population
     // 2.1 Mandatory info: time, fitness evaulations 
     jpop = {
-        {"FitEvals", pop.get_problem().get_fevals()},
-        {"Current time", currtime_str}
+        {label::__fevals, pop.get_problem().get_fevals()},
+        {label::__currtime, currtime_str}
     };
     
     // 2.2 Mandatory info, the population's individuals
@@ -290,21 +295,21 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
     auto pop_dvs        = pop.get_x();
     auto pop_fitnesses  = pop.get_f();
     for (auto individual = 0u; individual<pop.size(); ++individual){
-        jpop["Individuals"].push_back({
-            {"ID", population_ids[individual]},
-            {"Decision vector", pop_dvs[individual]},
-            {"Fitness vector", pop_fitnesses[individual]}
+        jpop[label::__individuals].push_back({
+            {label::__id, population_ids[individual]},
+            {label::__dv, pop_dvs[individual]},
+            {label::__fv, pop_fitnesses[individual]}
         });
     }
 
     // 2.3 Optional info: Gradient evals, Hessian evals, dynamic info of the Algotithm, Problem, UDRP, UDSP
     // TODO: for now it is empty, but I will add it in the future, e.g. see below 
     if (pop.get_problem().get_gevals() > 0)
-        jpop["GradEvals"] = pop.get_problem().get_gevals();
+        jpop[label::__gevals] = pop.get_problem().get_gevals();
     if (pop.get_problem().get_hevals() > 0)
-        jpop["HessEvals"] = pop.get_problem().get_hevals();
+        jpop[label::__hevals] = pop.get_problem().get_hevals();
 
-    j["Generations"].push_back(jpop);
+    j[label::__generations].push_back(jpop);
 
     // Save the file
     std::ofstream ofs(filename);
