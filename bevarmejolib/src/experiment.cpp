@@ -124,10 +124,11 @@ void Experiment::save_outcome()
     json jsys;
     // example machine, OS etc ... 
 
-    json jarchipelago; // 
-    // TODO: for now it is default, actually use what is stored in Experiment
-    jarchipelago[label::__topology] = json { 
-        {label::__name, label::pagmodefault::__topology} /* Extra info none */};
+    json jarchipelago; 
+    {
+        auto jtopology = reporting::static_part_to_json(m_archipelago.get_topology());
+        if ( !jtopology.empty() ) jarchipelago.update(jtopology);
+    }
 
     // 2. Load the runtime data of each island (final population already in) and
     //    add the static part of the island (i.e., common parameters between the
@@ -212,18 +213,23 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
     // 2.2. Add the static part of the island
     json jstat;
     // 2.2.1. The User Defined Island infos 
-    // TODO: extra info in some way
-    jstat[label::__island] = {{ label::__name, isl.get_name() }};
-    // check it has extra info 
-    // TODO: kind of an automatic extraction, something like get_static_jsoninfo(algo)
-    if ( !isl.get_extra_info().empty() )
-        jstat[label::__island][label::__extra_info] = isl.get_extra_info();
-    jstat[label::__island][label::__pop_seed] = isl.get_population().get_seed();
+    {   // reporting::static_part_to_json calls the correct transformation to 
+        // json for the static part of the object (here the island). The same 
+        // exist for the dynamic part, but it may be deleted for some type of
+        // objects, e.g. the island. 
+        // Internally, static_part_to_json calls the correct method based on the 
+        // UD class hold by the pagmo container. It uses is() and extract().
+        // TODO: when the container is defaulted return empty json, for now print everything
+        auto jisland = reporting::static_part_to_json(isl);
+        if ( !jisland.empty() ) jstat.update(jisland);
+    }
 
 
     // 2.2.2. The User Defined Algorithm infos
-    // see pattern above 2.2.1.
-    jstat.update(reporting::static_part_to_json(isl.get_algorithm()));
+    {   // see pattern above 2.2.1.
+        auto jalgo = reporting::static_part_to_json(isl.get_algorithm());
+        if ( !jalgo.empty() ) jstat.update(jalgo);
+    }
 
     // 2.2.3. The User Defined Problem infos
     // see pattern above 2.2.1.
@@ -232,17 +238,17 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
         jstat[label::__problem][label::__extra_info] = isl.get_population().get_problem().get_extra_info();
     
     // 2.2.4. The User Defined Replacement Policy infos
-    // see pattern above 2.2.1.
-    jstat[label::__r_policy] = {{ label::__name, isl.get_r_policy().get_name() }};
-    if ( !isl.get_r_policy().get_extra_info().empty() )
-        jstat[label::__r_policy][label::__extra_info] = isl.get_r_policy().get_extra_info();
+    {   // see pattern above 2.2.1.
+        auto jrpolicy = reporting::static_part_to_json(isl.get_r_policy());
+        if ( !jrpolicy.empty() ) jstat.update(jrpolicy);
+    }    
 
     // 2.2.5. The User Defined Selection Policy infos
-    // see pattern above 2.2.1.
-    jstat[label::__s_policy] = {{ label::__name, isl.get_s_policy().get_name() }};
-    if ( !isl.get_s_policy().get_extra_info().empty() )
-        jstat[label::__s_policy][label::__extra_info] = isl.get_s_policy().get_extra_info();
-
+    {   // see pattern above 2.2.1.
+        auto jspolicy = reporting::static_part_to_json(isl.get_s_policy());
+        if ( !jspolicy.empty() ) jstat.update(jspolicy);
+    }
+    
     // 2.3. Save the file
     json& jout = jstat;
     jout[label::__generations] = jdyn[label::__generations];
