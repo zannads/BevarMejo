@@ -223,9 +223,7 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
 
     // 2.2.2. The User Defined Algorithm infos
     // see pattern above 2.2.1.
-    jstat[label::__algorithm] = {{label::__name, isl.get_algorithm().get_name() }};
-    if ( !isl.get_algorithm().get_extra_info().empty() )
-        jstat[label::__algorithm][label::__extra_info] = isl.get_algorithm().get_extra_info();
+    jstat.update(reporting::static_part_to_json(isl.get_algorithm()));
 
     // 2.2.3. The User Defined Problem infos
     // see pattern above 2.2.1.
