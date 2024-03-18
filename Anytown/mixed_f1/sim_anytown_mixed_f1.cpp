@@ -22,8 +22,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path experiment_folder(argv[2]);
     
     // Create an experiment object to handle results and settings
-    bevarmejo::Experiment experiment(experiment_folder, 0);
-    experiment.set_name("anytown_nsga2");
+    bevarmejo::Experiment experiment(experiment_folder);
 
     // Construct a pagmo::problem for ANYTOWN model
     pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };

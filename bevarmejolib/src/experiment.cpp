@@ -33,14 +33,9 @@ namespace bevarmejo {
 
 namespace fsys = std::filesystem;
 // Constructor from path to root folder (preferred)
-Experiment::Experiment(std::string a_name,
-                       fsys::path experiment_folder,
-                       unsigned int seed,
-                       fsys::path settings_filename) :
-    m_name(a_name),
-    _root_experiment_folder_(experiment_folder),
-    _seed_(seed),
-    _settings_filename_(settings_filename) {
+Experiment::Experiment(fsys::path experiment_folder) : _root_experiment_folder_(experiment_folder) {
+    
+    _settings_filename_ = "beme_settings.xml";
     
     // check that the root folder exist
     if (!fsys::exists(_root_experiment_folder_) ||
@@ -68,6 +63,8 @@ Experiment::Experiment(std::string a_name,
         throw std::runtime_error(result.description());
     }
 
+    // Set the name from the input file 
+    m_name = std::string(_settings_.child("optProblem").child_value("name"));
 }
 
 void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop) {
@@ -75,6 +72,7 @@ void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop) {
     // islands are created in the build method. The pop and algo will be created 
     // there.
     m_archipelago.push_back(algo, pop);
+    _seed_ = pop.get_seed();
     m_islands_filenames.push_back(runtime_file());
     // TODO: the name is based on the input files when multiple islands are used
 

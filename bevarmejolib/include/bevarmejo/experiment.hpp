@@ -61,10 +61,7 @@ public:
     // Default constructor
     Experiment() = default;
     // Starting from path to root folder and filename
-    Experiment(std::string a_name, 
-            fsys::path experiment_folder,
-               unsigned int seed,
-               fsys::path settings_filename = "beme_settings.xml");
+    Experiment(fsys::path experiment_folder);
     
     /* Setters and getters */
     const std::string& get_name() const;

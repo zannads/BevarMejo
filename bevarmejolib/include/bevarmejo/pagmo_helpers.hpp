@@ -99,7 +99,7 @@ inline std::pair<json,std::string> static_params_to_json<pagmo::nsga2>(const pag
 
         } else if (key == "Seed") {
             assert(tokens.size() == 2);
-            j[key] = std::stoi(tokens[1]);
+            j[key] = std::stoull(tokens[1]);
 
         } else {
             for (const auto& token : tokens) {
@@ -128,7 +128,7 @@ inline std::pair<json,std::string> static_params_to_json<pagmo::thread_island>(c
     assert(tokens.size() == 2);
 
     json j;
-    j["Using pool"] = tokens[1] == "yes" ? true : false;
+    j["Using pool"] = tokens[1] == " yes" ? true : false; // space is there too
 
     return std::make_pair(j, std::string{});
 }

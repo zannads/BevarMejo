@@ -25,24 +25,22 @@
 int main(int argc, char* argv[]) {   
     
     // Parse the inputs, ideally I could change anything and should perform checks. 
-    // For now the structure will be: -p path/to/experiment/folder
-    //                                -s seed
-    std::filesystem::path experiment_folder(argv[2]);
-    unsigned int seed = std::stoi(argv[4]);
+    // For now the structure will be: path/to/experiment/folder
+    std::filesystem::path experiment_folder(argv[1]);
     
     // Create an experiment object to handle results and settings
-    bevarmejo::Experiment experiment("anytown_nsga2", experiment_folder, seed);
+    bevarmejo::Experiment experiment( experiment_folder );
 
     // Construct a pagmo::problem for ANYTOWN model
     pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };
 
     // Construct a pagmo::algorithm for NSGA2
     bevarmejo::nsga2p settings_nsgaII = bevarmejo::quick_settings_upload(experiment.algorithm_settings());
-    settings_nsgaII.seed = seed;
-    pagmo::algorithm algo{ pagmo::nsga2(settings_nsgaII.report_nfe, settings_nsgaII.cr, settings_nsgaII.eta_c, settings_nsgaII.m, settings_nsgaII.eta_m, settings_nsgaII.seed) };
+ 
+    pagmo::algorithm algo{ pagmo::nsga2(settings_nsgaII.report_nfe, settings_nsgaII.cr, settings_nsgaII.eta_c, settings_nsgaII.m, settings_nsgaII.eta_m) };
 
     // Instantiate population
-    pagmo::population pop{ std::move(p), settings_nsgaII.pop_size, settings_nsgaII.seed };
+    pagmo::population pop{ std::move(p), settings_nsgaII.pop_size };
 
     try {
         experiment.build(algo, pop);
