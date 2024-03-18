@@ -91,6 +91,26 @@ namespace bevarmejo {
 			// simulation time step to 1 hour
 			errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
 			assert(errorcode <= 100);
+
+			// Fix pumps' patterns: from 9 to 18 -> 3, from 19 to 8 -> 2 (Siew et al. 2016 https://link.springer.com/article/10.1007/s11269-016-1371-1)
+			for (int i = 0; i < 3; ++i) {
+				// no need to go through the pumps, I know the pattern ID
+				int pattern_idx = 0;
+				errorcode = EN_getpatternindex(ph, std::to_string(i+2).c_str(), &pattern_idx);
+				assert(errorcode <= 100);
+
+				std::vector<double> temp(24, 1.0);
+				// pumps 1 and 2 always on
+				if (i == 2) { // pump 3 off from 19 to 8
+					int j = 9;
+					while (j-->0) temp[j] = 0.0;
+					j = 24;
+					while (j-->19) temp[j] = 0.0;
+				} 
+
+				errorcode = EN_setpattern(ph, pattern_idx, temp.data(), temp.size());
+				assert(errorcode <= 100);
+			}
 		};
 
 		_anytown_->load_from_inp_file(inp_filename, fix_inp);
@@ -164,7 +184,7 @@ namespace bevarmejo {
     }
 
     std::string ModelAnytown::get_extra_info() const {
-        return std::string("\tVersion 1.1");
+        return std::string("\tVersion Rehabilitation F1 (No operations, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n");
     }
 
     std::vector<double> ModelAnytown::fitness(const std::vector<double> &dvs) const {
@@ -333,14 +353,6 @@ namespace bevarmejo {
 			++it;
 		}
 
-		// 24 hours x [npr]
-		// this is subnetworks independent
-		curr_dv_chunk_end += 24; // hours in a day
-		while (it != curr_dv_chunk_end) {
-			*it = 3.;
-			++it;
-		}
-
 		// 2 x [tav] x [tvol]
 		double n_possible_locs = _anytown_->subnetwork("possible_tank_locations").size();
 		assert( n_possible_locs == 17. );
@@ -428,9 +440,6 @@ namespace bevarmejo {
 
 			++curr_dv;
 		}
-		// energy from pumps 
-		curr_dv += 24; // 24 hours x [npr]
-		double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 		
 		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// Check if the tanks is going to be installed
@@ -451,6 +460,9 @@ namespace bevarmejo {
 			design_cost += _pipes_alt_costs_.at(5).new_cost*anytown::riser_length_ft; // no need to go back to meters because everything here is in foot
 			++curr_dv;
 		}
+
+		// Finally, add the energy from pumps (not present in the dv)
+		double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 
 		// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
 		return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
@@ -589,23 +601,7 @@ namespace bevarmejo {
 			++curr_dv;
 		}
 
-		// 3. pumps
-		auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, dvs.end()), anytown->pumps().size());
-		for (std::size_t i = 0; i < patterns.size(); ++i) {
-			// I know pump patterns IDs are from 2, 3, and 4
-			int pump_idx = i + 2;
-			std::string pump_id = std::to_string(pump_idx);
-			int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
-			assert(errorcode <= 100);
-
-			// set the pattern
-			errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
-			assert(errorcode <= 100);
-		}
-
-		curr_dv += 24; // 24 hours x [npr]
-
-		// 4. tanks
+		// 3. tanks
 		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// 0 counts as "don't install" and I can't install two tanks on the same location
 			if ((int)*curr_dv == 0 || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
@@ -785,24 +781,7 @@ namespace bevarmejo {
 			++curr_dv;
 		}
 	
-		// 3. pumps
-		// first is all 1s, second all 0s except at 3h,9h, 15h, 21h, 
-		// third has the first 6h 1s and the rest 0s
-		for (std::size_t i = 0; i < 3; ++i) {
-			// I know pump patterns IDs are from 2, 3, and 4
-			int pump_idx = i + 2;
-			std::string pump_id = std::to_string(pump_idx);
-			int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
-			assert(errorcode <= 100);
-
-			// set the pattern, use empty array of 24 double to zero
-			errorcode = EN_setpattern(anytown->ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
-			assert(errorcode <= 100);
-		}
-
-		curr_dv += 24; // 24 hours x [npr]
-
-		// 4. tanks
+		// 3. tanks
 		for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 			// 0 counts as "don't install" and I can't install two tanks on the same location
 			if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
