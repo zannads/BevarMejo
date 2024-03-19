@@ -14,7 +14,8 @@
 #include <utility>
 #include <vector>
 
-#include "pugixml.hpp"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -89,7 +90,8 @@ static const std::string l__TEMP_ELEMS = "TempEs";
 	class ModelAnytown {
 	public: 
 		ModelAnytown() = default;
-		ModelAnytown(fsys::path input_directory, pugi::xml_node settings);
+
+        ModelAnytown(json settings, std::vector<std::filesystem::path> lookup_paths);
 
         // Copy constructor
         ModelAnytown(const ModelAnytown& other) = default;
@@ -149,6 +151,15 @@ static const std::string l__TEMP_ELEMS = "TempEs";
         std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const;
 
 	}; /* class ModelAnytown*/
+
+namespace anytown {
+namespace rehab {
+namespace f_1 {
+
+
+}
+}
+}
  
 } /* namespace bevarmejo */
 

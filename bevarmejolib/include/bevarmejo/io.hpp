@@ -8,8 +8,10 @@
 #ifndef BEVARMEJOLIB_IO_HPP
 #define BEVARMEJOLIB_IO_HPP
 
+#include <filesystem>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -19,6 +21,8 @@
 namespace bevarmejo {
 
 namespace label {
+    // Initial part of the main filename for the experiment outcome
+    const std::string __beme_prefix = "opt_";
     // Final part of the main filename for the experiment outcome
     const std::string __beme_suffix = "__bemeexp.json";
 
@@ -58,7 +62,15 @@ namespace label {
 
     const std::string __system = "System";
     //const std::string __libraries = "Libraries";
+
+
+    // Labels for the input file
+    const std::string __paths = "Paths";
+    const std::string __typconfig = "Typical configuration";
+    const std::string __specs = "Specializations";
 }
+
+std::optional<std::filesystem::path> locate_file(const std::filesystem::path& filename, const std::vector<std::filesystem::path>& lookup_paths);
 
 namespace detail {
 

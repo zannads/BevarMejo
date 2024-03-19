@@ -14,7 +14,8 @@
 #include <string>
 #include <vector>
 
-#include "pugixml.hpp"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
@@ -59,13 +60,17 @@ namespace bevarmejo {
 		return is;
 	}
 
-	ModelAnytown::ModelAnytown(fsys::path input_directory, pugi::xml_node settings) {
+	ModelAnytown::ModelAnytown(json settings, std::vector<std::filesystem::path> lookup_paths) {
 		assert(settings != nullptr);
 
 		// Add here load of problem specific data 
 
-		fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
-		inp_filename = input_directory / inp_filename;
+		// Check the existence of the inp_filename in any of the lookup paths and its extension
+		auto file = bevarmejo::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
+		if (!file.has_value()) {
+			throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
+		}
+		auto inp_filename = file.value();
 
 		/* Fix the bug where the curve 2 (i.e., the pump characteristic curve
 		 * is uploaded as a generic curve and not as a pump curve). 
@@ -75,8 +80,12 @@ namespace bevarmejo {
 		 * and then use init(). 
 		*/
 		_anytown_ = std::make_shared<WDS>();
+
+		// Also fix the operations at the beginning loading from the settings file
+		std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
+		assert(operations.size() == 24);
 		
-		auto fix_inp = [](EN_Project ph) {
+		auto fix_inp = [&operations](EN_Project ph) {
 			// change curve ID 2 to a pump curve
 			assert(ph != nullptr);
 			std::string curve_id = "2";
@@ -99,14 +108,10 @@ namespace bevarmejo {
 				errorcode = EN_getpatternindex(ph, std::to_string(i+2).c_str(), &pattern_idx);
 				assert(errorcode <= 100);
 
-				std::vector<double> temp(24, 1.0);
-				// pumps 1 and 2 always on
-				if (i == 2) { // pump 3 off from 19 to 8
-					int j = 9;
-					while (j-->0) temp[j] = 0.0;
-					j = 24;
-					while (j-->19) temp[j] = 0.0;
-				} 
+				std::vector<double> temp(24, 0.0);
+				for (int j = 0; j < 24; ++j) {
+					temp[j] = operations[j] > i ? 1.0 : 0.0;
+				}
 
 				errorcode = EN_setpattern(ph, pattern_idx, temp.data(), temp.size());
 				assert(errorcode <= 100);
@@ -115,30 +120,35 @@ namespace bevarmejo {
 
 		_anytown_->load_from_inp_file(inp_filename, fix_inp);
 
-		// Load subnetworks 
-		for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
-			subnet = subnet.next_sibling("subNet")) {
-			fsys::path subnet_filename{subnet.child_value()};
-			subnet_filename = input_directory / subnet_filename;
-
-			try
-			{
-				_anytown_->add_subnetwork(subnet_filename);
+		// Load subnetworks
+		for (const auto& udeg : settings["WDS"]["UDEGs"]) {
+			// Locate the file in the lookup paths
+			file = bevarmejo::locate_file(fsys::path{udeg}, lookup_paths);
+			if (file.has_value()) {
+				try{
+					_anytown_->add_subnetwork(file.value());
+				}
+				catch (const std::exception& ex) {
+					std::cout << ex.what();
+				}
 			}
-			catch (const std::exception& ex)
-			{
-				std::cout << ex.what();
-			}
+			// else skip but log the error 
+			// TODO: log the error in case it fails at later stages
 		}
+		// TODO: assert that all the required subnetworks are present
 
-		// Custom made subnetworks
+		// Custom made subnetworks for the temporary elements 
 		wds::Subnetwork temp_elements;
 		_anytown_->add_subnetwork(anytown::l__TEMP_ELEMS, temp_elements);
 
 		// Load Pipe rehabilitation alternative costs 
-		fsys::path prac_filename{settings.child_value("avDiams")};
-		prac_filename = input_directory / prac_filename;
+		file = bevarmejo::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
+		if (!file.has_value()) {
+			throw std::runtime_error("The provided available diameters file does not exist in the lookup paths. Check the settings file.\n");
+		}
+		auto prac_filename = file.value();
 
+		// TODO: move also this to json?
 		std::ifstream prac_file{prac_filename};
 		if (!prac_file.is_open()) {
 			throw std::runtime_error("Could not open file " + prac_filename.string());
@@ -150,9 +160,11 @@ namespace bevarmejo {
 		
 
 		// Load Tank costs 
-		fsys::path tanks_filename{settings.child_value("tankCosts")};
-		tanks_filename = input_directory / tanks_filename;
-
+		file = bevarmejo::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
+		if (!file.has_value()) {
+			throw std::runtime_error("The provided tank costs file does not exist in the lookup paths. Check the settings file.\n");
+		}
+		auto tanks_filename = file.value();
 		std::ifstream tanks_file{tanks_filename};
 		if (!tanks_file.is_open()) {
 			throw std::runtime_error("Could not open file " + tanks_filename.string());

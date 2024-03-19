@@ -24,8 +24,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include "bevarmejo/io.hpp"
 #include "bevarmejo/pagmo_helpers.hpp"
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/parsers.hpp"
 
 namespace bevarmejo {
 
@@ -45,11 +46,14 @@ protected:
 private: 
     // Name of the experiment
     std::string m_name;
+    // Path to the experiment folder 
+    fsys::path m_folder;
     // Archipelago to run the experiment
     pagmo::archipelago m_archipelago;
     // Filenames for runtime and final results saving for each island
     std::vector<fsys::path> m_islands_filenames;
     // TODO: add the settings for each independent island
+
 
     // Flag for resuming the experiment.
     bool m_resume{false};
@@ -57,31 +61,20 @@ private:
     bool m_deep_copy{false};
 
 public:
-    /* Constructors */
-    // Default constructor
-    Experiment() = default;
-    // Starting from path to root folder and filename
-    Experiment(fsys::path experiment_folder);
+    /* Constructors and co all defaulted */
+    // TODO: fix the constructors 
     
     /* Setters and getters */
-    const std::string& get_name() const;
-    
-    fsys::path input_dir() const ;
-    fsys::path output_dir() const ;
-    fsys::path settings_file();
+    const std::string& name() const { return m_name; }
+    const fsys::path& folder() const { return m_folder; }
+    const fsys::path output_folder() const { return m_folder / "output"; }
+
     fsys::path runtime_file();
-
-    pugi::xml_node algorithm_settings() const;
-    // TODO: overload for multiple algorithms
-
-    pugi::xml_node model_settings() const;
-    // TODO :overload for multiple models
-
-
 
 /*--- Methods ---*/
 
     // Construct the experiment from the settings 
+    void build(const ExperimentSettings &settings);
     // TEMP: algo and pop, in the future some struct with the settings
     void build(pagmo::algorithm &algo, pagmo::population &pop);
 

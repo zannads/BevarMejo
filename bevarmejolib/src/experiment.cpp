@@ -29,45 +29,18 @@ using json = nlohmann::json;
 #include "experiment.hpp"
 
 namespace bevarmejo {
-// Default constructor on .hpp
-
+    
 namespace fsys = std::filesystem;
-// Constructor from path to root folder (preferred)
-Experiment::Experiment(fsys::path experiment_folder) : _root_experiment_folder_(experiment_folder) {
-    
-    _settings_filename_ = "beme_settings.xml";
-    
-    // check that the root folder exist
-    if (!fsys::exists(_root_experiment_folder_) ||
-        !fsys::is_directory(_root_experiment_folder_) ){
-        throw std::runtime_error("\nExperiment folder "+_root_experiment_folder_.string()+" not located\nMake sure it exists.\n");
-    }
-    
-    // check that the output folder exist, otherwise create it
-    if (!fsys::exists(output_dir()))
-        fsys::create_directory(output_dir());
-    
-    
-    // look for the settings file
-    if (!fsys::exists(settings_file()) || !fsys::is_regular_file(settings_file())){
-        std::string error_message{"\nSettings file ("};
-        error_message.append(settings_file().string());
-        error_message.append(") not found or not a file\n");
-        throw std::runtime_error(error_message);
-    }
-    
-    // upload settings file 
-    pugi::xml_parse_result result = _settings_.load_file(settings_file().c_str());
 
-    if (result.status != pugi::status_ok) {
-        throw std::runtime_error(result.description());
-    }
+void Experiment::build(const ExperimentSettings &settings) {
+    m_name = settings.name;
+    m_folder = settings.folder;
 
-    // Set the name from the input file 
-    m_name = std::string(_settings_.child("optProblem").child_value("name"));
+    // TODO: actually building the experiment
 }
 
-void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop) {
+void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop)
+{
     // TEMP: the set and the inputs of this function will be removed once the 
     // islands are created in the build method. The pop and algo will be created 
     // there.
@@ -153,9 +126,9 @@ void Experiment::save_outcome()
 }
 
 fsys::path Experiment::main_filename() const {
-    fsys::path outtemp_filename = output_dir()/m_name;
-    outtemp_filename += label::__beme_suffix;
-    return outtemp_filename;
+    std::string complete_filename = label::__beme_prefix+m_name+label::__beme_suffix;
+    
+    return output_folder()/complete_filename;
 }
 
 std::pair<std::vector<std::string>, std::string> Experiment::save_final_results() const {
@@ -332,46 +305,10 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
 }
 
 
-
-/* Setters and getters */
-const std::string& Experiment::get_name() const {
-    return m_name;
-}
-
-fsys::path Experiment::output_dir() const {
-    return _root_experiment_folder_/"output";
-}
-
-fsys::path Experiment::input_dir() const {
-    return _root_experiment_folder_/"input";
-}
-
-fsys::path Experiment::settings_file(){
-    return input_dir()/_settings_filename_;
-}
-
 fsys::path Experiment::runtime_file() {
-    fsys::path outtemp_filename = output_dir()/m_name;
-    outtemp_filename += "__";
-    outtemp_filename += std::to_string(_seed_);
-    outtemp_filename += ".json";
-    return outtemp_filename;
-}
+    std::string outtemp_filename = label::__beme_prefix+m_name+"__"+std::to_string(_seed_)+".json";
 
-pugi::xml_node Experiment::algorithm_settings() const
-{
-    pugi::xml_node algorithm_settings_node = _settings_.child("optProblem").child("optAlgorithm").first_child();
-    if (algorithm_settings_node.empty())
-		throw std::runtime_error("\nNo algorithm settings found in the settings file\n");
-    return algorithm_settings_node;
-}
-
-pugi::xml_node Experiment::model_settings() const
-{
-    pugi::xml_node model_settings_node = _settings_.child("optProblem").child("systemModel").first_child();
-    if (model_settings_node.empty())
-        throw std::runtime_error("\nNo model settings found in the settings file\n");
-	return model_settings_node;
+    return output_folder()/outtemp_filename;
 }
 
 } // namespace bevarmejo

@@ -49,6 +49,7 @@ add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
                     "src/hydraulic_functions.cpp" "include/bevarmejo/hydraulic_functions.hpp"
                     "include/bevarmejo/epanet_helpers/en_helpers.hpp"
                     "include/bevarmejo/pagmo_helpers.hpp"
+                    "include/bevarmejo/parsers.hpp" "src/parsers.cpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
                     ${WDS_LINKS}
