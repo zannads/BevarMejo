@@ -25,7 +25,9 @@ using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/labels.hpp"
+#include "bevarmejo/pagmo_helpers/udc_help.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
+
 
 #include "experiment.hpp"
 
@@ -270,8 +272,8 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
     // 2. Add the info of each population
     // 2.1 Mandatory info: time, fitness evaulations 
     jpop = {
-        {label::__fevals, pop.get_problem().get_fevals()},
-        {label::__currtime, currtime_str}
+        {to_kebab_case(label::__fevals), pop.get_problem().get_fevals()},
+        {to_kebab_case(label::__currtime), currtime_str}
     };
     
     // 2.2 Mandatory info, the population's individuals
@@ -279,21 +281,21 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
     auto pop_dvs        = pop.get_x();
     auto pop_fitnesses  = pop.get_f();
     for (auto individual = 0u; individual<pop.size(); ++individual){
-        jpop[label::__individuals].push_back({
-            {label::__id, population_ids[individual]},
-            {label::__dv, pop_dvs[individual]},
-            {label::__fv, pop_fitnesses[individual]}
+        jpop[to_kebab_case(label::__individuals)].push_back({
+            {to_kebab_case(label::__id), population_ids[individual]},
+            {to_kebab_case(label::__dv), pop_dvs[individual]},
+            {to_kebab_case(label::__fv), pop_fitnesses[individual]}
         });
     }
 
     // 2.3 Optional info: Gradient evals, Hessian evals, dynamic info of the Algotithm, Problem, UDRP, UDSP
     // TODO: for now it is empty, but I will add it in the future, e.g. see below 
     if (pop.get_problem().get_gevals() > 0)
-        jpop[label::__gevals] = pop.get_problem().get_gevals();
+        jpop[to_kebab_case(label::__gevals)] = pop.get_problem().get_gevals();
     if (pop.get_problem().get_hevals() > 0)
-        jpop[label::__hevals] = pop.get_problem().get_hevals();
+        jpop[to_kebab_case(label::__hevals)] = pop.get_problem().get_hevals();
 
-    j[label::__generations].push_back(jpop);
+    j[to_kebab_case(label::__generations)].push_back(jpop);
 
     // Save the file
     std::ofstream ofs(filename);

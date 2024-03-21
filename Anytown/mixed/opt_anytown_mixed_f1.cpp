@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     bevarmejo::Experiment experiment( experiment_folder );
 
     // Construct a pagmo::problem for ANYTOWN model
-    pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };
+    pagmo::problem p{ bevarmejo::Problem(experiment.input_dir(), experiment.model_settings()) };
 
     // Construct a pagmo::algorithm for NSGA2
     bevarmejo::nsga2p settings_nsgaII = bevarmejo::quick_settings_upload(experiment.algorithm_settings());

@@ -147,6 +147,9 @@ T to_kebab_case(const T &s) {
         }
     }
 
+    // substitute all spaces with hyphens
+    std::replace(result.begin(), result.end(), ' ', '-');
+
     // remove the beginning hyphen if it exists
     if (!result.empty() && result.front() == '-') {
         result.erase(result.begin());

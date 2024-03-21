@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     bevarmejo::Experiment experiment(experiment_folder);
 
     // Construct a pagmo::problem for ANYTOWN model
-    pagmo::problem p{ bevarmejo::ModelAnytown(experiment.input_dir(), experiment.model_settings()) };
+    pagmo::problem p{ bevarmejo::Problem(experiment.input_dir(), experiment.model_settings()) };
 
     // Load the decision vector from file
     std::filesystem::path dv_file(argv[4]);
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
         "Element with ID ", j["ID"], 
         " evaluated with Fitness vector : ", res, 
         " in ", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), "ms\n");
-    bevarmejo::io::stream_out(std::cout, j["Comment"], "\n", j["Print"], "\n");
     
     return 0;
 }

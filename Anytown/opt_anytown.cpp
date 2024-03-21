@@ -20,7 +20,8 @@
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/parsers.hpp"
 
-#include "model_anytown.hpp"
+#include "prob_anytown.hpp"
+#include "rehab/prob_at_reh_f1.hpp"
 
 int main(int argc, char* argv[]) {   
     
@@ -49,7 +50,7 @@ int main(int argc, char* argv[]) {
         pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
         // Construct a pagmo::problem for ANYTOWN model
-        pagmo::problem p{ bevarmejo::ModelAnytown(settings.jinput["Typical configuration"]["UDP"]["Parameters"], settings.lookup_paths) };
+        pagmo::problem p{ bevarmejo::anytown::rehab::f1::Problem(settings.jinput["Typical configuration"]["UDP"]["Parameters"], settings.lookup_paths) };
 
         // and instantiate population
         pagmo::population pop{ std::move(p), settings.jinput["Typical configuration"]["Population"]["Size"].get<unsigned int>() };

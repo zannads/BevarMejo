@@ -14,8 +14,7 @@
 #include <utility>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
+#include "pugixml.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -30,8 +29,8 @@ namespace anytown {
     constexpr std::size_t n_ec = 0u;
     constexpr std::size_t n_ic = 0u;
     constexpr std::size_t n_fit = n_obj + n_ec + n_ic;
-    constexpr std::size_t n_dv = 80u;
-    constexpr std::size_t n_ix = 80u; // Will transform the tank volume to a continuous variable in the future.
+    constexpr std::size_t n_dv = 104u;
+    constexpr std::size_t n_ix = 104u; // Will transform the tank volume to a continuous variable in the future.
     constexpr std::size_t n_cx = n_dv-n_ix;
 
     // Other constants always valid.
@@ -87,26 +86,25 @@ namespace anytown {
 static const std::string l__TEMP_ELEMS = "TempEs";
 }
     // Here the problem is actually construted.
-	class ModelAnytown {
+	class Problem {
 	public: 
-		ModelAnytown() = default;
-
-        ModelAnytown(json settings, std::vector<std::filesystem::path> lookup_paths);
+		Problem() = default;
+		Problem(fsys::path input_directory, pugi::xml_node settings);
 
         // Copy constructor
-        ModelAnytown(const ModelAnytown& other) = default;
+        Problem(const Problem& other) = default;
 
         // Move constructor
-        ModelAnytown(ModelAnytown&& other) noexcept = default;
+        Problem(Problem&& other) noexcept = default;
 
         // Copy assignment operator
-        ModelAnytown& operator=(const ModelAnytown& rhs) = default;
+        Problem& operator=(const Problem& rhs) = default;
 
         // Move assignment operator
-        ModelAnytown& operator=(ModelAnytown&& rhs) noexcept = default;
+        Problem& operator=(Problem&& rhs) noexcept = default;
 
         // Destructor
-        ~ModelAnytown() = default;
+        ~Problem() = default;
 
 		// Try to have copy and move constructor automatically created
 
@@ -150,16 +148,7 @@ static const std::string l__TEMP_ELEMS = "TempEs";
         void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
         std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const;
 
-	}; /* class ModelAnytown*/
-
-namespace anytown {
-namespace rehab {
-namespace f_1 {
-
-
-}
-}
-}
+	}; /* class Problem*/
  
 } /* namespace bevarmejo */
 

@@ -59,7 +59,7 @@ namespace bevarmejo {
 		return is;
 	}
 
-	ModelAnytown::ModelAnytown(fsys::path input_directory, pugi::xml_node settings) {
+	Problem::Problem(fsys::path input_directory, pugi::xml_node settings) {
 		assert(settings != nullptr);
 
 		// Add here load of problem specific data 
@@ -143,31 +143,31 @@ namespace bevarmejo {
 		stream_in(tanks_file, _tanks_costs_);
 	}
 
-    std::vector<double>::size_type ModelAnytown::get_nobj() const {
+    std::vector<double>::size_type Problem::get_nobj() const {
 		// Cost and reliability
         return anytown::n_obj;
     }
 
-    std::vector<double>::size_type ModelAnytown::get_nec() const {
+    std::vector<double>::size_type Problem::get_nec() const {
 		// NO equality constraints
         return anytown::n_ec;
     }
 
-    std::vector<double>::size_type ModelAnytown::get_nic() const {
+    std::vector<double>::size_type Problem::get_nic() const {
 		// NO inequality constraints
         return anytown::n_ic;
     }
 
-    std::vector<double>::size_type ModelAnytown::get_nix() const {
+    std::vector<double>::size_type Problem::get_nix() const {
 		// For now they are all integers. //Tanks will be added in the future
         return anytown::n_ix;
     }
 
-    std::string ModelAnytown::get_extra_info() const {
+    std::string Problem::get_extra_info() const {
         return std::string("\tVersion 1.1");
     }
 
-    std::vector<double> ModelAnytown::fitness(const std::vector<double> &dvs) const {
+    std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 
 		// things to do 
 		// 1. EPS 
@@ -294,7 +294,7 @@ namespace bevarmejo {
         return fitv;
     }
 
-    std::pair<std::vector<double>, std::vector<double>> ModelAnytown::get_bounds() const {
+    std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const {
 		// Structure of the decision variables
 		// [35 pipes x [action, prc], 6 pipes x [prc], 24 hours x [npr] ] 
 		// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
@@ -358,7 +358,7 @@ namespace bevarmejo {
 		return std::pair<std::vector<double>, std::vector<double>>(lb, ub);
     }
 
-    double ModelAnytown::cost(const std::vector<double> &dvs, const double energy_cost_per_day) const {
+    double Problem::cost(const std::vector<double> &dvs, const double energy_cost_per_day) const {
         double design_cost = 0.0;
 		// 35 pipes x [action, prc]
 		auto curr_dv = dvs.begin();
@@ -456,7 +456,7 @@ namespace bevarmejo {
 		return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
     }
 
-    std::vector<double> ModelAnytown::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs) const {
+    std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs) const {
 		// I need to return the old HW coefficients to reset them later
 		std::vector<double> old_HW_coeffs;
 		auto curr_dv = dvs.begin();
@@ -710,7 +710,7 @@ namespace bevarmejo {
         return old_HW_coeffs;
     }
 
-    void ModelAnytown::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs, const std::vector<double> &old_HW_coeffs) const {
+    void Problem::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs, const std::vector<double> &old_HW_coeffs) const {
 		// Do the opposite operations of apply_dv 
 		auto old_HW_coeffs_iter = old_HW_coeffs.begin();
 		auto curr_dv = dvs.begin();
@@ -849,7 +849,7 @@ namespace bevarmejo {
 		anytown->cache_indices();
 	}
 
-    std::vector<std::vector<double>> ModelAnytown::decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const {
+    std::vector<std::vector<double>> Problem::decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) const {
         // I want a copy of the decision variables because every time I put a 
 		// pattern to 1 I want to remove it from the vector.
 		std::size_t n_periods = pg_pattern.size();
