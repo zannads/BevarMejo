@@ -1,5 +1,5 @@
-#ifndef ANYTOWN__REHAB__PROB_ANYTOWN_REHAB_F1_HPP
-#define ANYTOWN__REHAB__PROB_ANYTOWN_REHAB_F1_HPP
+#ifndef ANYTOWN__MIXED__PROB_ANYTOWN_MIXED_F1_HPP
+#define ANYTOWN__MIXED__PROB_ANYTOWN_MIXED_F1_HPP
 //#define DEBUGSIM
 
 #include <iostream>
@@ -19,25 +19,27 @@ namespace fsys = std::filesystem;
 namespace bevarmejo {
 // Data of Anytown that can't be changed.
 namespace anytown {
-namespace rehab {
+namespace mixed {
 namespace f1 {
 
-const std::string name = "bevarmejo::anytown::rehab::f1";
-const std::string extra_info = "\tVersion 1 of Anytown Rehabilitation Formulation 1\nOperations from input, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+const std::string name = "bevarmejo::anytown::mixed::f1";
+const std::string extra_info = "\tVersion 1 of Anytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
     
 // Dimensions of the problem.
 constexpr std::size_t n_obj = 2u;
 constexpr std::size_t n_ec = 0u;
 constexpr std::size_t n_ic = 0u;
 constexpr std::size_t n_fit = n_obj + n_ec + n_ic;
-constexpr std::size_t n_dv = 80u;
-constexpr std::size_t n_ix = 80u; // Will transform the tank volume to a continuous variable in the future.
+constexpr std::size_t n_dv = 104u;
+constexpr std::size_t n_ix = 104u; // Will transform the tank volume to a continuous variable in the future.
 constexpr std::size_t n_cx = n_dv-n_ix;
-    
+
+
+// Here the problem is actually construted.
 class Problem {
 public: 
     Problem() = default;
-
+    
     Problem(json settings, std::vector<std::filesystem::path> lookup_paths);
 
     // Copy constructor
@@ -98,10 +100,10 @@ private:
     void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
     
 }; // class Problem
- 
+
 } // namespace f1
-} // namespace rehab
+} // namespace mixed
 } // namespace anytown
 } // namespace bevarmejo
 
-#endif // ANYTOWN__REHAB__PROB_ANYTOWN_REHAB_F1_HPP
+#endif // ANYTOWN__MIXED__PROB_ANYTOWN_MIXED_F1_HPP

@@ -34,7 +34,7 @@ std::istream& anytown::operator>>(std::istream& is, anytown::pipes_alt_costs& pa
 	return is;
 }
 
-std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) {
+std::vector<std::vector<double>> anytown::decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) {
 	// I want a copy of the decision variables because every time I put a 
 	// pattern to 1 I want to remove it from the vector.
 	std::size_t n_periods = pg_pattern.size();

@@ -31,13 +31,99 @@ using json = nlohmann::json;
 
 #include "prob_anytown.hpp"
 
-#include "prob_at_reh_f1.hpp"
+#include "prob_at_mix_f1.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {
 namespace anytown {
-namespace rehab {
+namespace mixed {
 namespace f1 {
+
+/*
+Problem::Problem(fsys::path input_directory, pugi::xml_node settings) {
+	assert(settings != nullptr);
+
+	// Add here load of problem specific data 
+
+	fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
+	inp_filename = input_directory / inp_filename;
+
+	 Fix the bug where the curve 2 (i.e., the pump characteristic curve
+		* is uploaded as a generic curve and not as a pump curve). 
+		* Thus instead of the automatic constructor from inp file: 
+		* _anytown_ = std::make_shared<WDS>(inp_filename);
+		* I create an empty one first, add the inp file, modify it thorugh the lambda
+		* and then use init(). 
+	
+	_anytown_ = std::make_shared<WDS>();
+	
+	auto fix_inp = [](EN_Project ph) {
+		// change curve ID 2 to a pump curve
+		assert(ph != nullptr);
+		std::string curve_id = "2";
+		int curve_idx = 0;
+		int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
+		assert(errorcode <= 100);
+
+		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
+		assert(errorcode <= 100);
+
+
+		// simulation time step to 1 hour
+		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
+		assert(errorcode <= 100);
+	};
+
+	_anytown_->load_from_inp_file(inp_filename, fix_inp);
+
+	// Load subnetworks 
+	for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
+		subnet = subnet.next_sibling("subNet")) {
+		fsys::path subnet_filename{subnet.child_value()};
+		subnet_filename = input_directory / subnet_filename;
+
+		try
+		{
+			_anytown_->add_subnetwork(subnet_filename);
+		}
+		catch (const std::exception& ex)
+		{
+			std::cout << ex.what();
+		}
+	}
+
+	// Custom made subnetworks
+	wds::Subnetwork temp_elements;
+	_anytown_->add_subnetwork(anytown::l__TEMP_ELEMS, temp_elements);
+
+	// Load Pipe rehabilitation alternative costs 
+	fsys::path prac_filename{settings.child_value("avDiams")};
+	prac_filename = input_directory / prac_filename;
+
+	std::ifstream prac_file{prac_filename};
+	if (!prac_file.is_open()) {
+		throw std::runtime_error("Could not open file " + prac_filename.string());
+	}
+
+	std::size_t n_alt_costs = load_dimensions(prac_file, "#DATA");
+	_pipes_alt_costs_.resize(n_alt_costs);
+	stream_in(prac_file, _pipes_alt_costs_);
+	
+
+	// Load Tank costs 
+	fsys::path tanks_filename{settings.child_value("tankCosts")};
+	tanks_filename = input_directory / tanks_filename;
+
+	std::ifstream tanks_file{tanks_filename};
+	if (!tanks_file.is_open()) {
+		throw std::runtime_error("Could not open file " + tanks_filename.string());
+	}
+	
+	std::size_t n_tanks = load_dimensions(tanks_file, "#DATA");
+	_tanks_costs_.resize(n_tanks);
+	stream_in(tanks_file, _tanks_costs_);
+}
+*/
 
 Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths) {
 	assert(settings != nullptr);
@@ -59,12 +145,8 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		* and then use init(). 
 	*/
 	_anytown_ = std::make_shared<WDS>();
-
-	// Also fix the operations at the beginning loading from the settings file
-	std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
-	assert(operations.size() == 24);
 	
-	auto fix_inp = [&operations](EN_Project ph) {
+	auto fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
 		assert(ph != nullptr);
 		std::string curve_id = "2";
@@ -79,22 +161,6 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		// simulation time step to 1 hour
 		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
 		assert(errorcode <= 100);
-
-		// Fix pumps' patterns: from 9 to 18 -> 3, from 19 to 8 -> 2 (Siew et al. 2016 https://link.springer.com/article/10.1007/s11269-016-1371-1)
-		for (int i = 0; i < 3; ++i) {
-			// no need to go through the pumps, I know the pattern ID
-			int pattern_idx = 0;
-			errorcode = EN_getpatternindex(ph, std::to_string(i+2).c_str(), &pattern_idx);
-			assert(errorcode <= 100);
-
-			std::vector<double> temp(24, 0.0);
-			for (int j = 0; j < 24; ++j) {
-				temp[j] = operations[j] > i ? 1.0 : 0.0;
-			}
-
-			errorcode = EN_setpattern(ph, pattern_idx, temp.data(), temp.size());
-			assert(errorcode <= 100);
-		}
 	};
 
 	_anytown_->load_from_inp_file(inp_filename, fix_inp);
@@ -320,6 +386,14 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const 
 		++it;
 	}
 
+	// 24 hours x [npr]
+	// this is subnetworks independent
+	curr_dv_chunk_end += 24; // hours in a day
+	while (it != curr_dv_chunk_end) {
+		*it = 3.;
+		++it;
+	}
+
 	// 2 x [tav] x [tvol]
 	double n_possible_locs = _anytown_->subnetwork("possible_tank_locations").size();
 	assert( n_possible_locs == 17. );
@@ -407,6 +481,9 @@ double Problem::cost(const std::vector<double> &dvs, const double energy_cost_pe
 
 		++curr_dv;
 	}
+	// energy from pumps 
+	curr_dv += 24; // 24 hours x [npr]
+	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 	
 	for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 		// Check if the tanks is going to be installed
@@ -427,9 +504,6 @@ double Problem::cost(const std::vector<double> &dvs, const double energy_cost_pe
 		design_cost += _pipes_alt_costs_.at(5).new_cost*anytown::riser_length_ft; // no need to go back to meters because everything here is in foot
 		++curr_dv;
 	}
-
-	// Finally, add the energy from pumps (not present in the dv)
-	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
 	return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
@@ -568,7 +642,23 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 		++curr_dv;
 	}
 
-	// 3. tanks
+	// 3. pumps
+	auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, dvs.end()), anytown->pumps().size());
+	for (std::size_t i = 0; i < patterns.size(); ++i) {
+		// I know pump patterns IDs are from 2, 3, and 4
+		int pump_idx = i + 2;
+		std::string pump_id = std::to_string(pump_idx);
+		int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
+		assert(errorcode <= 100);
+
+		// set the pattern
+		errorcode = EN_setpattern(anytown->ph_, pump_idx, patterns[i].data(), patterns[i].size());
+		assert(errorcode <= 100);
+	}
+
+	curr_dv += 24; // 24 hours x [npr]
+
+	// 4. tanks
 	for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 		// 0 counts as "don't install" and I can't install two tanks on the same location
 		if ((int)*curr_dv == 0 || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
@@ -748,7 +838,24 @@ void Problem::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &
 		++curr_dv;
 	}
 
-	// 3. tanks
+	// 3. pumps
+	// first is all 1s, second all 0s except at 3h,9h, 15h, 21h, 
+	// third has the first 6h 1s and the rest 0s
+	for (std::size_t i = 0; i < 3; ++i) {
+		// I know pump patterns IDs are from 2, 3, and 4
+		int pump_idx = i + 2;
+		std::string pump_id = std::to_string(pump_idx);
+		int errorcode = EN_getpatternindex(anytown->ph_, pump_id.c_str(), &pump_idx);
+		assert(errorcode <= 100);
+
+		// set the pattern, use empty array of 24 double to zero
+		errorcode = EN_setpattern(anytown->ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
+		assert(errorcode <= 100);
+	}
+
+	curr_dv += 24; // 24 hours x [npr]
+
+	// 4. tanks
 	for(std::size_t tank_idx = 0; tank_idx < anytown::max_n_installable_tanks; ++tank_idx) {
 		// 0 counts as "don't install" and I can't install two tanks on the same location
 		if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
@@ -796,6 +903,6 @@ void Problem::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &
 }
 
 } // namespace f1
-} // namespace rehab
+} // namespace mixed
 } // namespace anytown
 } // namespace bevarmejo

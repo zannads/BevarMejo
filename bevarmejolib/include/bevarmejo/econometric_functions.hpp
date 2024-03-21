@@ -7,7 +7,7 @@
 namespace bevarmejo {
 
 // net present value (NPV)
-double net_present_value(const double initial_investment, const double discount_rate, const std::vector<double>& cash_flows) {
+inline double net_present_value(const double initial_investment, const double discount_rate, const std::vector<double>& cash_flows) {
     double npv = -initial_investment;
     for (std::size_t i = 0; i < cash_flows.size(); ++i) {
         npv += cash_flows[i] / std::pow(1 + discount_rate, i + 1);
@@ -15,7 +15,7 @@ double net_present_value(const double initial_investment, const double discount_
     return npv;
 }
 
-double net_present_value(const double initial_investment, const double discount_rate, const double cash_flow, const int number_of_periods = 1){
+inline double net_present_value(const double initial_investment, const double discount_rate, const double cash_flow, const int number_of_periods = 1){
     std::vector<double>cash_flows(number_of_periods, cash_flow);
     return bevarmejo::net_present_value(initial_investment, discount_rate, cash_flows);
 }

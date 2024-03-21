@@ -22,6 +22,7 @@
 
 #include "prob_anytown.hpp"
 #include "rehab/prob_at_reh_f1.hpp"
+#include "mixed/prob_at_mix_f1.hpp"
 
 int main(int argc, char* argv[]) {   
     
@@ -50,7 +51,13 @@ int main(int argc, char* argv[]) {
         pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
         // Construct a pagmo::problem for ANYTOWN model
-        pagmo::problem p{ bevarmejo::anytown::rehab::f1::Problem(settings.jinput["Typical configuration"]["UDP"]["Parameters"], settings.lookup_paths) };
+        pagmo::problem p{};
+        if (settings.jinput["Typical configuration"]["UDP"]["Name"] == bevarmejo::anytown::rehab::f1::name)
+            p = bevarmejo::anytown::rehab::f1::Problem(settings.jinput["Typical configuration"]["UDP"]["Parameters"], settings.lookup_paths);
+        else if (settings.jinput["Typical configuration"]["UDP"]["Name"] == bevarmejo::anytown::mixed::f1::name)
+            p = bevarmejo::anytown::mixed::f1::Problem(settings.jinput["Typical configuration"]["UDP"]["Parameters"], settings.lookup_paths);
+        else
+            throw std::runtime_error("The problem name is not recognized.");
 
         // and instantiate population
         pagmo::population pop{ std::move(p), settings.jinput["Typical configuration"]["Population"]["Size"].get<unsigned int>() };

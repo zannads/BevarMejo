@@ -3,6 +3,7 @@
 
 add_library(anytown "prob_anytown.hpp" "prob_anytown.cpp"
                     "rehab/prob_at_reh_f1.hpp" "rehab/prob_at_reh_f1.cpp"
+					"mixed/prob_at_mix_f1.hpp" "mixed/prob_at_mix_f1.cpp"
 )
 
 target_link_libraries(anytown PUBLIC Pagmo::pagmo epanet bemelib)
