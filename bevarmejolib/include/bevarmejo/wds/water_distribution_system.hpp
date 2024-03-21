@@ -19,7 +19,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/epanet_helpers/en_helpers.hpp"
+#include "bevarmejo/epanet_helpers/en_help.hpp"
 #include "bevarmejo/io.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
@@ -295,7 +295,7 @@ std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::w
 	// checks if file exists
 	if (!std::filesystem::exists(file_path)) {
 		std::ostringstream oss;
-		stream_out(oss, "File ", file_path, " does not exist.\n");
+		io::stream_out(oss, "File ", file_path, " does not exist.\n");
 		throw std::runtime_error(oss.str());
 	}
 
@@ -303,7 +303,7 @@ std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::w
 	std::ifstream ifs(file_path);
 	if (!ifs.is_open()) {
 		std::ostringstream oss;
-		stream_out(oss, "File ", file_path, " not opened.\n");
+		io::stream_out(oss, "File ", file_path, " not opened.\n");
 		throw std::runtime_error(oss.str());
 	}
 
@@ -315,8 +315,8 @@ std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::w
 	}
 	catch (const std::exception& e) {
 		std::ostringstream oss;
-		stream_out(oss, "Error while loading subnetwork ", file_path, "\n");
-		stream_out(oss, e.what(), "\n");
+		io::stream_out(oss, "Error while loading subnetwork ", file_path, "\n");
+		io::stream_out(oss, e.what(), "\n");
 		throw std::runtime_error(oss.str());
 	}
 

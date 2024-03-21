@@ -30,13 +30,13 @@ int main(int argc, char* argv[]) {
     // Load the decision vector from file
     std::filesystem::path dv_file(argv[4]);
     if (!std::filesystem::exists(dv_file) || !std::filesystem::is_regular_file(dv_file) ) {
-        bevarmejo::stream_out(std::cout, "Decision vector file not found or not a file: ", dv_file, "\n");
+        bevarmejo::io::stream_out(std::cout, "Decision vector file not found or not a file: ", dv_file, "\n");
         return 1;
     }
         
     std::ifstream dv_stream(dv_file);
     if (!dv_stream.is_open()) {
-        bevarmejo::stream_out(std::cout, "Could not open decision vector file: ", dv_file, "\n");
+        bevarmejo::io::stream_out(std::cout, "Could not open decision vector file: ", dv_file, "\n");
         return 1;
     }
 
@@ -55,11 +55,11 @@ int main(int argc, char* argv[]) {
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    bevarmejo::stream_out(std::cout, 
+    bevarmejo::io::stream_out(std::cout, 
         "Element with ID ", j["ID"], 
         " evaluated with Fitness vector : ", res, 
         " in ", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), "ms\n");
-    bevarmejo::stream_out(std::cout, j["Comment"], "\n", j["Print"], "\n");
+    bevarmejo::io::stream_out(std::cout, j["Comment"], "\n", j["Print"], "\n");
     
     return 0;
 }

@@ -202,7 +202,7 @@ namespace bevarmejo {
 		// everything in a new thread and then simply discard it.
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dvs);
-		//bevarmejo::stream_out(std::cout, dvs, "\n");
+		//bevarmejo::io::stream_out(std::cout, dvs, "\n");
 		try {
 			_anytown_->run_hydraulics();
 		} catch (...) {
@@ -701,7 +701,7 @@ namespace bevarmejo {
 			++curr_dv;
 
 #ifdef DEBUGSIM
-			stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+			io::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
 			" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 			" Elev ", elev, " Min level ", min_lev, " Max lev ", max_lev, " Diam ", diam_m, "\n");
 #endif

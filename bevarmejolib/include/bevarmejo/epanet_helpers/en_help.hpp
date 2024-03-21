@@ -94,7 +94,7 @@ inline int is_string_en_object_type(const std::string& en_obj_string) {
 		en_object_type = EN_RULE;
 	else {
 		std::ostringstream oss;
-		stream_out(oss, "Invalid EN object type: ", en_obj_string, "\n");
+		io::stream_out(oss, "Invalid EN object type: ", en_obj_string, "\n");
 		throw std::runtime_error(oss.str());
 	}
 

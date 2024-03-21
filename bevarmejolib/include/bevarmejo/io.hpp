@@ -18,58 +18,13 @@
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+namespace nl = nlohmann;
+
+#include "bevarmejo/labels.hpp"
+
 namespace bevarmejo {
-
-namespace label {
-    // Initial part of the main filename for the experiment outcome
-    const std::string __beme_prefix = "opt_";
-    // Final part of the main filename for the experiment outcome
-    const std::string __beme_suffix = "__bemeexp.json";
-
-    // Every user defined class has the follwing labels
-    // Name of the class
-    const std::string __name = "Name";
-    // To list internal parameters of the class (e.g., mutation rate)
-    const std::string __params = "Parameters";
-    // To print extra info of the class (e.g., string with the formulation of the problem)
-    const std::string __extra_info = "Extra info";
-
-    // Labels for the json object of the main files
-    const std::string __archi = "Archipelago";
-    const std::string __topology = "Topology";
-    const std::string __islands = "Islands";
-    const std::string __errors = "Errors";
-
-    // Labels for the json object of the islands (static and dynamic)
-    const std::string __island = "Island";
-    const std::string __pop_seed = "Population seed";
-    const std::string __algorithm = "Algorithm";
-    const std::string __problem = "Problem";
-    const std::string __r_policy = "Replacement policy";
-    const std::string __s_policy = "Selection policy";
-    const std::string __generations = "Generations";
-
-    // Labels for the json object of the islands (only dynamic part)
-    const std::string __fevals = "Fitness evaluations";
-    const std::string __currtime = "Current time";
-    const std::string __individuals = "Individuals";
-    const std::string __id = "ID";
-    const std::string __dv = "Decision vector";
-    const std::string __fv = "Fitness vector";
-    const std::string __gevals = "Gradient evaluations";
-    const std::string __hevals = "Hessian evaluations";
-
-
-    const std::string __system = "System";
-    //const std::string __libraries = "Libraries";
-
-
-    // Labels for the input file
-    const std::string __paths = "Paths";
-    const std::string __typconfig = "Typical configuration";
-    const std::string __specs = "Specializations";
-}
-
+namespace io {
 std::optional<std::filesystem::path> locate_file(const std::filesystem::path& filename, const std::vector<std::filesystem::path>& lookup_paths);
 
 namespace detail {
@@ -295,7 +250,7 @@ inline void stream_output(std::ostream& os, const T& value, Args& ...args){
     stream_output(os, args...);
 }
 
-} /* namespace detail */
+} // namespace detail 
 
 
 /* STREAM IN and OUT
@@ -327,6 +282,60 @@ inline void stream_param(std::ostream &os, const std::string& param_name, const 
     detail::stream_output(os, param_name, " : ", param_value, "\n");
 }
 
+// Given any pagmo container (island, algorithm, etc) return a json object with
+// name of the UD class, Parameters for input to the UD class, and extra info.
+// Two formulations are available, one for static parameters and one for dynamic.
+// The dynamic parameters are the ones that change at runtime, the static ones are
+// set at the beginning and don't change.
+// For each user defined class in an experiment (udc), this could have a set of 
+// static parameters and a set of dynamic parameters (more like states of the class).
+// The static parameters remain the same during en evolution, while the dynamic
+// parameters change. Together with the static parameters, I allow a string with
+// extra information that can be used to store any other information (e.g., an
+// explanation of the problem, the topology, etc.)
+
+namespace json {
+namespace detail {
+
+template <typename T>
+inline std::pair<nl::json,std::string> static_params_to_json(const T& udc) {
+    auto extra_info = udc.get_extra_info();
+    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
+    return std::make_pair(nl::json{}, extra_info);
+}
+
+template <typename T>
+inline nl::json dynamic_params_to_json(const T& udc) {
+    return nl::json{};
+}
+
+} // namespace detail
+
+template <typename T>
+nl::json static_part_to_json(const T& udc) {
+    nl::json j;
+    j[to_kebab_case(label::__name)] = udc.get_name();
+    
+    auto [params, extra_info] = detail::static_params_to_json(udc);
+    if (!params.empty())
+        j[to_kebab_case(label::__params)] = params;
+    
+    if (!extra_info.empty()) 
+        j[to_kebab_case(label::__extra_info)] = extra_info;
+    
+    return j;
+}
+
+template <typename T>
+nl::json dynamic_part_to_json(const T& udc) {
+    return nl::json{ }; // Default implementation, no dynamic parameters
+}
+
+} // namespace json
+
+
+
+
 /* LOAD dimensions from TAG
 * Special type of stream input for tag */
 inline std::size_t load_dimensions(std::istream& is, const std::string_view tag) {
@@ -354,16 +363,7 @@ inline std::size_t load_dimensions(std::istream& is, const std::string_view tag)
     throw std::runtime_error(oss.str());
 }
 
-inline std::vector<std::string> split(const std::string& s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream token_stream(s);
-    while (std::getline(token_stream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
-} /* namespace bevarmejo */
+} // namespace io
+} // namespace bevarmejo
 
 #endif /* BEVARMEJOLIB_IO_HPP */

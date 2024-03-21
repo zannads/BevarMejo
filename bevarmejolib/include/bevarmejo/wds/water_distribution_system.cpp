@@ -312,7 +312,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         }
         else { //TODO: all sorts of valves if (link_type == EN_VALVE) {
             //_elements_.push_back(std::make_shared<valve>(link_id));
-            stream_out(std::cout, "Valves not implemented yet or unknown link type\n");
+            io::stream_out(std::cout, "Valves not implemented yet or unknown link type\n");
         }
         delete[] link_id;
 
@@ -385,7 +385,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         _elements_.push_back(std::make_shared<control>(control_id));
         delete[] control_id;
         */
-        stream_out(std::cout, "Controls not implemented yet\n");
+        io::stream_out(std::cout, "Controls not implemented yet\n");
     }
 
     // [6/6] Rules (control rules)
@@ -400,7 +400,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         _elements_.push_back(std::make_shared<rule>(rule_id));
         delete[] rule_id;
         */
-        stream_out(std::cout, "Rules not implemented yet\n");
+        io::stream_out(std::cout, "Rules not implemented yet\n");
     }
 
     // Fill the data from EPANET. Use polymorphism in the right way :)

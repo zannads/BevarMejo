@@ -8,10 +8,11 @@
 #ifndef BEMELIB_EXPERIMENT_HPP
 #define BEMELIB_EXPERIMENT_HPP
 
-#include <chrono>
 #include <iostream>
 #include <filesystem>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <pagmo/archipelago.hpp>
 #include <pagmo/island.hpp>
@@ -19,14 +20,8 @@
 #include <pagmo/population.hpp>
 #include <pagmo/problem.hpp>
 
+#include "parsers.hpp"
 
-#include <pugixml.hpp>
-
-#include <nlohmann/json.hpp>
-
-#include "bevarmejo/pagmo_helpers.hpp"
-#include "bevarmejo/io.hpp"
-#include "bevarmejo/parsers.hpp"
 
 namespace bevarmejo {
 
@@ -37,7 +32,6 @@ protected:
     fsys::path _root_experiment_folder_;
     fsys::path _settings_filename_;
 
-    pugi::xml_document _settings_;
     // For now I will modify only the seed, but in the future I will add more options
     unsigned int _seed_{0};
     // Ideally, here I change all the settings of the algorithm and the model

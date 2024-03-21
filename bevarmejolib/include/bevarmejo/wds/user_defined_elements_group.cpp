@@ -9,7 +9,7 @@
 
 #include "bevarmejo/io.hpp"
 
-#include "bevarmejo/epanet_helpers/en_helpers.hpp"
+#include "bevarmejo/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -38,18 +38,18 @@ std::tuple<int, std::vector<std::string>, std::string> wds::__load_egroup_data_f
 	std::string comment;
 
 	// search for the tag #TYPE
-	load_dimensions(is, "#TYPE"); 
+	io::load_dimensions(is, "#TYPE"); 
 	// read the type of the elements
 	std::string a_obj_type;
-	stream_in(is, a_obj_type);
+	io::stream_in(is, a_obj_type);
 	en_object_type = epanet::is_string_en_object_type(a_obj_type);
 
-	std::size_t n_elements = load_dimensions(is, "#DATA");
+	std::size_t n_elements = io::load_dimensions(is, "#DATA");
 	ids_list = std::vector<std::string>(n_elements);
-	stream_in(is, ids_list);
+	io::stream_in(is, ids_list);
 
-	load_dimensions(is, "#COMMENT");
-	stream_in(is, comment);
+	io::load_dimensions(is, "#COMMENT");
+	io::stream_in(is, comment);
 
 	return std::make_tuple(en_object_type, ids_list, comment);
 }

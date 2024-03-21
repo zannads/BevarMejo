@@ -17,6 +17,7 @@
 #include "io.hpp"
 
 namespace bevarmejo {
+namespace io {
 
 std::optional<std::filesystem::path> locate_file(const std::filesystem::path &filename, const std::vector<std::filesystem::path> &lookup_paths) {
 
@@ -31,4 +32,5 @@ std::optional<std::filesystem::path> locate_file(const std::filesystem::path &fi
     return std::nullopt;
 }
 
-} /* namespace bevarmejo */
+} // namespace io
+} // namespace bevarmejo

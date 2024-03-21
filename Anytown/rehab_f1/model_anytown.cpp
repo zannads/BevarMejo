@@ -33,7 +33,7 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_helpers.hpp"
+#include "bevarmejo/epanet_helpers/en_help.hpp"
 
 #include "model_anytown.hpp"
 
@@ -42,20 +42,20 @@ namespace bevarmejo {
 
 	std::istream& anytown::operator>>(std::istream& is, anytown::tanks_costs& tc)
 	{
-		stream_in(is, tc.volume_gal); is.ignore(1000, ';');
-		stream_in(is, tc.cost);
+		io::stream_in(is, tc.volume_gal); is.ignore(1000, ';');
+		io::stream_in(is, tc.cost);
 
 		return is;
 	}
 
 	std::istream& anytown::operator>>(std::istream& is, anytown::pipes_alt_costs& pac) {
-		stream_in(is, pac.diameter_in); is.ignore(1000, ';');
+		io::stream_in(is, pac.diameter_in); is.ignore(1000, ';');
 
-		stream_in(is, pac.new_cost); is.ignore(1000, ';');
-		stream_in(is, pac.dup_city); is.ignore(1000, ';');
-		stream_in(is, pac.dup_residential); is.ignore(1000, ';');
-		stream_in(is, pac.clean_city); is.ignore(1000, ';');
-		stream_in(is, pac.clean_residential);
+		io::stream_in(is, pac.new_cost); is.ignore(1000, ';');
+		io::stream_in(is, pac.dup_city); is.ignore(1000, ';');
+		io::stream_in(is, pac.dup_residential); is.ignore(1000, ';');
+		io::stream_in(is, pac.clean_city); is.ignore(1000, ';');
+		io::stream_in(is, pac.clean_residential);
 
 		return is;
 	}
@@ -66,7 +66,7 @@ namespace bevarmejo {
 		// Add here load of problem specific data 
 
 		// Check the existence of the inp_filename in any of the lookup paths and its extension
-		auto file = bevarmejo::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
+		auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
 		if (!file.has_value()) {
 			throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
 		}
@@ -123,7 +123,7 @@ namespace bevarmejo {
 		// Load subnetworks
 		for (const auto& udeg : settings["WDS"]["UDEGs"]) {
 			// Locate the file in the lookup paths
-			file = bevarmejo::locate_file(fsys::path{udeg}, lookup_paths);
+			file = bevarmejo::io::locate_file(fsys::path{udeg}, lookup_paths);
 			if (file.has_value()) {
 				try{
 					_anytown_->add_subnetwork(file.value());
@@ -142,7 +142,7 @@ namespace bevarmejo {
 		_anytown_->add_subnetwork(anytown::l__TEMP_ELEMS, temp_elements);
 
 		// Load Pipe rehabilitation alternative costs 
-		file = bevarmejo::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
+		file = bevarmejo::io::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
 		if (!file.has_value()) {
 			throw std::runtime_error("The provided available diameters file does not exist in the lookup paths. Check the settings file.\n");
 		}
@@ -154,13 +154,13 @@ namespace bevarmejo {
 			throw std::runtime_error("Could not open file " + prac_filename.string());
 		}
 
-		std::size_t n_alt_costs = load_dimensions(prac_file, "#DATA");
+		std::size_t n_alt_costs = io::load_dimensions(prac_file, "#DATA");
 		_pipes_alt_costs_.resize(n_alt_costs);
-		stream_in(prac_file, _pipes_alt_costs_);
+		io::stream_in(prac_file, _pipes_alt_costs_);
 		
 
 		// Load Tank costs 
-		file = bevarmejo::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
+		file = bevarmejo::io::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
 		if (!file.has_value()) {
 			throw std::runtime_error("The provided tank costs file does not exist in the lookup paths. Check the settings file.\n");
 		}
@@ -170,9 +170,9 @@ namespace bevarmejo {
 			throw std::runtime_error("Could not open file " + tanks_filename.string());
 		}
 		
-		std::size_t n_tanks = load_dimensions(tanks_file, "#DATA");
+		std::size_t n_tanks = io::load_dimensions(tanks_file, "#DATA");
 		_tanks_costs_.resize(n_tanks);
-		stream_in(tanks_file, _tanks_costs_);
+		io::stream_in(tanks_file, _tanks_costs_);
 	}
 
     std::vector<double>::size_type ModelAnytown::get_nobj() const {
@@ -234,7 +234,7 @@ namespace bevarmejo {
 		// everything in a new thread and then simply discard it.
 		std::vector<double> old_HW_coeffs;
 		old_HW_coeffs = apply_dv(_anytown_, dvs);
-		//bevarmejo::stream_out(std::cout, dvs, "\n");
+		//bevarmejo::io::stream_out(std::cout, dvs, "\n");
 		try {
 			_anytown_->run_hydraulics();
 		} catch (...) {
@@ -709,7 +709,7 @@ namespace bevarmejo {
 			++curr_dv;
 
 #ifdef DEBUGSIM
-			stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+			io::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
 			" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 			" Elev ", elev, " Min level ", min_lev, " Max lev ", max_lev, " Diam ", diam_m, "\n");
 #endif

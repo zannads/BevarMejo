@@ -16,12 +16,11 @@
 #include <pagmo/algorithms/nsga2.hpp>
 
 #include "bevarmejo/experiment.hpp"
-#include "bevarmejo/nsga2_helper.hpp"
-
-#include "model_anytown.hpp"
-
+#include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/parsers.hpp"
+
+#include "model_anytown.hpp"
 
 int main(int argc, char* argv[]) {   
     
