@@ -27,7 +27,11 @@ using json = nlohmann::json;
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/pagmo_helpers/udc_help.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
+#include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
+#include "Anytown/prob_anytown.hpp"
+#include "Anytown/rehab/prob_at_reh_f1.hpp"
+#include "Anytown/mixed/prob_at_mix_f1.hpp"
 
 #include "experiment.hpp"
 
@@ -39,14 +43,22 @@ void Experiment::build(const ExperimentSettings &settings) {
     m_name = settings.name;
     m_folder = settings.folder;
 
-    // TODO: actually building the experiment
-}
+    //TODO: compose based on the settings
+    json jnsga2{ {label::__report_gen, settings.jinput[label::__typconfig][label::__population][label::__report_gen].get<unsigned int>() } };
+    pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
-void Experiment::build(pagmo::algorithm &algo, pagmo::population &pop)
-{
-    // TEMP: the set and the inputs of this function will be removed once the 
-    // islands are created in the build method. The pop and algo will be created 
-    // there.
+    // Construct a pagmo::problem for ANYTOWN model
+    pagmo::problem p{};
+    if (settings.jinput[label::__typconfig][label::__problem_sh][label::__name] == bevarmejo::anytown::rehab::f1::name)
+        p = bevarmejo::anytown::rehab::f1::Problem(settings.jinput[label::__typconfig][label::__problem_sh][label::__params], settings.lookup_paths);
+    else if (settings.jinput[label::__typconfig][label::__problem_sh][label::__name] == bevarmejo::anytown::mixed::f1::name)
+        p = bevarmejo::anytown::mixed::f1::Problem(settings.jinput[label::__typconfig][label::__problem_sh][label::__params], settings.lookup_paths);
+    else
+        throw std::runtime_error("The problem name is not recognized.");
+
+    // and instantiate population
+    pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
+
     m_archipelago.push_back(algo, pop);
     _seed_ = pop.get_seed();
     m_islands_filenames.push_back(runtime_file());

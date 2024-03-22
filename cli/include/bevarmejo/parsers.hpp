@@ -22,6 +22,8 @@ struct ExperimentSettings {
     std::string name;
     // Additional lookup paths for the internal files
     std::vector<std::filesystem::path> lookup_paths;
+    // Number of times it is necessary to call evolve to reach the desired number of generations
+    unsigned int n_evolve;
     // TODO: Add additional flags 
 };
 

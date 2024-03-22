@@ -126,6 +126,9 @@ ENDIF(LINUX)
 # Include my library
 add_subdirectory("bevarmejolib")
 
-# Include sub-projects.
-add_subdirectory ("Hanoi")
-add_subdirectory ("Anytown")
+# Include the specific directories of the problems
+add_subdirectory("Hanoi")
+add_subdirectory("Anytown")
+
+# Include the executables and the experiment classes
+add_subdirectory("cli")

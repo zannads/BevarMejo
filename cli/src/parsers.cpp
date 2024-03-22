@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -16,7 +17,7 @@ namespace bevarmejo {
 
 ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
     if (argc < 2) {
-        throw std::invalid_argument("Usage: " + std::string(argv[0]) + " <settings_file> [flags]");
+        throw std::invalid_argument("Not enough arguments.\nUsage: " + std::string(argv[0]) + " <settings_file> [flags]");
     }
     std::filesystem::path settings_file(argv[1]);
     if (!std::filesystem::exists(settings_file)) {
@@ -58,6 +59,33 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
         throw std::runtime_error("Settings file does not contain the mandatory field: " + label::__name);
     }
     settings.name = settings.jinput[label::__name];
+    // typical configuration
+    if (!settings.jinput.contains(label::__typconfig)) {
+        throw std::runtime_error("Settings file does not contain the mandatory field: " + label::__typconfig);
+    }
+    // TODO: ALGO
+    // TODO: PROBLEM
+
+    // population, its size and the generations are mandatory. 
+    // Seed, report gen are optional. 
+    if (!settings.jinput[label::__typconfig].contains(label::__population)) {
+        throw std::runtime_error("Settings file does not contain the mandatory field: " + label::__population);
+    }
+    if (!settings.jinput[label::__typconfig][label::__population].contains(label::__size)) {
+        throw std::runtime_error("Settings file does not contain the mandatory field: " + label::__size);
+    }
+    if (!settings.jinput[label::__typconfig][label::__population].contains(label::__generations)) {
+        throw std::runtime_error("Settings file does not contain the mandatory field: " + label::__generations);
+    }
+    if (!settings.jinput[label::__typconfig][label::__population].contains(label::__report_gen)) {
+        // the algorithms need to know how many generations to report because the island calls the evolve method n times
+        // until n*__report_gen > __generations, default = __generations
+        settings.jinput[label::__typconfig][label::__population][label::__report_gen] = settings.jinput[label::__typconfig][label::__population][label::__generations];
+    }
+    // ceil(__generations/__report_gen) = n_evolve
+    settings.n_evolve = ceil(settings.jinput[label::__typconfig][label::__population][label::__generations].get<unsigned int>()/
+                            settings.jinput[label::__typconfig][label::__population][label::__report_gen].get<unsigned int>());
+    
 
     // 4. Check the settings file has the optional fields
     if (settings.jinput.contains(label::__paths)) {

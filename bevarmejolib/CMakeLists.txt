@@ -46,13 +46,11 @@ set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_hel
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp")
 
-add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp" 
-                    "src/experiment.cpp" "include/bevarmejo/experiment.hpp" 
+add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
                     "${PUGIXML_ROOT}/pugixml.cpp" 
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
                     "src/hydraulic_functions.cpp" "include/bevarmejo/hydraulic_functions.hpp"
-                    "include/bevarmejo/parsers.hpp" "src/parsers.cpp"
                     "include/bevarmejo/labels.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
