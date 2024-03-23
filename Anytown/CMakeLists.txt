@@ -6,10 +6,13 @@ add_library(anytown "prob_anytown.hpp" "prob_anytown.cpp"
 					"mixed/prob_at_mix_f1.hpp" "mixed/prob_at_mix_f1.cpp"
 )
 
-target_link_libraries(anytown PUBLIC Pagmo::pagmo epanet bemelib)
+set_property(TARGET anytown PROPERTY CXX_STANDARD 17)
+
+target_link_libraries(anytown PRIVATE bemelib)
 
 target_include_directories(anytown PUBLIC
 							"${CMAKE_CURRENT_SOURCE_DIR}"
-							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
-							"${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
+							"${CMAKE_CURRENT_SOURCE_DIR}/rehab"
+							"${CMAKE_CURRENT_SOURCE_DIR}/mixed"
+							"${CMAKE_CURRENT_SOURCE_DIR}/twophases"
 )

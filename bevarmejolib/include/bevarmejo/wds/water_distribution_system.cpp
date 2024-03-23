@@ -474,10 +474,17 @@ void WaterDistributionSystem::assign_demands_EN() {
             std::string d_category(d_category_);
             delete[] d_category_;
 
-            auto it = _patterns_.find(pattern_id);
-            assert(it != _patterns_.end());
+            // Pattern id can be "" if the demand is constant
+            if (pattern_id.empty()) {
+                junction->add_demand(d_category, d_base_demand, nullptr);
+            }
+            else {
+                // I need to find the pattern in the patterns map (it should be there
+                auto it = _patterns_.find(pattern_id);
+                assert(it != _patterns_.end());
 
-            junction->add_demand(d_category, d_base_demand, *it);
+                junction->add_demand(d_category, d_base_demand, *it);
+            }
         }
     }
 }

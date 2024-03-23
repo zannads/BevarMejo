@@ -33,6 +33,8 @@ using json = nlohmann::json;
 #include "Anytown/rehab/prob_at_reh_f1.hpp"
 #include "Anytown/mixed/prob_at_mix_f1.hpp"
 
+#include "Hanoi/problem_hanoi_biobj.hpp"
+
 #include "experiment.hpp"
 
 namespace bevarmejo {
@@ -44,18 +46,26 @@ void Experiment::build(const ExperimentSettings &settings) {
     m_folder = settings.folder;
 
     //TODO: compose based on the settings
-    json jnsga2{ {label::__report_gen, settings.jinput[label::__typconfig][label::__population][label::__report_gen].get<unsigned int>() } };
+    json jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
     // Construct a pagmo::problem for ANYTOWN model
     pagmo::problem p{};
-    if (settings.jinput[label::__typconfig][label::__problem_sh][label::__name] == bevarmejo::anytown::rehab::f1::name)
-        p = bevarmejo::anytown::rehab::f1::Problem(settings.jinput[label::__typconfig][label::__problem_sh][label::__params], settings.lookup_paths);
-    else if (settings.jinput[label::__typconfig][label::__problem_sh][label::__name] == bevarmejo::anytown::mixed::f1::name)
-        p = bevarmejo::anytown::mixed::f1::Problem(settings.jinput[label::__typconfig][label::__problem_sh][label::__params], settings.lookup_paths);
-    else
+    auto probname = settings.jinput[label::__typconfig][label::__problem_sh][label::__name].get<std::string>();
+    auto pparams = settings.jinput[label::__typconfig][label::__problem_sh][label::__params];
+    if ( probname == bevarmejo::anytown::rehab::f1::name) {
+        p = bevarmejo::anytown::rehab::f1::Problem(pparams, settings.lookup_paths);
+    }
+    else if ( probname == bevarmejo::anytown::mixed::f1::name) {
+        p = bevarmejo::anytown::mixed::f1::Problem(pparams, settings.lookup_paths);
+    }
+    else if ( probname == bevarmejo::hanoi::fbiobj::name) {
+        p = bevarmejo::hanoi::fbiobj::Problem(pparams, settings.lookup_paths);
+    }
+    else {
         throw std::runtime_error("The problem name is not recognized.");
-
+    }
+        
     // and instantiate population
     pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
 

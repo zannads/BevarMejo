@@ -13,7 +13,7 @@ namespace label {
 // Ouput main file 
 //--- Part 0 filename prefix and suffix ---
 // Initial part of the main filename for the experiment outcome
-const std::string __beme_prefix = "bemeopt_";
+const std::string __beme_prefix = "bemeopt__";
 // Final part of the main filename for the experiment outcome
 const std::string __beme_suffix = "__exp.json";
 

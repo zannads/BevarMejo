@@ -1,0 +1,52 @@
+#include <chrono>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
+
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/parsers.hpp"
+
+int main(int argc, char* argv[]) {
+
+    // 1. Parse the inputs, ideally I could change anything and should perform checks.
+    // argv[1] the problem settings file (it also implicitly defines the experiment folder unless copy flag is active)
+    // argv[2] the decision variables file
+    // TODO: argv[3, ...] optional flags, e.g., save inp file, save results, etc.
+
+    bevarmejo::sim::Simulation simu;
+    try {
+        simu = bevarmejo::sim::parse(argc, argv);
+
+    } catch (const std::exception& e) {
+        bevarmejo::io::stream_out(std::cerr, "An error happend while parsing the CLI inputs:\n", e.what(), "\n" );
+        return 1;
+    }
+    
+    std::vector<double> res(simu.p.get_nf());
+    try
+    {   
+        // TODO: sanity check for the decision vector
+        simu.start = std::chrono::high_resolution_clock::now();
+        res = simu.p.fitness(simu.dvs);
+    }
+    catch(const std::exception& e)
+    {
+        simu.end = std::chrono::high_resolution_clock::now();
+        bevarmejo::io::stream_out(std::cerr, "An error happend while evaluating the decision vector:\n", e.what(), "\n" );
+        return 1;
+    }
+    
+    simu.end = std::chrono::high_resolution_clock::now();
+
+    bevarmejo::io::stream_out(std::cout, 
+        "Element with ID ", simu.id,
+        " evaluated with Fitness vector : ", res,
+        " in ", std::chrono::duration_cast<std::chrono::milliseconds>(simu.end - simu.start).count(), " ms\n");
+
+    if (!simu.extra_message.empty())
+        bevarmejo::io::stream_out(std::cout, simu.extra_message, "\n");
+
+    return 0;
+}

@@ -12,8 +12,8 @@
 namespace bevarmejo {
 namespace epanet {
 
-template <typename T>
-T convert_flow_to_L_per_s(EN_Project ph, T a_flow) {
+
+inline double convert_flow_to_L_per_s(EN_Project ph, double a_flow) {
     if (ph->parser.Unitsflag == US){
         switch (ph->parser.Flowflag) {
         case CFS:
@@ -43,19 +43,19 @@ T convert_flow_to_L_per_s(EN_Project ph, T a_flow) {
     else { // SI
         switch (ph->parser.Flowflag) {
         case LPM:
-            a_flow /= 60; // from L/min to L/s
+            a_flow /= 60.0; // from L/min to L/s
             break;
 
         case MLD:
-            a_flow *= 1000*1000/(24*60*60); // from ML/day to L/s
+            a_flow *= 1000.*1000/(24*60*60); // from ML/day to L/s
             break;
 
         case CMH:
-            a_flow *= 1000/60/60; // from m^3/h to L/s
+            a_flow *= 1000./60/60; // from m^3/h to L/s
             break;
 
         case CMD:
-            a_flow *= 1000/24/60/60; // from m^3/day to L/s
+            a_flow *= 1000./24/60/60; // from m^3/day to L/s
             break;
         
         default:
