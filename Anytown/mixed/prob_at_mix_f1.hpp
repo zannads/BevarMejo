@@ -13,7 +13,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
-#include "prob_anytown.hpp"
+#include "Anytown/prob_anytown.hpp"
 
 namespace fsys = std::filesystem;
 namespace bevarmejo {

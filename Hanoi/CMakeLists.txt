@@ -8,6 +8,6 @@ set_property(TARGET hanoi PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(hanoi PRIVATE bemelib)
 
-target_link_directories(hanoi PUBLIC 
+target_link_directories(hanoi PRIVATE 
                             "${CMAKE_CURRENT_SOURCE_DIR}"
 )

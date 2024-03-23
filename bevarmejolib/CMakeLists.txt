@@ -3,16 +3,14 @@
 #
 
 # PUGIXML library
-IF(DEFINED ENV{PUGIXML_ROOT})
-    set( PUGIXML_ROOT "$ENV{PUGIXML_ROOT}/src" CACHE PATH "Path to the rootfolder to pugiXML" )
-    message(STATUS "PUGIXML_ROOT environmental variable found, using ${PUGIXML_ROOT}" )
-ELSE()
-    set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")
-    message(STATUS "PUGIXML_ROOT environmental variable NOT found, using ${PUGIXML_ROOT}" )
-ENDIF()
+# IF(DEFINED ENV{PUGIXML_ROOT})
+#     set( PUGIXML_ROOT "$ENV{PUGIXML_ROOT}/src" CACHE PATH "Path to the rootfolder to pugiXML" )
+#     message(STATUS "PUGIXML_ROOT environmental variable found, using ${PUGIXML_ROOT}" )
+# ELSE()
+#     set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")
+#     message(STATUS "PUGIXML_ROOT environmental variable NOT found, using ${PUGIXML_ROOT}" )
+# ENDIF()
 
-#file(GLOB BEMELIB_SOURCES RELATIVE ${PROJECT_SOURCE_DIR} src/*.cpp)
-#add_library(bemelib ${BEMELIB_SOURCES})
 set(WDS_INC_ROOT    "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" 
          CACHE PATH "Path to the rootfolder of the WDS"
 )
@@ -46,11 +44,11 @@ set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_hel
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp")
 
-add_library(bemelib "src/io.cpp" "include/bevarmejo/io.hpp"
+add_library(bemelib "include/bevarmejo/io.hpp" "src/io.cpp" 
                     "${PUGIXML_ROOT}/pugixml.cpp" 
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
-                    "src/hydraulic_functions.cpp" "include/bevarmejo/hydraulic_functions.hpp"
+                    "include/bevarmejo/hydraulic_functions.hpp" "src/hydraulic_functions.cpp"
                     "include/bevarmejo/labels.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
@@ -65,9 +63,13 @@ target_link_libraries(bemelib PUBLIC Pagmo::pagmo epanet nlohmann_json::nlohmann
 
 target_include_directories(bemelib PUBLIC
                             "include"
+)
+
+target_include_directories(bemelib PRIVATE
                             "include/bevarmejo"
+                            "include/bevarmejo/epanet_helpers"
+                            "include/bevarmejo/pagmo_helpers"
+                            "include/bevarmejo/pagmo_helpers/algorithms"
                             "include/bevarmejo/wds"
-                            "${PUGIXML_ROOT}"
-                            "${EPANET_ROOT}/include"
-                            "${EPANET_ROOT}/src/"
+                            "include/bevarmejo/wds/elements"
 )

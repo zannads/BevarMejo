@@ -107,8 +107,13 @@ IF(APPLE)
   "${EPANET_ROOT}/src/util/filemanager.c"
   "${EPANET_ROOT}/src/util/filemanager.h"
 )
-  add_library(epanet ${EPANET_FILES})
-  target_include_directories(epanet PUBLIC "${EPANET_ROOT}/include")
+
+add_library(epanet ${EPANET_FILES})
+
+target_include_directories(epanet PUBLIC 
+                              "${EPANET_ROOT}/include"
+                              "${EPANET_ROOT}/src"
+)
 
   #add_library(epanet SHARED IMPORTED)
   #set_target_properties(epanet PROPERTIES

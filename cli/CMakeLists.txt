@@ -10,12 +10,12 @@ set_property(TARGET bemeoptimize PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(bemeoptimize PRIVATE bemelib anytown hanoi)
 
-target_include_directories(bemeoptimize PRIVATE 
-		"include"
-		"include/bevarmejo"
+target_include_directories(bemeoptimize PRIVATE
 		"${CMAKE_SOURCE_DIR}"
 		"${CMAKE_CURRENT_SOURCE_DIR}"
-		)
+		"${CMAKE_CURRENT_SOURCE_DIR}/include"
+		"${CMAKE_CURRENT_SOURCE_DIR}/include/bevarmejo"
+)
 
 add_executable(bemesimulate "bemesim.cpp" 
 							"include/bevarmejo/factories.hpp"
@@ -27,9 +27,9 @@ set_property(TARGET bemesimulate PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(bemesimulate PRIVATE bemelib anytown hanoi)
 
-target_include_directories(bemesimulate PRIVATE 
-		"include"
-		"include/bevarmejo"
+target_include_directories(bemesimulate PRIVATE
 		"${CMAKE_SOURCE_DIR}"
 		"${CMAKE_CURRENT_SOURCE_DIR}"
-		)
+		"${CMAKE_CURRENT_SOURCE_DIR}/include"
+		"${CMAKE_CURRENT_SOURCE_DIR}/include/bevarmejo"
+)

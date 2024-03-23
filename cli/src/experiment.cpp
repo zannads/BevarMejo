@@ -18,8 +18,6 @@
 #include <pagmo/algorithm.hpp>
 #include <pagmo/population.hpp>
 
-#include <pugixml.hpp>
-
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
