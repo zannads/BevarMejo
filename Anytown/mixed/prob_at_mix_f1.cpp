@@ -29,7 +29,7 @@ using json = nlohmann::json;
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/epanet_helpers/en_help.hpp"
 
-#include "prob_anytown.hpp"
+#include "Anytown/prob_anytown.hpp"
 
 #include "prob_at_mix_f1.hpp"
 
