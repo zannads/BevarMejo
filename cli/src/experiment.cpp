@@ -30,6 +30,7 @@ using json = nlohmann::json;
 #include "Anytown/prob_anytown.hpp"
 #include "Anytown/rehab/prob_at_reh_f1.hpp"
 #include "Anytown/mixed/prob_at_mix_f1.hpp"
+#include "Anytown/operations/prob_at_ope_f1.hpp"
 
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
@@ -56,6 +57,9 @@ void Experiment::build(const ExperimentSettings &settings) {
     }
     else if ( probname == bevarmejo::anytown::mixed::f1::name) {
         p = bevarmejo::anytown::mixed::f1::Problem(pparams, settings.lookup_paths);
+    }
+    else if (probname == bevarmejo::anytown::operations::f1::name) {
+        p = bevarmejo::anytown::operations::f1::Problem(pparams, settings.lookup_paths);
     }
     else if ( probname == bevarmejo::hanoi::fbiobj::name) {
         p = bevarmejo::hanoi::fbiobj::Problem(pparams, settings.lookup_paths);
