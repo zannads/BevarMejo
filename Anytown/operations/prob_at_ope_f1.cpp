@@ -43,7 +43,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
     assert(settings != nullptr);
 
     // Check the existence of the inp_filename in any of the lookup paths and its extension
-	auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
+	auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"].get<std::string>()}, lookup_paths);
 	if (!file.has_value()) {
 		throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
 	}
@@ -93,36 +93,6 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		// TODO: log the error in case it fails at later stages
 	}
 	
-    // If the flag is active I remove the new part of the city and other elements that we don't need
-    if (settings["Original city"].get<bool>() == true) {
-        // assert I have new park and new_pipes networks loaded
-        assert(m_anytown->subnetworks().find("new_pipes") != m_anytown->subnetworks().end());
-        assert(m_anytown->subnetworks().find("new_park")  != m_anytown->subnetworks().end());
-
-        // remove all the elements in new park and new city 
-        // first the pipes because they don't do anything to the nodes
-        for (const auto& wp_ele : m_anytown->subnetworks().at("new_pipes") ) {
-            m_anytown->remove(wp_ele.lock());
-
-            int errorco = EN_deletelink(m_anytown->ph_, wp_ele.lock()->index(), EN_UNCONDITIONAL);
-            assert(errorco <= 100);
-
-            m_anytown->cache_indices();
-        }
-        // the the nodes 
-        for (const auto& wp_ele : m_anytown->subnetworks().at("new_park") ) {
-            m_anytown->remove(wp_ele.lock());
-
-            int errorco = EN_deletenode(m_anytown->ph_, wp_ele.lock()->index(), EN_UNCONDITIONAL);
-            assert(errorco <= 100);
-
-            m_anytown->cache_indices();
-        }
-
-        // remove the subnetworks
-        m_anytown->subnetworks().erase(m_anytown->subnetworks().find("new_pipes"));
-        m_anytown->subnetworks().erase(m_anytown->subnetworks().find("new_park"));
-    }
 }
 
 std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
