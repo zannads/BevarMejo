@@ -410,3 +410,5 @@ buildXCode/
 /build-vs-code
 
 build-XCode/
+
+nohup.out

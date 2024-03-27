@@ -202,6 +202,17 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
     assert(udp != nullptr);
     udp->anytown(this->_anytown_);
 
+	// I need to force the re-evaluation of the current solutions in the population
+	// So I create a "new population", that has the same elements of the previous one,
+	// but now, since the problem has changed, it will re-evaluate the solutions.
+	// I will then replace the old population with the new one.
+	// Super light to copy the internal problem as it only has the internal shared pointer to the network
+	pagmo::population new_pop( *udp /*, pop_size = 0, seed = m_pop.get_seed() */); 
+	for (const auto& dv: m_pop.get_x()) {
+		new_pop.push_back(dv);
+	}
+	m_pop = std::move(new_pop);
+
     // Run the internal optimization problem which evolve n solutions m times
     try {
         m_pop = m_algo.evolve(m_pop);
