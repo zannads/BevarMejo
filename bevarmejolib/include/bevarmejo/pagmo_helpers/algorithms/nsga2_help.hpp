@@ -59,8 +59,7 @@ namespace json {
 namespace detail {
 
 // Specializations for nsga2 class
-template <>
-inline std::pair<nl::json,std::string> static_params_to_json<pagmo::nsga2>(const pagmo::nsga2& algo) {
+inline std::pair<nl::json,std::string> static_params(const pagmo::nsga2& algo) {
     
     nl::json j;
    
@@ -103,8 +102,7 @@ inline std::pair<nl::json,std::string> static_params_to_json<pagmo::nsga2>(const
     return std::make_pair( j, extra_info );
 }
 
-template <>
-inline nl::json dynamic_params_to_json<pagmo::nsga2>(const pagmo::nsga2& algo) = delete;
+inline nl::json dynamic_params(const pagmo::nsga2& algo) = delete;
 	
 } // namespace detail
 } // namespace json

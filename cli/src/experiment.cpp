@@ -133,7 +133,7 @@ void Experiment::save_outcome()
 
     json jarchipelago; 
     {
-        auto jtopology = io::json::static_part_to_json(m_archipelago.get_topology());
+        auto jtopology = io::json::static_descr(m_archipelago.get_topology());
         if ( !jtopology.empty() ) jarchipelago.update(jtopology);
     }
 
@@ -227,32 +227,33 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
         // Internally, static_part_to_json calls the correct method based on the 
         // UD class hold by the pagmo container. It uses is() and extract().
         // TODO: when the container is defaulted return empty json, for now print everything
-        auto jisland = io::json::static_part_to_json(isl);
+        auto jisland = io::json::static_descr(isl);
         if ( !jisland.empty() ) jstat.update(jisland);
     }
 
 
     // 2.2.2. The User Defined Algorithm infos
     {   // see pattern above 2.2.1.
-        auto jalgo = io::json::static_part_to_json(isl.get_algorithm());
+        auto jalgo = io::json::static_descr(isl.get_algorithm());
         if ( !jalgo.empty() ) jstat.update(jalgo);
     }
 
     // 2.2.3. The User Defined Problem infos
-    // see pattern above 2.2.1.
-    jstat[to_kebab_case(label::__problem)] = {{ to_kebab_case(label::__name), isl.get_population().get_problem().get_name() }};
-    if ( !isl.get_population().get_problem().get_extra_info().empty() )
-        jstat[to_kebab_case(label::__problem)][to_kebab_case(label::__extra_info)] = isl.get_population().get_problem().get_extra_info();
+    {   // see pattern above 2.2.1.
+        auto jprob = io::json::static_descr(isl.get_population().get_problem());
+        if ( !jprob.empty() ) jstat.update(jprob);
+    }
+    
     
     // 2.2.4. The User Defined Replacement Policy infos
     {   // see pattern above 2.2.1.
-        auto jrpolicy = io::json::static_part_to_json(isl.get_r_policy());
+        auto jrpolicy = io::json::static_descr(isl.get_r_policy());
         if ( !jrpolicy.empty() ) jstat.update(jrpolicy);
     }    
 
     // 2.2.5. The User Defined Selection Policy infos
     {   // see pattern above 2.2.1.
-        auto jspolicy = io::json::static_part_to_json(isl.get_s_policy());
+        auto jspolicy = io::json::static_descr(isl.get_s_policy());
         if ( !jspolicy.empty() ) jstat.update(jspolicy);
     }
     
@@ -324,6 +325,17 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
         jpop[to_kebab_case(label::__gevals)] = pop.get_problem().get_gevals();
     if (pop.get_problem().get_hevals() > 0)
         jpop[to_kebab_case(label::__hevals)] = pop.get_problem().get_hevals();
+
+    {  // see pattern above 2.2.1. in save_final_result
+        auto jalgo_dyn = io::json::dynamic_descr(isl.get_algorithm());
+        if (!jalgo_dyn.empty()) jpop.update(jalgo_dyn);
+    }
+
+    {   // see pattern above 2.2.1. in save_final_result
+        auto jprob_dyn = io::json::dynamic_descr(pop.get_problem());
+        if (!jprob_dyn.empty()) jpop.update(jprob_dyn);
+    }
+    
 
     j[to_kebab_case(label::__generations)].push_back(jpop);
 

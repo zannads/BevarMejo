@@ -298,39 +298,18 @@ namespace json {
 namespace detail {
 
 template <typename T>
-inline std::pair<nl::json,std::string> static_params_to_json(const T& udc) {
+inline std::pair<nl::json,std::string> static_params(const T& udc) {
     auto extra_info = udc.get_extra_info();
     extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
     return std::make_pair(nl::json{}, extra_info);
 }
 
 template <typename T>
-inline nl::json dynamic_params_to_json(const T& udc) {
+inline nl::json dynamic_params(const T& udc) {
     return nl::json{};
 }
 
 } // namespace detail
-
-template <typename T>
-nl::json static_part_to_json(const T& udc) {
-    nl::json j;
-    j[to_kebab_case(label::__name)] = udc.get_name();
-    
-    auto [params, extra_info] = detail::static_params_to_json(udc);
-    if (!params.empty())
-        j[to_kebab_case(label::__params)] = params;
-    
-    if (!extra_info.empty()) 
-        j[to_kebab_case(label::__extra_info)] = extra_info;
-    
-    return j;
-}
-
-template <typename T>
-nl::json dynamic_part_to_json(const T& udc) {
-    return nl::json{ }; // Default implementation, no dynamic parameters
-}
-
 } // namespace json
 
 

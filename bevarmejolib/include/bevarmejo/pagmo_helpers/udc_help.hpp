@@ -29,7 +29,7 @@ namespace json {
 namespace detail {
 /*----------------------- Thread island ------------------ */
 template <>
-inline std::pair<nl::json,std::string> static_params_to_json<pagmo::thread_island>(const pagmo::thread_island& isl) {
+inline std::pair<nl::json,std::string> static_params<pagmo::thread_island>(const pagmo::thread_island& isl) {
     static const std::string threadisl__label__pool_flag = "Using pool";
     std::string extra_info = isl.get_extra_info(); // I know it returns "\tUsing pool: yes" or no
     extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
@@ -44,11 +44,11 @@ inline std::pair<nl::json,std::string> static_params_to_json<pagmo::thread_islan
 
 // Thread island can not have dynamic parameters, so it is a compile error to call this function
 template <>
-inline nl::json dynamic_params_to_json<pagmo::thread_island>(const pagmo::thread_island& isl) = delete;
+inline nl::json dynamic_params<pagmo::thread_island>(const pagmo::thread_island& isl) = delete;
 
 /*----------------------- Fair replace ------------------ */
 template <>
-inline std::pair<nl::json,std::string> static_params_to_json<pagmo::fair_replace>(const pagmo::fair_replace& rp) {
+inline std::pair<nl::json,std::string> static_params<pagmo::fair_replace>(const pagmo::fair_replace& rp) {
     // I know the extra info returns "\tAbsolute migration rate: 1" and the 
     // number is an integer or a "\tFractional migration rate: 0.1" and the
     // number is a double.
@@ -69,12 +69,12 @@ inline std::pair<nl::json,std::string> static_params_to_json<pagmo::fair_replace
 
 // Fair replace can not have dynamic parameters, so it is a compile error to call this function
 template <>
-inline nl::json dynamic_params_to_json<pagmo::fair_replace>(const pagmo::fair_replace& rp) = delete;
+inline nl::json dynamic_params<pagmo::fair_replace>(const pagmo::fair_replace& rp) = delete;
 
 /*----------------------- Select best ------------------ */
 // exactly like fair replace
 template <>
-inline std::pair<nl::json,std::string> static_params_to_json<pagmo::select_best>(const pagmo::select_best& sp) {
+inline std::pair<nl::json,std::string> static_params<pagmo::select_best>(const pagmo::select_best& sp) {
     std::string extra_info = sp.get_extra_info(); 
     extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
     auto tokens = bevarmejo::split(extra_info, ':');
@@ -92,15 +92,15 @@ inline std::pair<nl::json,std::string> static_params_to_json<pagmo::select_best>
 
 // Select best can not have dynamic parameters, so it is a compile error to call this function
 template <>
-inline nl::json dynamic_params_to_json<pagmo::select_best>(const pagmo::select_best& sp) = delete;
+inline nl::json dynamic_params<pagmo::select_best>(const pagmo::select_best& sp) = delete;
 
 /*----------------------- Unconnected topology ------------------ */
 // Unconnected topology don't have any type of parameters (static nor dynamic)
 template <>
-inline std::pair<nl::json,std::string> static_params_to_json<pagmo::unconnected>(const pagmo::unconnected& tp) = delete;
+inline std::pair<nl::json,std::string> static_params<pagmo::unconnected>(const pagmo::unconnected& tp) = delete;
 
 template <>
-inline nl::json dynamic_params_to_json<pagmo::unconnected>(const pagmo::unconnected& tp) = delete;
+inline nl::json dynamic_params<pagmo::unconnected>(const pagmo::unconnected& tp) = delete;
 
 } // namespace detail
 } // namespace json

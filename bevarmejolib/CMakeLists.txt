@@ -41,6 +41,7 @@ set(WDS_VARS    "${WDS_INC_ROOT}/elements/variable.hpp"
 
 set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/containers_help.hpp"
+                "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp")
 
@@ -63,6 +64,7 @@ target_link_libraries(bemelib PUBLIC Pagmo::pagmo epanet nlohmann_json::nlohmann
 
 target_include_directories(bemelib PUBLIC
                             "include"
+                            "${CMAKE_SOURCE_DIR}"
 )
 
 target_include_directories(bemelib PRIVATE

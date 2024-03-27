@@ -11,6 +11,11 @@
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
+namespace nl = nlohmann;
+
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/labels.hpp"
+#include "bevarmejo/pagmo_helpers/containers_help.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -101,12 +106,49 @@ private:
     std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
     void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv, const std::vector<double>& old_HW_coeffs) const;
     
-
+public:
+    friend std::pair<nl::json, std::string> bevarmejo::io::json::detail::static_params<>(const Problem& prob);
+    friend nl::json bevarmejo::io::json::detail::dynamic_params<>(const Problem& prob); 
 };
 
 } // namespace f1
 } // namespace twophases
 } // namespace anytown
+
+namespace io {
+
+// Specializations on how to write it to a json file
+template <>
+inline std::pair<nl::json, std::string> json::detail::static_params<bevarmejo::anytown::twophases::f1::Problem>(const bevarmejo::anytown::twophases::f1::Problem& prob) {
+    
+    nl::json jparams { };
+    jparams[to_kebab_case(std::string("inp"))] = prob._anytown_->inp_file();
+    // Skip pipes alt costs and tanks costs even if they should be there 
+    jparams[to_kebab_case(std::string("m_algo"))] = json::static_descr(prob.m_algo)[to_kebab_case(label::__algorithm)];
+    
+    return std::make_pair(jparams, prob.get_extra_info());
+} // static_params
+
+template <>
+inline nl::json json::detail::dynamic_params<bevarmejo::anytown::twophases::f1::Problem>(const bevarmejo::anytown::twophases::f1::Problem& prob) {
+    
+    // Info about the population here are a little bit easier as I know the type of the problem, the number of fitness evaluation and I don't need tome
+    auto population_ids = prob.m_pop.get_ID();
+    auto pop_dvs = prob.m_pop.get_x();
+    auto pop_fvs = prob.m_pop.get_f();
+    nl::json jpop { };
+    for (auto individual = 0u; individual < prob.m_pop.size(); ++individual ) {
+        jpop.push_back( { {to_kebab_case(label::__id), population_ids[individual]}, 
+                          {to_kebab_case(label::__dv), pop_dvs[individual]},
+                          {to_kebab_case(label::__fv), pop_fvs[individual]} } );
+    }
+    
+    return nl::json{ {to_kebab_case(std::string("m_pop")), { {to_kebab_case(label::__individuals), jpop } } } };
+    
+} // dynamic_params
+
+} // namespace io 
+
 } // namespace bevarmejo
 
 #endif // ANYTOWN__TWOPHASES__PROB_ANYTOWN_TWO_F1_HPP
