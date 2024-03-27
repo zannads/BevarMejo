@@ -88,7 +88,7 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
     }
     // ceil(__generations/__report_gen) = n_evolve
     settings.n_evolve = ceil(settings.jinput[label::__typconfig][label::__population][label::__generations].get<unsigned int>()/
-                            settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>());
+                            settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<double>()); // get double instead of unsigned int to force non integer division
     
 
     // 4. Check the settings file has the optional fields
