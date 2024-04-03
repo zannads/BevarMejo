@@ -402,3 +402,13 @@ FodyWeavers.xsd
 
 # For xcode and build
 build/
+/CMakeSettings.json
+buildXCode/
+
+# For vscode 
+.vscode/
+/build-vs-code
+
+build-XCode/
+
+nohup.out

@@ -2,21 +2,12 @@
 # project specific logic here.
 #
 
-add_subdirectory(src)
+add_library(hanoi "problem_hanoi_biobj.cpp" "problem_hanoi_biobj.hpp")
 
-# Add source to this project's executable.
-add_executable (hanoiOptimization "main_hanoi.cpp" "main_hanoi.h" )
+set_property(TARGET hanoi PROPERTY CXX_STANDARD 17)
 
+target_link_libraries(hanoi PRIVATE bemelib)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET hanoiOptimization PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Add tests and install targets if needed.
-target_link_libraries(hanoiOptimization PRIVATE Pagmo::pagmo logger modelHanoi)
-
-target_include_directories(hanoiOptimization PUBLIC
-                          "${PROJECT_BINARY_DIR}"
-                          "${PROJECT_SOURCE_DIR}/Hanoi/include"
-                          "${PROJECT_SOURCE_DIR}/lib"
-                          )
+target_link_directories(hanoi PRIVATE 
+                            "${CMAKE_CURRENT_SOURCE_DIR}"
+)
