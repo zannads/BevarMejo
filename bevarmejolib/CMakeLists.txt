@@ -46,7 +46,6 @@ set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_hel
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp")
 
 add_library(bemelib "include/bevarmejo/io.hpp" "src/io.cpp" 
-                    "${PUGIXML_ROOT}/pugixml.cpp" 
                     "include/bevarmejo/constants.hpp"
                     "include/bevarmejo/econometric_functions.hpp"
                     "include/bevarmejo/hydraulic_functions.hpp" "src/hydraulic_functions.cpp"
