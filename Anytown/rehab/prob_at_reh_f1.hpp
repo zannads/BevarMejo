@@ -83,6 +83,14 @@ public:
     // Implementation of the box bounds.
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
+    void save_solution(const std::vector<double>& dv, const fsys::path& out_file) const {
+        auto pass_on_info = apply_dv(this->_anytown_, dv);
+
+	    int errco = EN_saveinpfile(this->_anytown_->ph_, out_file.c_str());
+	    assert(errco <= 100);
+
+	    reset_dv(this->_anytown_, dv, pass_on_info);
+    }
 
 private: 
     /* Anytonw specific data */

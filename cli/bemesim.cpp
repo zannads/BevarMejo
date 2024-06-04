@@ -8,6 +8,9 @@
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/parsers.hpp"
 
+// temp until I fix 
+#include "bevarmejo/pagmo_helpers/containers_help.hpp"
+
 int main(int argc, char* argv[]) {
 
     // 1. Parse the inputs, ideally I could change anything and should perform checks.
@@ -47,6 +50,17 @@ int main(int argc, char* argv[]) {
 
     if (!simu.extra_message.empty())
         bevarmejo::io::stream_out(std::cout, simu.extra_message, "\n");
+
+    // If I pass the --saveinp flag than I should save the inp file
+    if (simu.save_inp) {
+        bevarmejo::io::stream_out(std::cout, "Thanks for using BeMe-Sim, saving the inp file...\n");
+        try {
+            bevarmejo::io::inp::temp_net_to_file(simu.p, simu.dvs, std::to_string(simu.id) + ".inp");
+        } catch (const std::exception& e) {
+            bevarmejo::io::stream_out(std::cerr, "An error happend while saving the inp file:\n", e.what(), "\n" );
+            return 1;
+        }
+    }
 
     return 0;
 }

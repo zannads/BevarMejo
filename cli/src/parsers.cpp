@@ -159,7 +159,21 @@ Simulation parse(int argc, char *argv[]) {
             jproblem[label::__params] = json::object();
         }
 
-        // 1.4 build the problem
+        // 1.4 check the settings file has the optional fields
+        if (jproblem.contains(label::__paths)) {
+            for (const auto& path : jproblem[label::__paths]) {
+                // Check that is actually a string and an existing directory
+                std::filesystem::path p(path.get<std::string>());
+                if (std::filesystem::exists(p) && std::filesystem::is_directory(p)) {
+                    simu.lookup_paths.push_back(p);
+                }
+                else {
+                    std::cerr << "Path in the settings file is not a valid directory: " << p.string() << std::endl;
+                }
+            }
+        }
+
+        // 1.5 build the problem
         simu.p = std::move(build_problem( jproblem, simu.lookup_paths ));
     }
     catch (const std::exception& e) {
@@ -217,7 +231,15 @@ Simulation parse(int argc, char *argv[]) {
         throw std::runtime_error("Failed to parse decision variables file: " + simu.dv_file.string() + "\n" + e.what());
     }
 
-    // TODO: check the other flags 
+    // 3. Check the flags
+    // 3.1 save inp file
+    simu.save_inp = false;
+    for (int i = 3; i < argc; ++i) {
+        if (std::string(argv[i]) == "--saveinp") {
+            simu.save_inp = true;
+        }
+    }
+    // TODO: check the other flags
 
     // last last thing because I assume then after this it starts the simulation
     simu.start = std::chrono::high_resolution_clock::now();

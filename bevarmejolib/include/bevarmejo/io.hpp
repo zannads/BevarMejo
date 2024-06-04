@@ -312,7 +312,16 @@ inline nl::json dynamic_params(const T& udc) {
 } // namespace detail
 } // namespace json
 
+namespace inp {
+namespace detail {
 
+template <typename P>
+inline void temp_net_to_file(const P& p, const std::vector<double>& dv, const std::string& out_file) {
+    p.save_solution(dv, out_file);
+}
+
+} // namespace detail
+} // namespace inp 
 
 
 /* LOAD dimensions from TAG

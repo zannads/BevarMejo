@@ -192,5 +192,22 @@ nl::json static_descr(const pagmo::topology& tp) {
 }
 
 } // namespace json
+
+void inp::temp_net_to_file(const pagmo::problem& prob, const std::vector<double>& dv, const std::string& out_file) {
+    if ( prob.is<bevarmejo::anytown::mixed::f1::Problem>() ) {
+        inp::detail::temp_net_to_file<bevarmejo::anytown::mixed::f1::Problem>(*prob.extract<bevarmejo::anytown::mixed::f1::Problem>(), dv, out_file);
+    } else if ( prob.is<bevarmejo::anytown::rehab::f1::Problem>() ) {
+        inp::detail::temp_net_to_file<bevarmejo::anytown::rehab::f1::Problem>(*prob.extract<bevarmejo::anytown::rehab::f1::Problem>(), dv, out_file);
+    } else if ( prob.is<bevarmejo::anytown::operations::f1::Problem>() ) {
+        //inp::detail::temp_net_to_file<bevarmejo::anytown::operations::f1::Problem>(*prob.extract<bevarmejo::anytown::operations::f1::Problem>(), dv, out_file);
+    } else if ( prob.is<bevarmejo::anytown::twophases::f1::Problem>() ) {
+        inp::detail::temp_net_to_file<bevarmejo::anytown::twophases::f1::Problem>(*prob.extract<bevarmejo::anytown::twophases::f1::Problem>(), dv, out_file);
+    } else if ( prob.is<bevarmejo::hanoi::fbiobj::Problem>() ) {
+        //inp::detail::temp_net_to_file<bevarmejo::hanoi::fbiobj::Problem>(*prob.extract<bevarmejo::hanoi::fbiobj::Problem>(), dv, out_file);
+    } else {
+        throw std::runtime_error("Problem type not supported for inp file generation");
+    }
+}
+
 } // namespace io
 } // namespace bevarmejo

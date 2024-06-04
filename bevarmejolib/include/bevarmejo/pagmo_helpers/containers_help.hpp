@@ -72,6 +72,10 @@ nl::json static_descr(const pagmo::topology& tp);
 nl::json dynamic_descr(const pagmo::topology& tp) = delete;
 
 } // namespace json
+
+namespace inp {
+void temp_net_to_file(const pagmo::problem& prob, const std::vector<double>& dv, const std::string& out_file);
+} // namespace inp
 } // namespace io
 } // namespace bevarmejo
 

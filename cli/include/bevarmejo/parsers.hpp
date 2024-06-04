@@ -52,6 +52,8 @@ struct Simulation {
     std::chrono::high_resolution_clock::time_point start;
     // Ending time of the simulation
     std::chrono::high_resolution_clock::time_point end;
+    // Flag to save the inp file (useful for running the simulations directly from EPANET)
+    bool save_inp;
 }; // struct Simulation
 } // namespace sim
 
