@@ -3,7 +3,7 @@ Bevar Mejo is the monolithic repository containing all the code and documentatio
 
 For more information about me, see https://zannads.github.io.
 
-For the code documentation, visit the [GitHub pages of this project](https://zannads.github.io/BevarMejo/).
+For the code documentation, visit the (GitHub pages of this project)[https://zannads.github.io/BevarMejo/].
 
 ## Versioning
 The versioning of my repositories (data and code) follows this convention: `vyy.mm.x<-optional-event-name-YYYY>`. 
