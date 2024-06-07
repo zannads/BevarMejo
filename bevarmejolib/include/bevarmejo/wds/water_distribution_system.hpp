@@ -83,6 +83,8 @@ protected:
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
     
+    // Bool to turn on/off the report behaviour like in EPANET
+    bool m_save_all_hsteps = true;
 
 /*--- Constructors ---*/ 
 public:

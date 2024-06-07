@@ -230,7 +230,8 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         error_message.append(std::to_string(errorcode));
         throw std::runtime_error(error_message);
     }
-    
+    errorcode = EN_setreport(ph_, "SUMMARY NO");
+    errorcode = EN_setreport(ph_, "STATUS NO");
     errorcode = EN_setreport(ph_, "MESSAGES NO");
 
     // Do everything you need to do on your Project before loading the network
@@ -639,7 +640,7 @@ void WaterDistributionSystem::run_hydraulics() const{
 
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
-        if (scheduled) {
+        if (m_save_all_hsteps || scheduled) {
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
