@@ -39,92 +39,6 @@ namespace anytown {
 namespace mixed {
 namespace f1 {
 
-/*
-Problem::Problem(fsys::path input_directory, pugi::xml_node settings) {
-	assert(settings != nullptr);
-
-	// Add here load of problem specific data 
-
-	fsys::path inp_filename{settings.child("wds").child_value("inpFile")};
-	inp_filename = input_directory / inp_filename;
-
-	 Fix the bug where the curve 2 (i.e., the pump characteristic curve
-		* is uploaded as a generic curve and not as a pump curve). 
-		* Thus instead of the automatic constructor from inp file: 
-		* _anytown_ = std::make_shared<WDS>(inp_filename);
-		* I create an empty one first, add the inp file, modify it thorugh the lambda
-		* and then use init(). 
-	
-	_anytown_ = std::make_shared<WDS>();
-	
-	auto fix_inp = [](EN_Project ph) {
-		// change curve ID 2 to a pump curve
-		assert(ph != nullptr);
-		std::string curve_id = "2";
-		int curve_idx = 0;
-		int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
-		assert(errorcode <= 100);
-
-		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
-		assert(errorcode <= 100);
-
-
-		// simulation time step to 1 hour
-		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
-		assert(errorcode <= 100);
-	};
-
-	_anytown_->load_from_inp_file(inp_filename, fix_inp);
-
-	// Load subnetworks 
-	for (pugi::xml_node subnet = settings.child("wds").child("subNet"); subnet;
-		subnet = subnet.next_sibling("subNet")) {
-		fsys::path subnet_filename{subnet.child_value()};
-		subnet_filename = input_directory / subnet_filename;
-
-		try
-		{
-			_anytown_->add_subnetwork(subnet_filename);
-		}
-		catch (const std::exception& ex)
-		{
-			std::cout << ex.what();
-		}
-	}
-
-	// Custom made subnetworks
-	wds::Subnetwork temp_elements;
-	_anytown_->add_subnetwork(anytown::l__TEMP_ELEMS, temp_elements);
-
-	// Load Pipe rehabilitation alternative costs 
-	fsys::path prac_filename{settings.child_value("avDiams")};
-	prac_filename = input_directory / prac_filename;
-
-	std::ifstream prac_file{prac_filename};
-	if (!prac_file.is_open()) {
-		throw std::runtime_error("Could not open file " + prac_filename.string());
-	}
-
-	std::size_t n_alt_costs = load_dimensions(prac_file, "#DATA");
-	_pipes_alt_costs_.resize(n_alt_costs);
-	stream_in(prac_file, _pipes_alt_costs_);
-	
-
-	// Load Tank costs 
-	fsys::path tanks_filename{settings.child_value("tankCosts")};
-	tanks_filename = input_directory / tanks_filename;
-
-	std::ifstream tanks_file{tanks_filename};
-	if (!tanks_file.is_open()) {
-		throw std::runtime_error("Could not open file " + tanks_filename.string());
-	}
-	
-	std::size_t n_tanks = load_dimensions(tanks_file, "#DATA");
-	_tanks_costs_.resize(n_tanks);
-	stream_in(tanks_file, _tanks_costs_);
-}
-*/
-
 Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths) {
 	assert(settings != nullptr);
 
@@ -155,11 +69,6 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		assert(errorcode <= 100);
 
 		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
-		assert(errorcode <= 100);
-
-
-		// simulation time step to 1 hour
-		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
 		assert(errorcode <= 100);
 	};
 

@@ -68,11 +68,6 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 
 		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
 		assert(errorcode <= 100);
-
-
-		// simulation time step to 1 hour
-		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
-		assert(errorcode <= 100);
 	};
 
 	m_anytown->load_from_inp_file(inp_filename, fix_inp);
