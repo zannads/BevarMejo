@@ -552,7 +552,7 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 	}
 
 	// 3. pumps
-	auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, dvs.end()), anytown->pumps().size());
+	auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, curr_dv+24), anytown->pumps().size());
 	for (std::size_t i = 0; i < patterns.size(); ++i) {
 		// I know pump patterns IDs are from 2, 3, and 4
 		int pump_idx = i + 2;
