@@ -6,7 +6,7 @@
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curve.hpp"
 
 namespace bevarmejo {
 namespace wds {

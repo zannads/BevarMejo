@@ -7,15 +7,15 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
-#include "bevarmejo/wds/elements/pattern.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
+#include "bevarmejo/wds/data_structures/pattern.hpp"
+#include "bevarmejo/wds/data_structures/demand.hpp"
 
 #include "junction.hpp"
 

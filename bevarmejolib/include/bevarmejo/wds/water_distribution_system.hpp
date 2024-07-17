@@ -32,9 +32,9 @@
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements/pump.hpp"
-#include "bevarmejo/wds/elements/curve.hpp"
-#include "bevarmejo/wds/elements/curves.hpp"
-#include "bevarmejo/wds/elements/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
+#include "bevarmejo/wds/data_structures/pattern.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"

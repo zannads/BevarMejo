@@ -4,8 +4,8 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 
 #include "network_element.hpp"

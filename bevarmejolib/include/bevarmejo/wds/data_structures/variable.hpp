@@ -8,7 +8,7 @@
 
 #include <string>
 
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 
 namespace bevarmejo {
 namespace wds {

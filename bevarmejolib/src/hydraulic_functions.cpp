@@ -2,7 +2,7 @@
 #include <vector>
 
 #include "bevarmejo/constants.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 

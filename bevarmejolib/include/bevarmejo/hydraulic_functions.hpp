@@ -14,7 +14,7 @@
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/elements/tank.hpp"
 #include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 
 namespace bevarmejo {
 

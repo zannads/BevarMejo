@@ -2,7 +2,7 @@
 #include <string>
 #include <variant>
 
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 
