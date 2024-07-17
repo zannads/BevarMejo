@@ -13,7 +13,7 @@
 namespace bevarmejo {
 namespace wds {
 
-static const std::string LNAME_PATTERN= "Pattern";
+static const std::string l__PATTERN= "Pattern";
 
 class Pattern : public Element {
     public:
@@ -23,11 +23,9 @@ class Pattern : public Element {
     /*--- Attributes ---*/
     protected:
         /*--- Properties ---*/
-        container _multipliers_;
-        long _start_time_s_;
-        long _step_s_;
-
-    protected:
+        container m__multipliers;
+        long* m__start_time_s_;
+        long* m__timestep__s_;
         
      /*--- Constructors ---*/
     public: 
@@ -36,7 +34,7 @@ class Pattern : public Element {
 
         Pattern(const std::string& id);
 
-        Pattern(const std::string& id, long a_start_time_s, long a_step_s);
+        Pattern(const std::string& id, long* ap__start_time_s, long* ap__timestep__s);
 
         // Copy constructor
         Pattern(const Pattern& other);
@@ -50,28 +48,28 @@ class Pattern : public Element {
         // Move assignment operator
         Pattern& operator=(Pattern&& rhs) noexcept;
 
-        virtual ~Pattern() { _multipliers_.clear(); }
+        virtual ~Pattern() { m__multipliers.clear(); }
 
     /*--- Getters and setters ---*/
     public:
         /*--- Properties ---*/
-        const container& multipliers() const { return _multipliers_; }
-        container& multipliers() { return _multipliers_; }
-        const long start_time_s() const { return _start_time_s_; }
-        void start_time_s(long a_start_time_s) { _start_time_s_ = a_start_time_s; }
-        const long step_s() const { return _step_s_; }
-        void step_s(long a_step_s) { _step_s_ = a_step_s; }
+        const container& multipliers() const { return m__multipliers; }
+        container& multipliers() { return m__multipliers; }
+        const long start_time_s() const { return *m__start_time_s_; }
+        void start_time_s(long* ap__start_time_s) { m__start_time_s_ = ap__start_time_s; }
+        const long timestep__s() const { return *m__timestep__s_; }
+        void timestep__s(long* ap__timestep__s) { m__timestep__s_ = ap__timestep__s; }
 
     /*--- Methods ---*/
     public: 
-        size_t size() const { return _multipliers_.size(); }
-        double& operator[](size_t index) { return _multipliers_[index]; }
-        double& at(size_t index) { return _multipliers_.at(index); }
+        size_t size() const { return m__multipliers.size(); }
+        double& operator[](size_t index) { return m__multipliers[index]; }
+        double& at(size_t index) { return m__multipliers.at(index); }
 
     /*--- Pure virtual methods override---*/
     public:
         /*--- Properties ---*/
-        const std::string& element_name() const override {return LNAME_PATTERN;}
+        const std::string& element_name() const override {return l__PATTERN;}
         const unsigned int element_type() const override {return ELEMENT_PATTERN;}
 
 

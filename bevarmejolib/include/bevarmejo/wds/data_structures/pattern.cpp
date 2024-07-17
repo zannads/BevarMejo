@@ -13,35 +13,37 @@ namespace wds {
 
 Pattern::Pattern(const std::string& id) : 
     inherited(id), 
-    _multipliers_(),
-    _start_time_s_(0),
-    _step_s_(3600) { }
+    m__multipliers(),
+    m__start_time_s_(nullptr),
+    m__timestep__s_(nullptr) { }
 
-Pattern::Pattern(const std::string &id, long a_start_time_s, long a_step_s) :
+Pattern::Pattern(const std::string &id, long* ap__start_time_s, long* ap__timestep__s) :
     inherited(id),
-    _multipliers_(),
-    _start_time_s_(a_start_time_s),
-    _step_s_(a_step_s) { }
+    m__multipliers(),
+    m__start_time_s_(ap__start_time_s),
+    m__timestep__s_(ap__timestep__s) { }
 
 // Copy constructor
 Pattern::Pattern(const Pattern& other) :
     inherited(other), 
-    _multipliers_(other._multipliers_),
-    _start_time_s_(other._start_time_s_),
-    _step_s_(other._step_s_) { }
+    m__multipliers(other.m__multipliers),
+    m__start_time_s_(other.m__start_time_s_),
+    m__timestep__s_(other.m__timestep__s_) { }
 
 // Move constructor
 Pattern::Pattern(Pattern&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _multipliers_(std::move(rhs._multipliers_)),
-    _start_time_s_(rhs._start_time_s_),
-    _step_s_(rhs._step_s_) { }
+    m__multipliers(std::move(rhs.m__multipliers)),
+    m__start_time_s_(rhs.m__start_time_s_),
+    m__timestep__s_(rhs.m__timestep__s_) { }
 
 // Copy assignment operator
 Pattern& Pattern::operator=(const Pattern& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
-        _multipliers_ = rhs._multipliers_;
+        m__multipliers = rhs.m__multipliers;
+        m__start_time_s_ = rhs.m__start_time_s_;
+        m__timestep__s_ = rhs.m__timestep__s_;
         _update_pointers();
     }
     return *this;
@@ -51,7 +53,9 @@ Pattern& Pattern::operator=(const Pattern& rhs) {
 Pattern& Pattern::operator=(Pattern&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        _multipliers_ = std::move(rhs._multipliers_);
+        m__multipliers = std::move(rhs.m__multipliers);
+        m__start_time_s_ = rhs.m__start_time_s_;
+        m__timestep__s_ = rhs.m__timestep__s_;
         _update_pointers();
     }
     return *this;
@@ -69,8 +73,21 @@ void Pattern::retrieve_index(EN_Project ph) {
 void Pattern::retrieve_properties(EN_Project ph) {
     assert(index()!= 0);
 
-    int en_index = 0;
+    // If debug, check that you are also already pointing to the right time values.
+    assert(m__start_time_s_ != nullptr);
+    assert(m__timestep__s_ != nullptr);
     int errorcode = 0;
+#ifndef NDEBUG
+    long a__time=0;
+    errorcode = EN_gettimeparam(ph, EN_PATTERNSTART, &a__time);
+    assert(errorcode < 100);
+    assert(a__time == *m__start_time_s_);
+    errorcode = EN_gettimeparam(ph, EN_PATTERNSTEP, &a__time);
+    assert(errorcode < 100);
+    assert(a__time == *m__timestep__s_);
+#endif
+
+    int en_index = 0;
     double val = 0.0;
     int len = 0;
     errorcode = EN_getpatternlen(ph, index(), &len);
@@ -78,7 +95,7 @@ void Pattern::retrieve_properties(EN_Project ph) {
         throw std::runtime_error("Error retrieving length of pattern "+id()+" from EPANET project.");
     }
     
-    _multipliers_.reserve(len);
+    m__multipliers.reserve(len);
 
     // Start from +1. See epanet documentation.
     for(int i=1; i<=len; ++i) {
@@ -86,7 +103,7 @@ void Pattern::retrieve_properties(EN_Project ph) {
         if (errorcode > 100) {
             throw std::runtime_error("Error retrieving value of pattern "+id()+" from EPANET project.");
         }
-        _multipliers_.push_back(val);
+        m__multipliers.push_back(val);
     }
 }
 

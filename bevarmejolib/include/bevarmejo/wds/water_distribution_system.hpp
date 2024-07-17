@@ -89,6 +89,10 @@ protected:
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
+        struct PatternTimeOptions {
+            long start_time_s = 0;                   // Start time of the pattern
+            long timestep__s = 3600;                      // Step of the pattern
+        } global_pattern_props;
     } m__config_options_;
 
 /*--- Constructors ---*/ 

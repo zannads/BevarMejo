@@ -327,6 +327,15 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
     }
 
     // [3/6] Patterns
+    // Basic patterns time info are needed to be passed always.
+    long a__time=0;
+    errorcode = EN_gettimeparam(ph_, EN_PATTERNSTART, &a__time);
+    assert(errorcode < 100);
+    m__config_options_.global_pattern_props.start_time_s = a__time;
+    errorcode = EN_gettimeparam(ph_, EN_PATTERNSTEP, &a__time);
+    assert(errorcode < 100);
+    m__config_options_.global_pattern_props.timestep__s = a__time;
+
     int n_patterns;
     errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
     assert(errorcode < 100);
@@ -338,7 +347,11 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<Pattern>(pattern_id));
+        _elements_.push_back(std::make_shared<Pattern>(
+            pattern_id, 
+            &m__config_options_.global_pattern_props.start_time_s,
+            &m__config_options_.global_pattern_props.timestep__s)
+        );
         delete[] pattern_id;
 
         // Save it in _patterns_ too
