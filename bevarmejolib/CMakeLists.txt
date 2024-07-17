@@ -37,6 +37,8 @@ set(WDS_DATAS   "${WDS_INC_ROOT}/data_structures/variable.hpp"
                 "${WDS_INC_ROOT}/data_structures/temporal.hpp"
                 "${WDS_INC_ROOT}/data_structures/time_options.hpp"
                 "${WDS_INC_ROOT}/data_structures/pattern.hpp" "${WDS_INC_ROOT}/data_structures/pattern.cpp"
+                "${WDS_INC_ROOT}/data_structures/time_series.hpp"
+                "${WDS_INC_ROOT}/data_structures/constant_ts.hpp"
                 "${WDS_INC_ROOT}/data_structures/demand.hpp"
 )
 

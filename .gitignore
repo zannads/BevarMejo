@@ -419,3 +419,7 @@ data
 **/.tmp/
 **/tmp/
 temp*
+*.py
+*.ipynb
+
+*.sh

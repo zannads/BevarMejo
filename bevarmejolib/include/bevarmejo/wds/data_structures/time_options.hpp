@@ -7,7 +7,7 @@ namespace bevarmejo {
 namespace wds {
 
 struct GlobalTimeOptions {
-    long start_time__s = 0;               // Start time of the simulation in seconds
+    long shift_start_time__s = 0;         // Shift for the start time of the simulation in seconds, but this is only for control rules and eventually for visualization. Simulations and times always start at 0.
     long duration__s = 3600;              // Duration of the simulation in seconds
 };
 struct PatternTimeOptions {
