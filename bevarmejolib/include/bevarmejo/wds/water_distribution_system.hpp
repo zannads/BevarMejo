@@ -75,16 +75,21 @@ protected:
     Pipes _pipes_;
     // Valves _valves_;
 
-    Patterns _patterns_;
-    Curves _curves_;
+    struct AuxiliaryElements { 
+        Patterns patterns;
+        Curves curves;
+        // Controls controls;
+        // Rules rules;
+    } m__aux_elements_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
     
-    // Bool to turn on/off the report behaviour like in EPANET
-    bool m_save_all_hsteps = true;
+    struct ConfigOptions {
+        bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
+    } m__config_options_;
 
 /*--- Constructors ---*/ 
 public:
@@ -121,14 +126,14 @@ public:
     /*--- Object-specific Subnetworks ---*/
     const Nodes& nodes() const {return _nodes_;};
     const Links& links() const {return _links_;};
-    const Patterns& patterns() const {return _patterns_;};
+    const Patterns& patterns() const {return m__aux_elements_.patterns;};
     const Junctions& junctions() const {return _junctions_;};
     // const Sources& sources() const {return _sources_;};
     const Tanks& tanks() const {return _tanks_;};
     const Reservoirs& reservoirs() const {return _reservoirs_;};
     const Pipes& pipes() const {return _pipes_;};
     const Pumps& pumps() const {return _pumps_;};
-    const Curves& curves() const {return _curves_;};
+    const Curves& curves() const {return m__aux_elements_.curves;};
 
     /*--- User-defined Subnetworks ---*/
     SubnetworksMap& subnetworks() {return _subnetworks_;};
@@ -211,9 +216,9 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         _links_.insert(a_element);
         _pumps_.insert(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        _patterns_.insert(a_element);
+        m__aux_elements_.patterns.insert(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        _curves_.insert(a_element);
+        m__aux_elements_.curves.insert(a_element);
     } else {
         // Handle other types
         // ...
@@ -259,9 +264,9 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         _links_.remove(a_element);
         _pumps_.remove(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        _patterns_.remove(a_element);
+        m__aux_elements_.patterns.remove(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        _curves_.remove(a_element);
+        m__aux_elements_.patterns.remove(a_element);
     } else {
         // Handle other types
         // ...

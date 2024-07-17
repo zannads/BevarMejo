@@ -33,14 +33,15 @@ WaterDistributionSystem::WaterDistributionSystem() :
     _elements_(),
     _nodes_(),
     _links_(),
-    _patterns_(),
+    m__aux_elements_(),
     _junctions_(),
     _tanks_(),
     _reservoirs_(),
     _pipes_(),
     _pumps_(),
     _subnetworks_(),
-    _groups_() 
+    _groups_(),
+    m__config_options_()
     { }
 
 WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& inp_file) :
@@ -49,14 +50,15 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
     _elements_(),
     _nodes_(),
     _links_(),
-    _patterns_(),
+    m__aux_elements_(),
     _junctions_(),
     _tanks_(),
     _reservoirs_(),
     _pipes_(),
     _pumps_(),
     _subnetworks_(),
-    _groups_()
+    _groups_(),
+    m__config_options_()
     {
         load_from_inp_file(inp_file);
     }
@@ -67,14 +69,15 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         _elements_(other._elements_),
         _nodes_(other._nodes_),
         _links_(other._links_),
-        _patterns_(other._patterns_),
+        m__aux_elements_(other.m__aux_elements_),
         _junctions_(other._junctions_),
         _tanks_(other._tanks_),
         _reservoirs_(other._reservoirs_),
         _pipes_(other._pipes_),
         _pumps_(other._pumps_),
         _subnetworks_(other._subnetworks_),
-        _groups_(other._groups_)
+        _groups_(other._groups_),
+        m__config_options_(other.m__config_options_)
         { }
 
     WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem&& other) noexcept :
@@ -83,14 +86,15 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         _elements_(std::move(other._elements_)),
         _nodes_(std::move(other._nodes_)),
         _links_(std::move(other._links_)),
-        _patterns_(std::move(other._patterns_)),
+        m__aux_elements_(std::move(other.m__aux_elements_)),
         _junctions_(std::move(other._junctions_)),
         _tanks_(std::move(other._tanks_)),
         _reservoirs_(std::move(other._reservoirs_)),
         _pipes_(std::move(other._pipes_)),
         _pumps_(std::move(other._pumps_)),
         _subnetworks_(std::move(other._subnetworks_)),
-        _groups_(std::move(other._groups_))
+        _groups_(std::move(other._groups_)),
+        m__config_options_(std::move(other.m__config_options_))
         { }
 
     WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
@@ -100,7 +104,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
             _elements_ = rhs._elements_;
             _nodes_ = rhs._nodes_;
             _links_ = rhs._links_;
-            _patterns_ = rhs._patterns_;
+            m__aux_elements_ = rhs.m__aux_elements_;
             _junctions_ = rhs._junctions_;
             _tanks_ = rhs._tanks_;
             _reservoirs_ = rhs._reservoirs_;
@@ -108,6 +112,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
             _pumps_ = rhs._pumps_;
             _subnetworks_ = rhs._subnetworks_;
             _groups_ = rhs._groups_;
+            m__config_options_ = rhs.m__config_options_;
         }
         return *this;
     }
@@ -119,7 +124,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
             _elements_ = std::move(rhs._elements_);
             _nodes_ = std::move(rhs._nodes_);
             _links_ = std::move(rhs._links_);
-            _patterns_ = std::move(rhs._patterns_);
+            m__aux_elements_ = std::move(rhs.m__aux_elements_);
             _junctions_ = std::move(rhs._junctions_);
             _tanks_ = std::move(rhs._tanks_);
             _reservoirs_ = std::move(rhs._reservoirs_);
@@ -127,6 +132,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
             _pumps_ = std::move(rhs._pumps_);
             _subnetworks_ = std::move(rhs._subnetworks_);
             _groups_ = std::move(rhs._groups_);
+            m__config_options_ = std::move(rhs.m__config_options_);
         }
         return *this;
     }
@@ -146,7 +152,7 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const 
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
-    for (auto& old_curve : _curves_) {
+    for (auto& old_curve : m__aux_elements_.curves) {
         std::shared_ptr<Curve> curve_clone = old_curve->clone();
         wds_clone->insert(curve_clone);
     }
@@ -325,7 +331,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
     errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
     assert(errorcode < 100);
     _elements_.reserve(n_patterns);
-    _patterns_.reserve(n_patterns);
+    m__aux_elements_.patterns.reserve(n_patterns);
 
     for (int i = 1; i <= n_patterns; ++i) {
         char* pattern_id = new char[EN_MAXID];
@@ -336,7 +342,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         delete[] pattern_id;
 
         // Save it in _patterns_ too
-        _patterns_.insert(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
+        m__aux_elements_.patterns.insert(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
     }
 
     // [4/6] Curves
@@ -370,7 +376,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
             throw std::runtime_error("Unknown curve type\n");
     
         // Save it in _curves_ too
-        _curves_.insert(std::dynamic_pointer_cast<Curve>(_elements_.back()));
+        m__aux_elements_.curves.insert(std::dynamic_pointer_cast<Curve>(_elements_.back()));
     }
 
     // [5/6] Controls (simple control)
@@ -439,8 +445,8 @@ void WaterDistributionSystem::assign_patterns_EN() {
         std::string pattern_id(__pattern_id);
         delete[] __pattern_id;
 
-        auto it = _patterns_.find(pattern_id);
-        assert(it != _patterns_.end());
+        auto it = m__aux_elements_.patterns.find(pattern_id);
+        assert(it != m__aux_elements_.patterns.end());
         
         pump->speed_pattern((*it));
     }
@@ -480,8 +486,8 @@ void WaterDistributionSystem::assign_demands_EN() {
             }
             else {
                 // I need to find the pattern in the patterns map (it should be there
-                auto it = _patterns_.find(pattern_id);
-                assert(it != _patterns_.end());
+                auto it = m__aux_elements_.patterns.find(pattern_id);
+                assert(it != m__aux_elements_.patterns.end());
 
                 junction->add_demand(d_category, d_base_demand, *it);
             }
@@ -507,8 +513,8 @@ void WaterDistributionSystem::assign_curves_EN() {
             std::string curve_id(__curve_id);
             delete[] __curve_id;
 
-            auto it = _curves_.find(curve_id);
-            assert(it != _curves_.end());
+            auto it = m__aux_elements_.curves.find(curve_id);
+            assert(it != m__aux_elements_.curves.end());
 
             pump->pump_curve(std::dynamic_pointer_cast<PumpCurve>(*it) );
         }
@@ -525,8 +531,8 @@ void WaterDistributionSystem::assign_curves_EN() {
             std::string curve_id(__curve_id);
             delete[] __curve_id;
 
-            auto it = _curves_.find(curve_id);
-            assert(it != _curves_.end());
+            auto it = m__aux_elements_.curves.find(curve_id);
+            assert(it != m__aux_elements_.curves.end());
 
             pump->efficiency_curve(std::dynamic_pointer_cast<EfficiencyCurve>(*it) );
         }
@@ -550,8 +556,8 @@ void WaterDistributionSystem::assign_curves_EN() {
         std::string curve_id(__curve_id);
         delete[] __curve_id;
 
-        auto it = _curves_.find(curve_id);
-        assert(it != _curves_.end());
+        auto it = m__aux_elements_.curves.find(curve_id);
+        assert(it != m__aux_elements_.curves.end());
 
         tank->volume_curve(std::dynamic_pointer_cast<VolumeCurve>(*it) );
     }
@@ -640,7 +646,7 @@ void WaterDistributionSystem::run_hydraulics() const{
 
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
-        if (m_save_all_hsteps || scheduled) {
+        if (m__config_options_.save_all_hsteps || scheduled) {
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);

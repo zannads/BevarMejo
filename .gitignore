@@ -402,6 +402,7 @@ FodyWeavers.xsd
 
 # For xcode and build
 build/
+build*/
 /CMakeSettings.json
 buildXCode/
 
