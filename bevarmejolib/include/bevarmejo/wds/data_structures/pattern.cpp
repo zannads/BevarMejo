@@ -94,7 +94,7 @@ void Pattern::retrieve_properties(EN_Project ph) {
     if (errorcode > 100) {
         throw std::runtime_error("Error retrieving length of pattern "+id()+" from EPANET project.");
     }
-    
+    m__multipliers.clear();
     m__multipliers.reserve(len);
 
     // Start from +1. See epanet documentation.

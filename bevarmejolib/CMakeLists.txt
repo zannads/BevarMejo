@@ -17,10 +17,8 @@ set(WDS_INC_ROOT    "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
 set(WDS_FILES   "${WDS_INC_ROOT}/water_distribution_system.cpp" "${WDS_INC_ROOT}/water_distribution_system.hpp" 
                 "${WDS_INC_ROOT}/elements_group.hpp" 
                 "${WDS_INC_ROOT}/user_defined_elements_group.hpp" "${WDS_INC_ROOT}/user_defined_elements_group.cpp"
-                "${WDS_INC_ROOT}/data_structures/demand.hpp"
                 "${WDS_INC_ROOT}/auxiliary/curve.hpp"
                 "${WDS_INC_ROOT}/auxiliary/curves.hpp" "${WDS_INC_ROOT}/auxiliary/curves.cpp"
-                "${WDS_INC_ROOT}/data_structures/pattern.hpp" "${WDS_INC_ROOT}/data_structures/pattern.cpp"
                 "${WDS_INC_ROOT}/elements/element.hpp" "${WDS_INC_ROOT}/elements/element.cpp"
                 "${WDS_INC_ROOT}/elements/network_element.hpp" "${WDS_INC_ROOT}/elements/network_element.cpp"
 )
@@ -35,8 +33,11 @@ set(WDS_LINKS   "${WDS_INC_ROOT}/elements/pipe.hpp" "${WDS_INC_ROOT}/elements/pi
                 "${WDS_INC_ROOT}/elements/link.hpp" "${WDS_INC_ROOT}/elements/link.cpp"
                 "${WDS_INC_ROOT}/elements/pump.hpp" "${WDS_INC_ROOT}/elements/pump.cpp"
 )
-set(WDS_VARS    "${WDS_INC_ROOT}/data_structures/variable.hpp"
+set(WDS_DATAS   "${WDS_INC_ROOT}/data_structures/variable.hpp"
                 "${WDS_INC_ROOT}/data_structures/temporal.hpp"
+                "${WDS_INC_ROOT}/data_structures/time_options.hpp"
+                "${WDS_INC_ROOT}/data_structures/pattern.hpp" "${WDS_INC_ROOT}/data_structures/pattern.cpp"
+                "${WDS_INC_ROOT}/data_structures/demand.hpp"
 )
 
 set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_help.hpp"
@@ -53,7 +54,7 @@ add_library(bemelib "include/bevarmejo/io.hpp" "src/io.cpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
                     ${WDS_LINKS}
-                    ${WDS_VARS}
+                    ${WDS_DATAS}
                     ${HELPERS}
 )
             

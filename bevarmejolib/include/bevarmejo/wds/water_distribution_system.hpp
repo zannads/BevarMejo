@@ -35,6 +35,7 @@
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
 #include "bevarmejo/wds/data_structures/pattern.hpp"
+#include "bevarmejo/wds/data_structures/time_options.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
@@ -80,6 +81,8 @@ protected:
         Curves curves;
         // Controls controls;
         // Rules rules;
+
+        TimeSteps results_times;
     } m__aux_elements_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
@@ -89,11 +92,11 @@ protected:
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
-        struct PatternTimeOptions {
-            long start_time_s = 0;                   // Start time of the pattern
-            long timestep__s = 3600;                      // Step of the pattern
-        } global_pattern_props;
-    } m__config_options_;
+        struct TimeOptions {
+            GlobalTimeOptions global;
+            PatternTimeOptions pattern;
+        } times;
+    } m__config_options;
 
 /*--- Constructors ---*/ 
 public:

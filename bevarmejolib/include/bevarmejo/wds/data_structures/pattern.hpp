@@ -15,7 +15,7 @@ namespace wds {
 
 static const std::string l__PATTERN= "Pattern";
 
-class Pattern : public Element {
+class Pattern final : public Element {
     public:
         using inherited= Element;
         using container= std::vector<double>;
@@ -69,8 +69,8 @@ class Pattern : public Element {
     /*--- Pure virtual methods override---*/
     public:
         /*--- Properties ---*/
-        const std::string& element_name() const override {return l__PATTERN;}
-        const unsigned int element_type() const override {return ELEMENT_PATTERN;}
+        virtual const std::string& element_name() const override {return l__PATTERN;}
+        virtual const unsigned int element_type() const override {return ELEMENT_PATTERN;}
 
 
     /*--- EPANET-dependent PVMs ---*/
