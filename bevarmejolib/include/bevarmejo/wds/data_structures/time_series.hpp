@@ -1,15 +1,29 @@
 #ifndef BEVARMEJOLIB__WDS_DATA_STRUCTURES__TIME_SERIES_HPP
 #define BEVARMEJOLIB__WDS_DATA_STRUCTURES__TIME_SERIES_HPP
 
-#include <vector>
+#include <limits>
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
 #include "bevarmejo/wds/data_structures/time_options.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
+static constexpr std::size_t base_value_pos = std::numeric_limits<std::size_t>::max();
+
 template <typename T>
 class TimeSeries {
+/*--- Member types ---*/
+public: 
+    using value_type= T;
+    using size_type= std::size_t;
+    using difference_type= std::ptrdiff_t;
+    using reference= T&;
+    using const_reference= const T&;
+    using pointer= T*;
+    using const_pointer= const T*;
 
 /*--- Attributes ---*/
 protected:
@@ -22,7 +36,7 @@ protected:
 public:
     TimeSeries() : p__glo_time_opts(nullptr) {}
 
-    TimeSeries(GlobalTimeOptions* a_glo_time_opts) : p__glo_time_opts(a_glo_time_opts) {}
+    TimeSeries(GlobalTimeOptions* ap_glo_time_opts) : p__glo_time_opts(ap_glo_time_opts) {}
 
     TimeSeries(const TimeSeries& other) : p__glo_time_opts(other.p__glo_time_opts) {}
 
@@ -44,38 +58,70 @@ public:
 
     virtual ~TimeSeries() = default;
 
-/*--- Queries ---*/
+/*--- Getters and setters ---*/
+// TODO: ???
+
+/*--- Time queries ---*/
 public:
-    long start_time__s(bool absolute = false) const  override {
-        return absolute ? p__glo_time_opts->shift_start_time__s : 0;
+    time_t abs_t0__s() const {
+        if (p__glo_time_opts == nullptr) {
+            throw std::runtime_error("Global time options not set.");
+        }
+        return sim_t0__s() + p__glo_time_opts->shift_start_time__s;
     }
 
-    long duration__s() const  override {
+    time_t sim_t0__s() const { return 0l; }
+
+    // For lovers of pythonic code
+    time_t t0__s(bool absolute=false) const {
+        return absolute ? abs_t0__s() : sim_t0__s();
+    }
+
+    time_t duration__s() const {
+        if (p__glo_time_opts == nullptr) {
+            throw std::runtime_error("Global time options not set.");
+        }
         return p__glo_time_opts->duration__s;
     }
 
-    long end_time__s(bool absolute = false) const  override {
-        return absolute ? p__glo_time_opts->shift_start_time__s + p__glo_time_opts->duration__s : p__glo_time_opts->duration__s;
+    time_t abs_tH__s() const {
+        return abs_t0__s() + duration__s();
+    }
+
+    time_t sim_tH__s() const {
+        return duration__s();
+    }
+
+    time_t tH__s(bool absolute=false) const {
+        return absolute ? abs_tH__s() : sim_tH__s();
     }
 
 /*--- Element access ---*/
 public:
-    virtual T& at( std::size_t pos ) = 0;
-    virtual const T& at( std::size_t pos ) const = 0;
-    virtual T& at_t( const long time__s ) = 0;
-    virtual const T& at_t( const long time__s ) const = 0;
+    virtual reference at( size_type pos ) = 0;
+    virtual const_reference at( size_type pos ) const = 0;
 
-    // No operator []
+    virtual const value_type when_sim_t( time_t time__s ) const = 0;
 
-    virtual T& front() = 0;
-    virtual const T& front() const = 0;
-    virtual T& at_start_t() = 0;
-    virtual const T& at_start_t() const = 0;
+    const value_type when_abs_t( time_t time__s ) const {
+        return this->at_sim_t(time__s - abs_t0__s());
+    }
+    
+    const value_type when_t( time_t time__s, bool absolute=false ) const {
+        return absolute ? this->when_abs_t(time__s) : this->when_sim_t(time__s);
+    }
 
-    virtual T& back() = 0;
-    virtual const T& back() const = 0;
-    virtual T& at_end_t() = 0;
-    virtual const T& at_end_t() const = 0;
+    // No operator[] because it is not safe to use it with this setup
+
+    virtual reference front() = 0;
+    virtual const_reference front() const = 0;
+
+    virtual const value_type when_t0() const = 0;
+
+    virtual reference back() = 0;
+    virtual const_reference back() const = 0;
+
+    virtual const value_type when_tH() const = 0;
     
     // No direct data access as it can vary depending on the derived class
 
@@ -85,18 +131,27 @@ public:
 
 /*--- Capacity ---*/
 public:
-    virtual bool empty() const = 0;
-    virtual std::size_t size() const = 0; // Actual size of the object handling stuff under the hood
-    virtual std::size_t length() const = 0; // Length of the time series (so when you iterate on it you do x steps)
-    virtual std::size_t max_size() const noexcept = 0;
-    virtual void reserve( std::size_t new_cap ) = 0;
-    virtual std::size_t capacity() const noexcept = 0;
+    virtual bool empty() const noexcept = 0;
+
+    virtual size_type size() const noexcept = 0; // Actual size of the object handling stuff under the hood
+    
+    virtual size_type length() const noexcept = 0; // Length of the time series (so when you iterate on it you do x steps)
+    
+    virtual size_type max_size() const noexcept = 0;
+    
+    virtual void reserve( size_type new_cap ) = 0;
+    
+    virtual size_type capacity() const noexcept = 0;
     
     // No shrink_to_fit
 
 /*--- Modifiers ---*/
 public:
-    virtual void clear() noexcept = 0;
+    // I can't mark this as noexcept because the constructor of T in the
+    // inherited classes could throw an exception
+    virtual void clear() {
+        p__glo_time_opts = nullptr;
+    }
 
     // TODO: continue here with the modifiers and the lookup functions
 

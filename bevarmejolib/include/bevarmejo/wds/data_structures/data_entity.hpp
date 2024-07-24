@@ -17,7 +17,7 @@ class DataEntity {
 
 /*--- Attributes ---*/
 protected:
-    std::unique_ptr<TimeSeries> p__time_series;
+    std::unique_ptr<TimeSeries<T>> p__time_series;
 
 /*--- Constructors ---*/
 public:

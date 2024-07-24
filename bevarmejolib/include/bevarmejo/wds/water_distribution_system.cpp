@@ -347,11 +347,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<Pattern>(
-            pattern_id, 
-            &m__config_options.times.pattern.shift_start_time__s,
-            &m__config_options.times.pattern.timestep__s)
-        );
+        _elements_.push_back(std::make_shared<Pattern>(pattern_id));
         delete[] pattern_id;
 
         // Save it in _patterns_ too
