@@ -388,6 +388,120 @@ TYPED_TEST(OpenQuantitySeriesVectorTest, VectorConstructorAndStates) {
     }
 }
 
+TYPED_TEST(OpenQuantitySeriesVectorTest, TimeBasedLookup) {
+
+        for (auto& [key, value] : this->ts_map) {
+        for (auto& input : this->input_values) {
+            QuantitySeries<TypeParam> qs(value, input);
+            
+            if (qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined)) {
+                EXPECT_THROW(qs.at(0), std::runtime_error);
+            }
+            else { // Is valid 
+                EXPECT_THROW(qs.find_pos(k__test_ts_start-1l), std::out_of_range);
+                EXPECT_THROW(qs.find_pos(k__test_ts_start+k__test_ts_duration+100l), std::out_of_range);
+                EXPECT_THROW(qs.lower_bound_pos(k__test_ts_start-1l), std::out_of_range);
+                EXPECT_THROW(qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration+100l), std::out_of_range);
+                EXPECT_THROW(qs.upper_bound_pos(k__test_ts_start-1l), std::out_of_range);
+                EXPECT_THROW(qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration+100l), std::out_of_range);
+
+                if (key == l__test_ts_constant) {
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+1));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step-1));
+                    
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step+1));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(1, qs.find_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration));
+
+                }
+                else if (key == l__test_ts_regular_input) {
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+1));
+                    
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step-1));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(1, qs.find_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(2, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step));
+
+                    EXPECT_EQ(1, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(1, qs.find_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(2, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step+1));
+
+                    EXPECT_EQ(k__test_ts_n_steps-1, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(k__test_ts_n_steps-1, qs.find_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(k__test_ts_n_steps-0, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+
+                    EXPECT_EQ(k__test_ts_n_steps-1, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(k__test_ts_n_steps-0, qs.find_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(k__test_ts_n_steps-0, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration));
+                }
+                else { // if (key == l__test_ts_results) 
+                    // Similar to the regular input, but with different time steps, therefore expected positions
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start));
+
+                    EXPECT_EQ(0, qs.lower_bound_pos(k__test_ts_start+1));
+                    EXPECT_EQ(0, qs.find_pos(k__test_ts_start+1));
+                    EXPECT_EQ(1, qs.upper_bound_pos(k__test_ts_start+1));
+                    
+                    // k__test_ts_start+k__test_ts_step-1 = 3599+start, I have two extra 1800 and 2700, 3600 is the fourth 
+                    EXPECT_EQ(2, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(2, qs.find_pos(k__test_ts_start+k__test_ts_step-1));
+                    EXPECT_EQ(3, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step-1));
+
+                    EXPECT_EQ(2, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(3, qs.find_pos(k__test_ts_start+k__test_ts_step));
+                    EXPECT_EQ(4, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step));
+
+                    EXPECT_EQ(3, qs.lower_bound_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(3, qs.find_pos(k__test_ts_start+k__test_ts_step+1));
+                    EXPECT_EQ(4, qs.upper_bound_pos(k__test_ts_start+k__test_ts_step+1));
+
+                    EXPECT_EQ(9-1, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(9-1, qs.find_pos(k__test_ts_start+k__test_ts_duration-1));
+                    EXPECT_EQ(9-0, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration-1));
+
+                    EXPECT_EQ(9-1, qs.lower_bound_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(9-0, qs.find_pos(k__test_ts_start+k__test_ts_duration));
+                    EXPECT_EQ(9-0, qs.upper_bound_pos(k__test_ts_start+k__test_ts_duration));
+                    
+                }
+                
+            }
+        }
+        }
+}
+
 } // namespace test
 } // namespace wds
 } // namespace bevarmejo
