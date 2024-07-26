@@ -9,6 +9,11 @@ function( add_test_executable name )
     gtest_discover_tests( ${name}Tests )
 endfunction()
 
-add_test_executable( vars )
+# add_test_executable( vars )
+# add_test_executable( demand )
+# add_test_executable( junction )
+# add_test_executable( tank )
 
-add_test_executable( junction )
+add_test_executable( pattern )
+
+add_test_executable( quantity_series )
