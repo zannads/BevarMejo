@@ -8,15 +8,24 @@
 #ifndef BEVARMEJOLIB_IO_HPP
 #define BEVARMEJOLIB_IO_HPP
 
+#include <filesystem>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+namespace nl = nlohmann;
+
+#include "bevarmejo/labels.hpp"
+
 namespace bevarmejo {
+namespace io {
+std::optional<std::filesystem::path> locate_file(const std::filesystem::path& filename, const std::vector<std::filesystem::path>& lookup_paths);
 
 namespace detail {
 
@@ -241,7 +250,7 @@ inline void stream_output(std::ostream& os, const T& value, Args& ...args){
     stream_output(os, args...);
 }
 
-} /* namespace detail */
+} // namespace detail 
 
 
 /* STREAM IN and OUT
@@ -273,6 +282,48 @@ inline void stream_param(std::ostream &os, const std::string& param_name, const 
     detail::stream_output(os, param_name, " : ", param_value, "\n");
 }
 
+// Given any pagmo container (island, algorithm, etc) return a json object with
+// name of the UD class, Parameters for input to the UD class, and extra info.
+// Two formulations are available, one for static parameters and one for dynamic.
+// The dynamic parameters are the ones that change at runtime, the static ones are
+// set at the beginning and don't change.
+// For each user defined class in an experiment (udc), this could have a set of 
+// static parameters and a set of dynamic parameters (more like states of the class).
+// The static parameters remain the same during en evolution, while the dynamic
+// parameters change. Together with the static parameters, I allow a string with
+// extra information that can be used to store any other information (e.g., an
+// explanation of the problem, the topology, etc.)
+
+namespace json {
+namespace detail {
+
+template <typename T>
+inline std::pair<nl::json,std::string> static_params(const T& udc) {
+    auto extra_info = udc.get_extra_info();
+    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
+    return std::make_pair(nl::json{}, extra_info);
+}
+
+template <typename T>
+inline nl::json dynamic_params(const T& udc) {
+    return nl::json{};
+}
+
+} // namespace detail
+} // namespace json
+
+namespace inp {
+namespace detail {
+
+template <typename P>
+inline void temp_net_to_file(const P& p, const std::vector<double>& dv, const std::string& out_file) {
+    p.save_solution(dv, out_file);
+}
+
+} // namespace detail
+} // namespace inp 
+
+
 /* LOAD dimensions from TAG
 * Special type of stream input for tag */
 inline std::size_t load_dimensions(std::istream& is, const std::string_view tag) {
@@ -300,7 +351,7 @@ inline std::size_t load_dimensions(std::istream& is, const std::string_view tag)
     throw std::runtime_error(oss.str());
 }
 
-
-} /* namespace bevarmejo */
+} // namespace io
+} // namespace bevarmejo
 
 #endif /* BEVARMEJOLIB_IO_HPP */

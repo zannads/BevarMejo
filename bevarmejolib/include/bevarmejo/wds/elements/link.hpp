@@ -4,9 +4,12 @@
 #include <string>
 
 #include "epanet2_2.h"
+#include "types.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/epanet_helpers/en_help.hpp"
+
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -72,10 +75,9 @@ public:
 public:
     /*--- Properties ---*/
     Node* from_node() const { return _node_start_; }
-    void from_node(Node* a_node);
-
+    void start_node(Node* a_node) { _node_start_ = a_node; }
     Node* to_node() const { return _node_end_; }
-    void to_node(Node* a_node);
+    void end_node(Node* a_node) { _node_end_ = a_node; }
 
     vars::var_int& initial_status() const { return *_initial_status_; }
 

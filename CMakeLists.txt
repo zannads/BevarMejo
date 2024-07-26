@@ -1,4 +1,4 @@
-﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.8)
@@ -48,6 +48,18 @@ ENDIF()
 # Look for an installation of pagmo in the system.
 find_package(Pagmo REQUIRED)
 
+# Look for an installation of nlohmann json in the system.
+IF(DEFINED ENV{JSON_ROOT})
+  set( JSON_ROOT "$ENV{JSON_ROOT}" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env found, using ${JSON_ROOT}")
+ELSE()
+  set( JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env NOT found, using ${JSON_ROOT}")
+ENDIF()
+# Include in the cmake prefix path 
+list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
 # "Look" for an installation of EPANET in the system.
 IF(WIN32)
   add_library(epanet SHARED IMPORTED )
@@ -55,13 +67,70 @@ IF(WIN32)
             IMPORTED_LOCATION "${EPANET_ROOT}/build/bin/Release/epanet2.dll"
             IMPORTED_IMPLIB "${EPANET_ROOT}/build/lib/Release/epanet2.lib"
             )
+  target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
 ENDIF(WIN32)
 
 IF(APPLE)
-  add_library(epanet SHARED IMPORTED)
-  set_target_properties(epanet PROPERTIES
-             IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
-             )
+  # On my Mac, I want to include the epanet library from source to debug it. 
+  IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(EPANET_FROM_SOURCE TRUE)
+  ELSE()
+    SET(EPANET_FROM_SOURCE FALSE)
+  ENDIF()
+
+  IF(EPANET_FROM_SOURCE)
+    message(STATUS "Building EPANET from source")
+    set(EPANET_FILES 
+      "${EPANET_ROOT}/src/enumstxt.h"
+      "${EPANET_ROOT}/src/epanet.c" 
+      "${EPANET_ROOT}/src/epanet2.c" 
+      "${EPANET_ROOT}/src/errors.dat" 
+      "${EPANET_ROOT}/src/funcs.h" 
+      "${EPANET_ROOT}/src/genmmd.c" 
+      "${EPANET_ROOT}/src/hash.c" 
+      "${EPANET_ROOT}/src/hash.h" 
+      "${EPANET_ROOT}/src/hydcoeffs.c" 
+      "${EPANET_ROOT}/src/hydraul.c" 
+      "${EPANET_ROOT}/src/hydsolver.c" 
+      "${EPANET_ROOT}/src/hydstatus.c" 
+      "${EPANET_ROOT}/src/inpfile.c" 
+      "${EPANET_ROOT}/src/input1.c" 
+      "${EPANET_ROOT}/src/input2.c" 
+      "${EPANET_ROOT}/src/input3.c" 
+      "${EPANET_ROOT}/src/mempool.c" 
+      "${EPANET_ROOT}/src/mempool.h" 
+      "${EPANET_ROOT}/src/output.c" 
+      "${EPANET_ROOT}/src/project.c" 
+      "${EPANET_ROOT}/src/quality.c" 
+      "${EPANET_ROOT}/src/qualreact.c" 
+      "${EPANET_ROOT}/src/qualroute.c" 
+      "${EPANET_ROOT}/src/report.c" 
+      "${EPANET_ROOT}/src/rules.c" 
+      "${EPANET_ROOT}/src/smatrix.c" 
+      "${EPANET_ROOT}/src/text.h" 
+      "${EPANET_ROOT}/src/types.h" 
+      "${EPANET_ROOT}/src/validate.c"
+      "${EPANET_ROOT}/src/util/cstr_helper.c"
+      "${EPANET_ROOT}/src/util/cstr_helper.h"
+      "${EPANET_ROOT}/src/util/errormanager.c"
+      "${EPANET_ROOT}/src/util/errormanager.h"
+      "${EPANET_ROOT}/src/util/filemanager.c"
+      "${EPANET_ROOT}/src/util/filemanager.h"
+    )
+
+    add_library(epanet ${EPANET_FILES})
+
+    target_include_directories(epanet PUBLIC 
+                                  "${EPANET_ROOT}/include"
+                                  "${EPANET_ROOT}/src"
+    )
+  ELSE() # EPANET non from source
+    add_library(epanet SHARED IMPORTED)
+    set_target_properties(epanet PROPERTIES
+              IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
+              )
+    target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
+  ENDIF()
 ENDIF(APPLE)
 
 IF(LINUX)
@@ -69,15 +138,15 @@ IF(LINUX)
   set_target_properties(epanet PROPERTIES
         IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.so"
         )
+  target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
 ENDIF(LINUX)
 
 # Include my library
 add_subdirectory("bevarmejolib")
-#add_subdirectory ("lib")
 
-# Include sub-projects.
-add_subdirectory ("Hanoi")
-add_subdirectory ("Anytown")
+# Include the specific directories of the problems
+add_subdirectory("Hanoi")
+add_subdirectory("Anytown")
 
 include(FetchContent)
 FetchContent_Declare(

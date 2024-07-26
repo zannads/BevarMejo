@@ -1,22 +1,22 @@
-﻿# CMakeList.txt : CMake project for the original Anytown problem
+﻿# CMakeList.txt : CMake project for all the Anytown formulations
 #
 
-add_subdirectory(src)
+add_library(anytown "prob_anytown.hpp" "prob_anytown.cpp"
+                    "rehab/prob_at_reh_f1.hpp" "rehab/prob_at_reh_f1.cpp"
+					"mixed/prob_at_mix_f1.hpp" "mixed/prob_at_mix_f1.cpp"
+					"operations/prob_at_ope_f1.hpp" "operations/prob_at_ope_f1.cpp"
+					"twophases/prob_at_2ph_f1.hpp" "twophases/prob_at_2ph_f1.cpp"
+)
 
-# Add source to this project's executable.
-add_executable (anytownTest "main_anytown_test.cpp" )
+set_property(TARGET anytown PROPERTY CXX_STANDARD 17)
 
+target_link_libraries(anytown PRIVATE bemelib)
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET anytownTest PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Add tests and install targets if needed.
-target_link_libraries(anytownTest PRIVATE Pagmo::pagmo bemelib modelAnytown)
-
-target_include_directories(anytownTest PUBLIC
-                          "${PROJECT_BINARY_DIR}"
-                          "${PROJECT_SOURCE_DIR}/Anytown/src"
-                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo"
-                          "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds"
-                          )
+target_include_directories(anytown PRIVATE
+							"${CMAKE_SOURCE_DIR}"
+							"${CMAKE_CURRENT_SOURCE_DIR}"
+							"${CMAKE_CURRENT_SOURCE_DIR}/rehab"
+							"${CMAKE_CURRENT_SOURCE_DIR}/mixed"
+							"${CMAKE_CURRENT_SOURCE_DIR}/twophases"
+							"${CMAKE_CURRENT_SOURCE_DIR}/operations"
+)

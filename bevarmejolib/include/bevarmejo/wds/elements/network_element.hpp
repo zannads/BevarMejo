@@ -9,8 +9,8 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 
 namespace bevarmejo {
@@ -72,6 +72,7 @@ class NetworkElement : public Element {
 
         /*---  Results   ---*/
         ResultsMap& results() { return _results_; }
+        void clear_results();
 
     /*--- Pure virtual methods ---*/
     public:

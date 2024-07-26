@@ -4,8 +4,8 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/variable.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
 
 #include "network_element.hpp"
@@ -61,6 +61,12 @@ NetworkElement& NetworkElement::operator=(NetworkElement&& rhs) noexcept {
 // Destructor
 NetworkElement::~NetworkElement() {
     _results_.clear();
+}
+
+void NetworkElement::clear_results() {
+    for (auto& [key, value] : _results_) {
+        std::visit([](auto&& arg) { arg.clear(); }, value);
+    }
 }
 
 void NetworkElement::_add_properties() {

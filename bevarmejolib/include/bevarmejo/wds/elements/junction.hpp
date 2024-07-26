@@ -4,18 +4,19 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
+#include <vector>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
-#include "bevarmejo/wds/elements/pattern.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/demand.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -86,7 +87,7 @@ public:
     void remove_demand(const std::string& a_category);
 private:
     auto _find_demand(const std::string& a_category) const;
-    
+public:    
     vars::var_real& demand_constant() {return *_demand_constant_;}
 
     /*---  Results   ---*/
@@ -97,8 +98,7 @@ private:
 /*--- Methods ---*/
 public:
     const bool has_demand() const override;
-    void retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>>& patterns);
-
+    
 /*--- Pure virtual methods override---*/
 public:
     /*--- Properties ---*/

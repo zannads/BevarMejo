@@ -5,8 +5,8 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -88,26 +88,37 @@ void DimensionedLink::retrieve_properties(EN_Project ph) {
     errorcode = EN_getlinkvalue(ph, index(), EN_DIAMETER, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the diameter of link "+id()+" from EPANET project.");
+
+    if (ph->parser.Unitsflag == US)
+        val = val/12*MperFT*1000; // from inches to ft, then to m, finally to mm
     _diameter_->value(val);
 
     errorcode = EN_getlinkvalue(ph, index(), EN_ROUGHNESS, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the roughness of link "+id()+" from EPANET project.");
+
+    // for now only HW coeff is supported
     _roughness_->value(val);
 
     errorcode = EN_getlinkvalue(ph, index(), EN_MINORLOSS, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the minor loss of link "+id()+" from EPANET project.");
+    
+    // DIMLESS
     _minor_loss_->value(val);
 
     errorcode = EN_getlinkvalue(ph, index(), EN_KBULK, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the bulk coefficient of link "+id()+" from EPANET project.");
+    
+    // for now I don't care about this
     _bulk_coeff_->value(val);
 
     errorcode = EN_getlinkvalue(ph, index(), EN_KWALL, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the wall coefficient of link "+id()+" from EPANET project.");
+    
+    // for now I don't care about this
     _wall_coeff_->value(val);
 }
 
@@ -115,21 +126,26 @@ void DimensionedLink::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
 
     int errorcode = 0;  
-    double d_velocity = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &d_velocity);
+    double val = 0;
+    errorcode = EN_getlinkvalue(ph, index(), EN_VELOCITY, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving the velocity of link "+id()+" from EPANET project.");
-    this->_velocity_->value().insert(std::make_pair(t, d_velocity));
+
+    // Before saving I need to conver it to m/s
+    if (ph->parser.Unitsflag == US)
+        val = val*MperFT; // from ft/s to m/s
+
+    this->_velocity_->value().insert(std::make_pair(t, val));
 }
 
 void DimensionedLink::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(L_DIAMETER, vars::var_real(vars::L_METER, kmin_diameter));
+    properties().emplace(L_DIAMETER, vars::var_real(vars::l__mm, kmin_diameter));
     properties().emplace(L_ROUGHNESS, vars::var_real("?", 0));
-    properties().emplace(L_MINOR_LOSS, vars::var_real(vars::L_DIMLESS, 0));
-    properties().emplace(L_BULK_COEFF, vars::var_real(vars::L_DIMLESS, 0));
-    properties().emplace(L_WALL_COEFF, vars::var_real(vars::L_DIMLESS, 0));
+    properties().emplace(L_MINOR_LOSS, vars::var_real(vars::l__DIMLESS, 0));
+    properties().emplace(L_BULK_COEFF, vars::var_real(vars::l__DIMLESS, 0));
+    properties().emplace(L_WALL_COEFF, vars::var_real(vars::l__DIMLESS, 0));
 }
 
 void DimensionedLink::_add_results() {

@@ -5,8 +5,8 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -61,12 +61,25 @@ public:
     // Destructor
     virtual ~Pipe();
 
+    std::unique_ptr<Pipe> clone() const;
+
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
     vars::var_real& length() const { return *_length_; }
+    void length(const double a_length) { _length_->value(a_length);}
 
     /*---  Results   ---*/
+
+/*--- Methods ---*/
+public:
+    /*--- Properties ---*/
+    
+    /*---  Results   ---*/
+
+    /*---   Other    ---*/
+    std::unique_ptr<Pipe> duplicate() const;
+    std::unique_ptr<Pipe> duplicate(const std::string& id) const;
 
 /*--- Pure virtual methods ---*/
 public:

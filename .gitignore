@@ -402,9 +402,24 @@ FodyWeavers.xsd
 
 # For xcode and build
 build/
+build*/
 /CMakeSettings.json
 buildXCode/
 
 # For vscode 
 .vscode/
 /build-vs-code
+
+build-XCode/
+
+nohup.out
+data/
+data
+
+**/.tmp/
+**/tmp/
+temp*
+*.py
+*.ipynb
+
+*.sh

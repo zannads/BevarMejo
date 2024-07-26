@@ -1,4 +1,5 @@
 #include <cassert>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -6,15 +7,15 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
-#include "bevarmejo/wds/elements/pattern.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/demand.hpp"
 
 #include "junction.hpp"
 
@@ -86,6 +87,7 @@ Demand& Junction::demand(const std::string &a_category) {
             return d;
         }
     }
+    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
 }
 
 void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) {
@@ -98,6 +100,7 @@ auto Junction::_find_demand(const std::string &a_category) const {
             return it;
         }
     }
+    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
 }
 
 void Junction::remove_demand(const std::string &a_category) {
@@ -111,40 +114,6 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::retrieve_demands(EN_Project ph, std::vector<std::shared_ptr<Pattern>> &patterns) {
-    int errorcode;
-    int n_demands;
-    errorcode = EN_getnumdemands(ph, this->index(), &n_demands);
-    assert(errorcode < 100);
-
-    for (int i=1; i<= n_demands; ++i) {
-        double d_base_demand;
-        errorcode = EN_getbasedemand(ph, this->index(), i, &d_base_demand);
-        assert(errorcode < 100);
-
-        int pattern_index;
-        errorcode = EN_getdemandpattern(ph, this->index(), i, &pattern_index);
-        assert(errorcode < 100);
-        // look for the pattern in the _patterns_ vector
-        std::shared_ptr<Pattern> p_pattern = nullptr;
-        for (auto& pattern : patterns) {
-            if (pattern->index() == pattern_index) {
-                p_pattern = pattern;
-                break;
-            }
-        }
-        assert(p_pattern != nullptr);
-        
-        char* d_category_ = new char[EN_MAXID];
-        errorcode = EN_getdemandname(ph, this->index(), i, d_category_);
-        assert(errorcode < 100);
-        std::string d_category(d_category_);
-        delete[] d_category_;
-
-        this->add_demand(d_category, d_base_demand, p_pattern);
-    }
-}
-
 void Junction::retrieve_properties(EN_Project ph)
 {
     inherited::retrieve_properties(ph);
@@ -155,33 +124,45 @@ void Junction::retrieve_properties(EN_Project ph)
 void Junction::retrieve_results(EN_Project ph, long t=0) {
     inherited::retrieve_results(ph, t);
 
-    int errorcode;
-    double d_demand_requested, d_demand_undelivered;
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &d_demand_requested);
+    int errorcode = 0;
+    double d_demand = 0;
+    double d_dem_deficit = 0;
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &d_demand);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
-    this->_demand_requested_->value().insert(std::make_pair(t, d_demand_requested));
 
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_demand_undelivered);
+    if (ph->parser.Unitsflag != LPS)
+        d_demand = epanet::convert_flow_to_L_per_s(ph, d_demand);
+    this->_demand_requested_->value().insert(std::make_pair(t, d_demand));
+
+    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_dem_deficit);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand deficit for node " + id()+"\n");
-    this->_demand_undelivered_->value().insert(std::make_pair(t, d_demand_undelivered));
 
-    this->_demand_delivered_->value().insert(std::make_pair(t, d_demand_requested - d_demand_undelivered));
+    if (ph->parser.Unitsflag != LPS)
+        d_dem_deficit = epanet::convert_flow_to_L_per_s(ph, d_dem_deficit);
+    // IF DDA is on and head is negative, the demand was not satisfied and it should go as a demand undelivered
+    if (/*Assume we know it is DDA*/ this->_head_->value().at(t) < 0)
+        this->_demand_undelivered_->value().insert(std::make_pair(t, d_demand));
+    else
+        this->_demand_undelivered_->value().insert(std::make_pair(t, d_dem_deficit));
+
+    this->_demand_delivered_->value().insert(std::make_pair(t, 
+        _demand_requested_->value().at(t) - _demand_undelivered_->value().at(t)));
 }
 
 void Junction::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::L_M3_PER_S,0));
+    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::l__L_per_s,0));
 }
 
 void Junction::_add_results() {
     inherited::_add_results();
 
-    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::L_M3_PER_S));
-    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::L_M3_PER_S));
-    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::L_M3_PER_S));
+    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::l__L_per_s));
+    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::l__L_per_s));
+    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::l__L_per_s));
 }
 
 void Junction::_update_pointers() {
