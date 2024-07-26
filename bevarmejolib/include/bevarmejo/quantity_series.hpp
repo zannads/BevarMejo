@@ -209,13 +209,12 @@ public:
         if (time__s < m__time_steps->front() || time__s > m__time_steps->back())
             throw std::out_of_range("QuantitySeries::find_pos: time__s out of range");
 
-        if (time__s == m__time_steps->back())
-            return m__time_steps->size()-1;
-
         size_type pos= 0;
-        while (pos < m__time_steps->size() && m__time_steps->at(pos) < time__s)
+        while (pos < m__time_steps->size() -1) {
+            if (m__time_steps->at(pos+1) > time__s)
+                break;
             ++pos;
-
+        }
         return pos;
     }
 
@@ -230,9 +229,11 @@ public:
             throw std::out_of_range("QuantitySeries::lower_bound_pos: time__s out of range");
 
         size_type pos= 0;
-        while (pos < m__time_steps->size() && m__time_steps->at(pos) < time__s)
+        while (pos < m__time_steps->size() -1) {
+            if (m__time_steps->at(pos+1) >= time__s)
+                break;
             ++pos;
-
+        }
         return pos;
     }
             
@@ -244,10 +245,12 @@ public:
         if (time__s < m__time_steps->front() || time__s > m__time_steps->back())
             throw std::out_of_range("QuantitySeries::upper_bound_pos: time__s out of range");
 
-        size_type pos= 0;
-        while (pos < m__time_steps->size() && m__time_steps->at(pos) <= time__s)
+        size_type pos= 1;
+        while (pos < m__time_steps->size()-1) {
+            if (m__time_steps->at(pos) > time__s)
+                break;
             ++pos;
-
+        }
         return pos;
     }
 
