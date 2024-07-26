@@ -33,16 +33,19 @@ set(WDS_LINKS   "${WDS_INC_ROOT}/elements/pipe.hpp" "${WDS_INC_ROOT}/elements/pi
                 "${WDS_INC_ROOT}/elements/link.hpp" "${WDS_INC_ROOT}/elements/link.cpp"
                 "${WDS_INC_ROOT}/elements/pump.hpp" "${WDS_INC_ROOT}/elements/pump.cpp"
 )
+
+set(WDS_AUX     "${WDS_INC_ROOT}/auxiliary/curve.hpp"
+                "${WDS_INC_ROOT}/auxiliary/curves.hpp" "${WDS_INC_ROOT}/auxiliary/curves.cpp"
+                "${WDS_INC_ROOT}/auxiliary/demand.hpp"
+                "${WDS_INC_ROOT}/auxiliary/pattern.hpp" "${WDS_INC_ROOT}/auxiliary/pattern.cpp"
+                )
+
 set(WDS_DATAS   "${WDS_INC_ROOT}/data_structures/variable.hpp"
                 "${WDS_INC_ROOT}/data_structures/temporal.hpp"
-                "${WDS_INC_ROOT}/data_structures/time_options.hpp"
-                "${WDS_INC_ROOT}/data_structures/pattern.hpp" "${WDS_INC_ROOT}/data_structures/pattern.cpp"
-                "${WDS_INC_ROOT}/data_structures/time_series.hpp"
-                "${WDS_INC_ROOT}/data_structures/constant_ts.hpp"
-                "${WDS_INC_ROOT}/data_structures/demand.hpp"
 )
 
 set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_help.hpp"
+                "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_time_options.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/containers_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"
@@ -53,9 +56,12 @@ add_library(bemelib "include/bevarmejo/io.hpp" "src/io.cpp"
                     "include/bevarmejo/econometric_functions.hpp"
                     "include/bevarmejo/hydraulic_functions.hpp" "src/hydraulic_functions.cpp"
                     "include/bevarmejo/labels.hpp"
+                    "include/bevarmejo/type_traits.hpp"
+                    "include/bevarmejo/quantity_series.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
                     ${WDS_LINKS}
+                    ${WDS_AUX}
                     ${WDS_DATAS}
                     ${HELPERS}
 )

@@ -15,7 +15,7 @@
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
-#include "bevarmejo/wds/data_structures/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
 
 #include "pump.hpp"
 

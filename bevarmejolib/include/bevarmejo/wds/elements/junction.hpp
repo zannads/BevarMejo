@@ -15,8 +15,8 @@
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
-#include "bevarmejo/wds/data_structures/pattern.hpp"
-#include "bevarmejo/wds/data_structures/demand.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/demand.hpp"
 
 namespace bevarmejo {
 namespace wds {

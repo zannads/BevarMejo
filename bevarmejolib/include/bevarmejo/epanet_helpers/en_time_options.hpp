@@ -1,12 +1,10 @@
 #ifndef BEVARMEJOLIB__WDS_DATA_STRUCTURES__TIME_OPTIONS_HPP
 #define BEVARMEJOLIB__WDS_DATA_STRUCTURES__TIME_OPTIONS_HPP
 
-#include <vector>
+#include "bevarmejo/quantity_series.hpp"
 
 namespace bevarmejo {
-namespace wds {
-
-using time_t = long;
+namespace epanet {
 
 struct GlobalTimeOptions {
     time_t shift_start_time__s = 0;         // Shift for the start time of the simulation in seconds, but this is only for control rules and eventually for visualization. Simulations and times always start at 0.
@@ -16,8 +14,6 @@ struct PatternTimeOptions {
     time_t shift_start_time__s = 0;         // Shift of the start time of the pattern
     time_t timestep__s = 3600;             // Step of the pattern
 };
-
-using TimeSteps = std::vector<time_t>;
 
 } // namespace wds
 } // namespace bevarmejo

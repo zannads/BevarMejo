@@ -34,8 +34,8 @@
 #include "bevarmejo/wds/elements/pump.hpp"
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
-#include "bevarmejo/wds/data_structures/pattern.hpp"
-#include "bevarmejo/wds/data_structures/time_options.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/epanet_helpers/en_time_options.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
@@ -93,8 +93,8 @@ protected:
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
         struct TimeOptions {
-            GlobalTimeOptions global;
-            PatternTimeOptions pattern;
+            epanet::GlobalTimeOptions global;
+            epanet::PatternTimeOptions pattern;
         } times;
     } m__config_options;
 

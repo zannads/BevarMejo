@@ -9,7 +9,7 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 
-#include "bevarmejo/wds/data_structures/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
 
 namespace bevarmejo {   
 namespace wds {
