@@ -57,6 +57,7 @@ add_library(bemelib "include/bevarmejo/io.hpp" "src/io.cpp"
                     "include/bevarmejo/hydraulic_functions.hpp" "src/hydraulic_functions.cpp"
                     "include/bevarmejo/labels.hpp"
                     "include/bevarmejo/type_traits.hpp"
+                    "include/bevarmejo/time_series.hpp" "src/time_series.cpp"
                     "include/bevarmejo/quantity_series.hpp"
                     ${WDS_FILES}
                     ${WDS_NODES}
