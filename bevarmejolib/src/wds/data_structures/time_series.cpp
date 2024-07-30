@@ -228,13 +228,7 @@ TimeSeries::iterator::pointer TimeSeries::iterator::operator->() const {
 }
 
 TimeSeries::iterator::value_type TimeSeries::iterator::operator[](difference_type n) const {
-    assert(m__index + n < m__time_series->length() && "Dereferencing end iterator");
-
-    if (m__index + n == m__time_series->inner_size())
-        return m__time_series->m__gto.duration__s();
-
-    // Dereferencing out of bounds is undefined behaviour.
-    return m__time_series->m__time_steps[m__index + n];
+    return *(*this + n);
 }
 
 TimeSeries::iterator& TimeSeries::iterator::operator++() {
@@ -286,18 +280,8 @@ TimeSeries::iterator& TimeSeries::iterator::operator+=(difference_type n) {
 }
 
 TimeSeries::iterator TimeSeries::iterator::operator+(difference_type n) const {
-    assert(m__index + n <= m__time_series->length() && "Going out of bounds");
-    
-    iterator tmp = *this;
-    // Overflow check
-    if (n < 0 && m__index < -n)
-        tmp.m__index = 0;
-    else {
-        size_type ub = m__time_series->length();
-        tmp.m__index = (m__index + n > ub) ? ub : m__index + n;
-    }
-
-    return tmp;
+    iterator tmp= *this;
+    return tmp += n;
 }
 
 TimeSeries::iterator& TimeSeries::iterator::operator-=(difference_type n) {
@@ -367,13 +351,7 @@ TimeSeries::const_iterator::pointer TimeSeries::const_iterator::operator->() con
 }
 
 TimeSeries::const_iterator::value_type TimeSeries::const_iterator::operator[](difference_type n) const {
-    assert(m__index + n < m__time_series->length() && "Dereferencing end iterator");
-
-    if (m__index + n == m__time_series->inner_size())
-        return m__time_series->m__gto.duration__s();
-
-    // Dereferencing out of bounds is undefined behaviour.
-    return m__time_series->m__time_steps[m__index + n];
+    return *(*this + n);
 }
 
 TimeSeries::const_iterator& TimeSeries::const_iterator::operator++() {
@@ -425,18 +403,8 @@ TimeSeries::const_iterator& TimeSeries::const_iterator::operator+=(difference_ty
 }
 
 TimeSeries::const_iterator TimeSeries::const_iterator::operator+(difference_type n) const {
-    assert(m__index + n <= m__time_series->length() && "Going out of bounds");
-    
-    const_iterator tmp = *this;
-    // Overflow check
-    if (n < 0 && m__index < -n)
-        tmp.m__index = 0;
-    else {
-        size_type ub = m__time_series->length();
-        tmp.m__index = (m__index + n > ub) ? ub : m__index + n;
-    }
-
-    return tmp;
+    const_iterator tmp= *this;
+    return tmp += n;
 }
 
 TimeSeries::const_iterator& TimeSeries::const_iterator::operator-=(difference_type n) {
@@ -505,17 +473,11 @@ TimeSeries::reverse_iterator::pointer TimeSeries::reverse_iterator::operator->()
 }
 
 TimeSeries::reverse_iterator::value_type TimeSeries::reverse_iterator::operator[](difference_type n) const {
-    assert(m__index - n != 0 && m__index - n <= m__time_series->length() && "Dereferencing end iterator");
-
-    if (m__index - n == m__time_series->inner_size()+1)
-        return m__time_series->m__gto.duration__s();
-
-    // Dereferencing out of bounds is undefined behaviour.
-    return m__time_series->m__time_steps[m__index - n - 1];
+    return *(*this + n);
 }
 
 TimeSeries::reverse_iterator& TimeSeries::reverse_iterator::operator++() {
-    assert(m__index > 0 && m__index <= m__time_series->length() && "Incrementing end iterator");
+    assert(m__index > 0 && "Incrementing end iterator");
 
     if (m__index > 0)
         --m__index;
@@ -523,7 +485,7 @@ TimeSeries::reverse_iterator& TimeSeries::reverse_iterator::operator++() {
 }
 
 TimeSeries::reverse_iterator TimeSeries::reverse_iterator::operator++(int) {
-    assert(m__index > 0 && m__index <= m__time_series->length() && "Incrementing end iterator");
+    assert(m__index > 0 && "Incrementing end iterator");
 
     reverse_iterator tmp = *this;
     if (m__index > 0)
@@ -549,32 +511,22 @@ TimeSeries::reverse_iterator TimeSeries::reverse_iterator::operator--(int) {
 }
 
 TimeSeries::reverse_iterator& TimeSeries::reverse_iterator::operator+=(difference_type n) {
-    assert(m__index -n != 0 && m__index - n <= m__time_series->length() && "Going out of bounds");
+    assert(m__index - n <= m__time_series->length() && "Going out of bounds");
 
     // Overflow check
     if (n>0 && m__index < n)
         m__index = 0;
     else {
-        size_type ub = m__time_series->length();
-        m__index = (m__index - n > ub) ? ub : m__index - n;
+        size_type upb = m__time_series->length();
+        m__index = (m__index - n > upb) ? upb : m__index - n;
     }
 
     return *this;
 }
 
 TimeSeries::reverse_iterator TimeSeries::reverse_iterator::operator+(difference_type n) const {
-    assert(m__index - n != 0 && m__index - n <= m__time_series->length() && "Going out of bounds");
-
     reverse_iterator tmp = *this;
-    // Overflow check
-    if (n>0 && m__index < n)
-        tmp.m__index = 0;
-    else {
-        size_type ub = m__time_series->length();
-        tmp.m__index = (m__index - n > ub) ? ub : m__index - n;
-    }
-
-    return tmp;
+    return tmp += n;
 }
 
 TimeSeries::reverse_iterator& TimeSeries::reverse_iterator::operator-=(difference_type n) {
@@ -643,17 +595,11 @@ TimeSeries::const_reverse_iterator::pointer TimeSeries::const_reverse_iterator::
 }
 
 TimeSeries::const_reverse_iterator::value_type TimeSeries::const_reverse_iterator::operator[](difference_type n) const {
-    assert(m__index - n != 0 && m__index - n <= m__time_series->length() && "Dereferencing end iterator");
-
-    if (m__index - n == m__time_series->inner_size()+1)
-        return m__time_series->m__gto.duration__s();
-
-    // Dereferencing out of bounds is undefined behaviour.
-    return m__time_series->m__time_steps[m__index - n - 1];
+    return *(*this + n);
 }
 
 TimeSeries::const_reverse_iterator& TimeSeries::const_reverse_iterator::operator++() {
-    assert(m__index > 0 && m__index <= m__time_series->length() && "Incrementing end iterator");
+    assert(m__index > 0 && "Incrementing end iterator");
 
     if (m__index > 0)
         --m__index;
@@ -661,7 +607,7 @@ TimeSeries::const_reverse_iterator& TimeSeries::const_reverse_iterator::operator
 }
 
 TimeSeries::const_reverse_iterator TimeSeries::const_reverse_iterator::operator++(int) {
-    assert(m__index > 0 && m__index <= m__time_series->length() && "Incrementing end iterator");
+    assert(m__index > 0 && "Incrementing end iterator");
 
     const_reverse_iterator tmp = *this;
     if (m__index > 0)
@@ -693,26 +639,16 @@ TimeSeries::const_reverse_iterator& TimeSeries::const_reverse_iterator::operator
     if (n>0 && m__index < n)
         m__index = 0;
     else {
-        size_type ub = m__time_series->length();
-        m__index = (m__index - n > ub) ? ub : m__index - n;
+        size_type upb = m__time_series->length();
+        m__index = (m__index - n > upb) ? upb : m__index - n;
     }
 
     return *this;
 }
 
 TimeSeries::const_reverse_iterator TimeSeries::const_reverse_iterator::operator+(difference_type n) const {
-    assert(m__index - n != 0 && m__index - n <= m__time_series->length() && "Going out of bounds");
-
     const_reverse_iterator tmp = *this;
-    // Overflow check
-    if (n>0 && m__index < n)
-        tmp.m__index = 0;
-    else {
-        size_type ub = m__time_series->length();
-        tmp.m__index = (m__index - n > ub) ? ub : m__index - n;
-    }
-
-    return tmp;
+    return tmp += n;
 }
 
 TimeSeries::const_reverse_iterator& TimeSeries::const_reverse_iterator::operator-=(difference_type n) {
