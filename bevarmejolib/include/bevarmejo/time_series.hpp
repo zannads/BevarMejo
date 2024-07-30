@@ -306,7 +306,7 @@ public:
 
     // Resize should be called when the duration of the gto changes. 
     // Failing to call this method after changing the duration of the GTO will result in an invalid time series.
-    void resize();
+    void shrink_to_duration();
     void resize( size_type count );
 
     // No emplace, try_emplace, emplace_hint, emplace_back as they are simple longs.

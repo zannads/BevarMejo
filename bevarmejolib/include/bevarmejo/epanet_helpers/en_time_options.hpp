@@ -55,6 +55,7 @@ public:
 public:
     time_t shift_start_time__s() const { return m__shift_start_time__s; }
     time_t duration__s() const { return m__duration__s; }
+    const time_t* duration__s_ptr() const { return &m__duration__s; }
 
     void shift_start_time__s(time_t a_shift_start_time__s) { m__shift_start_time__s = a_shift_start_time__s; }
 
