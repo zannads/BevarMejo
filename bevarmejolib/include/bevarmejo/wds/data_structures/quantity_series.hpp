@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "bevarmejo/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/time_series.hpp"
+#include "bevarmejo/wds/data_structures/time_series.hpp"
 
 namespace bevarmejo {
 
