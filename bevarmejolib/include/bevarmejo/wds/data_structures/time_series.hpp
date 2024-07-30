@@ -227,6 +227,7 @@ private:
         bool operator<=(const ReverseIterator& other) const { return m__index >= other.m__index; }
         bool operator>=(const ReverseIterator& other) const { return m__index <= other.m__index; }
     };
+    
 public:
     using iterator= Iterator<TimeSeries>;
     using const_iterator= Iterator<const TimeSeries>;
