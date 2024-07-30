@@ -95,155 +95,144 @@ public:
 
 // The reverse iterators behave the same, but I access index-1 to get the time step.
 // So that the end operator has index 0 and I can use a size_type for both forward and reverse iterators.
+private:
+    template <typename TS>
+    class Iterator {
+    public:
+        using iterator_category= std::random_access_iterator_tag;
+        using value_type= typename TS::value_type;
+        using difference_type= typename TS::difference_type;
+        using pointer= typename TS::const_pointer;
+        using reference= typename TS::const_reference;
 
-    class iterator {
     private:
-        TimeSeries* m__time_series;
+        TS* m__time_series;
         size_type m__index;
 
     public:
-        using iterator_category= std::random_access_iterator_tag;
-        using value_type= TimeSeries::value_type;
-        using difference_type= TimeSeries::difference_type;
-        using pointer= TimeSeries::const_pointer;
-        using reference= TimeSeries::const_reference;
-
-        iterator(TimeSeries* time_series, size_type index);
+        Iterator(TS* time_series, size_type index) : m__time_series(time_series), m__index(index) {}
 
         value_type operator*() const;
         pointer operator->() const;
-        value_type operator[](difference_type n) const;
+        value_type operator[](difference_type n) const { return *(*this + n); }
 
-        iterator& operator++();
-        iterator operator++(int);
-        iterator& operator--();
-        iterator operator--(int);
+        Iterator& operator++() {
+            assert(m__index < m__time_series->length() && "Incrementing end iterator");
+            
+            if (m__index < m__time_series->length())
+                ++m__index;
+            return *this;
+        }
+        Iterator operator++(int) { 
+            assert(m__index < m__time_series->length() && "Incrementing end iterator");
+            
+            auto tmp= *this;
+            if (m__index < m__time_series->length())
+                ++m__index;
+            return tmp;
+        }
+        Iterator& operator--() {
+            assert(m__index > 0 && "Decrementing begin iterator");
 
-        iterator& operator+=(difference_type n);
-        iterator operator+(difference_type n) const;
-        iterator& operator-=(difference_type n);
-        iterator operator-(difference_type n) const;
-        difference_type operator-(const iterator& other) const;
+            if (m__index > 0)
+                --m__index;
+            return *this;
+        }
+        Iterator operator--(int) {
+            assert(m__index > 0 && "Decrementing begin iterator");
 
-        bool operator==(const iterator& other) const;
-        bool operator!=(const iterator& other) const;
-        bool operator<(const iterator& other) const;
-        bool operator>(const iterator& other) const;
-        bool operator<=(const iterator& other) const;
-        bool operator>=(const iterator& other) const;
-    };
+            auto tmp= *this;
+            if (m__index > 0)
+                --m__index;
+            return tmp;
+        }
 
-    class const_iterator {
-    private:
-        const TimeSeries* m__time_series;
-        size_type m__index;
+        Iterator& operator+=(difference_type n);
+        Iterator operator+(difference_type n) const { auto tmp= *this; return tmp += n; }
+        Iterator& operator-=(difference_type n) { return (*this += -n); }
+        Iterator operator-(difference_type n) const { return (*this + -n); }
+        difference_type operator-(const Iterator& other) const { return m__index - other.m__index; }
 
-    public:
-        using iterator_category= std::random_access_iterator_tag;
-        using value_type= TimeSeries::value_type;
-        using difference_type= TimeSeries::difference_type;
-        using pointer= TimeSeries::const_pointer;
-        using reference= TimeSeries::const_reference;
-
-        const_iterator(const TimeSeries* time_series, size_type index);
-
-        value_type operator*() const;
-        pointer operator->() const;
-        value_type operator[](difference_type n) const;
-
-        const_iterator& operator++();
-        const_iterator operator++(int);
-        const_iterator& operator--();
-        const_iterator operator--(int);
-
-        const_iterator& operator+=(difference_type n);
-        const_iterator operator+(difference_type n) const;
-        const_iterator& operator-=(difference_type n);
-        const_iterator operator-(difference_type n) const;
-        difference_type operator-(const const_iterator& other) const;
-
-        bool operator==(const const_iterator& other) const;
-        bool operator!=(const const_iterator& other) const;
-        bool operator<(const const_iterator& other) const;
-        bool operator>(const const_iterator& other) const;
-        bool operator<=(const const_iterator& other) const;
-        bool operator>=(const const_iterator& other) const;
-    };
-
-    class reverse_iterator {
-    private:
-        TimeSeries* m__time_series;
-        size_type m__index;
-
-    public:
-        using iterator_category= std::random_access_iterator_tag;
-        using value_type= TimeSeries::value_type;
-        using difference_type= TimeSeries::difference_type;
-        using pointer= TimeSeries::const_pointer;
-        using reference= TimeSeries::const_reference;
-
-        reverse_iterator(TimeSeries* time_series, size_type index);
-
-        value_type operator*() const;
-        pointer operator->() const;
-        value_type operator[](difference_type n) const;
-
-        reverse_iterator& operator++();
-        reverse_iterator operator++(int);
-        reverse_iterator& operator--();
-        reverse_iterator operator--(int);
-
-        reverse_iterator& operator+=(difference_type n);
-        reverse_iterator operator+(difference_type n) const;
-        reverse_iterator& operator-=(difference_type n);
-        reverse_iterator operator-(difference_type n) const;
-        difference_type operator-(const reverse_iterator& other) const;
-
-        bool operator==(const reverse_iterator& other) const;
-        bool operator!=(const reverse_iterator& other) const;
-        bool operator<(const reverse_iterator& other) const;
-        bool operator>(const reverse_iterator& other) const;
-        bool operator<=(const reverse_iterator& other) const;
-        bool operator>=(const reverse_iterator& other) const;
-    };
-
-    class const_reverse_iterator {
-    private:
-        const TimeSeries* m__time_series;
-        size_type m__index;
-
-    public:
-        using iterator_category= std::random_access_iterator_tag;
-        using value_type= TimeSeries::value_type;
-        using difference_type= TimeSeries::difference_type;
-        using pointer= TimeSeries::const_pointer;
-        using reference= TimeSeries::const_reference;
-
-        const_reverse_iterator(const TimeSeries* time_series, size_type index);
-
-        value_type operator*() const;
-        pointer operator->() const;
-        value_type operator[](difference_type n) const;
-
-        const_reverse_iterator& operator++();
-        const_reverse_iterator operator++(int);
-        const_reverse_iterator& operator--();
-        const_reverse_iterator operator--(int);
-
-        const_reverse_iterator& operator+=(difference_type n);
-        const_reverse_iterator operator+(difference_type n) const;
-        const_reverse_iterator& operator-=(difference_type n);
-        const_reverse_iterator operator-(difference_type n) const;
-        difference_type operator-(const const_reverse_iterator& other) const;
-
-        bool operator==(const const_reverse_iterator& other) const;
-        bool operator!=(const const_reverse_iterator& other) const;
-        bool operator<(const const_reverse_iterator& other) const;
-        bool operator>(const const_reverse_iterator& other) const;
-        bool operator<=(const const_reverse_iterator& other) const;
-        bool operator>=(const const_reverse_iterator& other) const;
+        bool operator==(const Iterator& other) const { return m__index == other.m__index; }
+        bool operator!=(const Iterator& other) const { return m__index != other.m__index; }
+        bool operator<(const Iterator& other) const { return m__index < other.m__index; }
+        bool operator>(const Iterator& other) const { return m__index > other.m__index; }
+        bool operator<=(const Iterator& other) const { return m__index <= other.m__index; }
+        bool operator>=(const Iterator& other) const { return m__index >= other.m__index; }
     };
     
+    template <typename TS>
+    class ReverseIterator {
+    public:
+        using iterator_category= std::random_access_iterator_tag;
+        using value_type= typename TS::value_type;
+        using difference_type= typename TS::difference_type;
+        using pointer= typename TS::const_pointer;
+        using reference= typename TS::const_reference;
+
+    private:
+        TS* m__time_series;
+        size_type m__index;
+
+    public:
+        ReverseIterator(TS* time_series, size_type index) : m__time_series(time_series), m__index(index) {}
+
+        value_type operator*() const;
+        pointer operator->() const;
+        value_type operator[](difference_type n) const { return *(*this + n); }
+
+        ReverseIterator& operator++() {
+            assert(m__index > 0 && "Incrementing rend iterator");
+
+            if (m__index > 0)
+                --m__index;
+            return *this;
+        }
+        ReverseIterator operator++(int) {
+            assert(m__index > 0 && "Incrementing rend iterator");
+
+            auto tmp= *this;
+            if (m__index > 0)
+                --m__index;
+            return tmp;
+        }
+        ReverseIterator& operator--() {
+            assert(m__index < m__time_series->length() && "Decrementing rbegin iterator");
+
+            if (m__index < m__time_series->length())
+                ++m__index;
+            return *this;
+        }
+        ReverseIterator operator--(int) {
+            assert(m__index < m__time_series->length() && "Decrementing rbegin iterator");
+
+            auto tmp= *this;
+            if (m__index < m__time_series->length())
+                ++m__index;
+            return tmp;
+        }
+
+        ReverseIterator& operator+=(difference_type n);
+        ReverseIterator operator+(difference_type n) const { auto tmp= *this; return tmp += n; }
+        ReverseIterator& operator-=(difference_type n) { return (*this += -n); }
+        ReverseIterator operator-(difference_type n) const { return (*this + -n); }
+        // Reverse the logic of the comparison operators.
+        difference_type operator-(const ReverseIterator& other) const { return -(m__index - other.m__index); }
+
+        bool operator==(const ReverseIterator& other) const { return m__index == other.m__index; }
+        bool operator!=(const ReverseIterator& other) const { return m__index != other.m__index; }
+        // Reverse the logic of the comparison operators.
+        bool operator<(const ReverseIterator& other) const { return m__index > other.m__index; }
+        bool operator>(const ReverseIterator& other) const { return m__index < other.m__index; }
+        bool operator<=(const ReverseIterator& other) const { return m__index >= other.m__index; }
+        bool operator>=(const ReverseIterator& other) const { return m__index <= other.m__index; }
+    };
+public:
+    using iterator= Iterator<TimeSeries>;
+    using const_iterator= Iterator<const TimeSeries>;
+    using reverse_iterator= ReverseIterator<TimeSeries>;
+    using const_reverse_iterator= ReverseIterator<const TimeSeries>;
+
     iterator begin() noexcept;
     const_iterator begin() const noexcept;
     const_iterator cbegin() const noexcept;
@@ -354,6 +343,90 @@ public:
     // Upper_bound_pos, returns the array position to the first time that is greater than the given time
     size_type upper_bound_pos( time_t time__s ) const;
 };
+
+/*----------------------------------------------------------------------------*/
+
+                            /*--- Iterator ---*/
+
+/*----------------------------------------------------------------------------*/
+template <typename TS>
+typename TimeSeries::Iterator<TS>::value_type TimeSeries::Iterator<TS>::operator*() const {
+    assert(m__index < m__time_series->length() && "Dereferencing end iterator");
+
+    // Special case: index == size(), I return the end time.
+    if (m__index == m__time_series->inner_size())
+        return m__time_series->m__gto.duration__s();
+
+    // Default case: 
+    // Let dereference the end iterator be undefined behaviour in Release mode.
+    return m__time_series->m__time_steps[m__index];
+}
+
+template <typename TS>
+typename TimeSeries::Iterator<TS>::pointer TimeSeries::Iterator<TS>::operator->() const {
+    assert(m__index < m__time_series->length() && "Dereferencing end iterator");
+
+    if (m__index == m__time_series->inner_size())
+        return m__time_series->m__gto.duration__s_ptr();
+
+    return &m__time_series->m__time_steps[m__index];
+}
+
+template <typename TS>
+typename TimeSeries::Iterator<TS>& TimeSeries::Iterator<TS>::operator+=(difference_type n) {
+    assert(m__index + n <= m__time_series->length() && "Going out of bounds");
+    
+    // Overflow check
+    if (n < 0 && m__index < -n)
+        m__index = 0;
+    else {
+        size_type upb = m__time_series->length();
+        m__index = (m__index + n > upb) ? upb : m__index + n;
+    }   
+
+    return *this;
+}
+
+/*----------------------------------------------------------------------------*/
+
+                            /*--- Reverse Iterator ---*/
+
+/*----------------------------------------------------------------------------*/
+// Reverse iterator stores an iterator to the next element than the one it actually refers to.
+template <typename TS>
+typename TimeSeries::ReverseIterator<TS>::value_type TimeSeries::ReverseIterator<TS>::operator*() const {
+    assert(m__index > 0 && "Dereferencing rend iterator");
+
+    if (m__index == m__time_series->inner_size()+1)
+        return m__time_series->m__gto.duration__s();
+
+    return m__time_series->m__time_steps[m__index-1];
+}
+
+template <typename TS>
+typename TimeSeries::ReverseIterator<TS>::pointer TimeSeries::ReverseIterator<TS>::operator->() const {
+    assert(m__index > 0 && "Dereferencing rend iterator");
+
+    if (m__index == m__time_series->inner_size()+1)
+        return m__time_series->m__gto.duration__s_ptr();
+
+    return &m__time_series->m__time_steps[m__index-1];
+}
+
+template <typename TS>
+typename TimeSeries::ReverseIterator<TS>& TimeSeries::ReverseIterator<TS>::operator+=(difference_type n) {
+    assert(m__index - n <= m__time_series->length() && "Going out of bounds");
+
+    // Overflow check
+    if (n>0 && m__index < n)
+        m__index = 0;
+    else {
+        size_type upb = m__time_series->length();
+        m__index = (m__index - n > upb) ? upb : m__index - n;
+    }
+
+    return *this;
+}
 
 } // namespace bevarmejo
 
