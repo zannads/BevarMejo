@@ -14,6 +14,8 @@
 #include "bevarmejo/wds/data_structures/time_series.hpp"
 
 namespace bevarmejo {
+namespace wds {
+namespace aux {
 
 // just a base class to be able to use the same pointer for different types
 class QuantitySeriesBase { };
@@ -557,6 +559,8 @@ public:
     size_type upper_bound_pos( time_t time__s ) const { return m__time_series.upper_bound_pos(time__s); }
 };
 
+} // namespace aux
+} // namespace wds
 } // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__QUANTITY_SERIES_HPP

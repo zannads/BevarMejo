@@ -9,6 +9,8 @@
 #include "bevarmejo/epanet_helpers/en_time_options.hpp"
 
 namespace bevarmejo {
+namespace wds {
+namespace aux {
 
 using time_t= epanet::time_t;
 using TimeSteps= std::vector<time_t>;
@@ -227,7 +229,7 @@ private:
         bool operator<=(const ReverseIterator& other) const { return m__index >= other.m__index; }
         bool operator>=(const ReverseIterator& other) const { return m__index <= other.m__index; }
     };
-    
+
 public:
     using iterator= Iterator<TimeSeries>;
     using const_iterator= Iterator<const TimeSeries>;
@@ -429,6 +431,8 @@ typename TimeSeries::ReverseIterator<TS>& TimeSeries::ReverseIterator<TS>::opera
     return *this;
 }
 
+} // namespace aux
+} // namespace wds
 } // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__TIME_SERIES_HPP

@@ -7,6 +7,8 @@
 #include "time_series.hpp"
 
 namespace bevarmejo {
+namespace wds {
+namespace aux {
 
 bool is_monotonic(const TimeSteps& time_steps) {
     for (std::size_t i = 0; i < time_steps.size() - 1; ++i) {
@@ -198,4 +200,6 @@ TimeSeries::size_type TimeSeries::upper_bound_pos(time_t time__s) const {
     return lower_bound_pos(time__s) + 1;
 }
 
+} // namespace aux
+} // namespace wds
 } // namespace bevarmejo
