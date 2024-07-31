@@ -82,7 +82,7 @@ protected:
         // Controls controls;
         // Rules rules;
 
-        TimeSteps results_times;
+        
     } m__aux_elements_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
