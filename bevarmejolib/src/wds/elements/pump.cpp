@@ -106,8 +106,8 @@ namespace wds {
 
     Pump::~Pump() { /* Everything is deleted by the inherited destructor */ }
 
-    void Pump::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
-        inherited::__retrieve_EN_properties(ph);
+    void Pump::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
+        inherited::__retrieve_EN_properties(ph, nodes);
 
         double value= 0.0;
         int errorcode= EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
@@ -136,8 +136,42 @@ namespace wds {
 
             speed_pattern(*it);
         }
-        { // Assign EN Curves
+        { // Assign EN Curves (Pump curve and Efficiency curve)
+            errorcode= EN_getlinkvalue(ph, this->index(), EN_PUMP_HCURVE, &value);
+            assert(errorcode < 100);
+            
+            if (value != 0.0) {
+                char curve_id[EN_MAXID+1];
+                errorcode= EN_getcurveid(ph, static_cast<int>(value), curve_id);
+                assert(errorcode < 100);
+                auto it= curves.find(curve_id);
+                assert(it != curves.end());
 
+                std::shared_ptr<PumpCurve> pump_curve= std::dynamic_pointer_cast<PumpCurve>(*it);
+                assert(pump_curve != nullptr); 
+                // EPANET says that this curve with this ID should be a pump curve.
+                // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
+                this->pump_curve(pump_curve);
+            }
+            else this->pump_curve(nullptr);
+
+            errorcode= EN_getlinkvalue(ph, this->index(), EN_PUMP_ECURVE, &value);
+            assert(errorcode < 100);
+
+            if (value != 0.0) {
+                char curve_id[EN_MAXID+1];
+                errorcode= EN_getcurveid(ph, static_cast<int>(value), curve_id);
+                assert(errorcode < 100);
+                auto it= curves.find(curve_id);
+                assert(it != curves.end());
+
+                std::shared_ptr<EfficiencyCurve> efficiency_curve= std::dynamic_pointer_cast<EfficiencyCurve>(*it);
+                assert(efficiency_curve != nullptr); 
+                // EPANET says that this curve with this ID should be an efficiency curve.
+                // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
+                this->efficiency_curve(efficiency_curve);
+            }
+            else this->efficiency_curve(nullptr);
         }
     }
 

@@ -106,7 +106,7 @@ void Link::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Link::__retrieve_EN_properties(EN_Project ph) {
+void Link::__retrieve_EN_properties(EN_Project ph,  const ElementsGroup<Node>& nodes) {
     assert(index() != 0);
     int errorcode = 0;
 
@@ -118,8 +118,27 @@ void Link::__retrieve_EN_properties(EN_Project ph) {
 
     _initial_status_->value(d_initial_status);
 
-    // Unfortuntely, I can't retrieve the pointers to the node if I'm not sure the nodes have been created. 
-    // So I have to do it in the network class.
+    { // Assign Nodes
+        int node1_idx= 0;
+        int node2_idx= 0;
+        int errorcode= EN_getlinknodes(ph, this->index(), &node1_idx, &node2_idx);
+        assert(errorcode <= 100);
+
+        std::string node1_id = epanet::get_node_id(ph, node1_idx);
+        std::string node2_id = epanet::get_node_id(ph, node2_idx);
+
+        auto it_node1 = nodes.find(node1_id);
+        assert(it_node1 != nodes.end());
+        auto it_node2 = nodes.find(node2_id);
+        assert(it_node2 != nodes.end());
+
+        // Assign the nodes to the links and viceversa
+        this->start_node(it_node1->get());
+        this->end_node(it_node2->get());
+
+        (*it_node1)->add_link(this);
+        (*it_node2)->add_link(this);
+    }
 }
 
 void Link::retrieve_results(EN_Project ph, long t) {

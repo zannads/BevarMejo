@@ -90,7 +90,7 @@ public:
 public:
     void retrieve_results(EN_Project ph, long t) override;
 protected:
-    void __retrieve_EN_properties(EN_Project ph) override;
+    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) override;
 
 };
 

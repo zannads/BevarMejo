@@ -119,7 +119,7 @@ public:
 public:
     /*--- Properties ---*/
 protected:
-    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) override;
+    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) override;
 public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;

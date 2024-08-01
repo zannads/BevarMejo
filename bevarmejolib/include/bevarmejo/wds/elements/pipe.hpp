@@ -92,7 +92,7 @@ public:
 public:
     /*--- Properties ---*/
 private:
-    void __retrieve_EN_properties(EN_Project ph) override;
+    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) override;
 
 };
 

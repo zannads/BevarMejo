@@ -180,10 +180,6 @@ private:
     void load_EN_links(EN_Project ph);
     void load_EN_controls(EN_Project ph);
     void load_EN_rules(EN_Project ph);
-    void assign_patterns_EN();
-    void assign_demands_EN();
-    void assign_curves_EN();
-    void connect_network_EN();
 public:
     void clear_results() const;
     

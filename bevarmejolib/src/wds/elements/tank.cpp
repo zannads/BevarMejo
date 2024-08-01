@@ -95,7 +95,7 @@ Tank& Tank::operator=(Tank&& rhs) noexcept {
 
 Tank::~Tank() {/* Everything is deleted by the inherited destructor */}
 
-void Tank::__retrieve_EN_properties(EN_Project ph) {
+void Tank::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves) {
     inherited::__retrieve_EN_properties(ph);
 
     int errorcode;
@@ -147,6 +147,27 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_initial_level_->value(val);
+
+    { // Assign EN curves 
+        errorcode = EN_getnodevalue(ph, this->index(), EN_VOLCURVE, &val);
+        assert(errorcode <= 100);
+
+        if (val != 0.0) {
+            char curve_id[EN_MAXID+1];
+            errorcode = EN_getcurveid(ph, static_cast<int>(val), curve_id);
+            assert(errorcode <= 100);
+
+            auto it = curves.find(curve_id);
+            assert(it != curves.end());
+
+            std::shared_ptr<VolumeCurve> volume_curve = std::dynamic_pointer_cast<VolumeCurve>(*it);
+            assert(volume_curve != nullptr);
+            // EPANET says that this curve with this ID should be a volume curve.
+            // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
+            this->volume_curve(volume_curve);
+        }
+        else this->volume_curve(nullptr);
+    }
 }
 
 void Tank::retrieve_results(EN_Project ph, long t) {

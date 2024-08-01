@@ -114,11 +114,42 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::__retrieve_EN_properties(EN_Project ph)
-{
+void Junction::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns)  {
     inherited::__retrieve_EN_properties(ph);
 
-    //TODO: get the demands
+    int n_demands= 0;
+    int errorcode= EN_getnumdemands(ph, this->index(), &n_demands);
+    assert(errorcode < 100);
+
+    for (std::size_t i= 1; i <= n_demands; ++i) {
+        double base_demand= 0.0;
+        errorcode= EN_getbasedemand(ph, this->index(), i, &base_demand);
+        assert(errorcode < 100);
+
+        int pattern_index= 0;
+        errorcode= EN_getdemandpattern(ph, this->index(), i, &pattern_index);
+        assert(errorcode < 100);
+
+        char __pattern_id[EN_MAXID+1];
+        errorcode= EN_getpatternid(ph, pattern_index, __pattern_id);
+        assert(errorcode < 100);
+        std::string pattern_id(__pattern_id);
+
+        char __demand_category[EN_MAXID+1];
+        errorcode= EN_getdemandname(ph, this->index(), i, __demand_category);
+        assert(errorcode < 100);
+        std::string demand_category(__demand_category);
+
+        std::shared_ptr<Pattern> pattern= nullptr;
+        // Pattern id can be "" if the demand is constant
+        if (!pattern_id.empty()) {
+            auto it= patterns.find(pattern_id);
+            assert(it != patterns.end());
+            pattern= *it;
+        }
+        
+        add_demand(demand_category, base_demand, pattern);
+    }
 }
 
 void Junction::retrieve_results(EN_Project ph, long t=0) {

@@ -100,14 +100,6 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         // TODO: 4.0 Load the rest of the elements
         this->load_EN_controls(ph_);
         this->load_EN_rules(ph_);
-
-        // Nodes have pointers to demands and to links. Links have pointers to nodes. 
-        // I couldn't create this relationships inside the element as it has no idea of the other elements.
-        // So I create them here.
-        assign_demands_EN();
-        // assign_patterns_EN();
-        assign_curves_EN();
-        connect_network_EN();
         
         return;
     }
@@ -141,6 +133,9 @@ void WaterDistributionSystem::load_EN_time_settings(EN_Project ph) {
     // EN_STATISTIC (2)
     // The read only ones:
     // EN_PERIODS, EN_HTIME, EN_QTIME, EN_HALTFLAG, EN_NEXTEVENT, EN_NEXTEVENTTANK
+    // 1: Will be handled by the solvers and not in the WDS class
+    // 2: Completely ignored and discarded, we save everything
+    // 3: Not implemented yet
 }
 
 void WaterDistributionSystem::load_EN_curves(EN_Project ph) {
@@ -239,6 +234,11 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
         switch (node_type) {
             case EN_JUNCTION: {
                 auto junction = std::make_shared<Junction>(node_id);
+
+                // Actually load the junction data
+                junction->retrieve_index(ph_);
+                junction->retrieve_EN_properties(ph_);
+
                 _junctions_.insert(junction);
                 p_node= junction;
                 break;
@@ -246,6 +246,10 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
 
             case EN_RESERVOIR: {
                 auto reservoir = std::make_shared<Reservoir>(node_id);
+
+                reservoir->retrieve_index(ph_);
+                reservoir->retrieve_EN_properties(ph_);
+
                 _reservoirs_.insert(reservoir);
                 p_node= reservoir;
                 break;
@@ -253,6 +257,10 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
 
             case EN_TANK: {
                 auto tank = std::make_shared<Tank>(node_id);
+
+                tank->retrieve_index(ph_);
+                tank->retrieve_EN_properties(ph_, this->curves());
+
                 _tanks_.insert(tank);
                 p_node= tank;
                 break;
@@ -261,9 +269,6 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
             default:
                 throw std::runtime_error("Unknown node type\n");
         }
-
-        p_node->retrieve_index(ph_);
-        p_node->retrieve_EN_properties(ph_);
         
         _nodes_.insert(p_node);
         _elements_.push_back(p_node);
@@ -294,7 +299,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
 
                 // Actually load the pipe data
                 pipe->retrieve_index(ph_);
-                pipe->retrieve_EN_properties(ph_);
+                pipe->retrieve_EN_properties(ph_, this->nodes());
 
                 _pipes_.insert(pipe);
                 link= pipe;
@@ -306,7 +311,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
 
                 // Actually load the pump data
                 pump->retrieve_index(ph_);
-                pump->retrieve_EN_properties(ph_, m__aux_elements_.patterns, m__aux_elements_.curves);
+                pump->retrieve_EN_properties(ph_, this->nodes(), this->patterns(), this->curves());
 
                 _pumps_.insert(pump);
                 link= pump;
@@ -354,176 +359,11 @@ void WaterDistributionSystem::load_EN_rules(EN_Project ph) {
     }
 }
 
-
 void WaterDistributionSystem::cache_indices() const {
     for (auto& element : _elements_) {
         element->retrieve_index(ph_);
     }
 }
-
-void WaterDistributionSystem::assign_patterns_EN() {
-    // Pumps have patterns inside them, so I need to assign them first
-    for (auto& pump : _pumps_) {
-        int errorcode = 0;
-        double val = 0.0;
-        errorcode = EN_getlinkvalue(ph_, pump->index(), EN_LINKPATTERN, &val);
-        assert(errorcode < 100);
-
-        char* __pattern_id = new char[EN_MAXID];
-        errorcode = EN_getpatternid(ph_, static_cast<int>(val), __pattern_id);
-        std::string pattern_id(__pattern_id);
-        delete[] __pattern_id;
-
-        auto it = m__aux_elements_.patterns.find(pattern_id);
-        assert(it != m__aux_elements_.patterns.end());
-        
-        pump->speed_pattern((*it));
-    }
-}
-
-void WaterDistributionSystem::assign_demands_EN() {
-    // each junction has a list of demands that add up
-    for (auto& junction : _junctions_ ) {
-        int errorcode = 0;
-        int n_demands = 0;
-        errorcode = EN_getnumdemands(ph_, junction->index(), &n_demands);
-        assert(errorcode < 100);
-
-        for (int i = 1; i <= n_demands; ++i) {
-            double d_base_demand;
-            errorcode = EN_getbasedemand(ph_, junction->index(), i, &d_base_demand);
-            assert(errorcode < 100);
-
-            int pattern_index;
-            errorcode = EN_getdemandpattern(ph_, junction->index(), i, &pattern_index);
-            assert(errorcode < 100);
-            
-            char* __pattern_id = new char[EN_MAXID];
-            errorcode = EN_getpatternid(ph_, pattern_index, __pattern_id);
-            std::string pattern_id(__pattern_id);
-            delete[] __pattern_id;
-
-            char* d_category_ = new char[EN_MAXID];
-            errorcode = EN_getdemandname(ph_, junction->index(), i, d_category_);
-            assert(errorcode < 100);
-            std::string d_category(d_category_);
-            delete[] d_category_;
-
-            // Pattern id can be "" if the demand is constant
-            if (pattern_id.empty()) {
-                junction->add_demand(d_category, d_base_demand, nullptr);
-            }
-            else {
-                // I need to find the pattern in the patterns map (it should be there
-                auto it = m__aux_elements_.patterns.find(pattern_id);
-                assert(it != m__aux_elements_.patterns.end());
-
-                junction->add_demand(d_category, d_base_demand, *it);
-            }
-        }
-    }
-}
-
-void WaterDistributionSystem::assign_curves_EN() {
-    // Tanks, pumps and valves have curves inside them, so I need to assign them
-
-    // Pumps have two types of curves: pump curve and efficiency curve
-    for (auto& pump : _pumps_) {
-        // First the pump curve
-        assert(pump->index() > 0);
-        double val = 0.0;
-        int errco = EN_getlinkvalue(ph_, pump->index(), EN_PUMP_HCURVE, &val);
-        assert(errco <= 100);
-
-        if (val != 0.0) {
-            char* __curve_id = new char[EN_MAXID];
-            errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
-            assert(errco <= 100);
-            std::string curve_id(__curve_id);
-            delete[] __curve_id;
-
-            auto it = m__aux_elements_.curves.find(curve_id);
-            assert(it != m__aux_elements_.curves.end());
-
-            pump->pump_curve(std::dynamic_pointer_cast<PumpCurve>(*it) );
-        }
-        else pump->pump_curve(nullptr);
-
-        // Finally the efficiency curve 
-        errco = EN_getlinkvalue(ph_, pump->index(), EN_PUMP_ECURVE, &val);
-        assert(errco <= 100);
-        
-        if (val != 0.0) {
-            char* __curve_id = new char[EN_MAXID];
-            errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
-            assert(errco <= 100);
-            std::string curve_id(__curve_id);
-            delete[] __curve_id;
-
-            auto it = m__aux_elements_.curves.find(curve_id);
-            assert(it != m__aux_elements_.curves.end());
-
-            pump->efficiency_curve(std::dynamic_pointer_cast<EfficiencyCurve>(*it) );
-        }
-        else pump->efficiency_curve(nullptr);
-    }
-
-    for (auto& tank : _tanks_){
-        assert(tank->index() > 0);
-
-        double val = 0.0;
-        int errco = EN_getnodevalue(ph_, tank->index(), EN_VOLCURVE, &val);
-        assert(errco <= 100);
-
-        tank->volume_curve(nullptr);
-        if (val == 0.0)
-            continue;
-        
-        char* __curve_id = new char[EN_MAXID+1];
-        errco = EN_getcurveid(ph_, static_cast<int>(val), __curve_id);
-        assert(errco <= 100);
-        std::string curve_id(__curve_id);
-        delete[] __curve_id;
-
-        auto it = m__aux_elements_.curves.find(curve_id);
-        assert(it != m__aux_elements_.curves.end());
-
-        tank->volume_curve(std::dynamic_pointer_cast<VolumeCurve>(*it) );
-    }
-
-    // TODO: valves
-
-}
-
-void WaterDistributionSystem::connect_network_EN() {
-    for (auto& link : _links_) {
-        // retrieve the old property of the already existing pipe
-		assert(link->index() != 0);
-        int errorcode = 0;
-        int out_node1_idx = 0;
-		int out_node2_idx = 0;
-		errorcode = EN_getlinknodes(ph_, link->index(), &out_node1_idx, &out_node2_idx);
-		assert(errorcode <= 100);
-
-        std::string out_node1_id = epanet::get_node_id(ph_, out_node1_idx);
-        std::string out_node2_id = epanet::get_node_id(ph_, out_node2_idx);
-        
-        // find the nodes in the network
-        auto it1 = _nodes_.find(out_node1_id);
-        assert(it1 != _nodes_.end());
-        auto it2 = _nodes_.find(out_node2_id);
-        assert(it2 != _nodes_.end());
-
-        // assign the nodes to the link
-        link->start_node((*it1).get());
-        link->end_node((*it2).get());
-
-        // assign the link to the nodes
-        (*it1)->add_link(link.get());
-        (*it2)->add_link(link.get());
-    }
-}
-
 
 } // namespace wds
 } // namespace bevarmejo

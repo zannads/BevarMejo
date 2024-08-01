@@ -98,8 +98,20 @@ void Element::__retrieve_EN_properties(EN_Project ph) {
     return;
 }
 
-void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
-    return;
+void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns) {
+    this->__retrieve_EN_properties(ph);
+}
+
+void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves) {
+    this->__retrieve_EN_properties(ph);
+}
+
+void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) {
+    this->__retrieve_EN_properties(ph);
+}
+
+void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
+    this->__retrieve_EN_properties(ph);
 }
 
 } // namespace wds

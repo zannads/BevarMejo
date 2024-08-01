@@ -109,8 +109,8 @@ public:
 /*--- EPANET-dependent PVMs ---*/
 public:
     /*--- Properties ---*/
-private:
-    void __retrieve_EN_properties(EN_Project ph) override;
+protected:
+    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns) override;
 public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;
