@@ -150,7 +150,8 @@ public:
 public:
     /*--- Properties ---*/
     void retrieve_index(EN_Project ph) override;
-    void retrieve_properties(EN_Project ph) override;
+private:
+    void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Pattern
 

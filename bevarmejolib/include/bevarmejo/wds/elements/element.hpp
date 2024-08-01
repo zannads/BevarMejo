@@ -129,7 +129,13 @@ class Element {
     public:
         /*--- Properties ---*/
         virtual void retrieve_index(EN_Project ph) = 0;
-        virtual void retrieve_properties(EN_Project ph) = 0;
+
+        template <typename... Args>
+        void retrieve_EN_properties(EN_Project ph, Args&&... args) {
+            this->__retrieve_EN_properties(ph, std::forward<Args>(args)...);
+        }
+    protected:
+        virtual void __retrieve_EN_properties(EN_Project ph) = 0;
    
 };
 

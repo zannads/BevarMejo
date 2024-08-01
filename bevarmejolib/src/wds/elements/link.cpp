@@ -106,7 +106,7 @@ void Link::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Link::retrieve_properties(EN_Project ph) {
+void Link::__retrieve_EN_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;
 

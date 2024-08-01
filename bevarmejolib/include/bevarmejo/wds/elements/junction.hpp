@@ -108,8 +108,9 @@ public:
 /*--- EPANET-dependent PVMs ---*/
 public:
     /*--- Properties ---*/
-    void retrieve_properties(EN_Project ph) override;
-
+private:
+    void __retrieve_EN_properties(EN_Project ph) override;
+public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;
 

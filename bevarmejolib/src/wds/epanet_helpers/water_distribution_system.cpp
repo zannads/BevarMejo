@@ -34,7 +34,8 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
     _pumps_(),
     _subnetworks_(),
     _groups_(),
-    m__config_options()
+    m__config_options(),
+    m__time_series_map()
     {
         assert(!inp_file.empty());
 
@@ -187,7 +188,7 @@ void WaterDistributionSystem::load_EN_curves(EN_Project ph) {
         }
         // Add the data of the curve and save it in curves too
         p_curve->retrieve_index(ph_);
-        p_curve->retrieve_properties(ph_);
+        p_curve->retrieve_EN_properties(ph_);
 
         m__aux_elements_.curves.insert(p_curve);
         _elements_.push_back(std::static_pointer_cast<Element>(p_curve));
@@ -210,7 +211,7 @@ void WaterDistributionSystem::load_EN_patterns(EN_Project ph) {
 
         // Actually load the pattern data
         p_pattern->retrieve_index(ph_);
-        p_pattern->retrieve_properties(ph_);
+        p_pattern->retrieve_EN_properties(ph_);
 
         m__aux_elements_.patterns.insert(p_pattern);    
         _elements_.push_back(std::static_pointer_cast<Element>(p_pattern));
@@ -262,7 +263,7 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
         }
 
         p_node->retrieve_index(ph_);
-        p_node->retrieve_properties(ph_);
+        p_node->retrieve_EN_properties(ph_);
         
         _nodes_.insert(p_node);
         _elements_.push_back(p_node);
@@ -307,7 +308,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
         }
 
         link->retrieve_index(ph_);
-        link->retrieve_properties(ph_);
+        link->retrieve_EN_properties(ph_);
         
         _links_.insert(link);
         _elements_.push_back(link);

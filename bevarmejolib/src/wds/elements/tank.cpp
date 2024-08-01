@@ -95,8 +95,8 @@ Tank& Tank::operator=(Tank&& rhs) noexcept {
 
 Tank::~Tank() {/* Everything is deleted by the inherited destructor */}
 
-void Tank::retrieve_properties(EN_Project ph) {
-    inherited::retrieve_properties(ph);
+void Tank::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
 
     int errorcode;
     double val;

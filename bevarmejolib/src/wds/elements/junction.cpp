@@ -114,9 +114,9 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::retrieve_properties(EN_Project ph)
+void Junction::__retrieve_EN_properties(EN_Project ph)
 {
-    inherited::retrieve_properties(ph);
+    inherited::__retrieve_EN_properties(ph);
 
     //TODO: get the demands
 }

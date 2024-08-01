@@ -145,7 +145,8 @@ public:
 /*--- Pure virtual methods override ---*/
 public:
     /*--- Properties ---*/
-    virtual void retrieve_properties(EN_Project ph) {
+private:
+    virtual void __retrieve_EN_properties(EN_Project ph) override{
         assert(this->index()>0);
         int n_points;
         int errco = EN_getcurvelen(ph, this->index(), &n_points);

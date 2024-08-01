@@ -60,8 +60,8 @@ Reservoir& Reservoir::operator=(Reservoir&& rhs) noexcept {
 
 Reservoir::~Reservoir() { /* Everything is deleted by the inherited destructor */ }
 
-void Reservoir::retrieve_properties(EN_Project ph) {
-    inherited::retrieve_properties(ph);
+void Reservoir::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
 }
 
 void Reservoir::retrieve_results(EN_Project ph, long t) {

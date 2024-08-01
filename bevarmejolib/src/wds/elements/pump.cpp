@@ -104,8 +104,8 @@ namespace wds {
 
     Pump::~Pump() { /* Everything is deleted by the inherited destructor */ }
 
-    void Pump::retrieve_properties(EN_Project ph) {
-        inherited::retrieve_properties(ph);
+    void Pump::__retrieve_EN_properties(EN_Project ph) {
+        inherited::__retrieve_EN_properties(ph);
 
         int errorcode;
         double value;

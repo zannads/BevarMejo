@@ -113,7 +113,7 @@ void Node::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Node::retrieve_properties(EN_Project ph) {
+void Node::__retrieve_EN_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;    
     double x=0,

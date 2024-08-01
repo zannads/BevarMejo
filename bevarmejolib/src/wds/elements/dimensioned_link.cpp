@@ -77,8 +77,8 @@ DimensionedLink& DimensionedLink::operator=(DimensionedLink&& rhs) noexcept {
 
 DimensionedLink::~DimensionedLink() {/* results are cleared when the inherited destructor is called*/ }
 
-void DimensionedLink::retrieve_properties(EN_Project ph) {
-    inherited::retrieve_properties(ph);
+void DimensionedLink::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
     
     assert(index()!=0);
 

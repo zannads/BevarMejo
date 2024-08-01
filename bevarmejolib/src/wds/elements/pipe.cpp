@@ -121,9 +121,9 @@ std::unique_ptr<Pipe> Pipe::duplicate(const std::string& id) const {
 // Use the clone constructor when you need to copy the object to a NEW network.
 // Use the duplicate method when you need to copy the object to the SAME network.
 
-void Pipe::retrieve_properties(EN_Project ph)
+void Pipe::__retrieve_EN_properties(EN_Project ph)
 {
-    inherited::retrieve_properties(ph);
+    inherited::__retrieve_EN_properties(ph);
     assert(index()!= 0);
 
     int errorode = 0;
