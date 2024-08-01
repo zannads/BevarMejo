@@ -116,7 +116,7 @@ public:
     // Default constructor
     WaterDistributionSystem();
     
-    WaterDistributionSystem(const std::filesystem::path& inp_file);
+    WaterDistributionSystem(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
 
     // Copy constructor
     WaterDistributionSystem(const WaterDistributionSystem& other);
@@ -134,9 +134,6 @@ public:
     ~WaterDistributionSystem();
 
     std::unique_ptr<WaterDistributionSystem> clone() const;
-    
-    // Equivalent to constuctor from .inp file
-    void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
     
 /*--- Getters and setters ---*/
 public:
@@ -173,11 +170,21 @@ public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
     void cache_indices() const;
+private:
+    // Equivalent to constuctor from .inp file
+    void load_EN_time_settings(EN_Project ph);
+    void load_EN_analysis_options(EN_Project ph);
+    void load_EN_patterns(EN_Project ph);
+    void load_EN_curves(EN_Project ph);
+    void load_EN_nodes(EN_Project ph);
+    void load_EN_links(EN_Project ph);
+    void load_EN_controls(EN_Project ph);
+    void load_EN_rules(EN_Project ph);
     void assign_patterns_EN();
     void assign_demands_EN();
     void assign_curves_EN();
     void connect_network_EN();
-
+public:
     void clear_results() const;
     
     void run_hydraulics() const;
@@ -192,8 +199,6 @@ public:
 private:
     template <typename T>
     std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
-
-    void load_settings_from_EPANET(EN_Project ph);
 
 }; // class WaterDistributionSystem
 

@@ -66,8 +66,6 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		* I create an empty one first, add the inp file, modify it thorugh the lambda
 		* and then use init(). 
 	*/
-	_anytown_ = std::make_shared<WDS>();
-	
 	auto fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
 		assert(ph != nullptr);
@@ -80,7 +78,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		assert(errorcode <= 100);
 	};
 
-	_anytown_->load_from_inp_file(inp_filename, fix_inp);
+	_anytown_= std::make_shared<WDS>(inp_filename, fix_inp);
 
 	// Load subnetworks
 	for (const auto& udeg : settings["WDS"]["UDEGs"]) {

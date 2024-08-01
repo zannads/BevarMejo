@@ -58,7 +58,6 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		* I create an empty one first, add the inp file, modify it thorugh the lambda
 		* and then use init(). 
 	*/
-	_anytown_ = std::make_shared<WDS>();
 
 	// Also fix the operations at the beginning loading from the settings file
 	std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
@@ -92,7 +91,7 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		}
 	};
 
-	_anytown_->load_from_inp_file(inp_filename, fix_inp);
+	_anytown_= std::make_shared<WDS>(inp_filename, fix_inp);
 
 	// Load subnetworks
 	for (const auto& udeg : settings["WDS"]["UDEGs"]) {

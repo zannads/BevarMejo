@@ -47,9 +47,7 @@ Problem::Problem(const json& settings, const std::vector<std::filesystem::path>&
 	}
     auto inp_filename = file.value();
 
-    m_hanoi = std::make_shared<bevarmejo::wds::WaterDistributionSystem>();
-
-    m_hanoi->load_from_inp_file(inp_filename);
+    m_hanoi= std::make_shared<WDS>(inp_filename);
 
     // Load the "UDEG" from the constexpr array to have the pipes always in the same order (element group uses a set so it is not guaranteed)
     wds::Subnetwork changeable_pipes;
