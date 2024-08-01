@@ -34,7 +34,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 

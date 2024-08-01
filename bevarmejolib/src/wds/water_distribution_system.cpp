@@ -42,25 +42,10 @@ WaterDistributionSystem::WaterDistributionSystem() :
     _subnetworks_(),
     _groups_(),
     m__config_options()
-    { }
-
-WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& inp_file) :
-    ph_(nullptr),
-    _inp_file_(inp_file),
-    _elements_(),
-    _nodes_(),
-    _links_(),
-    m__aux_elements_(),
-    _junctions_(),
-    _tanks_(),
-    _reservoirs_(),
-    _pipes_(),
-    _pumps_(),
-    _subnetworks_(),
-    _groups_(),
-    m__config_options()
     {
-        load_from_inp_file(inp_file);
+        // I need at least a time series for the constant and one for the results
+        m__time_series_map.emplace("Constant", aux::TimeSeries(m__config_options.times.global));
+        m__time_series_map.emplace("Results", aux::TimeSeries(m__config_options.times.global));
     }
 
     WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
@@ -244,6 +229,52 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
     if (preprocessf)
         preprocessf(ph_);
 
+    // First it is important to load auxiliary elements like patterns and curves.
+    // Patterns especially since they are necessary to create the QuantitySeries that
+    // are used as inputs.
+
+    // 1.0 We need settings and things like this
+    aux::time_t a_time= 0l;
+    errorcode = EN_gettimeparam(ph_, EN_DURATION, &a_time);
+    assert(errorcode < 100);
+    m__config_options.times.global.duration__s(a_time);
+
+
+
+    // 1.1 Start easy with curves 
+    int n_curves;
+    errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
+    assert(errorcode < 100);
+    for (int i = 1; i <= n_curves; ++i) {
+        char* __curve_id = new char[EN_MAXID+1];
+        errorcode = EN_getcurveid(ph_, i, __curve_id);
+        assert(errorcode < 100);
+        std::string curve_id(__curve_id);
+        delete[] __curve_id;
+
+        int curve_type;
+        errorcode = EN_getcurvetype(ph_, i, &curve_type);
+        assert(errorcode < 100);
+
+        if (curve_type == EN_GENERIC_CURVE) {
+            _elements_.push_back(std::make_shared<GenericCurve>(curve_id));
+            std::cout << "Curve with ID \""+curve_id+"\" is a generic curve and will not link to anything.\n";
+        }
+        else if (curve_type == EN_VOLUME_CURVE)
+            _elements_.push_back(std::make_shared<VolumeCurve>(curve_id));
+        else if (curve_type == EN_PUMP_CURVE)
+            _elements_.push_back(std::make_shared<PumpCurve>(curve_id));
+        else if (curve_type == EN_EFFIC_CURVE)
+            _elements_.push_back(std::make_shared<EfficiencyCurve>(curve_id));
+        else if (curve_type == EN_HLOSS_CURVE)
+            _elements_.push_back(std::make_shared<HeadlossCurve>(curve_id));
+        else 
+            throw std::runtime_error("Unknown curve type\n");
+    
+        // Save it in _curves_ too
+        m__aux_elements_.curves.insert(std::dynamic_pointer_cast<Curve>(_elements_.back()));
+    }
+
     // Populate the elements vector
     // [1/6] Nodes
     int n_nodes;
@@ -354,39 +385,7 @@ void WaterDistributionSystem::load_from_inp_file(const std::filesystem::path& in
         m__aux_elements_.patterns.insert(std::dynamic_pointer_cast<Pattern>(_elements_.back()));
     }
 
-    // [4/6] Curves
-    int n_curves;
-    errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
-    assert(errorcode < 100);
-    for (int i = 1; i <= n_curves; ++i) {
-        char* __curve_id = new char[EN_MAXID];
-        errorcode = EN_getcurveid(ph_, i, __curve_id);
-        assert(errorcode < 100);
-        std::string curve_id(__curve_id);
-        delete[] __curve_id;
-
-        int curve_type;
-        errorcode = EN_getcurvetype(ph_, i, &curve_type);
-        assert(errorcode < 100);
-
-        if (curve_type == EN_GENERIC_CURVE) {
-            _elements_.push_back(std::make_shared<GenericCurve>(curve_id));
-            std::cout << "Curve with ID \""+curve_id+"\" is a generic curve and will not link to anything.\n";
-        }
-        else if (curve_type == EN_VOLUME_CURVE)
-            _elements_.push_back(std::make_shared<VolumeCurve>(curve_id));
-        else if (curve_type == EN_PUMP_CURVE)
-            _elements_.push_back(std::make_shared<PumpCurve>(curve_id));
-        else if (curve_type == EN_EFFIC_CURVE)
-            _elements_.push_back(std::make_shared<EfficiencyCurve>(curve_id));
-        else if (curve_type == EN_HLOSS_CURVE)
-            _elements_.push_back(std::make_shared<HeadlossCurve>(curve_id));
-        else 
-            throw std::runtime_error("Unknown curve type\n");
     
-        // Save it in _curves_ too
-        m__aux_elements_.curves.insert(std::dynamic_pointer_cast<Curve>(_elements_.back()));
-    }
 
     // [5/6] Controls (simple control)
     int n_controls;

@@ -19,23 +19,33 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+
 #include "bevarmejo/io.hpp"
 
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/reservoir.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements/pump.hpp"
+
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/epanet_helpers/en_time_options.hpp"
+
+#include "bevarmejo/wds/elements/network_element.hpp"
+
+#include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/source.hpp"
+#include "bevarmejo/wds/elements/reservoir.hpp"
+#include "bevarmejo/wds/elements/tank.hpp"
+
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+#include "bevarmejo/wds/elements/pipe.hpp"
+#include "bevarmejo/wds/elements/pump.hpp"
+// #include "bevarmejo/wds/elements/valve.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
@@ -55,8 +65,8 @@ public:
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
     using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
+    using TimeSeriesMap= std::unordered_map<std::string, aux::TimeSeries>; 
 
-    
 protected:
     // Path to the inp file from which the project will be uploaded.
     std::filesystem::path _inp_file_;
@@ -97,6 +107,9 @@ protected:
             epanet::PatternTimeOptions pattern;
         } times;
     } m__config_options;
+
+    // Keep the relevant times here:
+    TimeSeriesMap m__time_series_map;
 
 /*--- Constructors ---*/ 
 public:
@@ -179,6 +192,8 @@ public:
 private:
     template <typename T>
     std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
+
+    void load_settings_from_EPANET(EN_Project ph);
 
 }; // class WaterDistributionSystem
 

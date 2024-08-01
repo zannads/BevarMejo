@@ -10,7 +10,7 @@
 
 #include "bevarmejo/io.hpp"
 
-#include "bevarmejo/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 
 namespace bevarmejo {

@@ -20,7 +20,9 @@ set(WDS_SRC_ROOT
         CACHE PATH "Path to the rootfolder of the WDS"
 )
 set(WDS_FILES   
-        "${WDS_INC_ROOT}/water_distribution_system.hpp" "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
+        "${WDS_INC_ROOT}/water_distribution_system.hpp" 
+        "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
+        "${WDS_SRC_ROOT}/epanet_helpers/water_distribution_system.cpp"
         "${WDS_INC_ROOT}/elements_group.hpp" 
         "${WDS_INC_ROOT}/user_defined_elements_group.hpp" "${WDS_SRC_ROOT}/user_defined_elements_group.cpp"
 )
@@ -57,8 +59,12 @@ set(WDS_DATAS   "${WDS_INC_ROOT}/data_structures/variable.hpp"
                 "${WDS_INC_ROOT}/data_structures/temporal.hpp"
 )
 
-set(HELPERS     "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_help.hpp"
-                "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/epanet_helpers/en_time_options.hpp"
+set(WDS_HELPERS
+        "${WDS_INC_ROOT}/epanet_helpers/en_help.hpp"
+        "${WDS_INC_ROOT}/epanet_helpers/en_time_options.hpp"
+)
+
+set(HELPERS     
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/containers_help.hpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
                 "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"

@@ -27,7 +27,7 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 
