@@ -9,6 +9,7 @@
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -154,6 +155,8 @@ private:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Pattern
+
+using Patterns= ElementsGroup<Pattern>;
 
 } // namespace wds
 } // namespace bevarmejo

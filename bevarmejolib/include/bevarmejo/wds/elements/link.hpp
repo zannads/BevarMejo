@@ -12,6 +12,7 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
@@ -94,6 +95,8 @@ protected:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Link
+
+using Links= ElementsGroup<Link>;
 
 } // namespace wds
 } // namespace bevarmejo

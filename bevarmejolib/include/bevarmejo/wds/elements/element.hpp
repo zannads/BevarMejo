@@ -51,6 +51,13 @@ static const unsigned int ELEMENT_FCV= 34;
 static const unsigned int ELEMENT_TCV= 35;
 static const unsigned int ELEMENT_GPV= 36;
 
+// Some forward declarations
+class Pattern;
+class Curve;
+
+template <typename T>
+class ElementsGroup;
+
 class Element {
     // WDS ancestor object
     /************************************************************************
@@ -135,7 +142,8 @@ class Element {
             this->__retrieve_EN_properties(ph, std::forward<Args>(args)...);
         }
     protected:
-        virtual void __retrieve_EN_properties(EN_Project ph) = 0;
+        virtual void __retrieve_EN_properties(EN_Project ph);
+        virtual void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves);
    
 };
 

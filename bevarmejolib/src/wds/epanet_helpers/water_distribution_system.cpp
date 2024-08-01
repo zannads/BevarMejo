@@ -105,7 +105,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         // I couldn't create this relationships inside the element as it has no idea of the other elements.
         // So I create them here.
         assign_demands_EN();
-        assign_patterns_EN();
+        // assign_patterns_EN();
         assign_curves_EN();
         connect_network_EN();
         
@@ -291,6 +291,11 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
         switch (link_type) {
             case EN_PIPE:{
                 auto pipe= std::make_shared<Pipe>(link_id);
+
+                // Actually load the pipe data
+                pipe->retrieve_index(ph_);
+                pipe->retrieve_EN_properties(ph_);
+
                 _pipes_.insert(pipe);
                 link= pipe;
                 break;
@@ -298,6 +303,11 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
 
             case EN_PUMP: {
                 auto pump= std::make_shared<Pump>(link_id);
+
+                // Actually load the pump data
+                pump->retrieve_index(ph_);
+                pump->retrieve_EN_properties(ph_, m__aux_elements_.patterns, m__aux_elements_.curves);
+
                 _pumps_.insert(pump);
                 link= pump;
                 break;
@@ -306,9 +316,6 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
             default:
                 throw std::runtime_error("Unknown link type\n");
         }
-
-        link->retrieve_index(ph_);
-        link->retrieve_EN_properties(ph_);
         
         _links_.insert(link);
         _elements_.push_back(link);

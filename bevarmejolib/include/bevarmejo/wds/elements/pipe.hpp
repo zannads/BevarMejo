@@ -9,6 +9,7 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
@@ -94,6 +95,8 @@ private:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 };
+
+using Pipes= ElementsGroup<Pipe>;
 
 } // namespace wds
 } // namespace bevarmejo

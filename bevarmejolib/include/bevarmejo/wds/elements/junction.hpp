@@ -12,6 +12,7 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
@@ -115,6 +116,8 @@ public:
     void retrieve_results(EN_Project ph, long t) override;
 
 }; // class Junction
+
+using Junctions= ElementsGroup<Junction>;
 
 } // namespace wds
 } // namespace bevarmejo

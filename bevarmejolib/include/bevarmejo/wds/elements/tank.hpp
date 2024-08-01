@@ -9,6 +9,7 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
@@ -127,6 +128,8 @@ public:
     void retrieve_results(EN_Project ph, long t) override;
 
 }; // class Tank
+
+using Tanks= ElementsGroup<Tank>;
 
 } // namespace wds
 } // namespace bevarmejo

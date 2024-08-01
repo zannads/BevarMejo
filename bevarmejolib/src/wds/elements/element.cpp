@@ -94,5 +94,13 @@ void Element::_add_properties() {
     _properties_.clear();
 }
 
+void Element::__retrieve_EN_properties(EN_Project ph) {
+    return;
+}
+
+void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
+    return;
+}
+
 } // namespace wds
 } // namespace bevarmejo

@@ -19,6 +19,8 @@
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
+#include "bevarmejo/wds/elements_group.hpp"
+
 namespace bevarmejo {
 namespace wds {
 
@@ -122,6 +124,8 @@ class Node : public NetworkElement {
         void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Node
+
+using Nodes= ElementsGroup<Node>;
 
 } // namespace wds
 } // namespace bevarmejo

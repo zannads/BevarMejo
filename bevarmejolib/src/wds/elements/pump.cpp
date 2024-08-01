@@ -16,6 +16,8 @@
 #include "bevarmejo/wds/elements/link.hpp"
 
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
 
 #include "pump.hpp"
 
@@ -104,26 +106,39 @@ namespace wds {
 
     Pump::~Pump() { /* Everything is deleted by the inherited destructor */ }
 
-    void Pump::__retrieve_EN_properties(EN_Project ph) {
+    void Pump::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
         inherited::__retrieve_EN_properties(ph);
 
-        int errorcode;
-        double value;
-
-        errorcode = EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
+        double value= 0.0;
+        int errorcode= EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving initial setting for pump " + id());
         this->_init_setting_->value(value);
 
-        errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_POWER, &value);
+        errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_POWER, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving power rating for pump " + id());
         this->_power_rating_->value(value);
 
-        errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_ECOST, &value);
+        errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_ECOST, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving energy cost for pump " + id());
         this->_energy_cost_->value(value);
+
+        { // Assign EN Pattern
+            errorcode= EN_getlinkvalue(ph, this->index(), EN_LINKPATTERN, &value);
+            assert(errorcode < 100);
+            char pattern_id[EN_MAXID+1];
+            errorcode= EN_getpatternid(ph, static_cast<int>(value), pattern_id);
+            assert(errorcode < 100);
+            auto it= patterns.find(pattern_id);
+            assert(it != patterns.end());
+
+            speed_pattern(*it);
+        }
+        { // Assign EN Curves
+
+        }
     }
 
     void Pump::retrieve_results(EN_Project ph, long t) {
