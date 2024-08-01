@@ -98,7 +98,7 @@ TimeSeries::reverse_iterator TimeSeries::rend() noexcept { return reverse_iterat
 TimeSeries::const_reverse_iterator TimeSeries::rend() const noexcept { return const_reverse_iterator(this, 0); }
 TimeSeries::const_reverse_iterator TimeSeries::crend() const noexcept { return const_reverse_iterator(this, 0); }
 
-constexpr bool TimeSeries::empty() const noexcept { return false; }
+bool TimeSeries::empty() const noexcept { return m__time_steps.empty(); }
 
 TimeSeries::size_type TimeSeries::inner_size() const noexcept { return m__time_steps.size(); }
 
@@ -122,7 +122,10 @@ void TimeSeries::commit(time_t time__s) {
     if (time__s > m__gto.duration__s())
         throw std::invalid_argument("TimeSeries::commit: Can not add time steps greater than the duration.");
 
-    if (time__s <= m__time_steps.back())
+    if (time__s == m__time_steps.back())
+        return; // No need to commit anything
+
+    if (time__s < m__time_steps.back())
         throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
 
     m__time_steps.push_back(time__s);

@@ -257,7 +257,7 @@ public:
 /*--- Capacity ---*/
 public:
     
-    constexpr bool empty() const noexcept;
+    bool empty() const noexcept;
 
     // No simple size, because I need to add 1 to the size of the time steps. (final time)
     size_type inner_size() const noexcept;
