@@ -32,19 +32,31 @@ void TimeSeries::check_valid() const {
         throw std::invalid_argument("TimeSeries::check_valid: Time steps are not within the duration.");
 }
 
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto) : m__gto(a_gto), m__time_steps({0l}) {
+TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto) : 
+    m__gto(a_gto), 
+    m__time_steps({0l}) 
+{
+    check_valid();
+}
+
+TimeSeries::TimeSeries(const epanet::GlobalTimeOptions &a_gto, std::initializer_list<time_t> ilist) :
+    m__gto(a_gto),
+    m__time_steps(ilist) 
+{
     check_valid();
 }
 
 template <typename... Args>
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto, Args&&... args) : m__gto(a_gto), m__time_steps(std::forward<Args>(args)...) {
+TimeSeries::TimeSeries(const epanet::GlobalTimeOptions &a_gto, Args &&...args) : 
+    m__gto(a_gto),
+    m__time_steps(std::forward<Args>(args)...)
+{
     check_valid();
 }
 
 TimeSeries::size_type TimeSeries::not_found() const noexcept { return this->m__time_steps.size() + 1; }
 
-TimeSeries::value_type TimeSeries::at(size_type pos)
-{
+TimeSeries::value_type TimeSeries::at(size_type pos) {
     if (pos < m__time_steps.size())
         return m__time_steps[pos];
 

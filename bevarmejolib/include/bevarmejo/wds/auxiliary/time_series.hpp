@@ -49,6 +49,8 @@ public:
 
     TimeSeries( const epanet::GlobalTimeOptions& a_gto );
 
+    TimeSeries( const epanet::GlobalTimeOptions& a_gto, std::initializer_list<time_t> ilist );
+
     // Variadic constructor
     template <typename... Args>
     TimeSeries( const epanet::GlobalTimeOptions& a_gto, Args&&... args );
