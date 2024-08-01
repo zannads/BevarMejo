@@ -52,25 +52,32 @@ protected:
                 curr_time += k__test_ts_step;
             }
         }
-        ts_map.insert({l__test_ts_results, std::make_shared<TimeSteps>(
-            std::initializer_list<long>{k__test_ts_step*0, k__test_ts_step/2l, k__test_ts_step*3/4, 
-                                        k__test_ts_step*1, 2*k__test_ts_step*2, k__test_ts_step*3, k__test_ts_step*7/2,
-                                        k__test_ts_step*4, k__test_ts_step*5, k__test_ts_step*k__test_ts_n_steps} ) } );
+        {
+            ts_map.insert({l__test_ts_results, std::make_shared<TimeSteps>(10, k__test_ts_start) });
+            TimeSteps shifts( std::initializer_list<long>{k__test_ts_step*0, k__test_ts_step/2l, k__test_ts_step*3/4, 
+                                        k__test_ts_step*1, 2*k__test_ts_step*2, k__test_ts_step*3, 
+                                        k__test_ts_step*7/2, k__test_ts_step*4, k__test_ts_step*5, 
+                                        k__test_ts_duration} );
+
+            for (std::size_t i=0; i<ts_map.at(l__test_ts_results)->size(); ++i) 
+                ts_map.at(l__test_ts_results)->at(i) += shifts[i];
+            ts_map.at(l__test_ts_results)->push_back(k__test_ts_start+k__test_ts_duration);
+        }
     }
 
     void TearDown() override {
         ts_map.clear();
     }
 
-    T CreateValue() {
+    T CreateValue(double i=1.0) {
         if constexpr (std::is_same_v<T, int>) {
-            return 1;
+            return static_cast<int>(1 * i);
         } else if constexpr (std::is_same_v<T, double>) {
-            return 1.0;
+            return 1.0*i;
         } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-            return {1, 2, 3};
+            return {static_cast<int>(1 * i), static_cast<int>(2 * i)};
         } else if constexpr (std::is_same_v<T, std::vector<double>>) {
-            return {1.0, 2.0, 3.0};
+            return {1.0*i, 2.0*i, 3.0*i};
         }
     }
 
@@ -105,129 +112,100 @@ TYPED_TEST_SUITE(OpenQuantitySeriesTest, TestTypes);
 TYPED_TEST(OpenQuantitySeriesTest, EmptyConstructorsAndStates) {
 
     QuantitySeries<TypeParam> qs1;
-    ASSERT_EQ(qs1.time_steps(), nullptr);
+    ASSERT_EQ(nullptr, qs1.time_steps());
     EXPECT_EQ(qs1.values().size(), 0);
 
     EXPECT_THROW(qs1.check_valid(), std::runtime_error);
 
-    EXPECT_EQ(qs1.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-    EXPECT_EQ(qs1.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
+    EXPECT_EQ(true, qs1.is_state(QuantitySeries<TypeParam>::State::Invalid));
+    EXPECT_EQ(false, qs1.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-    EXPECT_EQ(qs1.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
     EXPECT_EQ(qs1.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
     EXPECT_EQ(qs1.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
     EXPECT_EQ(qs1.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
 }
 
-// Test the constructor passing the vector of time steps only. Independently of the 
-// the fact that this is for a constant, regular or whatever, the object should be
-// in a transitional state, because it is not valid yet.
+// Test the constructor passing the vector of time steps only. 
+// As long as I pass a correct time step vector, the object should be in a ValueFillable state.
+// Otherwise, it's invalid. 
+// Impossible to be valid.
 TYPED_TEST(OpenQuantitySeriesTest, PointerConstructorAndStates) {
 
     // Expecting pointer to the right thing and empty object
-    // Expecting to not be valid, but in a transitional state (therefore undefined too, always)
+    // Expecting to not be valid, but in a ValueFillable state
 
     for (auto& [key, value] : this->ts_map) {
         QuantitySeries<TypeParam> qs(value);
         ASSERT_EQ(qs.time_steps(), value);
         EXPECT_EQ(qs.values().size(), 0);
 
-        EXPECT_THROW(qs.check_valid(), std::runtime_error);
+        if (key == l__test_ts_null || key == l__test_ts_empty || key == l__test_ts_one) {
+            EXPECT_THROW(qs.check_valid(), std::runtime_error);
 
-        EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-        EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
+            EXPECT_EQ(true, qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+            EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
-        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+        }
+        else { // if (key == l__test_ts_constant || key == l__test_ts_regular_input || key == l__test_ts_results) {
+            EXPECT_THROW(qs.check_valid(), std::runtime_error);
+
+            EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+            EXPECT_EQ(true, qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
+
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+            EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+        }   
     }
-
 }
 
 // Test the constructor passing the vector of time steps and a single value. 
-// Now based on the time steps, the object can be in DIFFERENT states.
+// As long as I pass a correct time step vector, the object should be in a valid state.
+// Otherwise, it's invalid.
 TYPED_TEST(OpenQuantitySeriesTest, PointerValueConstructorAndStates) {
 
-    // Normal behaviour: Expecting pointer to the right thing and values of the same size. 
-    
     for (auto& [key, value] : this->ts_map) {
         QuantitySeries<TypeParam> qs(value, this->CreateValue());
         ASSERT_EQ(qs.time_steps(), value);
-        
-        if (key == l__test_ts_null || key == l__test_ts_empty) {
-            EXPECT_EQ(qs.values().size(), 0);
-        } else {
-            EXPECT_EQ(qs.values().size(), value->size()-1);
-        }
 
         if (key == l__test_ts_null || key == l__test_ts_empty || key == l__test_ts_one) {
-            EXPECT_THROW(qs.check_valid(), std::runtime_error);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
+            EXPECT_EQ(qs.values().size(), 0);
 
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
+            EXPECT_THROW(qs.check_valid(), std::runtime_error);
+            EXPECT_EQ(true,  qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+            EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
+
             EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
             EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
             EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
         } else {
+            EXPECT_EQ(qs.values().size(), value->size()-1);
+
             EXPECT_NO_THROW(qs.check_valid());
             EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
+            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable), false);
 
+            // based on the time the case should be different
             if (key == l__test_ts_constant) {
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), true);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-            } else if (key == l__test_ts_regular_input) {
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), true);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-            } else {
-                // Even if I pass a time series that is for a flexible, this constructor would build a regular
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), true);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
+                EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+            }
+            else if (key == l__test_ts_regular_input) {
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+            }
+            else { // if (key == l__test_ts_results) 
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
             }
         }
     }
-
-    
-    // Test the same constructor but with the case to test the force flexible option
-    for (auto& [key, value] : this->ts_map) {
-        QuantitySeries<TypeParam> qs(value, this->CreateValue(), /*force_flexible=*/ true);
-        ASSERT_EQ(qs.time_steps(), value);
-        
-        if (key == l__test_ts_null || key == l__test_ts_empty) {
-            EXPECT_EQ(qs.values().size(), 0);
-        } else {
-            EXPECT_EQ(qs.values().size(), value->size());
-        }
-
-        if (key == l__test_ts_null || key == l__test_ts_empty || key == l__test_ts_one) {
-            EXPECT_THROW(qs.check_valid(), std::runtime_error);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
-
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-        } else {
-            EXPECT_NO_THROW(qs.check_valid());
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-            EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
-
-            // In this case it is not a constant anymore, but a flexible because I forced it to be
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-            EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), true);
-        }
-    } 
 }
 
 // Test the constructor passing the vector of time steps and a vector of values (test for different sizes).
@@ -240,19 +218,18 @@ protected:
     void SetUp() override {
         OpenQuantitySeriesTest<T>::SetUp();
         
-        // N = k__test_ts_n_steps+1 = 7
         input_values.push_back({});                                                                 // empty
         input_values.push_back({this->CreateValue()});                                              // 1
-        input_values.push_back({this->CreateValue(), this->CreateValue()});                         // 2
-        input_values.push_back({this->CreateValue(), this->CreateValue(), this->CreateValue()});    // N-x (x=4)
         input_values.push_back({this->CreateValue(), this->CreateValue(), this->CreateValue(), 
                                 this->CreateValue(), this->CreateValue(), this->CreateValue()});    // N-1
         input_values.push_back({this->CreateValue(), this->CreateValue(), this->CreateValue(),
                                 this->CreateValue(), this->CreateValue(), this->CreateValue(),
-                                this->CreateValue()});                                              // N
+                                this->CreateValue(), this->CreateValue(), this->CreateValue(),
+                                this->CreateValue()});                                              // N-1 
         input_values.push_back({this->CreateValue(), this->CreateValue(), this->CreateValue(),
                                 this->CreateValue(), this->CreateValue(), this->CreateValue(),
-                                this->CreateValue(), this->CreateValue(), this->CreateValue()});    // N+x (x=2)
+                                this->CreateValue(), this->CreateValue(), this->CreateValue(),
+                                this->CreateValue(), this->CreateValue()});                                              // N
     }
 
     void TearDown() override {
@@ -264,6 +241,10 @@ protected:
 
 TYPED_TEST_SUITE(OpenQuantitySeriesVectorTest, TestTypes);
 
+// Test the constructor passing the vector of time steps and a vector of values (test for different sizes).
+// As long as I pass a correct time step vector and a correct value vector (size N-1), the object should be in a valid state.
+// If I pass a correct time step vector, but a value vector with size less than N-1, the object should be in a ValueFillable state.
+// Otherwise, it's invalid.
 TYPED_TEST(OpenQuantitySeriesVectorTest, VectorConstructorAndStates) {
 
     for (auto& [key, value] : this->ts_map) {
@@ -271,117 +252,66 @@ TYPED_TEST(OpenQuantitySeriesVectorTest, VectorConstructorAndStates) {
             QuantitySeries<TypeParam> qs(value, input);
             ASSERT_EQ(qs.time_steps(), value);
 
-            if (key == l__test_ts_null || key == l__test_ts_empty) {
+            if (key == l__test_ts_null || key == l__test_ts_empty || key == l__test_ts_one || value->size() != input.size()+1) {
                 EXPECT_EQ(qs.values().size(), 0);
             } else {
-                EXPECT_EQ(qs.values().size(), input.size());
+                EXPECT_EQ(qs.values().size(), value->size()-1);
             }
 
-            if (key == l__test_ts_null || key == l__test_ts_empty ) {
+            if (key == l__test_ts_null || key == l__test_ts_empty || key == l__test_ts_one) {
                 EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
+                EXPECT_EQ(true,  qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+                EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
                 EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
                 EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
                 EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-            } else if (key == l__test_ts_one) {
-                
-                if (input.size() <= 1) {
-                    EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
-
-                } else { // > 1, i.e., greater than the time steps
-                    EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), true);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
-                }
-
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-                EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-            } else if (key == l__test_ts_constant) {
-                if (input.size() == 0) {
-                    EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
-
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-                } else if (input.size() == 1 || input.size() == 2) {
-                    EXPECT_NO_THROW(qs.check_valid());
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
-
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-
-                    if (input.size() == 1) {
-                        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), true);
-                        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-                    } else {
-                        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                        EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), true);
-                    }
-                } else { // > 2, i.e., greater than the time steps
-                    EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), true);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
-
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-                }
-            } else { // if (key == l__test_ts_regular_input || key == l__test_ts_results) 
+            
+            } else {
                 if (input.size() < value->size()-1) { 
-                    // It should always be transitional, because it is not valid yet
+                    // It should always be ValueFillable, because it is not valid yet
                     EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), true);
+                    EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+                    EXPECT_EQ(true,  qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
                 
-                } else if (input.size() == value->size()-1) {
-                    // Special case for the regular input, doesn't matter if it is a regular time or not
+                } else if (input.size() == value->size()-1) { 
+                    // This is the exact condition when it is valid!
                     EXPECT_NO_THROW(qs.check_valid());
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
+                    EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+                    EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), true);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-
-                } else if (input.size() == value->size()) {
-                    // Special case for the flexible input, doesn't matter if it is a regular time or not
-                    EXPECT_NO_THROW(qs.check_valid());
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), false);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
-
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), true);
-
-                } else { // > value->size(), i.e., greater than the time steps
+                    // based on the time the case should be different
+                    if (key == l__test_ts_constant) {
+                        EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+                    }
+                    else if (key == l__test_ts_regular_input) {
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                        EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+                    }
+                    else { // if (key == l__test_ts_results) 
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant));
+                        EXPECT_EQ(false, qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular));
+                        EXPECT_EQ(true,  qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible));
+                    }
+                    
+                } else { // input.size() > value->size()-1, i.e., greater than the time steps
+                    // However, since I did pass a correct time step vector, but a non valid value vector, 
+                    // it should be in the same state as when "< value->size()-1"
+                    EXPECT_EQ(0, qs.values().size()); // Therefore it is correct that it is valuefillable
                     EXPECT_THROW(qs.check_valid(), std::runtime_error);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Invalid), true);
-                    EXPECT_EQ(qs.is_state(QuantitySeries<TypeParam>::State::Transitional), false);
+                    EXPECT_EQ(false, qs.is_state(QuantitySeries<TypeParam>::State::Invalid));
+                    EXPECT_EQ(true,  qs.is_state(QuantitySeries<TypeParam>::State::ValueFillable));
 
-                    EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined), true);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Constant), false);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Regular), false);
                     EXPECT_EQ(qs.is_special_case(QuantitySeries<TypeParam>::Case::Flexible), false);
-
                 }
             }
         }
@@ -394,7 +324,7 @@ TYPED_TEST(OpenQuantitySeriesVectorTest, TimeBasedLookup) {
         for (auto& input : this->input_values) {
             QuantitySeries<TypeParam> qs(value, input);
             
-            if (qs.is_special_case(QuantitySeries<TypeParam>::Case::Undefined)) {
+            if (!qs.is_state(QuantitySeries<TypeParam>::State::Valid)) {
                 EXPECT_THROW(qs.at(0), std::runtime_error);
             }
             else { // Is valid 
