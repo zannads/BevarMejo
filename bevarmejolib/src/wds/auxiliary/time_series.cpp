@@ -30,7 +30,7 @@ void TimeSeries::check_valid() const {
     if (!is_monotonic(m__time_steps))
         throw std::invalid_argument("TimeSeries::check_valid: Time steps are not monotonic.");
 
-    if (m__time_steps.back() >= m__gto.duration__s())
+    if (m__time_steps.size() > 1 && m__time_steps.back() >= m__gto.duration__s())
         throw std::invalid_argument("TimeSeries::check_valid: Time steps are not within the duration.");
 }
 

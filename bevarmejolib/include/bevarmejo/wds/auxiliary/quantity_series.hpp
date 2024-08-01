@@ -42,11 +42,6 @@ public:
 protected:
     const TimeSeries& m__time_series;
     container m__values;
-private:
-    template <typename TS>
-    friend class Iterator<TS>;
-    template <typename TS>
-    friend class ReverseIterator<TS>;
 
 /*--- Member methods ---*/
 public:
@@ -398,6 +393,13 @@ public:
     using const_iterator= Iterator<const QuantitySeries>;
     using reverse_iterator= ReverseIterator<QuantitySeries>;
     using const_reverse_iterator= ReverseIterator<const QuantitySeries>;
+private:
+    // Declare the iterator classes as friends
+    friend class Iterator<QuantitySeries>;
+    friend class Iterator<const QuantitySeries>;
+    friend class ReverseIterator<QuantitySeries>;
+    friend class ReverseIterator<const QuantitySeries>;
+public:
 
     iterator begin() noexcept { 
         if (is_accessible())    return iterator(this, 0);
