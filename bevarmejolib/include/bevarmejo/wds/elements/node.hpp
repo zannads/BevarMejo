@@ -13,9 +13,6 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -55,18 +52,10 @@ class Node : public NetworkElement {
         // TODO: add a parameter(option) that when true also forces the deletion
         // of the links connected to the node.
 
-        /*---  Results   ---*/ 
-        // pointer to the result property in the results object
-        vars::var_tseries_real* _head_;
-        vars::var_tseries_real* _pressure_;
+        /*---  Results   ---*/
         aux::QuantitySeries<double> m__head;
         aux::QuantitySeries<double> m__pressure;
         // TODO: water quality 
-
-    protected:
-        void _add_properties() override;
-        void _add_results() override;
-        void _update_pointers() override;
 
     /*--- Constructors ---*/
     public:
@@ -110,8 +99,8 @@ class Node : public NetworkElement {
         void elevation(const double elevation) {_elevation_ = elevation;}
 
         /*--- Results ---*/
-        const vars::var_tseries_real& head() const {return *_head_;}
-        const vars::var_tseries_real& pressure() const {return *_pressure_;}
+        const aux::QuantitySeries<double>& head() const {return m__head;}
+        const aux::QuantitySeries<double>& pressure() const {return m__pressure;}
 
     /*--- Methods ---*/
     public:

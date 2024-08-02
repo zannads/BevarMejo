@@ -5,12 +5,8 @@
 
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 #include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -43,17 +39,9 @@ protected:
     Demands m__demands;
 
     /*---  Results   ---*/
-    vars::var_tseries_real* _demand_requested_;
-    vars::var_tseries_real* _demand_delivered_;
-    vars::var_tseries_real* _demand_undelivered_;
     FlowSeries m__demand;
     FlowSeries m__consumption;
     FlowSeries m__undelivered_demand;
-
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
 
  /*--- Constructors ---*/
 public:
@@ -84,9 +72,10 @@ public:
     const FlowSeries& demand(const std::string& a_category) const;
 
     /*---  Results   ---*/
-    const vars::var_tseries_real& demand_requested() const {return *_demand_requested_;}
-    const vars::var_tseries_real& demand_delivered() const {return *_demand_delivered_;}
-    const vars::var_tseries_real& demand_undelivered() const {return *_demand_undelivered_;}
+    const aux::QuantitySeries<double>& demand_requested() const { return m__demand; }
+    const aux::QuantitySeries<double>& demand_delivered() const { return consumption(); }
+    const aux::QuantitySeries<double>& consumption() const { return m__consumption; }
+    const aux::QuantitySeries<double>& demand_undelivered() const { return m__undelivered_demand; }
 
 /*--- Methods ---*/
 public:

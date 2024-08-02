@@ -14,9 +14,6 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
-
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
@@ -34,8 +31,6 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     _y_coord_(0.0),
     m__links(),
     _elevation_(0.0),
-    _head_(nullptr),
-    _pressure_(nullptr),
     m__head(wds.time_series(l__RESULT_TS)),
     m__pressure(wds.time_series(l__RESULT_TS))
     {
@@ -51,8 +46,6 @@ Node::Node(const Node& other) :
     _y_coord_(other._y_coord_),
     m__links(other.m__links), 
     _elevation_(other._elevation_),
-    _head_(nullptr),
-    _pressure_(nullptr),
     m__head(other.m__head),
     m__pressure(other.m__pressure)
     {
@@ -66,8 +59,6 @@ Node::Node(Node&& rhs) noexcept :
     _y_coord_(rhs._y_coord_),
     m__links(std::move(rhs.m__links)),
     _elevation_(rhs._elevation_),
-    _head_(nullptr),
-    _pressure_(nullptr),
     m__head(std::move(rhs.m__head)),
     m__pressure(std::move(rhs.m__pressure))
     {
@@ -162,7 +153,7 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
     
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
-    this->_head_->value().insert(std::make_pair(t, val));
+    m__head.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_PRESSURE, &val);
     if (errorcode > 100) 
@@ -170,26 +161,7 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;
-    this->_pressure_->value().insert(std::make_pair(t, val));
-}
-
-void Node::_add_properties() {
-    inherited::_add_properties();
-    // no properties to add
-}
-
-void Node::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(LABEL_PRESSURE, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
-    results().emplace(LABEL_HEAD, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
-}
-
-void Node::_update_pointers() {
-    inherited::_update_pointers();
-
-    _head_ = &std::get<vars::var_tseries_real>(results().at(LABEL_HEAD));
-    _pressure_ = &std::get<vars::var_tseries_real>(results().at(LABEL_PRESSURE));
+    m__pressure.commit(t, val);
 }
 
 } // namespace wds

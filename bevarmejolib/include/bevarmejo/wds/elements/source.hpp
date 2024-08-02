@@ -2,23 +2,11 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__SOURCE_HPP
 
 #include <string>
-#include <vector>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
-
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
-#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
 namespace bevarmejo {
@@ -43,14 +31,8 @@ protected:
     /*--- Properties ---*/
 
     /*---  Results   ---*/
-    vars::var_tseries_real* _inflow_;
-    vars::var_tseries_real* _source_elevation_;
     aux::QuantitySeries<double> m__inflow;
     aux::QuantitySeries<double> m__source_elevation;
-
-protected:
-    void _add_results() override;
-    void _update_pointers() override;
 
 /*--- Constructors ---*/
 public:
@@ -77,8 +59,8 @@ public:
     /*--- Properties ---*/
 
     /*---  Results   ---*/
-    vars::var_tseries_real& inflow() const { return *_inflow_; }
-    vars::var_tseries_real& source_elevation() const { return *_source_elevation_; }
+    const aux::QuantitySeries<double>& inflow() const { return m__inflow; }
+    const aux::QuantitySeries<double>& source_elevation() const { return m__source_elevation; }
 
 /*--- Pure virtual methods override---*/
 

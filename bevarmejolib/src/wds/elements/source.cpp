@@ -17,9 +17,7 @@ namespace bevarmejo {
 namespace wds {
 
 Source::Source(const std::string& id, const WaterDistributionSystem& wds) : 
-    inherited(id, wds), 
-    _inflow_(nullptr),
-    _source_elevation_(nullptr),
+    inherited(id, wds),
     m__inflow(wds.time_series(l__RESULT_TS)),
     m__source_elevation(wds.time_series(l__RESULT_TS))
     {
@@ -29,9 +27,7 @@ Source::Source(const std::string& id, const WaterDistributionSystem& wds) :
 
 // Copy constructor
 Source::Source(const Source& other) : 
-    inherited(other), 
-    _inflow_(nullptr),
-    _source_elevation_(nullptr),
+    inherited(other),
     m__inflow(other.m__inflow),
     m__source_elevation(other.m__source_elevation)
     {
@@ -40,9 +36,7 @@ Source::Source(const Source& other) :
 
 // Move constructor
 Source::Source(Source&& rhs) noexcept : 
-    inherited(std::move(rhs)), 
-    _inflow_(nullptr),
-    _source_elevation_(nullptr),
+    inherited(std::move(rhs)),
     m__inflow(std::move(rhs.m__inflow)),
     m__source_elevation(std::move(rhs.m__source_elevation))
     {
@@ -84,7 +78,6 @@ void Source::retrieve_results(EN_Project ph, long t) {
 
     if (ph->parser.Flowflag != LPS)
         val = epanet::convert_flow_to_L_per_s(ph, val);
-    this->_inflow_->value().insert(std::make_pair(t, val));
     m__inflow.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
@@ -93,22 +86,7 @@ void Source::retrieve_results(EN_Project ph, long t) {
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
-    this->_source_elevation_->value().insert(std::make_pair(t, val));
     m__source_elevation.commit(t, val);
-}
-
-void Source::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(LINFLOW, vars::var_tseries_real(vars::l__L_per_s));
-    results().emplace(LSOURCE_ELEV, vars::var_tseries_real(vars::l__m));
-}
-
-void Source::_update_pointers() {
-    inherited::_update_pointers();
-
-    _inflow_ = &std::get<vars::var_tseries_real>(results().at(LINFLOW));
-    _source_elevation_ = &std::get<vars::var_tseries_real>(results().at(LSOURCE_ELEV));
 }
 
 } // namespace wds

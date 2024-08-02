@@ -6,9 +6,9 @@
 #include <variant>
 
 #include "epanet2_2.h"
+#include "types.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
@@ -29,9 +29,6 @@ namespace wds {
 
 Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    _demand_requested_(nullptr),
-    _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr),
     m__demands(),
     m__demand(wds.time_series(l__RESULT_TS)),
     m__consumption(wds.time_series(l__RESULT_TS)),
@@ -45,9 +42,6 @@ Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) :
 // Copy constructor
 Junction::Junction(const Junction& other) : 
     inherited(other),
-    _demand_requested_(nullptr),
-    _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr),
     m__demands(other.m__demands),
     m__demand(other.m__demand),
     m__consumption(other.m__consumption),
@@ -59,9 +53,6 @@ Junction::Junction(const Junction& other) :
 // Move constructor
 Junction::Junction(Junction&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _demand_requested_(nullptr),
-    _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr),
     m__demands(std::move(rhs.m__demands)),
     m__demand(std::move(rhs.m__demand)),
     m__consumption(std::move(rhs.m__consumption)),
@@ -178,7 +169,6 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
 
     if (ph->parser.Unitsflag != LPS)
         d_demand = epanet::convert_flow_to_L_per_s(ph, d_demand);
-    this->_demand_requested_->value().insert(std::make_pair(t, d_demand));
     m__demand.commit(t, d_demand);
 
     errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_dem_deficit);
@@ -188,36 +178,11 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     if (ph->parser.Unitsflag != LPS)
         d_dem_deficit = epanet::convert_flow_to_L_per_s(ph, d_dem_deficit);
     // IF DDA is on and head is negative, the demand was not satisfied and it should go as a demand undelivered
-    if (/*Assume we know it is DDA*/ this->_head_->value().at(t) < 0)
+    if (/*Assume we know it is DDA*/ m__head.when_t(t) < 0)
         d_dem_deficit = d_demand;
-    
-    this->_demand_undelivered_->value().insert(std::make_pair(t, d_dem_deficit));
     m__undelivered_demand.commit(t, d_dem_deficit);
 
-    this->_demand_delivered_->value().insert(std::make_pair(t, 
-        _demand_requested_->value().at(t) - _demand_undelivered_->value().at(t)));
     m__consumption.commit(t, d_demand-d_dem_deficit);
-}
-
-void Junction::_add_properties() {
-    inherited::_add_properties();
-
-}
-
-void Junction::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(LDEMAND_REQUESTED, vars::var_tseries_real(vars::l__L_per_s));
-    results().emplace(LDEMAND_DELIVERED, vars::var_tseries_real(vars::l__L_per_s));
-    results().emplace(LDEMAND_UNDELIVERED, vars::var_tseries_real(vars::l__L_per_s));
-}
-
-void Junction::_update_pointers() {
-    inherited::_update_pointers();
-
-    _demand_requested_ = &std::get<vars::var_tseries_real>(results().at(LDEMAND_REQUESTED));
-    _demand_delivered_ = &std::get<vars::var_tseries_real>(results().at(LDEMAND_DELIVERED));
-    _demand_undelivered_ = &std::get<vars::var_tseries_real>(results().at(LDEMAND_UNDELIVERED));
 }
 
 } // namespace wds

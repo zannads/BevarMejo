@@ -136,8 +136,6 @@ public:
 
 }; // class Tank
 
-using Tanks= ElementsGroup<Tank>;
-
 } // namespace wds
 } // namespace bevarmejo
 
