@@ -61,6 +61,24 @@ TimeSeries::TimeSeries(const epanet::GlobalTimeOptions &a_gto, Args &&...args) :
     check_valid();
 }
 
+TimeSeries& TimeSeries::operator= (const TimeSeries& other) {
+    if (this != &other) {
+        // m__gto = other.m__gto; // const reference cannot be assigned
+        m__time_steps = other.m__time_steps;
+        check_valid();
+    }
+    return *this;
+}
+
+TimeSeries& TimeSeries::operator= (TimeSeries&& other) noexcept {
+    if (this != &other) {
+        // m__gto = std::move(other.m__gto); // const reference cannot be assigned
+        m__time_steps = std::move(other.m__time_steps);
+        check_valid();
+    }
+    return *this;
+}
+
 TimeSeries::size_type TimeSeries::not_found() const noexcept { return this->m__time_steps.size() + 1; }
 
 TimeSeries::value_type TimeSeries::at(size_type pos) {

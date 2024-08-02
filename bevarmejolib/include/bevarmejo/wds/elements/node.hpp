@@ -7,6 +7,7 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__NODE_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__NODE_HPP
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 
@@ -15,14 +16,7 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
-
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
 
 #include "bevarmejo/wds/elements/network_element.hpp"
 
@@ -53,7 +47,7 @@ class Node : public NetworkElement {
         double _x_coord_;
         double _y_coord_;
 
-        std::unordered_set<Link*> _links_;
+        std::unordered_set<std::shared_ptr<Link>> m__links;
 
         // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
@@ -65,6 +59,8 @@ class Node : public NetworkElement {
         // pointer to the result property in the results object
         vars::var_tseries_real* _head_;
         vars::var_tseries_real* _pressure_;
+        aux::QuantitySeries<double> m__head;
+        aux::QuantitySeries<double> m__pressure;
         // TODO: water quality 
 
     protected:
@@ -104,7 +100,8 @@ class Node : public NetworkElement {
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
         // TODO: See Issue #32
-        std::unordered_set<Link*>& connected_links() {return _links_;}
+        std::unordered_set<std::shared_ptr<Link>>& connected_links() {return m__links;}
+        const std::unordered_set<std::shared_ptr<Link>>& connected_links() const {return m__links;}
         void add_link(Link* a_link);
         void remove_link(Link* a_link);
 
@@ -130,8 +127,6 @@ class Node : public NetworkElement {
         void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Node
-
-using Nodes= ElementsGroup<Node>;
 
 } // namespace wds
 } // namespace bevarmejo

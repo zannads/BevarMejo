@@ -12,8 +12,6 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
@@ -48,6 +46,7 @@ class NetworkElement : public Element {
         using ResultsMap = std::unordered_map<std::string, ResultsTypes>;
     private:
         ResultsMap _results_;
+        aux::QuantitiesMap m__ud_results;
 
     protected:
         void _add_properties() override;
@@ -73,7 +72,7 @@ class NetworkElement : public Element {
         NetworkElement& operator=(NetworkElement&& rhs) noexcept;
 
         // Destructor
-        virtual ~NetworkElement();
+        virtual ~NetworkElement() = default;
 
     /*--- Getters and setters ---*/
     public:

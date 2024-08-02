@@ -60,10 +60,10 @@ public:
     TimeSeries( const epanet::GlobalTimeOptions& a_gto, Args&&... args );
 
     TimeSeries(const TimeSeries& other) = default;
-    TimeSeries(TimeSeries&& other) = default;
+    TimeSeries(TimeSeries&& other) noexcept = default;
 
-    TimeSeries& operator=(const TimeSeries& other) = delete; // Not allowed to copy the GTO
-    TimeSeries& operator=(TimeSeries&& other) = delete; // Not allowed to move the GTO
+    TimeSeries& operator=(const TimeSeries& other);
+    TimeSeries& operator=(TimeSeries&& other) noexcept;
 
     ~TimeSeries() = default;
 

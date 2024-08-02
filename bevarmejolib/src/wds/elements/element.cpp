@@ -6,15 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 
-#include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "element.hpp"
@@ -78,10 +70,6 @@ Element& Element::operator=(Element&& rhs) noexcept {
         _update_pointers();
     }
     return *this;
-}
-
-Element::~Element() {
-    _properties_.clear();
 }
 
 bool Element::operator==(const Element& rhs) const {

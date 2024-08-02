@@ -23,10 +23,28 @@ namespace wds {
 namespace aux {
 
 // just a base class to be able to use the same pointer for different types
-class QuantitySeriesBase { };
+class QuantitySeriesBase {
+public:
+// Default all constructors and destructor
+    QuantitySeriesBase() = default;
+    QuantitySeriesBase(const QuantitySeriesBase& other) = default;
+    QuantitySeriesBase(QuantitySeriesBase&& other) noexcept = default;
+    QuantitySeriesBase& operator=(const QuantitySeriesBase& other) = default;
+    QuantitySeriesBase& operator=(QuantitySeriesBase&& other) noexcept = default;
+    virtual ~QuantitySeriesBase() = default;
+
+    // Clone method to be able to copy the objects.
+    std::unique_ptr<QuantitySeriesBase> clone() const {
+        return std::unique_ptr<QuantitySeriesBase>(this->__clone());
+    }
+
+protected:
+    virtual QuantitySeriesBase* __clone() const = 0;
+
+};
 
 template <typename T>
-class QuantitySeries : public QuantitySeriesBase {
+class QuantitySeries final : public QuantitySeriesBase {
 
 /*--- Member types ---*/
 public:
@@ -101,11 +119,28 @@ public:
 
     QuantitySeries(QuantitySeries&& other) noexcept = default;
 
-    QuantitySeries& operator=(const QuantitySeries& other) = default;
+    QuantitySeries& operator=(const QuantitySeries& other) {
+        if (this != &other) {
+            // m__time_series= other.m__time_series; // const reference cannot be assigned
+            m__values= other.m__values;
+        }
+        return *this;
+    }
 
-    QuantitySeries& operator=(QuantitySeries&& other) noexcept = default;
+    QuantitySeries& operator=(QuantitySeries&& other) noexcept {
+        if (this != &other) {
+            // m__time_series= std::move(other.m__time_series); // const reference cannot be assigned
+            m__values= std::move(other.m__values);
+        }
+        return *this;
+    }
 
     virtual ~QuantitySeries() = default;
+
+protected:
+    virtual QuantitySeriesBase* __clone() const override {
+        return new QuantitySeries(*this);
+    }
 
 /*--- Getters and setters ---*/
 public:

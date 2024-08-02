@@ -3,9 +3,12 @@
 //
 // Created by Dennis Zanutto on 20/10/23.
 #include <cassert>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 
 #include "epanet2_2.h"
@@ -29,10 +32,12 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
     _x_coord_(0.0),
     _y_coord_(0.0),
-    _links_(),
+    m__links(),
     _elevation_(0.0),
     _head_(nullptr),
-    _pressure_(nullptr)
+    _pressure_(nullptr),
+    m__head(wds.time_series("Results")),
+    m__pressure(wds.time_series("Results"))
     {
         _add_properties();
         _add_results();
@@ -44,10 +49,12 @@ Node::Node(const Node& other) :
     inherited(other),
     _x_coord_(other._x_coord_),
     _y_coord_(other._y_coord_),
-    _links_(other._links_), 
+    m__links(other.m__links), 
     _elevation_(other._elevation_),
     _head_(nullptr),
-    _pressure_(nullptr)
+    _pressure_(nullptr),
+    m__head(other.m__head),
+    m__pressure(other.m__pressure)
     {
         _update_pointers();
     }
@@ -57,10 +64,12 @@ Node::Node(Node&& rhs) noexcept :
     inherited(std::move(rhs)),
     _x_coord_(rhs._x_coord_),
     _y_coord_(rhs._y_coord_),
-    _links_(std::move(rhs._links_)),
+    m__links(std::move(rhs.m__links)),
     _elevation_(rhs._elevation_),
     _head_(nullptr),
-    _pressure_(nullptr)
+    _pressure_(nullptr),
+    m__head(std::move(rhs.m__head)),
+    m__pressure(std::move(rhs.m__pressure))
     {
         _update_pointers();
     }
@@ -71,8 +80,10 @@ Node& Node::operator=(const Node& rhs) {
         inherited::operator=(rhs);
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
-        _links_ = rhs._links_;
+        m__links = rhs.m__links;
         _elevation_ = rhs._elevation_;
+        m__head = rhs.m__head;
+        m__pressure = rhs.m__pressure;
         _update_pointers();
     }
     return *this;
@@ -84,8 +95,10 @@ Node& Node::operator=(Node&& rhs) noexcept {
         inherited::operator=(std::move(rhs));
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
-        _links_ = std::move(rhs._links_);
+        m__links = std::move(rhs.m__links);
         _elevation_ = rhs._elevation_;
+        m__head = std::move(rhs.m__head);
+        m__pressure = std::move(rhs.m__pressure);
         _update_pointers();
     }
     return *this;
@@ -98,12 +111,12 @@ Node::~Node() {
 
 void Node::add_link(Link *a_link) {
     if (a_link != nullptr)
-        _links_.insert(a_link);
+        m__links.insert(std::shared_ptr<Link>(a_link));
 }
 
 void Node::remove_link(Link *a_link) {
     if (a_link != nullptr)
-        _links_.erase(a_link);
+        m__links.erase(std::shared_ptr<Link>(a_link));
 }
 
 void Node::retrieve_index(EN_Project ph) {

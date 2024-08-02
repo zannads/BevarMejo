@@ -1,8 +1,3 @@
-//
-// element.hpp
-// 
-// Created by Dennis Zanutto on 20/10/23.
-
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 
@@ -107,7 +102,7 @@ class Element {
         Element& operator=(Element&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~Element();
+        virtual ~Element() = default;
 
     /*--- Operators ---*/
     public:
