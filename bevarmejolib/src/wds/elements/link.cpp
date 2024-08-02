@@ -17,13 +17,15 @@
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "link.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-Link::Link(const std::string& id) : 
-    inherited(id),
+Link::Link(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
     _node_start_(nullptr),
     _node_end_(nullptr),
     _initial_status_(nullptr),
@@ -106,13 +108,13 @@ void Link::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Link::__retrieve_EN_properties(EN_Project ph,  const ElementsGroup<Node>& nodes) {
+void Link::__retrieve_EN_properties(EN_Project ph) {
     assert(index() != 0);
-    int errorcode = 0;
+    auto nodes= m__wds.nodes();
 
     // get the initial status
     double d_initial_status = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_INITSTATUS, &d_initial_status);
+    int errorcode = EN_getlinkvalue(ph, index(), EN_INITSTATUS, &d_initial_status);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving initial status of link " + id() + " from EPANET project.");
 

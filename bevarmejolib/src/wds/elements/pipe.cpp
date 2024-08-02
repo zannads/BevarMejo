@@ -17,8 +17,8 @@
 namespace bevarmejo {
 namespace wds {
 
-Pipe::Pipe(const std::string& id) : 
-    inherited(id),
+Pipe::Pipe(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
     _length_(nullptr)
     {
         _add_properties();
@@ -121,8 +121,8 @@ std::unique_ptr<Pipe> Pipe::duplicate(const std::string& id) const {
 // Use the clone constructor when you need to copy the object to a NEW network.
 // Use the duplicate method when you need to copy the object to the SAME network.
 
-void Pipe::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) {
-    inherited::__retrieve_EN_properties(ph, nodes);
+void Pipe::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
     assert(index()!= 0);
 
     int errorode = 0;

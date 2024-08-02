@@ -2,11 +2,24 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__SOURCE_HPP
 
 #include <string>
-#include <variant>
+#include <vector>
 
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
+
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+
+#include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/node.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -40,7 +53,7 @@ protected:
 /*--- Constructors ---*/
 public:
     Source() = delete;
-    Source(const std::string& id);
+    Source(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Source(const Source& other);

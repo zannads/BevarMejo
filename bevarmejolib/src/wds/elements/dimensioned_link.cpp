@@ -4,6 +4,7 @@
 #include <variant>
 
 #include "epanet2_2.h"
+#include "types.h"
 
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
@@ -17,8 +18,8 @@
 namespace bevarmejo {
 namespace wds {
 
-DimensionedLink::DimensionedLink(const std::string& id) : 
-    inherited(id),
+DimensionedLink::DimensionedLink(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
     _diameter_(nullptr),
     _roughness_(nullptr),
     _minor_loss_(nullptr),
@@ -77,8 +78,8 @@ DimensionedLink& DimensionedLink::operator=(DimensionedLink&& rhs) noexcept {
 
 DimensionedLink::~DimensionedLink() {/* results are cleared when the inherited destructor is called*/ }
 
-void DimensionedLink::__retrieve_EN_properties(EN_Project ph,  const ElementsGroup<Node>& nodes) {
-    inherited::__retrieve_EN_properties(ph, nodes);
+void DimensionedLink::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
     
     assert(index()!=0);
 

@@ -20,8 +20,8 @@
 namespace bevarmejo {
 namespace wds {
 
-Tank::Tank(const std::string& id) :
-    inherited(id),
+Tank::Tank(const std::string& id, const WaterDistributionSystem& wds) :
+    inherited(id, wds),
     _diameter_(nullptr),
     _min_volume_(nullptr),
     _volume_curve_(nullptr),
@@ -95,8 +95,9 @@ Tank& Tank::operator=(Tank&& rhs) noexcept {
 
 Tank::~Tank() {/* Everything is deleted by the inherited destructor */}
 
-void Tank::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves) {
+void Tank::__retrieve_EN_properties(EN_Project ph) {
     inherited::__retrieve_EN_properties(ph);
+    auto curves= m__wds.curves();
 
     int errorcode;
     double val;

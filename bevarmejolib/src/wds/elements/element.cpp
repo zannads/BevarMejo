@@ -5,12 +5,17 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
+
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "element.hpp"
 
@@ -93,26 +98,6 @@ void Element::_add_properties() {
     // function and add them here.
     _properties_.clear();
     m__ud_properties.clear();
-}
-
-void Element::__retrieve_EN_properties(EN_Project ph) {
-    return;
-}
-
-void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns) {
-    this->__retrieve_EN_properties(ph);
-}
-
-void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves) {
-    this->__retrieve_EN_properties(ph);
-}
-
-void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) {
-    this->__retrieve_EN_properties(ph);
-}
-
-void Element::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
-    this->__retrieve_EN_properties(ph);
 }
 
 } // namespace wds

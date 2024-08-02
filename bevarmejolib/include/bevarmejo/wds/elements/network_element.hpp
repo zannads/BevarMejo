@@ -15,13 +15,14 @@
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
 
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
 
 namespace bevarmejo {
 namespace wds {
+
+class WaterDistributionSystem;
 
 class NetworkElement : public Element {
     // WDS ancestor object
@@ -34,8 +35,9 @@ class NetworkElement : public Element {
         using inherited= Element;
 
     /*--- Attributes ---*/
-    private:
+    protected:
         /*--- Properties ---*/
+        const WaterDistributionSystem& m__wds;
 
         /*---  Results   ---*/
         using ResultsTypes = std::variant<
@@ -44,7 +46,7 @@ class NetworkElement : public Element {
             vars::var_tseries_int,
             vars::var_tseries_real> ;
         using ResultsMap = std::unordered_map<std::string, ResultsTypes>;
-
+    private:
         ResultsMap _results_;
 
     protected:
@@ -56,7 +58,7 @@ class NetworkElement : public Element {
     public:
         NetworkElement() = delete;
 
-        NetworkElement(const std::string& id);
+        NetworkElement(const std::string& id, const WaterDistributionSystem& wds);
 
         // Copy constructor
         NetworkElement(const NetworkElement& other);
@@ -95,8 +97,6 @@ class NetworkElement : public Element {
         virtual void retrieve_results(EN_Project ph, long t) = 0;
 
 };
-
-using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
 
 } // namespace wds
 } // namespace bevarmejo

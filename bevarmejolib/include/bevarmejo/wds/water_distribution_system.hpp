@@ -29,6 +29,9 @@
 
 #include "bevarmejo/wds/elements/element.hpp"
 
+#include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
@@ -47,13 +50,14 @@
 #include "bevarmejo/wds/elements/pump.hpp"
 // #include "bevarmejo/wds/elements/valve.hpp"
 
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
 
 namespace bevarmejo {
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
+
+class NetworkElement;
 
 template <typename T>
 class UserDefinedElementsGroup;
@@ -62,12 +66,19 @@ using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
 class Reservoir;
 using Reservoirs = ElementsGroup<Reservoir>;
 class Tank;
+using Tanks = ElementsGroup<Tank>;
 class Node;
+using Nodes = ElementsGroup<Node>;
 class Junction;
+using Junctions = ElementsGroup<Junction>;
 class Source;
+using Sources = ElementsGroup<Source>;
 class Link;
+using Links = ElementsGroup<Link>;
 class Pipe;
+using Pipes = ElementsGroup<Pipe>;
 class Pump;
+using Pumps = ElementsGroup<Pump>;
 
 class WaterDistributionSystem {
 

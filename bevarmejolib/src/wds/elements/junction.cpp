@@ -17,13 +17,15 @@
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
 #include "bevarmejo/wds/auxiliary/demand.hpp"
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "junction.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-Junction::Junction(const std::string& id) : 
-    inherited(id),
+Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
     _demands_(),
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
@@ -114,8 +116,9 @@ const bool Junction::has_demand() const {
     return _demand_constant_->value() > 0 || !_demands_.empty();
 }
 
-void Junction::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns)  {
+void Junction::__retrieve_EN_properties(EN_Project ph)  {
     inherited::__retrieve_EN_properties(ph);
+    auto patterns= m__wds.patterns();
 
     int n_demands= 0;
     int errorcode= EN_getnumdemands(ph, this->index(), &n_demands);

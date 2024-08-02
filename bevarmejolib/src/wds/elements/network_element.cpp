@@ -13,8 +13,9 @@
 namespace bevarmejo {
 namespace wds {
 
-NetworkElement::NetworkElement(const std::string& id) :
+NetworkElement::NetworkElement(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id),
+    m__wds(wds),
     _results_()
     {
         _add_properties();
@@ -25,6 +26,7 @@ NetworkElement::NetworkElement(const std::string& id) :
 // Copy constructor
 NetworkElement::NetworkElement(const NetworkElement& other) :
     inherited(other),
+    m__wds(other.m__wds),
     _results_(other._results_)
     {
         _update_pointers();
@@ -33,6 +35,7 @@ NetworkElement::NetworkElement(const NetworkElement& other) :
 // Move constructor
 NetworkElement::NetworkElement(NetworkElement&& other) noexcept :
     inherited(std::move(other)),
+    m__wds(other.m__wds),
     _results_(std::move(other._results_))
     {
         _update_pointers();
@@ -42,6 +45,7 @@ NetworkElement::NetworkElement(NetworkElement&& other) noexcept :
 NetworkElement& NetworkElement::operator=(const NetworkElement& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        // m__wds = rhs.m__wds; // const reference cannot be assigned
         _results_ = rhs._results_;
         _update_pointers();
     }
@@ -52,6 +56,7 @@ NetworkElement& NetworkElement::operator=(const NetworkElement& rhs) {
 NetworkElement& NetworkElement::operator=(NetworkElement&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        // m__wds = std::move(rhs.m__wds); // const reference cannot be assigned
         _results_ = std::move(rhs._results_);
         _update_pointers();
     }

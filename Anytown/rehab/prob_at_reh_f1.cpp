@@ -592,7 +592,7 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 		// I should create a new tank at that position and with that volume
 		double tank_volume_gal = _tanks_costs_.at(*(curr_dv+1)).volume_gal;
 		double tank_volume_m3 = tank_volume_gal * 0.00378541;
-		std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx));
+		std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx), *anytown);
 		// elevation , min and max level are the same as in the original tanks
 		// Ideally same coordinates of the junction, but I move it slightly in case I want to save the result to file and visualize it
 		// diameter from volume divided by the fixed ratio
@@ -628,7 +628,7 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 		anytown->insert(new_tank);
 
 		// The riser has a well defined length, diameter could be a dv, but I fix it to 16 inches for now
-		std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx));
+		std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx), *anytown);
 		riser->diameter(14.0*MperFT/12*1000);
 		riser->length(anytown::riser_length_ft*MperFT);
 		riser->start_node(new_tank.get());

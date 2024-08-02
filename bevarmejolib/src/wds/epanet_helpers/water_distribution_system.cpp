@@ -233,11 +233,7 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
 
         switch (node_type) {
             case EN_JUNCTION: {
-                auto junction = std::make_shared<Junction>(node_id);
-
-                // Actually load the junction data
-                junction->retrieve_index(ph_);
-                junction->retrieve_EN_properties(ph_);
+                auto junction = std::make_shared<Junction>(node_id, *this);
 
                 _junctions_.insert(junction);
                 p_node= junction;
@@ -247,19 +243,13 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
             case EN_RESERVOIR: {
                 auto reservoir = std::make_shared<Reservoir>(node_id, *this);
 
-                reservoir->retrieve_index(ph_);
-                reservoir->retrieve_EN_properties(ph_);
-
                 _reservoirs_.insert(reservoir);
                 p_node= reservoir;
                 break;
             }
 
             case EN_TANK: {
-                auto tank = std::make_shared<Tank>(node_id);
-
-                tank->retrieve_index(ph_);
-                tank->retrieve_EN_properties(ph_, this->curves());
+                auto tank = std::make_shared<Tank>(node_id, *this);
 
                 _tanks_.insert(tank);
                 p_node= tank;
@@ -269,7 +259,11 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
             default:
                 throw std::runtime_error("Unknown node type\n");
         }
-        
+
+        // Actually load the node data
+        p_node->retrieve_index(ph_);
+        p_node->retrieve_EN_properties(ph_);
+
         _nodes_.insert(p_node);
         _elements_.push_back(p_node);
     }
@@ -295,11 +289,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
 
         switch (link_type) {
             case EN_PIPE:{
-                auto pipe= std::make_shared<Pipe>(link_id);
-
-                // Actually load the pipe data
-                pipe->retrieve_index(ph_);
-                pipe->retrieve_EN_properties(ph_, this->nodes());
+                auto pipe= std::make_shared<Pipe>(link_id, *this);
 
                 _pipes_.insert(pipe);
                 link= pipe;
@@ -307,11 +297,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
             }
 
             case EN_PUMP: {
-                auto pump= std::make_shared<Pump>(link_id);
-
-                // Actually load the pump data
-                pump->retrieve_index(ph_);
-                pump->retrieve_EN_properties(ph_, this->nodes(), this->patterns(), this->curves());
+                auto pump= std::make_shared<Pump>(link_id, *this);
 
                 _pumps_.insert(pump);
                 link= pump;
@@ -322,6 +308,10 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph) {
                 throw std::runtime_error("Unknown link type\n");
         }
         
+        // Actually load the link data
+        link->retrieve_index(ph_);
+        link->retrieve_EN_properties(ph_);
+
         _links_.insert(link);
         _elements_.push_back(link);
     }

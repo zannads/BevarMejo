@@ -1,6 +1,7 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__TANK_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__TANK_HPP
 
+#include <memory>
 #include <string>
 
 #include "epanet2_2.h"
@@ -8,13 +9,24 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+
 #include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
+#include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -71,7 +83,7 @@ protected:
 /*--- Constructors ---*/
 public:
     Tank() = delete;
-    Tank(const std::string& id);
+    Tank(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Tank(const Tank& other);
@@ -122,7 +134,7 @@ public:
 public:
     /*--- Properties ---*/
 private:
-    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves) override;
+    void __retrieve_EN_properties(EN_Project ph) override;
 public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;

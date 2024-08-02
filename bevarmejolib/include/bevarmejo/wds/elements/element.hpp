@@ -8,6 +8,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
 #include "epanet2_2.h"
@@ -54,12 +55,6 @@ static const unsigned int ELEMENT_PBV= 33;
 static const unsigned int ELEMENT_FCV= 34;
 static const unsigned int ELEMENT_TCV= 35;
 static const unsigned int ELEMENT_GPV= 36;
-
-// Some forward declarations
-class Pattern;
-class Curve;
-
-class Node;
 
 template <typename T>
 class ElementsGroup;
@@ -149,12 +144,7 @@ class Element {
             this->__retrieve_EN_properties(ph, std::forward<Args>(args)...);
         }
     protected:
-        virtual void __retrieve_EN_properties(EN_Project ph); // For all types of elements 
-        virtual void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Pattern>& patterns); // For junctions
-        virtual void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Curve>& curves); // For tanks
-        virtual void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes); // For links and derived classes
-        virtual void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves); // For pumps 
-   
+        virtual void __retrieve_EN_properties(EN_Project ph)= 0;
 };
 
 } // namespace wds

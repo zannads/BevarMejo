@@ -8,7 +8,15 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
+
+#include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
+
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
@@ -53,7 +61,7 @@ protected:
 /*--- Constructors ---*/
 public:
     DimensionedLink() = delete;
-    DimensionedLink(const std::string& id);
+    DimensionedLink(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     DimensionedLink(const DimensionedLink& other);
@@ -90,7 +98,7 @@ public:
 public:
     void retrieve_results(EN_Project ph, long t) override;
 protected:
-    void __retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes) override;
+    void __retrieve_EN_properties(EN_Project ph) override;
 
 };
 

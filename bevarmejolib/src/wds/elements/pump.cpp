@@ -24,8 +24,8 @@
 namespace bevarmejo {
 namespace wds {
 
-    Pump::Pump(const std::string& id) :
-        inherited(id),
+    Pump::Pump(const std::string& id, const WaterDistributionSystem& wds) :
+        inherited(id, wds),
         _init_setting_(nullptr),
         _power_rating_(nullptr),
         _energy_cost_(nullptr),
@@ -106,8 +106,10 @@ namespace wds {
 
     Pump::~Pump() { /* Everything is deleted by the inherited destructor */ }
 
-    void Pump::__retrieve_EN_properties(EN_Project ph, const ElementsGroup<Node>& nodes, const ElementsGroup<Pattern>& patterns, const ElementsGroup<Curve>& curves) {
-        inherited::__retrieve_EN_properties(ph, nodes);
+    void Pump::__retrieve_EN_properties(EN_Project ph) {
+        inherited::__retrieve_EN_properties(ph);
+        auto patterns= m__wds.patterns();
+        auto curves= m__wds.curves();
 
         double value= 0.0;
         int errorcode= EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);

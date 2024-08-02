@@ -21,8 +21,7 @@ namespace bevarmejo {
 namespace wds {
 
 Reservoir::Reservoir(const std::string& id, const WaterDistributionSystem& wds) :
-    inherited(id),
-    m__wds(wds),
+    inherited(id, wds),
     m__head(wds.time_series("Results"))
     {
         _add_properties();
@@ -33,7 +32,6 @@ Reservoir::Reservoir(const std::string& id, const WaterDistributionSystem& wds) 
 // Copy constructor
 Reservoir::Reservoir(const Reservoir& other) : 
     inherited(other),
-    m__wds(other.m__wds),
     m__head(other.m__head)
     {
         _update_pointers();
@@ -42,7 +40,6 @@ Reservoir::Reservoir(const Reservoir& other) :
 // Move constructor
 Reservoir::Reservoir(Reservoir&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    m__wds(rhs.m__wds),
     m__head(std::move(rhs.m__head))
     {
         _update_pointers();
@@ -51,7 +48,6 @@ Reservoir::Reservoir(Reservoir&& rhs) noexcept :
 Reservoir& Reservoir::operator=(const Reservoir& other) {
     if (this != &other) {
         inherited::operator=(other);
-        // m__wds = other.m__wds; Can't copy a reference
         _update_pointers();
     }
     return *this;
@@ -60,7 +56,6 @@ Reservoir& Reservoir::operator=(const Reservoir& other) {
 Reservoir& Reservoir::operator=(Reservoir&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        // m__wds = rhs.m__wds; Can't copy a reference
         _update_pointers();
     }
     return *this;
