@@ -30,7 +30,11 @@ Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) :
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr)
+    _demand_undelivered_(nullptr),
+    m__demands(),
+    m__demand(wds.time_series(l__RESULT_TS)),
+    m__consumption(wds.time_series(l__RESULT_TS)),
+    m__undelivered_demand(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -44,7 +48,11 @@ Junction::Junction(const Junction& other) :
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr)
+    _demand_undelivered_(nullptr),
+    m__demands(other.m__demands),
+    m__demand(other.m__demand),
+    m__consumption(other.m__consumption),
+    m__undelivered_demand(other.m__undelivered_demand)
     {
         _update_pointers();
     }
@@ -56,7 +64,11 @@ Junction::Junction(Junction&& rhs) noexcept :
     _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
-    _demand_undelivered_(nullptr)
+    _demand_undelivered_(nullptr),
+    m__demands(std::move(rhs.m__demands)),
+    m__demand(std::move(rhs.m__demand)),
+    m__consumption(std::move(rhs.m__consumption)),
+    m__undelivered_demand(std::move(rhs.m__undelivered_demand))
     {
         _update_pointers();
     }
@@ -66,6 +78,11 @@ Junction& Junction::operator=(const Junction& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
         _demands_ = rhs._demands_;
+
+        m__demands = rhs.m__demands;
+        m__demand = rhs.m__demand;
+        m__consumption = rhs.m__consumption;
+        m__undelivered_demand = rhs.m__undelivered_demand;
         _update_pointers();
     }
     return *this;
@@ -76,12 +93,15 @@ Junction& Junction::operator=(Junction&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
         _demands_ = std::move(rhs._demands_);
+
+        m__demands = std::move(rhs.m__demands);
+        m__demand = std::move(rhs.m__demand);
+        m__consumption = std::move(rhs.m__consumption);
+        m__undelivered_demand = std::move(rhs.m__undelivered_demand);
         _update_pointers();
     }
     return *this;
 }
-
-Junction::~Junction() { /* Everything is deleted by the inherited destructor */ }
 
 Demand& Junction::demand(const std::string &a_category) {
     for (auto& d : _demands_) {

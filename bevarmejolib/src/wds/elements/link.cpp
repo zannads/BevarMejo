@@ -29,7 +29,9 @@ Link::Link(const std::string& id, const WaterDistributionSystem& wds) :
     _node_start_(nullptr),
     _node_end_(nullptr),
     _initial_status_(nullptr),
-    _flow_(nullptr)
+    _flow_(nullptr),
+    m__initial_status(wds.time_series(l__CONSTANT_TS)),
+    m__flow(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -42,7 +44,9 @@ Link::Link(const Link& other) :
     _node_start_(nullptr),
     _node_end_(nullptr),
     _initial_status_(nullptr),
-    _flow_(nullptr)
+    _flow_(nullptr),
+    m__initial_status(other.m__initial_status),
+    m__flow(other.m__flow)
     {
         _update_pointers();
     }
@@ -53,7 +57,9 @@ Link::Link(Link&& rhs) noexcept :
     _node_start_(nullptr),
     _node_end_(nullptr),
     _initial_status_(nullptr),
-    _flow_(nullptr)
+    _flow_(nullptr),
+    m__initial_status(std::move(rhs.m__initial_status)),
+    m__flow(std::move(rhs.m__flow))
     {
         _update_pointers();
     }
@@ -62,6 +68,8 @@ Link::Link(Link&& rhs) noexcept :
 Link& Link::operator=(const Link& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        m__initial_status = rhs.m__initial_status;
+        m__flow = rhs.m__flow;
         _update_pointers();
     }
     return *this;
@@ -71,12 +79,12 @@ Link& Link::operator=(const Link& rhs) {
 Link& Link::operator=(Link&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        m__initial_status = std::move(rhs.m__initial_status);
+        m__flow = std::move(rhs.m__flow);
         _update_pointers();
     }
     return *this;
 }
-
-Link::~Link() {/* results are cleared when the inherited destructor is called*/ }
 
 void Link::_add_properties() {
     inherited::_add_properties();

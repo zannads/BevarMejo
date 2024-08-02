@@ -73,16 +73,21 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         // 1.2 Allocate space for the TimeSeries objects
         // Since I loaded the time options for simulation and the pattern, I can
         // already create the necessary TimeSeries objects.
-        m__time_series_map.emplace("Constant", aux::TimeSeries(m__config_options.times.global));
+        m__time_series_map.emplace(l__CONSTANT_TS, aux::TimeSeries(m__config_options.times.global));
 
-        m__time_series_map.emplace("Pattern", aux::TimeSeries(m__config_options.times.global));
+        auto map_pair_out= m__time_series_map.emplace(l__PATTERN_TS, aux::TimeSeries(m__config_options.times.global));
+        if (!map_pair_out.second) {
+            throw std::runtime_error("Error creating the pattern TimeSeries object\n");
+        }
+        // First "first" is for the iterator of the pair, the "second" is ot access the reference for the pair itself
+        auto pattern_ts= map_pair_out.first->second; 
         aux::time_t currt= m__config_options.times.pattern.shift_start_time__s;
         while (currt < m__config_options.times.global.duration__s()) {
-            m__time_series_map.at("Pattern").commit(currt);
+            pattern_ts.commit(currt);
             currt += m__config_options.times.pattern.timestep__s;
         }
 
-        m__time_series_map.emplace("Results", aux::TimeSeries(m__config_options.times.global));
+        m__time_series_map.emplace(l__RESULT_TS, aux::TimeSeries(m__config_options.times.global));
         // It will be the hydraulic solver that allocates the memory for the results.
 
         // 1.3 Load analysis options

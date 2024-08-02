@@ -9,24 +9,13 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
-
-#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -55,6 +44,9 @@ protected:
     vars::var_int* _init_setting_;
     vars::var_real* _power_rating_;
     vars::var_real* _energy_cost_;
+    aux::QuantitySeries<int> m__init_setting; // Constant
+    aux::QuantitySeries<double> m__power_rating; // Constant
+    aux::QuantitySeries<double> m__energy_cost; // Constant because it uses the pattern together
 
     std::shared_ptr<Pattern> _speed_pattern_;
     std::shared_ptr<Pattern> _energy_cost_pattern_;
@@ -66,6 +58,9 @@ protected:
     vars::var_tseries_real* _instant_energy_;
     vars::var_tseries_int* _state_;
     vars::var_tseries_real* _efficiency_;
+    aux::QuantitySeries<double> m__instant_energy;
+    aux::QuantitySeries<int> m__state;
+    aux::QuantitySeries<double> m__efficiency;
 
 protected:
     void _add_properties() override;
@@ -91,7 +86,7 @@ public:
     Pump& operator=(Pump&& rhs) noexcept;
 
     // Destructor
-    virtual ~Pump();
+    virtual ~Pump() = default;
 
 /*--- Getters and setters ---*/
 public:
@@ -135,8 +130,6 @@ public:
 
 
 }; // class Pump
-
-using Pumps = ElementsGroup<Pump>;
 
 } // namespace wds
 } // namespace bevarmejo

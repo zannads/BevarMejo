@@ -57,7 +57,7 @@ public:
     Reservoir(Reservoir&& rhs) noexcept;
     Reservoir& operator=(const Reservoir& other);
     Reservoir& operator=(Reservoir&& rhs) noexcept;
-    ~Reservoir() override;
+    virtual ~Reservoir() = default;
 
 /*--- Getters and setters ---*/
 public:

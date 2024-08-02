@@ -15,6 +15,8 @@
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "tank.hpp"
 
 namespace bevarmejo {
@@ -32,7 +34,17 @@ Tank::Tank(const std::string& id, const WaterDistributionSystem& wds) :
     _level_(nullptr),
     _initial_volume_(nullptr),
     _volume_(nullptr),
-    _max_volume_(nullptr)
+    _max_volume_(nullptr),
+    m__diameter(wds.time_series(l__CONSTANT_TS)),
+    m__min_volume(wds.time_series(l__CONSTANT_TS)),
+    m__min_level(wds.time_series(l__CONSTANT_TS)),
+    m__max_volume(wds.time_series(l__CONSTANT_TS)),
+    m__max_level(wds.time_series(l__CONSTANT_TS)),
+    m__can_overflow(wds.time_series(l__CONSTANT_TS)),
+    m__initial_volume(wds.time_series(l__CONSTANT_TS)),
+    m__initial_level(wds.time_series(l__CONSTANT_TS)),
+    m__volume(wds.time_series(l__RESULT_TS)),
+    m__level(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -52,7 +64,17 @@ Tank::Tank(const Tank& other) :
     _level_(nullptr),
     _initial_volume_(nullptr),
     _volume_(nullptr),
-    _max_volume_(nullptr)
+    _max_volume_(nullptr),
+    m__diameter(other.m__diameter),
+    m__min_volume(other.m__min_volume),
+    m__min_level(other.m__min_level),
+    m__max_volume(other.m__max_volume),
+    m__max_level(other.m__max_level),
+    m__can_overflow(other.m__can_overflow),
+    m__initial_volume(other.m__initial_volume),
+    m__initial_level(other.m__initial_level),
+    m__volume(other.m__volume),
+    m__level(other.m__level)
     {
         _update_pointers();
     }
@@ -70,7 +92,17 @@ Tank::Tank(Tank&& rhs) noexcept :
     _can_overflow_(nullptr),
     _initial_volume_(nullptr),
     _volume_(nullptr),
-    _max_volume_(nullptr)
+    _max_volume_(nullptr),
+    m__diameter(std::move(rhs.m__diameter)),
+    m__min_volume(std::move(rhs.m__min_volume)),
+    m__min_level(std::move(rhs.m__min_level)),
+    m__max_volume(std::move(rhs.m__max_volume)),
+    m__max_level(std::move(rhs.m__max_level)),
+    m__can_overflow(std::move(rhs.m__can_overflow)),
+    m__initial_volume(std::move(rhs.m__initial_volume)),
+    m__initial_level(std::move(rhs.m__initial_level)),
+    m__volume(std::move(rhs.m__volume)),
+    m__level(std::move(rhs.m__level))
     {
         _update_pointers();
     }
@@ -79,6 +111,17 @@ Tank::Tank(Tank&& rhs) noexcept :
 Tank& Tank::operator=(const Tank& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        m__diameter = rhs.m__diameter;
+        m__min_volume = rhs.m__min_volume;
+        m__min_level = rhs.m__min_level;
+        m__max_volume = rhs.m__max_volume;
+        m__max_level = rhs.m__max_level;
+        m__can_overflow = rhs.m__can_overflow;
+        m__initial_volume = rhs.m__initial_volume;
+        m__initial_level = rhs.m__initial_level;
+        m__volume = rhs.m__volume;
+        m__level = rhs.m__level;
+        
         _update_pointers();
     }
     return *this;
@@ -88,12 +131,22 @@ Tank& Tank::operator=(const Tank& rhs) {
 Tank& Tank::operator=(Tank&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        m__diameter = std::move(rhs.m__diameter);
+        m__min_volume = std::move(rhs.m__min_volume);
+        m__min_level = std::move(rhs.m__min_level);
+        m__max_volume = std::move(rhs.m__max_volume);
+        m__max_level = std::move(rhs.m__max_level);
+        m__can_overflow = std::move(rhs.m__can_overflow);
+        m__initial_volume = std::move(rhs.m__initial_volume);
+        m__initial_level = std::move(rhs.m__initial_level);
+        m__volume = std::move(rhs.m__volume);
+        m__level = std::move(rhs.m__level);
+
         _update_pointers();
     }
     return *this;
 }
 
-Tank::~Tank() {/* Everything is deleted by the inherited destructor */}
 
 void Tank::__retrieve_EN_properties(EN_Project ph) {
     inherited::__retrieve_EN_properties(ph);

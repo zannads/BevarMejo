@@ -41,11 +41,12 @@ WaterDistributionSystem::WaterDistributionSystem() :
     _pumps_(),
     _subnetworks_(),
     _groups_(),
-    m__config_options()
+    m__config_options(),
+    m__time_series_map()
     {
         // I need at least a time series for the constant and one for the results
-        m__time_series_map.emplace("Constant", aux::TimeSeries(m__config_options.times.global));
-        m__time_series_map.emplace("Results", aux::TimeSeries(m__config_options.times.global));
+        m__time_series_map.emplace(l__CONSTANT_TS, aux::TimeSeries(m__config_options.times.global));
+        m__time_series_map.emplace(l__RESULT_TS, aux::TimeSeries(m__config_options.times.global));
     }
 
     WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
@@ -62,7 +63,8 @@ WaterDistributionSystem::WaterDistributionSystem() :
         _pumps_(other._pumps_),
         _subnetworks_(other._subnetworks_),
         _groups_(other._groups_),
-        m__config_options(other.m__config_options)
+        m__config_options(other.m__config_options),
+        m__time_series_map(other.m__time_series_map)
         { }
 
     WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem&& other) noexcept :
@@ -79,7 +81,8 @@ WaterDistributionSystem::WaterDistributionSystem() :
         _pumps_(std::move(other._pumps_)),
         _subnetworks_(std::move(other._subnetworks_)),
         _groups_(std::move(other._groups_)),
-        m__config_options(std::move(other.m__config_options))
+        m__config_options(std::move(other.m__config_options)),
+        m__time_series_map(std::move(other.m__time_series_map))
         { }
 
     WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
@@ -98,6 +101,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
             _subnetworks_ = rhs._subnetworks_;
             _groups_ = rhs._groups_;
             m__config_options = rhs.m__config_options;
+            m__time_series_map = rhs.m__time_series_map;
         }
         return *this;
     }
@@ -118,6 +122,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
             _subnetworks_ = std::move(rhs._subnetworks_);
             _groups_ = std::move(rhs._groups_);
             m__config_options = std::move(rhs.m__config_options);
+            m__time_series_map = std::move(rhs.m__time_series_map);
         }
         return *this;
     }
@@ -130,7 +135,29 @@ WaterDistributionSystem::~WaterDistributionSystem(){
         ph_ = nullptr;
         std::cout << "EPANET project deleted\n";
     }
+
+    // First clear all the elements, then the time series and finally the config options
+    _subnetworks_.clear();
+    _groups_.clear();
+
+    _nodes_.clear();
+    _links_.clear();
+    _junctions_.clear();
+    _tanks_.clear();
+    _reservoirs_.clear();
+    _links_.clear();
+    _pipes_.clear();
+    _pumps_.clear();
+
+    m__aux_elements_.patterns.clear();
+    m__aux_elements_.curves.clear();
+
+    _elements_.clear();
+
+    m__time_series_map.clear();
+    // m__config_options can die in piece
 }
+
 
 std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const {
     std::unique_ptr<WaterDistributionSystem> wds_clone = std::make_unique<WaterDistributionSystem>();

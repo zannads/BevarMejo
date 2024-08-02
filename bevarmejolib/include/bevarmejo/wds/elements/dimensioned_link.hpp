@@ -8,16 +8,8 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
-#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 
 namespace bevarmejo {
@@ -49,9 +41,15 @@ protected:
     vars::var_real* _minor_loss_;
     vars::var_real* _bulk_coeff_;
     vars::var_real* _wall_coeff_;
+    aux::QuantitySeries<double> m__diameter;
+    aux::QuantitySeries<double> m__roughness;
+    aux::QuantitySeries<double> m__minor_loss;
+    aux::QuantitySeries<double> m__bulk_coeff;
+    aux::QuantitySeries<double> m__wall_coeff;
 
     /*---  Results   ---*/
     vars::var_tseries_real* _velocity_;
+    aux::QuantitySeries<double> m__velocity;
 
 protected:
     void _add_properties() override;
@@ -76,7 +74,7 @@ public:
     DimensionedLink& operator=(DimensionedLink&& rhs) noexcept;
 
     // Destructor
-    virtual ~DimensionedLink();
+    virtual ~DimensionedLink() = default;
 
 /*--- Getters and setters ---*/
 public:

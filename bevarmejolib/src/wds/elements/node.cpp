@@ -36,8 +36,8 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     _elevation_(0.0),
     _head_(nullptr),
     _pressure_(nullptr),
-    m__head(wds.time_series("Results")),
-    m__pressure(wds.time_series("Results"))
+    m__head(wds.time_series(l__RESULT_TS)),
+    m__pressure(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -104,19 +104,14 @@ Node& Node::operator=(Node&& rhs) noexcept {
     return *this;
 }
 
-Node::~Node() {
-    // Both properties and results are cleared when the inherited destructor 
-    // is called.
-}
-
 void Node::add_link(Link *a_link) {
     if (a_link != nullptr)
-        m__links.insert(std::shared_ptr<Link>(a_link));
+        m__links.insert(a_link);
 }
 
 void Node::remove_link(Link *a_link) {
     if (a_link != nullptr)
-        m__links.erase(std::shared_ptr<Link>(a_link));
+        m__links.erase(a_link);
 }
 
 void Node::retrieve_index(EN_Project ph) {

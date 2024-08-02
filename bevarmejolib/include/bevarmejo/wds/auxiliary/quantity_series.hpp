@@ -24,24 +24,35 @@ namespace aux {
 
 // just a base class to be able to use the same pointer for different types
 class QuantitySeriesBase {
+
+/*--- Attributes ---*/
+protected:
+    const TimeSeries& m__time_series;
+
 public:
 // Default all constructors and destructor
-    QuantitySeriesBase() = default;
+    QuantitySeriesBase() = delete;
+    QuantitySeriesBase(const TimeSeries& time_steps) : m__time_series(time_steps) { }
     QuantitySeriesBase(const QuantitySeriesBase& other) = default;
     QuantitySeriesBase(QuantitySeriesBase&& other) noexcept = default;
-    QuantitySeriesBase& operator=(const QuantitySeriesBase& other) = default;
-    QuantitySeriesBase& operator=(QuantitySeriesBase&& other) noexcept = default;
+    QuantitySeriesBase& operator=(const QuantitySeriesBase& other) = delete;
+    QuantitySeriesBase& operator=(QuantitySeriesBase&& other) noexcept = delete;
     virtual ~QuantitySeriesBase() = default;
 
     // Clone method to be able to copy the objects.
     std::unique_ptr<QuantitySeriesBase> clone() const {
-        return std::unique_ptr<QuantitySeriesBase>(this->__clone());
+        return std::unique_ptr<QuantitySeriesBase>(__clone());
     }
 
 protected:
     virtual QuantitySeriesBase* __clone() const = 0;
 
-};
+/*--- Getters and setters ---*/
+public:
+    // get TimeSeries, you can't modify it as it is a const reference
+    const TimeSeries& time_steps() const { return m__time_series; }
+    
+}; // class QuantitySeriesBase
 
 template <typename T>
 class QuantitySeries final : public QuantitySeriesBase {
@@ -49,6 +60,7 @@ class QuantitySeries final : public QuantitySeriesBase {
 /*--- Member types ---*/
 public:
     using container= std::vector<T>;
+    using inherited= QuantitySeriesBase;
 
     using key_type= time_t;
     using value_type= T;
@@ -63,7 +75,6 @@ public:
 
 /*--- Attributes ---*/
 protected:
-    const TimeSeries& m__time_series;
     container m__values;
 
 /*--- Member methods ---*/
@@ -96,40 +107,37 @@ public:
     QuantitySeries() = delete;
 
     QuantitySeries( const TimeSeries& time_steps ) : 
-        m__time_series(time_steps), 
+        inherited(time_steps), 
         m__values() {
             this->reserve();
         }
 
     QuantitySeries( const TimeSeries& time_steps, 
                     const_reference a_value) : 
-        m__time_series(time_steps),
+        inherited(time_steps),
         m__values() {
             // I have faith in the TimeSeries to be always well defined
             m__values.assign(m__time_series.inner_size(), a_value);
         }
 
     QuantitySeries( const TimeSeries& time_steps, const container& values) : 
-        m__time_series(time_steps),
+        inherited(time_steps),
         m__values(values) {
             this->reserve();
         }
 
     QuantitySeries(const QuantitySeries& other) = default;
-
     QuantitySeries(QuantitySeries&& other) noexcept = default;
-
     QuantitySeries& operator=(const QuantitySeries& other) {
         if (this != &other) {
-            // m__time_series= other.m__time_series; // const reference cannot be assigned
+            // You can't reassign the TimeSeries of the inherited class because is const reference
             m__values= other.m__values;
         }
         return *this;
     }
-
     QuantitySeries& operator=(QuantitySeries&& other) noexcept {
         if (this != &other) {
-            // m__time_series= std::move(other.m__time_series); // const reference cannot be assigned
+            // You can't reassign the TimeSeries of the inherited class because is const reference
             m__values= std::move(other.m__values);
         }
         return *this;
@@ -144,9 +152,6 @@ protected:
 
 /*--- Getters and setters ---*/
 public:
-    // get TimeSeries, you can't modify it as it is a const reference
-    const TimeSeries& time_steps() const { return m__time_series; }
-
     // No access allowed to the values, only through the methods. 
     const container& values() const { return m__values; }
     // Let's make it private so that friend classes, like the iterator can access it.

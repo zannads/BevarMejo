@@ -74,6 +74,19 @@ protected:
     //MIXZONEVOL
     vars::var_tseries_real* _volume_;
     vars::var_real* _max_volume_;
+    /*--- Properties ---*/
+    aux::QuantitySeries<double> m__diameter; // Constant
+    aux::QuantitySeries<double> m__min_volume; // Constant
+    aux::QuantitySeries<double> m__min_level; // Constant
+    aux::QuantitySeries<double> m__max_level; // Constant
+    aux::QuantitySeries<int> m__can_overflow; // Constant
+    aux::QuantitySeries<double> m__initial_level; // Constant
+    /*---  Read-only Props ---*/ //Will become a method one day
+    aux::QuantitySeries<double> m__initial_volume; // Constant
+    aux::QuantitySeries<double> m__max_volume; // Constant
+    /*---  Results   ---*/
+    aux::QuantitySeries<double> m__level;
+    aux::QuantitySeries<double> m__volume;
 
 protected:
     void _add_properties() override;
@@ -97,8 +110,7 @@ public:
     // Move assignment operator
     Tank& operator=(Tank&& rhs) noexcept;
 
-    // Destructor
-    ~Tank() override;
+    virtual ~Tank() = default;
 
 /*--- Getters and setters ---*/
 public:

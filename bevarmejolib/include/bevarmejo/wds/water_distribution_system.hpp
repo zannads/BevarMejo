@@ -56,6 +56,9 @@ namespace bevarmejo {
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
+static const std::string l__CONSTANT_TS = "Cst";
+static const std::string l__PATTERN_TS = "ENPatt";
+static const std::string l__RESULT_TS = "Res";
 
 class NetworkElement;
 

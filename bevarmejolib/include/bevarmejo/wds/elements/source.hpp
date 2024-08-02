@@ -45,6 +45,8 @@ protected:
     /*---  Results   ---*/
     vars::var_tseries_real* _inflow_;
     vars::var_tseries_real* _source_elevation_;
+    aux::QuantitySeries<double> m__inflow;
+    aux::QuantitySeries<double> m__source_elevation;
 
 protected:
     void _add_results() override;
@@ -68,7 +70,7 @@ public:
     Source& operator=(Source&& rhs) noexcept;
 
     // Destructor
-    virtual ~Source();
+    virtual ~Source() = default;
 
 /*--- Getters and setters ---*/
 public:

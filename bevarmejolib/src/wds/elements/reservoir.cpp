@@ -22,7 +22,7 @@ namespace wds {
 
 Reservoir::Reservoir(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
-    m__head(wds.time_series("Results"))
+    m__head(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -48,6 +48,7 @@ Reservoir::Reservoir(Reservoir&& rhs) noexcept :
 Reservoir& Reservoir::operator=(const Reservoir& other) {
     if (this != &other) {
         inherited::operator=(other);
+        m__head = other.m__head;
         _update_pointers();
     }
     return *this;
@@ -56,12 +57,11 @@ Reservoir& Reservoir::operator=(const Reservoir& other) {
 Reservoir& Reservoir::operator=(Reservoir&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        m__head = std::move(rhs.m__head);
         _update_pointers();
     }
     return *this;
 }
-
-Reservoir::~Reservoir() { /* Everything is deleted by the inherited destructor */ }
 
 void Reservoir::__retrieve_EN_properties(EN_Project ph) {
     inherited::__retrieve_EN_properties(ph);

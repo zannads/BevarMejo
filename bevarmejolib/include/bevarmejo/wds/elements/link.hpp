@@ -1,21 +1,16 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP
 
+#include <memory>
 #include <string>
+#include <unordered_set>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
-
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
 
 #include "bevarmejo/wds/elements/network_element.hpp"
 
@@ -44,10 +39,11 @@ protected:
     Node* _node_end_;
 
     vars::var_int* _initial_status_;
-    // aux::QuantitySeries<int> m__initial_status_;
+    aux::QuantitySeries<int> m__initial_status; // Constant
 
     /*---  Results   ---*/ 
     vars::var_tseries_real* _flow_;
+    aux::QuantitySeries<double> m__flow;
     // TODO: water quality
 
 protected:
@@ -74,7 +70,7 @@ public:
     Link& operator=(Link&& rhs) noexcept;
 
     // Destructor
-    virtual ~Link();
+    virtual ~Link() = default;
 
 /*--- Getters and setters ---*/
 public:
@@ -99,8 +95,6 @@ protected:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Link
-
-using Links= ElementsGroup<Link>;
 
 } // namespace wds
 } // namespace bevarmejo

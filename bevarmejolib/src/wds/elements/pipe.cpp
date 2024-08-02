@@ -11,6 +11,9 @@
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "pipe.hpp"
 
@@ -19,7 +22,8 @@ namespace wds {
 
 Pipe::Pipe(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    _length_(nullptr)
+    _length_(nullptr),
+    m__length(wds.time_series(l__CONSTANT_TS))
     {
         _add_properties();
         _add_results();
@@ -29,7 +33,8 @@ Pipe::Pipe(const std::string& id, const WaterDistributionSystem& wds) :
 // Copy constructor
 Pipe::Pipe(const Pipe& other) : 
     inherited(other),
-    _length_(nullptr)
+    _length_(nullptr),
+    m__length(other.m__length)
     {
         _update_pointers();
     }
@@ -37,7 +42,8 @@ Pipe::Pipe(const Pipe& other) :
 // Move constructor
 Pipe::Pipe(Pipe&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _length_(nullptr)
+    _length_(nullptr),
+    m__length(std::move(rhs.m__length))
     {
         _update_pointers();
     }
@@ -46,6 +52,8 @@ Pipe::Pipe(Pipe&& rhs) noexcept :
 Pipe& Pipe::operator=(const Pipe& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        m__length = rhs.m__length;
+
         _update_pointers();
     }
     return *this;
@@ -55,14 +63,11 @@ Pipe& Pipe::operator=(const Pipe& rhs) {
 Pipe& Pipe::operator=(Pipe&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        m__length = std::move(rhs.m__length);
+
         _update_pointers();
     }
     return *this;
-}
-
-// Destructor
-Pipe::~Pipe() {
-    // delete _length_;
 }
 
 std::unique_ptr<Pipe> Pipe::clone() const {

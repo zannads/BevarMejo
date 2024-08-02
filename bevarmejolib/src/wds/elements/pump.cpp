@@ -19,6 +19,8 @@
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "pump.hpp"
 
 namespace bevarmejo {
@@ -35,7 +37,13 @@ namespace wds {
         _efficiency_curve_(nullptr),
         _instant_energy_(nullptr),
         _state_(nullptr),
-        _efficiency_(nullptr)
+        _efficiency_(nullptr),
+        m__init_setting(wds.time_series(l__CONSTANT_TS)),
+        m__power_rating(wds.time_series(l__CONSTANT_TS)),
+        m__energy_cost(wds.time_series(l__CONSTANT_TS)),
+        m__instant_energy(wds.time_series(l__RESULT_TS)),
+        m__state(wds.time_series(l__RESULT_TS)),
+        m__efficiency(wds.time_series(l__RESULT_TS))
         {
             _add_properties();
             _add_results();
@@ -54,7 +62,13 @@ namespace wds {
         _efficiency_curve_(other._efficiency_curve_),
         _instant_energy_(nullptr),
         _state_(nullptr),
-        _efficiency_(nullptr)
+        _efficiency_(nullptr),
+        m__init_setting(other.m__init_setting),
+        m__power_rating(other.m__power_rating),
+        m__energy_cost(other.m__energy_cost),
+        m__instant_energy(other.m__instant_energy),
+        m__state(other.m__state),
+        m__efficiency(other.m__efficiency)
         {
             _update_pointers();
         }
@@ -71,7 +85,13 @@ namespace wds {
         _efficiency_curve_(std::move(rhs._efficiency_curve_)),
         _instant_energy_(nullptr),
         _state_(nullptr),
-        _efficiency_(nullptr)
+        _efficiency_(nullptr),
+        m__init_setting(std::move(rhs.m__init_setting)),
+        m__power_rating(std::move(rhs.m__power_rating)),
+        m__energy_cost(std::move(rhs.m__energy_cost)),
+        m__instant_energy(std::move(rhs.m__instant_energy)),
+        m__state(std::move(rhs.m__state)),
+        m__efficiency(std::move(rhs.m__efficiency))
         {
             _update_pointers();
         }
@@ -84,6 +104,12 @@ namespace wds {
             _energy_cost_pattern_ = rhs._energy_cost_pattern_;
             _pump_curve_ = rhs._pump_curve_;
             _efficiency_curve_ = rhs._efficiency_curve_;
+            m__init_setting = rhs.m__init_setting;
+            m__power_rating = rhs.m__power_rating;
+            m__energy_cost = rhs.m__energy_cost;
+            m__instant_energy = rhs.m__instant_energy;
+            m__state = rhs.m__state;
+            m__efficiency = rhs.m__efficiency;
             
             _update_pointers();
         }
@@ -98,13 +124,17 @@ namespace wds {
             _energy_cost_pattern_ = std::move(rhs._energy_cost_pattern_);
             _pump_curve_ = std::move(rhs._pump_curve_);
             _efficiency_curve_ = std::move(rhs._efficiency_curve_);
+            m__init_setting = std::move(rhs.m__init_setting);
+            m__power_rating = std::move(rhs.m__power_rating);
+            m__energy_cost = std::move(rhs.m__energy_cost);
+            m__instant_energy = std::move(rhs.m__instant_energy);
+            m__state = std::move(rhs.m__state);
+            m__efficiency = std::move(rhs.m__efficiency);
             
             _update_pointers();
         }
         return *this;
     }
-
-    Pump::~Pump() { /* Everything is deleted by the inherited destructor */ }
 
     void Pump::__retrieve_EN_properties(EN_Project ph) {
         inherited::__retrieve_EN_properties(ph);

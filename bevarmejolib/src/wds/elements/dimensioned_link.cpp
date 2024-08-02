@@ -9,9 +9,14 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "dimensioned_link.hpp"
 
@@ -25,7 +30,13 @@ DimensionedLink::DimensionedLink(const std::string& id, const WaterDistributionS
     _minor_loss_(nullptr),
     _bulk_coeff_(nullptr),
     _wall_coeff_(nullptr),
-    _velocity_(nullptr)
+    _velocity_(nullptr),
+    m__diameter(wds.time_series(l__CONSTANT_TS)),
+    m__roughness(wds.time_series(l__CONSTANT_TS)),
+    m__minor_loss(wds.time_series(l__CONSTANT_TS)),
+    m__bulk_coeff(wds.time_series(l__CONSTANT_TS)),
+    m__wall_coeff(wds.time_series(l__CONSTANT_TS)),
+    m__velocity(wds.time_series(l__RESULT_TS))
     {
         _add_properties();
         _add_results();
@@ -40,7 +51,13 @@ DimensionedLink::DimensionedLink(const DimensionedLink& other) :
     _minor_loss_(nullptr),
     _bulk_coeff_(nullptr),
     _wall_coeff_(nullptr),
-    _velocity_(nullptr)
+    _velocity_(nullptr),
+    m__diameter(other.m__diameter),
+    m__roughness(other.m__roughness),
+    m__minor_loss(other.m__minor_loss),
+    m__bulk_coeff(other.m__bulk_coeff),
+    m__wall_coeff(other.m__wall_coeff),
+    m__velocity(other.m__velocity)
     {
         _update_pointers();
     }
@@ -53,7 +70,13 @@ DimensionedLink::DimensionedLink(DimensionedLink&& rhs) noexcept :
     _minor_loss_(nullptr),
     _bulk_coeff_(nullptr),
     _wall_coeff_(nullptr),
-    _velocity_(nullptr)
+    _velocity_(nullptr),
+    m__diameter(std::move(rhs.m__diameter)),
+    m__roughness(std::move(rhs.m__roughness)),
+    m__minor_loss(std::move(rhs.m__minor_loss)),
+    m__bulk_coeff(std::move(rhs.m__bulk_coeff)),
+    m__wall_coeff(std::move(rhs.m__wall_coeff)),
+    m__velocity(std::move(rhs.m__velocity))
     {
         _update_pointers();
     }
@@ -62,6 +85,13 @@ DimensionedLink::DimensionedLink(DimensionedLink&& rhs) noexcept :
 DimensionedLink& DimensionedLink::operator=(const DimensionedLink& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        m__diameter = rhs.m__diameter;
+        m__roughness = rhs.m__roughness;
+        m__minor_loss = rhs.m__minor_loss;
+        m__bulk_coeff = rhs.m__bulk_coeff;
+        m__wall_coeff = rhs.m__wall_coeff;
+        m__velocity = rhs.m__velocity;
+
         _update_pointers();
     }
     return *this;
@@ -71,12 +101,17 @@ DimensionedLink& DimensionedLink::operator=(const DimensionedLink& rhs) {
 DimensionedLink& DimensionedLink::operator=(DimensionedLink&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+        m__diameter = std::move(rhs.m__diameter);
+        m__roughness = std::move(rhs.m__roughness);
+        m__minor_loss = std::move(rhs.m__minor_loss);
+        m__bulk_coeff = std::move(rhs.m__bulk_coeff);
+        m__wall_coeff = std::move(rhs.m__wall_coeff);
+        m__velocity = std::move(rhs.m__velocity);
+
         _update_pointers();
     }
     return *this;
 }
-
-DimensionedLink::~DimensionedLink() {/* results are cleared when the inherited destructor is called*/ }
 
 void DimensionedLink::__retrieve_EN_properties(EN_Project ph) {
     inherited::__retrieve_EN_properties(ph);

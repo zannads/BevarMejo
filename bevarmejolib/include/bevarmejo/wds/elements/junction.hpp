@@ -45,11 +45,13 @@ class Junction : public Node {
 public:
     using inherited= Node;
     using DemandContainer = std::vector<Demand>;
+    using Demands= std::vector<aux::QuantitySeries<double>>;
 
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
     DemandContainer _demands_;
+    Demands m__demands;
 
     vars::var_real* _demand_constant_;
 
@@ -57,6 +59,9 @@ protected:
     vars::var_tseries_real* _demand_requested_;
     vars::var_tseries_real* _demand_delivered_;
     vars::var_tseries_real* _demand_undelivered_;
+    aux::QuantitySeries<double> m__demand;
+    aux::QuantitySeries<double> m__consumption;
+    aux::QuantitySeries<double> m__undelivered_demand;
 
 protected:
     void _add_properties() override;
@@ -80,7 +85,7 @@ public:
     // Move assignment operator
     Junction& operator=(Junction&& rhs) noexcept;
 
-    ~Junction() override;
+    virtual ~Junction() = default;
     
 /*--- Getters and setters ---*/
 public:
