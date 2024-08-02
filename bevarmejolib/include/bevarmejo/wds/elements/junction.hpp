@@ -4,6 +4,7 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "epanet2_2.h"
@@ -11,20 +12,9 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
-#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
-
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -44,24 +34,21 @@ static const std::string LNAME_JUNCTION= "Junction";
 class Junction : public Node {    
 public:
     using inherited= Node;
-    using DemandContainer = std::vector<Demand>;
-    using Demands= std::vector<aux::QuantitySeries<double>>;
+    using FlowSeries= aux::QuantitySeries<double>;
+    using Demands= std::unordered_map<std::string, FlowSeries>;
 
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    DemandContainer _demands_;
     Demands m__demands;
-
-    vars::var_real* _demand_constant_;
 
     /*---  Results   ---*/
     vars::var_tseries_real* _demand_requested_;
     vars::var_tseries_real* _demand_delivered_;
     vars::var_tseries_real* _demand_undelivered_;
-    aux::QuantitySeries<double> m__demand;
-    aux::QuantitySeries<double> m__consumption;
-    aux::QuantitySeries<double> m__undelivered_demand;
+    FlowSeries m__demand;
+    FlowSeries m__consumption;
+    FlowSeries m__undelivered_demand;
 
 protected:
     void _add_properties() override;
@@ -90,18 +77,11 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    DemandContainer& demands() {return _demands_;}
-    const DemandContainer& demands() const {return _demands_;}
+    Demands& demands() {return m__demands;}
+    const Demands& demands() const {return m__demands;}
 
-    Demand& demand(const std::string& a_category);
-
-    void add_demand(const Demand& a_demand) {_demands_.push_back(a_demand);}
-    void add_demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern);
-    void remove_demand(const std::string& a_category);
-private:
-    auto _find_demand(const std::string& a_category) const;
-public:    
-    vars::var_real& demand_constant() {return *_demand_constant_;}
+    FlowSeries& demand(const std::string& a_category);
+    const FlowSeries& demand(const std::string& a_category) const;
 
     /*---  Results   ---*/
     const vars::var_tseries_real& demand_requested() const {return *_demand_requested_;}
@@ -128,8 +108,6 @@ public:
     void retrieve_results(EN_Project ph, long t) override;
 
 }; // class Junction
-
-using Junctions= ElementsGroup<Junction>;
 
 } // namespace wds
 } // namespace bevarmejo

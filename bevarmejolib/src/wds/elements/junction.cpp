@@ -10,12 +10,15 @@
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 #include "bevarmejo/wds/data_structures/variable.hpp"
 
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -26,8 +29,6 @@ namespace wds {
 
 Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    _demands_(),
-    _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
     _demand_undelivered_(nullptr),
@@ -44,8 +45,6 @@ Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) :
 // Copy constructor
 Junction::Junction(const Junction& other) : 
     inherited(other),
-    _demands_(other._demands_),
-    _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
     _demand_undelivered_(nullptr),
@@ -60,8 +59,6 @@ Junction::Junction(const Junction& other) :
 // Move constructor
 Junction::Junction(Junction&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _demands_(std::move(rhs._demands_)),
-    _demand_constant_(nullptr),
     _demand_requested_(nullptr),
     _demand_delivered_(nullptr),
     _demand_undelivered_(nullptr),
@@ -77,7 +74,6 @@ Junction::Junction(Junction&& rhs) noexcept :
 Junction& Junction::operator=(const Junction& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
-        _demands_ = rhs._demands_;
 
         m__demands = rhs.m__demands;
         m__demand = rhs.m__demand;
@@ -92,7 +88,6 @@ Junction& Junction::operator=(const Junction& rhs) {
 Junction& Junction::operator=(Junction&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        _demands_ = std::move(rhs._demands_);
 
         m__demands = std::move(rhs.m__demands);
         m__demand = std::move(rhs.m__demand);
@@ -103,37 +98,16 @@ Junction& Junction::operator=(Junction&& rhs) noexcept {
     return *this;
 }
 
-Demand& Junction::demand(const std::string &a_category) {
-    for (auto& d : _demands_) {
-        if (d.category() == a_category) {
-            return d;
-        }
-    }
-    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
+Junction::FlowSeries& Junction::demand(const std::string &a_category) {
+    return m__demands.at(a_category);
 }
 
-void Junction::add_demand(const std::string &a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern) {
-    _demands_.emplace_back(Demand(a_category, a_base_dem, a_pattern));
-}
-
-auto Junction::_find_demand(const std::string &a_category) const {
-    for (auto it = _demands_.begin(); it != _demands_.end(); ++it) {
-        if (it->category() == a_category) {
-            return it;
-        }
-    }
-    throw std::out_of_range("Demand category " + a_category + " not found in junction " + id());
-}
-
-void Junction::remove_demand(const std::string &a_category) {
-    auto d_p_demand = _find_demand(a_category);
-    if (d_p_demand != _demands_.end()) {
-        _demands_.erase(d_p_demand);
-    }
+const Junction::FlowSeries& Junction::demand(const std::string &a_category) const {
+    return m__demands.at(a_category);
 }
 
 const bool Junction::has_demand() const {
-    return _demand_constant_->value() > 0 || !_demands_.empty();
+    return !m__demands.empty();
 }
 
 void Junction::__retrieve_EN_properties(EN_Project ph)  {
@@ -165,14 +139,31 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
 
         std::shared_ptr<Pattern> pattern= nullptr;
         // Pattern id can be "" if the demand is constant
-        if (!pattern_id.empty()) {
+        if (pattern_id.empty()) {
+            // Means it's a constant demand
+            aux::QuantitySeries<double> cdemand(m__wds.time_series(l__CONSTANT_TS));
+            cdemand.commit(0l, base_demand);
+
+            m__demands.insert(std::make_pair(demand_category, cdemand));
+        }
+        else { // It's a pattern demand
+            aux::QuantitySeries<double> pdemand(m__wds.time_series(l__PATTERN_TS));
+
             auto it= patterns.find(pattern_id);
             assert(it != patterns.end());
             pattern= *it;
+
+            // TODO: this is very much wrong because it doesn't consider the shift time step 
+            // and that patterns may have a different length and I may need to wrap around.
+            auto ilen= m__wds.time_series(l__PATTERN_TS).inner_size();
+            for (auto i= 0l; i < ilen; ++i) {
+                auto __time= m__wds.time_series(l__PATTERN_TS).at(i);
+                pdemand.commit(__time, base_demand * pattern->at(i));
+            }
+
+            m__demands.insert(std::make_pair(demand_category, pdemand));
         }
-        
-        add_demand(demand_category, base_demand, pattern);
-    }
+    }   
 }
 
 void Junction::retrieve_results(EN_Project ph, long t=0) {
@@ -188,6 +179,7 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     if (ph->parser.Unitsflag != LPS)
         d_demand = epanet::convert_flow_to_L_per_s(ph, d_demand);
     this->_demand_requested_->value().insert(std::make_pair(t, d_demand));
+    m__demand.commit(t, d_demand);
 
     errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_dem_deficit);
     if (errorcode > 100)
@@ -197,18 +189,19 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
         d_dem_deficit = epanet::convert_flow_to_L_per_s(ph, d_dem_deficit);
     // IF DDA is on and head is negative, the demand was not satisfied and it should go as a demand undelivered
     if (/*Assume we know it is DDA*/ this->_head_->value().at(t) < 0)
-        this->_demand_undelivered_->value().insert(std::make_pair(t, d_demand));
-    else
-        this->_demand_undelivered_->value().insert(std::make_pair(t, d_dem_deficit));
+        d_dem_deficit = d_demand;
+    
+    this->_demand_undelivered_->value().insert(std::make_pair(t, d_dem_deficit));
+    m__undelivered_demand.commit(t, d_dem_deficit);
 
     this->_demand_delivered_->value().insert(std::make_pair(t, 
         _demand_requested_->value().at(t) - _demand_undelivered_->value().at(t)));
+    m__consumption.commit(t, d_demand-d_dem_deficit);
 }
 
 void Junction::_add_properties() {
     inherited::_add_properties();
 
-    properties().emplace(LDEMAND_CONSTANT, vars::var_real(vars::l__L_per_s,0));
 }
 
 void Junction::_add_results() {
@@ -221,8 +214,6 @@ void Junction::_add_results() {
 
 void Junction::_update_pointers() {
     inherited::_update_pointers();
-
-    _demand_constant_ = &std::get<vars::var_real>(properties().at(LDEMAND_CONSTANT));
 
     _demand_requested_ = &std::get<vars::var_tseries_real>(results().at(LDEMAND_REQUESTED));
     _demand_delivered_ = &std::get<vars::var_tseries_real>(results().at(LDEMAND_DELIVERED));

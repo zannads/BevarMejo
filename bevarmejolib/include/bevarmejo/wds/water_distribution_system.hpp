@@ -143,7 +143,7 @@ protected:
     } m__config_options;
 
     // Keep the relevant times here:
-    TimeSeriesMap m__time_series_map;
+    mutable TimeSeriesMap m__time_series_map;
 
 /*--- Constructors ---*/ 
 public:

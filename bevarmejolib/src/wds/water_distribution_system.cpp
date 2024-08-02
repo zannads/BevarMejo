@@ -253,6 +253,8 @@ const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& n
 
 void WaterDistributionSystem::run_hydraulics() const{
     this->clear_results();
+    m__time_series_map.at(l__RESULT_TS).reset();
+
     assert(ph_ != nullptr);
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
@@ -294,6 +296,7 @@ void WaterDistributionSystem::run_hydraulics() const{
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
         if (m__config_options.save_all_hsteps || scheduled) {
+            m__time_series_map.at(l__RESULT_TS).commit(t);
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
