@@ -87,13 +87,13 @@ public:
     }
 
     void check_access() const {
-        if ((m__time_series.inner_size() == m__values.size()) ||
-            (m__time_series.inner_size()+1 == m__values.size()) ) {
+        if ((m__time_series.inner_size() != m__values.size()) &&
+            (m__time_series.inner_size()+1 != m__values.size()) ) {
             std::ostringstream errmessage;
             bevarmejo::io::stream_out(errmessage, 
                 "QuantitySeries::check_access: Impossible to access the values with the current state.",
-                "\tExpected value size to be:\n\t\t", m__time_series.inner_size(),
-                "\tActual value size is:\n\t\t", m__values.size()
+                "\n\tExpected value size to be:\n\t\t", m__time_series.inner_size(),
+                "\n\tActual value size is:\n\t\t", m__values.size()
             );
             
             throw std::logic_error(errmessage.str());
@@ -254,18 +254,36 @@ public:
 
     // No direct access to the time series! 
 
-    // When the time series is a constant, you can alo access the value with a special method.
-    reference value() { 
+    // When the time series is a constant, you can alo access the value with some special methods:
+    reference value() {
+        check_access();
         if (m__time_series.is_constant())
             return m__values.front();
         
         throw std::logic_error("QuantitySeries::value: Time series is not constant.");
     }
-    const_reference value() const { 
+    const_reference value() const {
+        check_access();
         if (m__time_series.is_constant())
             return m__values.front();
         
         throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+    }
+    void value(const_reference a_value) { 
+        if (m__time_series.is_constant()) {
+            if (m__values.empty())
+                m__values.push_back(a_value);
+            else
+                m__values.front()= a_value;
+        }
+        else {
+            throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+        }
+    }
+    // Even simply assign it with "="
+    QuantitySeries& operator=(const_reference a_value) {
+        value(a_value);
+        return *this;
     }
 
 /*--- Iterators ---*/
