@@ -143,7 +143,20 @@ protected:
     } m__config_options;
 
     // Keep the relevant times here:
-    mutable TimeSeriesMap m__time_series_map;
+    struct RelevantTimes {
+        aux::TimeSeries constant;
+        aux::TimeSeries EN_pattern;
+        mutable aux::TimeSeries results;
+        TimeSeriesMap ud_time_series;
+
+        RelevantTimes() = delete;
+        RelevantTimes(const epanet::GlobalTimeOptions& gto) :
+            constant(gto),
+            EN_pattern(gto),
+            results(gto),
+            ud_time_series() {}
+    };
+    RelevantTimes m__times;
 
 /*--- Constructors ---*/ 
 public:

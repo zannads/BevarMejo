@@ -35,7 +35,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
     _subnetworks_(),
     _groups_(),
     m__config_options(),
-    m__time_series_map()
+    m__times(m__config_options.times.global)
     {
         assert(!inp_file.empty());
 
@@ -73,21 +73,16 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         // 1.2 Allocate space for the TimeSeries objects
         // Since I loaded the time options for simulation and the pattern, I can
         // already create the necessary TimeSeries objects.
-        m__time_series_map.emplace(l__CONSTANT_TS, aux::TimeSeries(m__config_options.times.global));
-        auto map_pair_out= m__time_series_map.emplace(l__PATTERN_TS, aux::TimeSeries(m__config_options.times.global));
-        if (!map_pair_out.second) {
-            throw std::runtime_error("Error creating the pattern TimeSeries object\n");
-        }
-        // First "first" is for the iterator of the pair, the "second" is ot access the reference for the pair itself
-        aux::TimeSeries& pattern_ts= map_pair_out.first->second; 
+        // Constant object has already been created in the constructor (see m__times)
         aux::time_t currt= m__config_options.times.pattern.shift_start_time__s;
         while (currt < m__config_options.times.global.duration__s()) {
-            pattern_ts.commit(currt);
+            m__times.EN_pattern.commit(currt);
             currt += m__config_options.times.pattern.timestep__s;
         }
 
-        m__time_series_map.emplace(l__RESULT_TS, aux::TimeSeries(m__config_options.times.global));
-        // It will be the hydraulic solver that allocates the memory for the results.
+        // The result object has already been created in the constructor (see m__times)
+        // BUT, it will be the hydraulic solver that allocates the memory for the results.
+        // This is why it is marked mutable.
 
         // 1.3 Load analysis options
         // TODO: this->load_EN_analysis_options(ph_);

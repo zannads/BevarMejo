@@ -42,12 +42,8 @@ WaterDistributionSystem::WaterDistributionSystem() :
     _subnetworks_(),
     _groups_(),
     m__config_options(),
-    m__time_series_map()
-    {
-        // I need at least a time series for the constant and one for the results
-        m__time_series_map.emplace(l__CONSTANT_TS, aux::TimeSeries(m__config_options.times.global));
-        m__time_series_map.emplace(l__RESULT_TS, aux::TimeSeries(m__config_options.times.global));
-    }
+    m__times(m__config_options.times.global) { }
+    
 
     WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
         ph_(other.ph_),
@@ -64,7 +60,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
         _subnetworks_(other._subnetworks_),
         _groups_(other._groups_),
         m__config_options(other.m__config_options),
-        m__time_series_map(other.m__time_series_map)
+        m__times(other.m__times)
         { }
 
     WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem&& other) noexcept :
@@ -82,7 +78,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
         _subnetworks_(std::move(other._subnetworks_)),
         _groups_(std::move(other._groups_)),
         m__config_options(std::move(other.m__config_options)),
-        m__time_series_map(std::move(other.m__time_series_map))
+        m__times(std::move(other.m__times))
         { }
 
     WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
@@ -101,7 +97,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
             _subnetworks_ = rhs._subnetworks_;
             _groups_ = rhs._groups_;
             m__config_options = rhs.m__config_options;
-            m__time_series_map = rhs.m__time_series_map;
+            m__times = rhs.m__times;
         }
         return *this;
     }
@@ -122,7 +118,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
             _subnetworks_ = std::move(rhs._subnetworks_);
             _groups_ = std::move(rhs._groups_);
             m__config_options = std::move(rhs.m__config_options);
-            m__time_series_map = std::move(rhs.m__time_series_map);
+            m__times = std::move(rhs.m__times);
         }
         return *this;
     }
@@ -154,7 +150,7 @@ WaterDistributionSystem::~WaterDistributionSystem(){
 
     _elements_.clear();
 
-    m__time_series_map.clear();
+    m__times.ud_time_series.clear();
     // m__config_options can die in piece
 }
 
@@ -244,8 +240,17 @@ void WaterDistributionSystem::clear_results() const {
 }
 
 const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const {
-    auto it = m__time_series_map.find(name);
-    if (it != m__time_series_map.end())
+    if (name == l__CONSTANT_TS)
+        return m__times.constant;
+    
+    if (name == l__PATTERN_TS)
+        return m__times.EN_pattern;
+    
+    if (name == l__RESULT_TS)
+        return m__times.results;
+
+    auto it = m__times.ud_time_series.find(name);
+    if (it != m__times.ud_time_series.end())
         return it->second;
     else
         throw std::runtime_error("Time series with name " + name + " not found.");
@@ -253,7 +258,7 @@ const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& n
 
 void WaterDistributionSystem::run_hydraulics() const{
     this->clear_results();
-    m__time_series_map.at(l__RESULT_TS).reset();
+    m__times.results.reset();
 
     assert(ph_ != nullptr);
     // I assume indices are cached already 
@@ -296,7 +301,7 @@ void WaterDistributionSystem::run_hydraulics() const{
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
         if (m__config_options.save_all_hsteps || scheduled) {
-            m__time_series_map.at(l__RESULT_TS).commit(t);
+            m__times.results.commit(t);
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
