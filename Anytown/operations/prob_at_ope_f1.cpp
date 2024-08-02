@@ -11,23 +11,14 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
-
-#include "bevarmejo/io.hpp"
-#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 
@@ -111,8 +102,8 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
     // Objective function 1: energy cost
     fitv[0] = cost(*m_anytown);
     // Objective function 2: cumulative pressure deficit 
-    auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
-    for (const auto& [t, deficit] : normdeficit_day) {
+    const auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
+    for (const auto [t, deficit] : normdeficit_day) {
         fitv[1] += deficit;
     }
 

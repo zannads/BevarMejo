@@ -32,7 +32,7 @@ protected:
 public:
 // Default all constructors and destructor
     QuantitySeriesBase() = delete;
-    QuantitySeriesBase(const TimeSeries& time_steps) : m__time_series(time_steps) { }
+    QuantitySeriesBase(const TimeSeries& time_series) : m__time_series(time_series) { }
     QuantitySeriesBase(const QuantitySeriesBase& other) = default;
     QuantitySeriesBase(QuantitySeriesBase&& other) noexcept = default;
     QuantitySeriesBase& operator=(const QuantitySeriesBase& other) = delete;
@@ -50,7 +50,7 @@ protected:
 /*--- Getters and setters ---*/
 public:
     // get TimeSeries, you can't modify it as it is a const reference
-    const TimeSeries& time_steps() const { return m__time_series; }
+    const TimeSeries& time_series() const { return m__time_series; }
     
 }; // class QuantitySeriesBase
 
@@ -319,9 +319,9 @@ private:
             assert(m__index < m__qs->length() && "Dereferencing the end iterator.");
 
             if (m__index == m__qs->length())
-                return {m__qs->time_steps().back(), m__qs->values().front()};
+                return {m__qs->time_series().back(), m__qs->values().front()};
 
-            return {m__qs->time_steps().at(m__index), m__qs->values()[m__index]};
+            return {m__qs->time_series().at(m__index), m__qs->values()[m__index]};
         }
         pointer operator->() const { __temp__= **this; return &__temp__; }
         value_type operator[](difference_type n) const { return *(*this + n); }

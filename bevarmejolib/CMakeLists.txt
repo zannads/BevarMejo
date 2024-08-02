@@ -48,7 +48,6 @@ set(WDS_LINKS
 set(WDS_AUX     
         "${WDS_INC_ROOT}/auxiliary/curve.hpp"
         "${WDS_INC_ROOT}/auxiliary/curves.hpp" "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
-        "${WDS_INC_ROOT}/auxiliary/demand.hpp"
         "${WDS_INC_ROOT}/auxiliary/pattern.hpp" "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
         "${WDS_INC_ROOT}/auxiliary/time_series.hpp" "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
         "${WDS_INC_ROOT}/auxiliary/quantity_series.hpp" 
@@ -98,5 +97,4 @@ target_include_directories(bemelib PRIVATE
                             "include/bevarmejo/wds"
                             "include/bevarmejo/wds/elements"
                             "include/bevarmejo/wds/auxiliary"
-                            "include/bevarmejo/wds/data_structures"
 )

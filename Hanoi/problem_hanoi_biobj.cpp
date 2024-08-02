@@ -21,7 +21,6 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 #include "bevarmejo/wds/elements/tank.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
@@ -89,11 +88,11 @@ std::vector<double> Problem::fitness(const std::vector<double>& dv) const {
     }
     
     // Change sign as reliability needs to be maximized
-    double ir = resilience_index_from_min_pressure(*m_hanoi, min_head_m).at(0);
+    double ir = resilience_index_from_min_pressure(*m_hanoi, min_head_m).when_t(0);
     if (ir > 0.) // means it worked
         ir = -ir;
     else // penalty based on head deficit
-        ir = pressure_deficiency(*m_hanoi, min_head_m, /*relative=*/ true).at(0);
+        ir = pressure_deficiency(*m_hanoi, min_head_m, /*relative=*/ true).when_t(0);
 
     // Return the fitness
     return {cost, ir};

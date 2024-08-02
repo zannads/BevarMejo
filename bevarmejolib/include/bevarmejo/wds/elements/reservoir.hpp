@@ -5,24 +5,9 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
-
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
-
-#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -79,8 +64,6 @@ public:
     
 
 }; // class Reservoir
-
-using Reservoirs= ElementsGroup<Reservoir>;
 
 } // namespace wds
 } // namespace bevarmejo

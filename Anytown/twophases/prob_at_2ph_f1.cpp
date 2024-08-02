@@ -17,20 +17,12 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/io.hpp"
@@ -283,7 +275,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 
 	fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 	// Resilience index 
-    auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
+    const auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
 	//fitv[1] = -1; //-ir_daily.mean();
 	fitv[1] = 0.0;
 	unsigned long t_prec = 0;
@@ -300,14 +292,14 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
     // Constraint : see prob_at_mix_f1.cpp for the motivation
     if (fitv[1] >= 0.0) {
         fitv[1] = 0.0;
-		auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		// just accumulate through the day, no need to average it out
 		for (const auto& [t, deficit] : normdeficit_daily) {
 			fitv[1] += deficit;
 		}
 	}
 	else {
-        auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+        const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		t_prec = 0;
 		double pdef_prec = 0.0;
 		double mean_norm_daily_deficit = 0.0;

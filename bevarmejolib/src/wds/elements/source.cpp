@@ -5,10 +5,6 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "source.hpp"

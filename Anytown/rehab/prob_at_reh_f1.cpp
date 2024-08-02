@@ -20,7 +20,6 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/auxiliary/demand.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 #include "bevarmejo/wds/elements/tank.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
@@ -212,7 +211,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 
 	fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 	// Resilience index 
-	auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
+	const auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
 	//fitv[1] = -1; //-ir_daily.mean();
 	fitv[1] = 0.0;
 	unsigned long t_prec = 0;
@@ -243,14 +242,14 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 	if (fitv[1] >= 0.0) { // I consider invalid solutions (0.0) and solutions with negative reliability ???
 		// reset reliability, forget about this
 		fitv[1] = 0.0;
-		auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		// just accumulate through the day, no need to average it out
 		for (const auto& [t, deficit] : normdeficit_daily) {
 			fitv[1] += deficit;
 		}
 	}
 	else {
-		auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		t_prec = 0;
 		double pdef_prec = 0.0;
 		double mean_norm_daily_deficit = 0.0;
