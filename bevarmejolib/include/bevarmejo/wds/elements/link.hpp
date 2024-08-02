@@ -41,6 +41,7 @@ protected:
     Node* _node_end_;
 
     vars::var_int* _initial_status_;
+    // aux::QuantitySeries<int> m__initial_status_;
 
     /*---  Results   ---*/ 
     vars::var_tseries_real* _flow_;

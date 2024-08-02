@@ -15,6 +15,10 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 namespace bevarmejo {
 namespace wds {
 
@@ -83,6 +87,7 @@ class Element {
         using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
         
         PropertiesMap _properties_; // Properties of the element
+        aux::QuantitiesMap m__ud_properties; // New user-defined Properties of the element.
         
     protected:
         virtual void _add_properties();

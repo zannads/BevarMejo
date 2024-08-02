@@ -5,6 +5,8 @@
 #include <memory>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -580,6 +582,17 @@ public:
     // Upper_bound_pos, returns the array position to the first time that is greater than the given time
     size_type upper_bound_pos( time_t time__s ) const { return m__time_series.upper_bound_pos(time__s); }
 };
+
+using QuantitiesMap= std::unordered_map<std::string, std::unique_ptr<QuantitySeriesBase>>;
+
+template <typename T>
+QuantitySeries<T>& extract_quantity_series(QuantitiesMap& quantities, const std::string& key) {
+    auto it= quantities.find(key);
+    if (it == quantities.end())
+        throw std::out_of_range("QuantitySeries::extract_quantity_series: key not found");
+
+    return dynamic_cast<QuantitySeries<T>&>(*it->second);
+}
 
 } // namespace aux
 } // namespace wds

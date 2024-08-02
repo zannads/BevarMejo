@@ -216,6 +216,14 @@ void WaterDistributionSystem::clear_results() const {
     }
 }
 
+const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const {
+    auto it = m__time_series_map.find(name);
+    if (it != m__time_series_map.end())
+        return it->second;
+    else
+        throw std::runtime_error("Time series with name " + name + " not found.");
+}
+
 void WaterDistributionSystem::run_hydraulics() const{
     this->clear_results();
     assert(ph_ != nullptr);

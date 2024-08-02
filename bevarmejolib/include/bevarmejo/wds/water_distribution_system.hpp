@@ -55,6 +55,20 @@ namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
 
+template <typename T>
+class UserDefinedElementsGroup;
+using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
+
+class Reservoir;
+using Reservoirs = ElementsGroup<Reservoir>;
+class Tank;
+class Node;
+class Junction;
+class Source;
+class Link;
+class Pipe;
+class Pump;
+
 class WaterDistributionSystem {
 
     /*--- Attributes ---*/
@@ -163,6 +177,8 @@ public:
     void remove_subnetwork(const std::string& name);
 
     /*--- User-defined Elements Groups ---*/
+
+    const aux::TimeSeries& time_series(const std::string& name) const;
     
     
 /*--- Methods ---*/

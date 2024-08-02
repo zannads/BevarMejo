@@ -245,7 +245,7 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph) {
             }
 
             case EN_RESERVOIR: {
-                auto reservoir = std::make_shared<Reservoir>(node_id);
+                auto reservoir = std::make_shared<Reservoir>(node_id, *this);
 
                 reservoir->retrieve_index(ph_);
                 reservoir->retrieve_EN_properties(ph_);

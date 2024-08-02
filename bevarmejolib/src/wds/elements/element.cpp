@@ -92,6 +92,7 @@ void Element::_add_properties() {
     // If in derived classes you have properties, you should override this 
     // function and add them here.
     _properties_.clear();
+    m__ud_properties.clear();
 }
 
 void Element::__retrieve_EN_properties(EN_Project ph) {

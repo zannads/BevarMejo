@@ -11,8 +11,14 @@
 
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
+
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 #include "bevarmejo/wds/elements/element.hpp"
+
 #include "bevarmejo/wds/elements_group.hpp"
+#include "bevarmejo/wds/user_defined_elements_group.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -89,6 +95,8 @@ class NetworkElement : public Element {
         virtual void retrieve_results(EN_Project ph, long t) = 0;
 
 };
+
+using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
 
 } // namespace wds
 } // namespace bevarmejo
