@@ -1,10 +1,14 @@
 #ifndef BEVARMEJOLIB__TIME_SERIES_HPP
 #define BEVARMEJOLIB__TIME_SERIES_HPP
 
-#include <memory>
-#include <stdexcept>
-#include <utility>
-#include <vector>
+#include <cassert>           // assert
+#include <cstddef>           // std::size_t, std::ptrdiff_t
+#include <initializer_list>  // std::initializer_list
+#include <iterator>          // std::random_access_iterator_tag
+#include <memory>            // std::shared_ptr
+#include <stdexcept>         // std::out_of_range
+#include <utility>           // std::move
+#include <vector>            // std::vector
 
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 

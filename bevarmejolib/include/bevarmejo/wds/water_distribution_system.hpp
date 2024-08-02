@@ -80,6 +80,12 @@ using Pipes = ElementsGroup<Pipe>;
 class Pump;
 using Pumps = ElementsGroup<Pump>;
 
+class Pattern;
+using Patterns = ElementsGroup<Pattern>;
+
+class Curve;
+using Curves = ElementsGroup<Curve>;
+
 class WaterDistributionSystem {
 
     /*--- Attributes ---*/

@@ -2,6 +2,9 @@
 #define BEVARMEJOLIB__QUANTITY_SERIES_HPP
 
 #include <cassert>
+#include <cstddef>
+#include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <stdexcept>

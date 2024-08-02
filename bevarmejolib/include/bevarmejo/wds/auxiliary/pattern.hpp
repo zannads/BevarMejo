@@ -1,15 +1,15 @@
-
-
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 
+#include <cstddef>
+#include <initializer_list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -155,8 +155,6 @@ private:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Pattern
-
-using Patterns= ElementsGroup<Pattern>;
 
 } // namespace wds
 } // namespace bevarmejo

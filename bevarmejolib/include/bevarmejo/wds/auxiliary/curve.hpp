@@ -2,15 +2,14 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__CURVE_HPP
 
 #include <cassert>
-#include <memory>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -162,8 +161,6 @@ private:
     }
 
 }; // class SpecificCurve
-
-using Curves= ElementsGroup<Curve>;
 
 } // namespace wds
 } // namespace bevarmejo

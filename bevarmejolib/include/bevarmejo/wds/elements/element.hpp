@@ -16,8 +16,6 @@
 #include "bevarmejo/wds/data_structures/variable.hpp"
 #include "bevarmejo/wds/data_structures/temporal.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 namespace bevarmejo {
@@ -55,9 +53,6 @@ static const unsigned int ELEMENT_PBV= 33;
 static const unsigned int ELEMENT_FCV= 34;
 static const unsigned int ELEMENT_TCV= 35;
 static const unsigned int ELEMENT_GPV= 36;
-
-template <typename T>
-class ElementsGroup;
 
 class Element {
     // WDS ancestor object

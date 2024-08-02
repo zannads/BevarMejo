@@ -1,8 +1,13 @@
 #include <cassert>
+#include <cstddef>
+#include <initializer_list>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
+
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 #include "time_series.hpp"
 
