@@ -128,7 +128,7 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
 
         double min_sim_lev = max_tank_lev;
         double max_sim_lev = min_tank_lev;
-        for (const auto& [t, level] : tank->level().value() ) {
+        for (const auto& [t, level] : tank->level() ) {
             if (level < min_sim_lev) min_sim_lev = level;
             if (level > max_sim_lev) max_sim_lev = level;
         }

@@ -299,7 +299,11 @@ private:
     class Iterator {
     public:
         using iterator_category= std::random_access_iterator_tag;
-        using value_type= typename TS::instant_type;
+        using value_type = typename std::conditional<
+            std::is_const<TS>::value,
+            typename TS::const_instant_type,
+            typename TS::instant_type
+        >::type;
         using size_type= typename TS::size_type;
         using difference_type= typename TS::difference_type;
         using pointer= typename TS::instant_type*;
@@ -309,7 +313,7 @@ private:
         mutable value_type __temp__; // Just for the operator->
 
     public:
-        Iterator(TS* qs, size_type index) : m__qs(qs), m__index(index) { }
+        Iterator(TS* qs, size_type index) : m__qs(qs), m__index(index), __temp__({0l, T()}) { }
 
         value_type operator*() const {
             assert(m__index < m__qs->length() && "Dereferencing the end iterator.");
@@ -383,7 +387,11 @@ private:
     class ReverseIterator {
     public:
         using iterator_category= std::random_access_iterator_tag;
-        using value_type= typename TS::instant_type;
+        using value_type = typename std::conditional<
+            std::is_const<TS>::value,
+            typename TS::const_instant_type,
+            typename TS::instant_type
+        >::type;
         using size_type= typename TS::size_type;
         using difference_type= typename TS::difference_type;
         using pointer= typename TS::instant_type*;
