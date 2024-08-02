@@ -28,73 +28,44 @@ namespace wds {
 
     Pump::Pump(const std::string& id, const WaterDistributionSystem& wds) :
         inherited(id, wds),
-        _init_setting_(nullptr),
-        _power_rating_(nullptr),
-        _energy_cost_(nullptr),
         _speed_pattern_(nullptr),
         _energy_cost_pattern_(nullptr),
         _pump_curve_(nullptr),
         _efficiency_curve_(nullptr),
-        _instant_energy_(nullptr),
-        _state_(nullptr),
-        _efficiency_(nullptr),
         m__init_setting(wds.time_series(l__CONSTANT_TS)),
         m__power_rating(wds.time_series(l__CONSTANT_TS)),
         m__energy_cost(wds.time_series(l__CONSTANT_TS)),
         m__instant_energy(wds.time_series(l__RESULT_TS)),
         m__state(wds.time_series(l__RESULT_TS)),
-        m__efficiency(wds.time_series(l__RESULT_TS))
-        {
-            _add_properties();
-            _add_results();
-            _update_pointers();
-        }
+        m__efficiency(wds.time_series(l__RESULT_TS)) { }
 
     // Copy constructor
     Pump::Pump(const Pump& other) : 
         inherited(other),
-        _init_setting_(nullptr),
-        _power_rating_(nullptr),
-        _energy_cost_(nullptr),
         _speed_pattern_(other._speed_pattern_),
         _energy_cost_pattern_(other._energy_cost_pattern_),
         _pump_curve_(other._pump_curve_),
         _efficiency_curve_(other._efficiency_curve_),
-        _instant_energy_(nullptr),
-        _state_(nullptr),
-        _efficiency_(nullptr),
         m__init_setting(other.m__init_setting),
         m__power_rating(other.m__power_rating),
         m__energy_cost(other.m__energy_cost),
         m__instant_energy(other.m__instant_energy),
         m__state(other.m__state),
-        m__efficiency(other.m__efficiency)
-        {
-            _update_pointers();
-        }
+        m__efficiency(other.m__efficiency) { }
 
     // Move constructor
     Pump::Pump(Pump&& rhs) noexcept : 
         inherited(std::move(rhs)),
-        _init_setting_(nullptr),
-        _power_rating_(nullptr),
-        _energy_cost_(nullptr),
         _speed_pattern_(std::move(rhs._speed_pattern_)),
         _energy_cost_pattern_(std::move(rhs._energy_cost_pattern_)),
         _pump_curve_(std::move(rhs._pump_curve_)),
         _efficiency_curve_(std::move(rhs._efficiency_curve_)),
-        _instant_energy_(nullptr),
-        _state_(nullptr),
-        _efficiency_(nullptr),
         m__init_setting(std::move(rhs.m__init_setting)),
         m__power_rating(std::move(rhs.m__power_rating)),
         m__energy_cost(std::move(rhs.m__energy_cost)),
         m__instant_energy(std::move(rhs.m__instant_energy)),
         m__state(std::move(rhs.m__state)),
-        m__efficiency(std::move(rhs.m__efficiency))
-        {
-            _update_pointers();
-        }
+        m__efficiency(std::move(rhs.m__efficiency)) { }
 
     // Copy assignment operator
     Pump& Pump::operator=(const Pump& rhs) {
@@ -110,8 +81,6 @@ namespace wds {
             m__instant_energy = rhs.m__instant_energy;
             m__state = rhs.m__state;
             m__efficiency = rhs.m__efficiency;
-            
-            _update_pointers();
         }
         return *this;
     }
@@ -130,8 +99,6 @@ namespace wds {
             m__instant_energy = std::move(rhs.m__instant_energy);
             m__state = std::move(rhs.m__state);
             m__efficiency = std::move(rhs.m__efficiency);
-            
-            _update_pointers();
         }
         return *this;
     }
@@ -145,17 +112,17 @@ namespace wds {
         int errorcode= EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving initial setting for pump " + id());
-        this->_init_setting_->value(value);
+        m__init_setting= value;
 
         errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_POWER, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving power rating for pump " + id());
-        this->_power_rating_->value(value);
+        m__power_rating= value;
 
         errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_ECOST, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving energy cost for pump " + id());
-        this->_energy_cost_->value(value);
+        m__energy_cost= value;
 
         { // Assign EN Pattern
             errorcode= EN_getlinkvalue(ph, this->index(), EN_LINKPATTERN, &value);
@@ -216,53 +183,23 @@ namespace wds {
         errorcode = EN_getlinkvalue(ph, index(), EN_ENERGY, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving energy for pump " + id());
-        this->_instant_energy_->value().emplace(std::make_pair(t, value));
+        m__instant_energy.commit(t, value);
 
         errorcode = EN_getlinkvalue(ph, index(), EN_STATUS, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving status for pump " + id());
-        this->_state_->value().emplace(std::make_pair(t, static_cast<int>(value)));
+        m__state.commit(t, static_cast<int>(value));
 
         errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_EFFIC, &value);
         if (errorcode > 100) 
             throw std::runtime_error("Error retrieving efficiency for pump " + id());
-        this->_efficiency_->value().emplace(std::make_pair(t, value));
+        m__efficiency.commit(t, value);
 
         // Note on conversions:
         // // Instantenous Energy is always in kW (even if they say kWh)        
         // // Status is dimensionless
         // // Efficiency is dimensionless
 }
-
-void Pump::_add_properties() {
-    inherited::_add_properties();
-
-    properties().emplace(l__INIT_SETTINGS, vars::var_int(vars::l__DIMLESS, 0));
-    properties().emplace(l__POWER_RATING, vars::var_real(vars::l__W, 0));
-    properties().emplace(l__ENERGY_COST, vars::var_real(vars::l__Euro, 0));
-
-}
-
-void Pump::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(l__INSTANT_ENERGY, vars::var_tseries_real(vars::l__W));
-    results().emplace(l__STATE, vars::var_tseries_int(vars::l__DIMLESS));
-    results().emplace(l__EFFICIENCY, vars::var_tseries_real(vars::l__DIMLESS));
-}
-
-void Pump::_update_pointers() {
-    inherited::_update_pointers();
-
-    _init_setting_ = &std::get<vars::var_int>(properties().at(l__INIT_SETTINGS));
-    _power_rating_ = &std::get<vars::var_real>(properties().at(l__POWER_RATING));
-    _energy_cost_ = &std::get<vars::var_real>(properties().at(l__ENERGY_COST));
-
-    _instant_energy_ = &std::get<vars::var_tseries_real>(results().at(l__INSTANT_ENERGY));
-    _state_ = &std::get<vars::var_tseries_int>(results().at(l__STATE));
-    _efficiency_ = &std::get<vars::var_tseries_real>(results().at(l__EFFICIENCY));
-}
-
 
 } // namespace wds
 } // namespace bevarmejo

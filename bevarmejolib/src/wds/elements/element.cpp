@@ -17,46 +17,38 @@ namespace wds {
 Element::Element() :
     _id_(""),
     _index_(0),
-    _properties_()
-    {
-        _add_properties();
-        _update_pointers();
-    }
+    m__ud_properties() { }
 
 Element::Element(const std::string& id) :
     _id_(id),
     _index_(0),
-    _properties_()
-    {
-        _add_properties();
-        _update_pointers();
-    }
+    m__ud_properties() { }
 
 // Copy constructor
 Element::Element(const Element& other) :
     _id_(other._id_),
     _index_(other._index_),
-    _properties_(other._properties_)
-    {
-        _update_pointers();
+    m__ud_properties() {
+        for (auto& [key, ptr] : other.m__ud_properties) {
+            m__ud_properties[key] = ptr->clone();
+        }
     }
 
 // Move constructor
 Element::Element(Element&& rhs) noexcept :
     _id_(std::move(rhs._id_)),
     _index_(rhs._index_),
-    _properties_(std::move(rhs._properties_))
-    {
-        _update_pointers();
-    }
+    m__ud_properties(std::move(rhs.m__ud_properties)) { }
 
 // Copy assignment operator
 Element& Element::operator=(const Element& rhs) {
     if (this != &rhs) {
         _id_ = rhs._id_;
         _index_ = rhs._index_;
-        _properties_ = rhs._properties_;
-        _update_pointers();
+        m__ud_properties.clear();
+        for (auto& [key, ptr] : rhs.m__ud_properties) {
+            m__ud_properties[key] = ptr->clone();
+        }
     }
     return *this;
 }
@@ -66,26 +58,13 @@ Element& Element::operator=(Element&& rhs) noexcept {
     if (this != &rhs) {
         _id_ = std::move(rhs._id_);
         _index_ = rhs._index_;
-        _properties_ = std::move(rhs._properties_);
-        _update_pointers();
+        m__ud_properties = std::move(rhs.m__ud_properties);
     }
     return *this;
 }
 
 bool Element::operator==(const Element& rhs) const {
     return _id_ == rhs._id_;
-}
-
-void Element::_update_pointers() {
-    // If in derived classes you have pointers to properties or results,
-    // you should override this function and update them here.
-}
-
-void Element::_add_properties() {
-    // If in derived classes you have properties, you should override this 
-    // function and add them here.
-    _properties_.clear();
-    m__ud_properties.clear();
 }
 
 } // namespace wds

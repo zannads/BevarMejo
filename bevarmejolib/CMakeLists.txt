@@ -54,11 +54,6 @@ set(WDS_AUX
         "${WDS_INC_ROOT}/auxiliary/quantity_series.hpp" 
 )
 
-# to be removed soon
-set(WDS_DATAS   "${WDS_INC_ROOT}/data_structures/variable.hpp"
-                "${WDS_INC_ROOT}/data_structures/temporal.hpp"
-)
-
 set(WDS_HELPERS
         "${WDS_INC_ROOT}/epanet_helpers/en_help.hpp"
         "${WDS_INC_ROOT}/epanet_helpers/en_time_options.hpp"

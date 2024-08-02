@@ -183,7 +183,7 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
             heads_sources.push_back(tank->head().when_t(t));
         }
         for (const auto& pump : a_wds.pumps() ) {
-            powers_pumps.push_back(pump->instant_energy().value().at(t));
+            powers_pumps.push_back(pump->instant_energy().when_t(t));
         }
 
 

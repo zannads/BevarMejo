@@ -34,12 +34,7 @@ Tank::Tank(const std::string& id, const WaterDistributionSystem& wds) :
     m__initial_volume(wds.time_series(l__CONSTANT_TS)),
     m__initial_level(wds.time_series(l__CONSTANT_TS)),
     m__volume(wds.time_series(l__RESULT_TS)),
-    m__level(wds.time_series(l__RESULT_TS))
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    m__level(wds.time_series(l__RESULT_TS)) { }
 
 // Copy constructor
 Tank::Tank(const Tank& other) : 
@@ -53,10 +48,7 @@ Tank::Tank(const Tank& other) :
     m__initial_volume(other.m__initial_volume),
     m__initial_level(other.m__initial_level),
     m__volume(other.m__volume),
-    m__level(other.m__level)
-    {
-        _update_pointers();
-    }
+    m__level(other.m__level) { }
 
 // Move constructor
 Tank::Tank(Tank&& rhs) noexcept : 
@@ -70,15 +62,13 @@ Tank::Tank(Tank&& rhs) noexcept :
     m__initial_volume(std::move(rhs.m__initial_volume)),
     m__initial_level(std::move(rhs.m__initial_level)),
     m__volume(std::move(rhs.m__volume)),
-    m__level(std::move(rhs.m__level))
-    {
-        _update_pointers();
-    }
+    m__level(std::move(rhs.m__level)) { }
 
 // Copy assignment operator
 Tank& Tank::operator=(const Tank& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+
         m__diameter = rhs.m__diameter;
         m__min_volume = rhs.m__min_volume;
         m__min_level = rhs.m__min_level;
@@ -89,8 +79,6 @@ Tank& Tank::operator=(const Tank& rhs) {
         m__initial_level = rhs.m__initial_level;
         m__volume = rhs.m__volume;
         m__level = rhs.m__level;
-        
-        _update_pointers();
     }
     return *this;
 }
@@ -99,6 +87,7 @@ Tank& Tank::operator=(const Tank& rhs) {
 Tank& Tank::operator=(Tank&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+
         m__diameter = std::move(rhs.m__diameter);
         m__min_volume = std::move(rhs.m__min_volume);
         m__min_level = std::move(rhs.m__min_level);
@@ -109,8 +98,6 @@ Tank& Tank::operator=(Tank&& rhs) noexcept {
         m__initial_level = std::move(rhs.m__initial_level);
         m__volume = std::move(rhs.m__volume);
         m__level = std::move(rhs.m__level);
-
-        _update_pointers();
     }
     return *this;
 }

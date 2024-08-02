@@ -19,38 +19,27 @@ namespace wds {
 Source::Source(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
     m__inflow(wds.time_series(l__RESULT_TS)),
-    m__source_elevation(wds.time_series(l__RESULT_TS))
-    {
-        _add_results();
-        _update_pointers();
-    }
+    m__source_elevation(wds.time_series(l__RESULT_TS)) { }
 
 // Copy constructor
 Source::Source(const Source& other) : 
     inherited(other),
     m__inflow(other.m__inflow),
-    m__source_elevation(other.m__source_elevation)
-    {
-        _update_pointers();
-    }
+    m__source_elevation(other.m__source_elevation) { }
 
 // Move constructor
 Source::Source(Source&& rhs) noexcept : 
     inherited(std::move(rhs)),
     m__inflow(std::move(rhs.m__inflow)),
-    m__source_elevation(std::move(rhs.m__source_elevation))
-    {
-        _update_pointers();
-    }
+    m__source_elevation(std::move(rhs.m__source_elevation)) { }
 
 // Copy assignment operator
 Source& Source::operator=(const Source& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
+        
         m__inflow = rhs.m__inflow;
         m__source_elevation = rhs.m__source_elevation;
-
-        _update_pointers();
     }
     return *this;
 }
@@ -59,10 +48,9 @@ Source& Source::operator=(const Source& rhs) {
 Source& Source::operator=(Source&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
+
         m__inflow = std::move(rhs.m__inflow);
         m__source_elevation = std::move(rhs.m__source_elevation);
-
-        _update_pointers();
     }
     return *this;
 }

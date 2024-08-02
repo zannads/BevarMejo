@@ -4,13 +4,8 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__NETWORK_ELEMENT_HPP
 
 #include <string>
-#include <unordered_map>
-#include <variant>
 
 #include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/data_structures/temporal.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -32,26 +27,16 @@ class NetworkElement : public Element {
     public:
         using inherited= Element;
 
+        using ResultsMap= aux::QuantitiesMap;
+
     /*--- Attributes ---*/
     protected:
         /*--- Properties ---*/
         const WaterDistributionSystem& m__wds;
 
         /*---  Results   ---*/
-        using ResultsTypes = std::variant<
-            vars::var_int,
-            vars::var_real,
-            vars::var_tseries_int,
-            vars::var_tseries_real> ;
-        using ResultsMap = std::unordered_map<std::string, ResultsTypes>;
     private:
-        ResultsMap _results_;
-        aux::QuantitiesMap m__ud_results;
-
-    protected:
-        void _add_properties() override;
-        virtual void _add_results();
-        void _update_pointers() override;
+        ResultsMap m__ud_results;
 
     /*--- Constructors ---*/
     public:
@@ -79,7 +64,7 @@ class NetworkElement : public Element {
         /*--- Properties ---*/
 
         /*---  Results   ---*/
-        ResultsMap& results() { return _results_; }
+        const ResultsMap& results() const { return m__ud_results; }
         void clear_results();
 
     /*--- Pure virtual methods ---*/

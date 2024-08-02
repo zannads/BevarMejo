@@ -30,12 +30,7 @@ DimensionedLink::DimensionedLink(const std::string& id, const WaterDistributionS
     m__minor_loss(wds.time_series(l__CONSTANT_TS)),
     m__bulk_coeff(wds.time_series(l__CONSTANT_TS)),
     m__wall_coeff(wds.time_series(l__CONSTANT_TS)),
-    m__velocity(wds.time_series(l__RESULT_TS))
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    m__velocity(wds.time_series(l__RESULT_TS)) { }
 
 // Copy constructor
 DimensionedLink::DimensionedLink(const DimensionedLink& other) : 
@@ -45,10 +40,7 @@ DimensionedLink::DimensionedLink(const DimensionedLink& other) :
     m__minor_loss(other.m__minor_loss),
     m__bulk_coeff(other.m__bulk_coeff),
     m__wall_coeff(other.m__wall_coeff),
-    m__velocity(other.m__velocity)
-    {
-        _update_pointers();
-    }
+    m__velocity(other.m__velocity) { }
 
 // Move constructor
 DimensionedLink::DimensionedLink(DimensionedLink&& rhs) noexcept : 
@@ -58,10 +50,7 @@ DimensionedLink::DimensionedLink(DimensionedLink&& rhs) noexcept :
     m__minor_loss(std::move(rhs.m__minor_loss)),
     m__bulk_coeff(std::move(rhs.m__bulk_coeff)),
     m__wall_coeff(std::move(rhs.m__wall_coeff)),
-    m__velocity(std::move(rhs.m__velocity))
-    {
-        _update_pointers();
-    }
+    m__velocity(std::move(rhs.m__velocity)) { }
 
 // Copy assignment operator
 DimensionedLink& DimensionedLink::operator=(const DimensionedLink& rhs) {
@@ -73,8 +62,6 @@ DimensionedLink& DimensionedLink::operator=(const DimensionedLink& rhs) {
         m__bulk_coeff = rhs.m__bulk_coeff;
         m__wall_coeff = rhs.m__wall_coeff;
         m__velocity = rhs.m__velocity;
-
-        _update_pointers();
     }
     return *this;
 }
@@ -89,8 +76,6 @@ DimensionedLink& DimensionedLink::operator=(DimensionedLink&& rhs) noexcept {
         m__bulk_coeff = std::move(rhs.m__bulk_coeff);
         m__wall_coeff = std::move(rhs.m__wall_coeff);
         m__velocity = std::move(rhs.m__velocity);
-
-        _update_pointers();
     }
     return *this;
 }

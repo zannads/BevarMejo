@@ -133,7 +133,7 @@ double Problem::cost(const bevarmejo::wds::WaterDistributionSystem& a_wds) const
 		unsigned long t_prec = 0;
 		double power_kW_prec = 0.0;
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
-		for (const auto& [t, power_kW] : pump->instant_energy().value() ) {
+		for (const auto& [t, power_kW] : pump->instant_energy() ) {
 			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * anytown::energy_cost_kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;

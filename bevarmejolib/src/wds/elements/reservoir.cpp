@@ -21,32 +21,19 @@ namespace bevarmejo {
 namespace wds {
 
 Reservoir::Reservoir(const std::string& id, const WaterDistributionSystem& wds) :
-    inherited(id, wds)
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    inherited(id, wds) { }
 
 // Copy constructor
 Reservoir::Reservoir(const Reservoir& other) : 
-    inherited(other)
-    {
-        _update_pointers();
-    }
+    inherited(other) { }
 
 // Move constructor
 Reservoir::Reservoir(Reservoir&& rhs) noexcept : 
-    inherited(std::move(rhs))
-    {
-        _update_pointers();
-    }
+    inherited(std::move(rhs)) { }
 
 Reservoir& Reservoir::operator=(const Reservoir& other) {
     if (this != &other) {
         inherited::operator=(other);
-
-        _update_pointers();
     }
     return *this;
 }
@@ -54,8 +41,6 @@ Reservoir& Reservoir::operator=(const Reservoir& other) {
 Reservoir& Reservoir::operator=(Reservoir&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-
-        _update_pointers();
     }
     return *this;
 }

@@ -2,14 +2,9 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 
 #include <string>
-#include <unordered_map>
 #include <utility>
-#include <variant>
 
 #include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/data_structures/temporal.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -55,32 +50,16 @@ class Element {
      * The bevarmejo::wds::Element class is the ancestor of all the elements
      * of the WDS. It is a pure virtual class, so it cannot be instantiated.
     */
+public:
+    using PropertiesMap= aux::QuantitiesMap;
 
    /*--- Attributes ---*/
     private:
         /*--- Properties ---*/
         std::string _id_; // Human readable id (EPANET ID too)
         int _index_; // Index in the EPANET project for cache purposes
-
-        //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
-        // don't use strings for now
-        using PropertiesTypes = std::variant<
-            vars::var_int, 
-            vars::var_real, 
-            vars::var_tseries_int, 
-            vars::var_tseries_real>;
-        using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
         
-        PropertiesMap _properties_; // Properties of the element
-        aux::QuantitiesMap m__ud_properties; // New user-defined Properties of the element.
-        
-    protected:
-        virtual void _add_properties();
-
-        /* should be called every time you add a variable to the results, so that, if you have a property
-         * in the derived class that is a pointer to a variable in the results, you can update it. 
-         */   
-        virtual void _update_pointers(); 
+        PropertiesMap m__ud_properties; // User-defined Properties of the element.
         
     /*--- Constructors ---*/
     public:
@@ -116,7 +95,8 @@ class Element {
         int index() const {return _index_;}
         void index(const int index) {_index_ = index;}
 
-        PropertiesMap& properties() {return _properties_;}
+        PropertiesMap& properties() {return m__ud_properties;}
+        const PropertiesMap& properties() const {return m__ud_properties;}
 
     /*--- Pure virtual methods ---*/
     public:

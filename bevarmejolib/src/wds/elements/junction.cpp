@@ -32,12 +32,7 @@ Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) :
     m__demands(),
     m__demand(wds.time_series(l__RESULT_TS)),
     m__consumption(wds.time_series(l__RESULT_TS)),
-    m__undelivered_demand(wds.time_series(l__RESULT_TS))
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    m__undelivered_demand(wds.time_series(l__RESULT_TS)) { }
 
 // Copy constructor
 Junction::Junction(const Junction& other) : 
@@ -45,10 +40,7 @@ Junction::Junction(const Junction& other) :
     m__demands(other.m__demands),
     m__demand(other.m__demand),
     m__consumption(other.m__consumption),
-    m__undelivered_demand(other.m__undelivered_demand)
-    {
-        _update_pointers();
-    }
+    m__undelivered_demand(other.m__undelivered_demand) { }
 
 // Move constructor
 Junction::Junction(Junction&& rhs) noexcept : 
@@ -56,10 +48,7 @@ Junction::Junction(Junction&& rhs) noexcept :
     m__demands(std::move(rhs.m__demands)),
     m__demand(std::move(rhs.m__demand)),
     m__consumption(std::move(rhs.m__consumption)),
-    m__undelivered_demand(std::move(rhs.m__undelivered_demand))
-    {
-        _update_pointers();
-    }
+    m__undelivered_demand(std::move(rhs.m__undelivered_demand)) { }
 
 // Copy assignment operator
 Junction& Junction::operator=(const Junction& rhs) {
@@ -70,7 +59,6 @@ Junction& Junction::operator=(const Junction& rhs) {
         m__demand = rhs.m__demand;
         m__consumption = rhs.m__consumption;
         m__undelivered_demand = rhs.m__undelivered_demand;
-        _update_pointers();
     }
     return *this;
 }
@@ -84,7 +72,6 @@ Junction& Junction::operator=(Junction&& rhs) noexcept {
         m__demand = std::move(rhs.m__demand);
         m__consumption = std::move(rhs.m__consumption);
         m__undelivered_demand = std::move(rhs.m__undelivered_demand);
-        _update_pointers();
     }
     return *this;
 }

@@ -6,9 +6,6 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
@@ -30,16 +27,11 @@ public:
     using inherited= DimensionedLink;
 
  /*--- Attributes ---*/
-    protected:
+protected:
     /*--- Properties ---*/
-    vars::var_real* _length_;
     aux::QuantitySeries<double> m__length; // Constant
 
     /*---  Results   ---*/
-
-protected:
-    void _add_properties() override;
-    void _update_pointers() override;
 
 /*--- Constructors ---*/
 public:
@@ -67,8 +59,9 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    vars::var_real& length() const { return *_length_; }
-    void length(const double a_length) { _length_->value(a_length);}
+    aux::QuantitySeries<double>& length() {return m__length;}
+    const aux::QuantitySeries<double>& length() const {return m__length;}
+    void length(double a_length) {m__length.value(a_length);}
 
     /*---  Results   ---*/
 
@@ -95,8 +88,6 @@ private:
     void __retrieve_EN_properties(EN_Project ph) override;
 
 };
-
-using Pipes= ElementsGroup<Pipe>;
 
 } // namespace wds
 } // namespace bevarmejo

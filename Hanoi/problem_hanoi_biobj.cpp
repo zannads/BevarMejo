@@ -123,7 +123,7 @@ double Problem::cost(const std::vector<double>& dv) const {
         assert(p_pipe != nullptr);
 
         //C  +=   a * D_i^b                                  * L_i
-        cost += m_diams_cost[static_cast<std::size_t>(*itd)] * p_pipe->length()();
+        cost += m_diams_cost[static_cast<std::size_t>(*itd)] * p_pipe->length().value();
 
         ++itp;
         ++itd;

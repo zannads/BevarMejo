@@ -32,12 +32,7 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     m__links(),
     _elevation_(0.0),
     m__head(wds.time_series(l__RESULT_TS)),
-    m__pressure(wds.time_series(l__RESULT_TS))
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    m__pressure(wds.time_series(l__RESULT_TS)) { }
 
 // Copy constructor
 Node::Node(const Node& other) : 
@@ -47,10 +42,7 @@ Node::Node(const Node& other) :
     m__links(other.m__links), 
     _elevation_(other._elevation_),
     m__head(other.m__head),
-    m__pressure(other.m__pressure)
-    {
-        _update_pointers();
-    }
+    m__pressure(other.m__pressure) { }
 
 // Move constructor
 Node::Node(Node&& rhs) noexcept : 
@@ -60,10 +52,7 @@ Node::Node(Node&& rhs) noexcept :
     m__links(std::move(rhs.m__links)),
     _elevation_(rhs._elevation_),
     m__head(std::move(rhs.m__head)),
-    m__pressure(std::move(rhs.m__pressure))
-    {
-        _update_pointers();
-    }
+    m__pressure(std::move(rhs.m__pressure)) { }
 
 // Copy assignment operator
 Node& Node::operator=(const Node& rhs) {
@@ -75,7 +64,6 @@ Node& Node::operator=(const Node& rhs) {
         _elevation_ = rhs._elevation_;
         m__head = rhs.m__head;
         m__pressure = rhs.m__pressure;
-        _update_pointers();
     }
     return *this;
 }
@@ -89,8 +77,7 @@ Node& Node::operator=(Node&& rhs) noexcept {
         m__links = std::move(rhs.m__links);
         _elevation_ = rhs._elevation_;
         m__head = std::move(rhs.m__head);
-        m__pressure = std::move(rhs.m__pressure);
-        _update_pointers();
+        m__pressure = std::move(rhs.m__pressure); { }
     }
     return *this;
 }
