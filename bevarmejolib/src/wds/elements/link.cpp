@@ -1,17 +1,16 @@
-// Constructors and destructor from link.hpp
-//
 #include <cassert>
 #include <string>
-#include <unordered_map>
-#include <variant>
+#include <stdexcept>
+#include <utility>
 
 #include "epanet2_2.h"
 #include "types.h"
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -28,8 +27,6 @@ Link::Link(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
     _node_start_(nullptr),
     _node_end_(nullptr),
-    _initial_status_(nullptr),
-    _flow_(nullptr),
     m__initial_status(wds.time_series(l__CONSTANT_TS)),
     m__flow(wds.time_series(l__RESULT_TS))
     {
@@ -43,8 +40,6 @@ Link::Link(const Link& other) :
     inherited(other),
     _node_start_(nullptr),
     _node_end_(nullptr),
-    _initial_status_(nullptr),
-    _flow_(nullptr),
     m__initial_status(other.m__initial_status),
     m__flow(other.m__flow)
     {
@@ -56,8 +51,6 @@ Link::Link(Link&& rhs) noexcept :
     inherited(std::move(rhs)),
     _node_start_(nullptr),
     _node_end_(nullptr),
-    _initial_status_(nullptr),
-    _flow_(nullptr),
     m__initial_status(std::move(rhs.m__initial_status)),
     m__flow(std::move(rhs.m__flow))
     {
@@ -86,26 +79,6 @@ Link& Link::operator=(Link&& rhs) noexcept {
     return *this;
 }
 
-void Link::_add_properties() {
-    inherited::_add_properties();
-
-    properties().emplace(L_INITIAL_STATUS, vars::var_int(vars::l__DIMLESS, 0)); 
-}
-
-void Link::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(L_FLOW, vars::var_tseries_real(vars::l__L_per_s));
-}
-
-void Link::_update_pointers() {
-    inherited::_update_pointers();
-
-    _initial_status_ = &std::get<vars::var_int>(properties().at(L_INITIAL_STATUS));
-
-    _flow_ = &std::get<vars::var_tseries_real>(results().at(L_FLOW));
-}
-
 void Link::retrieve_index(EN_Project ph) {
     int en_index = 0;
     int errorcode = 0;
@@ -126,7 +99,7 @@ void Link::__retrieve_EN_properties(EN_Project ph) {
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving initial status of link " + id() + " from EPANET project.");
 
-    _initial_status_->value(d_initial_status);
+    m__initial_status= d_initial_status;
 
     { // Assign Nodes
         int node1_idx= 0;
@@ -162,7 +135,7 @@ void Link::retrieve_results(EN_Project ph, long t) {
     if (ph->parser.Flowflag != LPS)
         d_flow = epanet::convert_flow_to_L_per_s(ph, d_flow);
 
-    this->_flow_->value().insert(std::make_pair(t, d_flow));
+    m__flow.commit(t, d_flow);
 }
 
 } // namespace wds

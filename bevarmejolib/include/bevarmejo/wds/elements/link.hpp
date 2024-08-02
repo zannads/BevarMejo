@@ -1,14 +1,9 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP
 
-#include <memory>
 #include <string>
-#include <unordered_set>
 
 #include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -38,18 +33,11 @@ protected:
     Node* _node_start_;
     Node* _node_end_;
 
-    vars::var_int* _initial_status_;
     aux::QuantitySeries<int> m__initial_status; // Constant
 
     /*---  Results   ---*/ 
-    vars::var_tseries_real* _flow_;
     aux::QuantitySeries<double> m__flow;
     // TODO: water quality
-
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
 
 /*--- Constructors ---*/
 public:
@@ -80,10 +68,11 @@ public:
     Node* to_node() const { return _node_end_; }
     void end_node(Node* a_node) { _node_end_ = a_node; }
 
-    vars::var_int& initial_status() const { return *_initial_status_; }
+    aux::QuantitySeries<int>& initial_status() { return m__initial_status; }
+    const aux::QuantitySeries<int>& initial_status() const { return m__initial_status; }
 
     /*---  Results   ---*/
-    const vars::var_tseries_real& flow() const { return *_flow_; }
+    const aux::QuantitySeries<double>& flow() const { return m__flow; }
 
 /*--- Pure virtual methods override---*/
 
