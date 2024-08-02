@@ -254,6 +254,20 @@ public:
 
     // No direct access to the time series! 
 
+    // When the time series is a constant, you can alo access the value with a special method.
+    reference value() { 
+        if (m__time_series.is_constant())
+            return m__values.front();
+        
+        throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+    }
+    const_reference value() const { 
+        if (m__time_series.is_constant())
+            return m__values.front();
+        
+        throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+    }
+
 /*--- Iterators ---*/
 // Iterators follow the same behaviour of the TimeSeries, so from 0 to m__time_series.size()-1 
 // access m__time_series and m__values at position.

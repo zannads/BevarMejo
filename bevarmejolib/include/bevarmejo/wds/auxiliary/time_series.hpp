@@ -45,6 +45,8 @@ private:
 public:
 
     void check_valid() const;
+
+    bool is_constant() const;
     
 /*--- Constructors ---*/
 public:

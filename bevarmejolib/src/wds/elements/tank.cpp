@@ -150,18 +150,16 @@ Tank& Tank::operator=(Tank&& rhs) noexcept {
 
 void Tank::__retrieve_EN_properties(EN_Project ph) {
     inherited::__retrieve_EN_properties(ph);
-    auto curves= m__wds.curves();
 
-    int errorcode;
-    double val;
-
-    errorcode = EN_getnodevalue(ph, index(), EN_DIAMETER, &val);
+    double val= 0.0;
+    int errorcode = EN_getnodevalue(ph, index(), EN_DIAMETER, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving diameter for node " + id()+"\n");
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_diameter_->value(val);
+    m__diameter.value()= val;
 
     errorcode = EN_getnodevalue(ph, index(), EN_MINVOLUME, &val);
     if (errorcode > 100)
@@ -170,6 +168,7 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;
     this->_min_volume_->value(val);
+    m__min_volume.value()= val;
 
     errorcode = EN_getnodevalue(ph, index(), EN_MINLEVEL, &val);
     if (errorcode > 100)
@@ -178,6 +177,7 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_min_level_->value(val);
+    m__min_level.value()= val;
 
     errorcode = EN_getnodevalue(ph, index(), EN_MAXLEVEL, &val);
     if (errorcode > 100)
@@ -186,6 +186,7 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_max_level_->value(val);
+    m__max_level.value()= val;
 
     errorcode = EN_getnodevalue(ph, index(), EN_CANOVERFLOW, &val);
     if (errorcode > 100)
@@ -193,6 +194,7 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
 
     // DIMLESS
     this->_can_overflow_->value(val);
+    m__can_overflow.value()= val;
 
     errorcode = EN_getnodevalue(ph, index(), EN_TANKLEVEL, &val);
     if (errorcode > 100)
@@ -201,8 +203,10 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_initial_level_->value(val);
+    m__initial_level.value()= val;
 
     { // Assign EN curves 
+        auto curves= m__wds.curves();
         errorcode = EN_getnodevalue(ph, this->index(), EN_VOLCURVE, &val);
         assert(errorcode <= 100);
 
@@ -222,6 +226,25 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
         }
         else this->volume_curve(nullptr);
     }
+
+    // Assign Read-only properties (Results but not really).
+    errorcode = EN_getnodevalue(ph, index(), EN_INITVOLUME, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving initial volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
+    this->_initial_volume_->value(val);
+    m__initial_volume.value()= val;
+
+    errorcode = EN_getnodevalue(ph, index(), EN_MAXVOLUME, &val);
+    if (errorcode > 100)
+        throw std::runtime_error("Error retrieving max volume for node " + id()+"\n");
+
+    if (ph->parser.Unitsflag == US)
+        val *= M3perFT3;
+    this->_max_volume_->value(val);
+    m__max_volume.value()= val;
 }
 
 void Tank::retrieve_results(EN_Project ph, long t) {
@@ -238,14 +261,6 @@ void Tank::retrieve_results(EN_Project ph, long t) {
         val *= MperFT;
     this->_level_->value().insert(std::make_pair(t, val));
 
-    errorcode = EN_getnodevalue(ph, index(), EN_INITVOLUME, &val);
-    if (errorcode > 100)
-        throw std::runtime_error("Error retrieving initial volume for node " + id()+"\n");
-
-    if (ph->parser.Unitsflag == US)
-        val *= M3perFT3;
-    this->_initial_volume_->value(val);
-
     errorcode = EN_getnodevalue(ph, index(), EN_TANKVOLUME, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving volume for node " + id()+"\n");
@@ -253,14 +268,6 @@ void Tank::retrieve_results(EN_Project ph, long t) {
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;
     this->_volume_->value().insert(std::make_pair(t, val));
-
-    errorcode = EN_getnodevalue(ph, index(), EN_MAXVOLUME, &val);
-    if (errorcode > 100)
-        throw std::runtime_error("Error retrieving max volume for node " + id()+"\n");
-
-    if (ph->parser.Unitsflag == US)
-        val *= M3perFT3;
-    this->_max_volume_->value(val);
 }
 
 void Tank::_add_properties() {

@@ -39,6 +39,14 @@ void TimeSeries::check_valid() const {
         throw std::invalid_argument("TimeSeries::check_valid: Time steps are not within the duration.");
 }
 
+// A TimeSeries represent a constant when there is only the initial value 0 (and the duration of the simulation).
+bool TimeSeries::is_constant() const {
+    if (m__time_steps.size() == 1)
+        return true;
+
+    return false;
+}
+
 TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto) : 
     m__gto(a_gto), 
     m__time_steps({0l}) 
