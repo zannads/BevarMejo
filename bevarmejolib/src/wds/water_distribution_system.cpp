@@ -284,6 +284,7 @@ void WaterDistributionSystem::run_hydraulics() const{
     assert(errorcode < 100);
 
     long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
+    m__times.results.reserve(n_reports);
 
     bool solution_has_failed = false;
     bool scheduled; // is the current time a reporting time?

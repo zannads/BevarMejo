@@ -55,6 +55,7 @@ Source& Source::operator=(const Source& rhs) {
         inherited::operator=(rhs);
         m__inflow = rhs.m__inflow;
         m__source_elevation = rhs.m__source_elevation;
+
         _update_pointers();
     }
     return *this;
@@ -66,6 +67,7 @@ Source& Source::operator=(Source&& rhs) noexcept {
         inherited::operator=(std::move(rhs));
         m__inflow = std::move(rhs.m__inflow);
         m__source_elevation = std::move(rhs.m__source_elevation);
+
         _update_pointers();
     }
     return *this;
@@ -75,16 +77,15 @@ void Source::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);
     assert(index()!= 0);
 
-    int errorcode = 0;
     double val = 0.0;
-
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
+    int errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
     if (errorcode > 100)
         throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
 
     if (ph->parser.Flowflag != LPS)
         val = epanet::convert_flow_to_L_per_s(ph, val);
     this->_inflow_->value().insert(std::make_pair(t, val));
+    m__inflow.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
     if (errorcode > 100)
@@ -93,6 +94,7 @@ void Source::retrieve_results(EN_Project ph, long t) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     this->_source_elevation_->value().insert(std::make_pair(t, val));
+    m__source_elevation.commit(t, val);
 }
 
 void Source::_add_results() {

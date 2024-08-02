@@ -41,13 +41,8 @@ public:
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    aux::QuantitySeries<double> m__head;
-    /*---  Results   ---*/
 
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
+    /*---  Results   ---*/
 
  /*--- Constructors ---*/
 public:
@@ -78,10 +73,10 @@ public:
 public:
     /*--- Properties ---*/
 private:
-    void __retrieve_EN_properties(EN_Project ph) override;
+    
 public:
     /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
+    
 
 }; // class Reservoir
 
