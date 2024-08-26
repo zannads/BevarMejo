@@ -21,14 +21,13 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 #include "bevarmejo/wds/elements/tank.hpp"
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "problem_hanoi_biobj.hpp"
 
@@ -47,9 +46,7 @@ Problem::Problem(const json& settings, const std::vector<std::filesystem::path>&
 	}
     auto inp_filename = file.value();
 
-    m_hanoi = std::make_shared<bevarmejo::wds::WaterDistributionSystem>();
-
-    m_hanoi->load_from_inp_file(inp_filename);
+    m_hanoi= std::make_shared<WDS>(inp_filename);
 
     // Load the "UDEG" from the constexpr array to have the pipes always in the same order (element group uses a set so it is not guaranteed)
     wds::Subnetwork changeable_pipes;
@@ -91,11 +88,11 @@ std::vector<double> Problem::fitness(const std::vector<double>& dv) const {
     }
     
     // Change sign as reliability needs to be maximized
-    double ir = resilience_index_from_min_pressure(*m_hanoi, min_head_m).at(0);
+    double ir = resilience_index_from_min_pressure(*m_hanoi, min_head_m).when_t(0);
     if (ir > 0.) // means it worked
         ir = -ir;
     else // penalty based on head deficit
-        ir = pressure_deficiency(*m_hanoi, min_head_m, /*relative=*/ true).at(0);
+        ir = pressure_deficiency(*m_hanoi, min_head_m, /*relative=*/ true).when_t(0);
 
     // Return the fitness
     return {cost, ir};
@@ -125,7 +122,7 @@ double Problem::cost(const std::vector<double>& dv) const {
         assert(p_pipe != nullptr);
 
         //C  +=   a * D_i^b                                  * L_i
-        cost += m_diams_cost[static_cast<std::size_t>(*itd)] * p_pipe->length()();
+        cost += m_diams_cost[static_cast<std::size_t>(*itd)] * p_pipe->length().value();
 
         ++itp;
         ++itd;

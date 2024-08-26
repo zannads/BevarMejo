@@ -9,7 +9,7 @@
 
 #include "bevarmejo/io.hpp"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -23,8 +23,8 @@
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements/pump.hpp"
 //#include "bevarmejo/wds/elements/valve.hpp"
-#include "bevarmejo/wds/elements/pattern.hpp"
-#include "bevarmejo/wds/elements/curve.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+#include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "user_defined_elements_group.hpp"

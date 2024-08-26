@@ -4,19 +4,13 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
-
-#include "bevarmejo/wds/elements/pattern.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -36,29 +30,23 @@ static const std::string LNAME_JUNCTION= "Junction";
 class Junction : public Node {    
 public:
     using inherited= Node;
-    using DemandContainer = std::vector<Demand>;
+    using FlowSeries= aux::QuantitySeries<double>;
+    using Demands= std::unordered_map<std::string, FlowSeries>;
 
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    DemandContainer _demands_;
-
-    vars::var_real* _demand_constant_;
+    Demands m__demands;
 
     /*---  Results   ---*/
-    vars::var_tseries_real* _demand_requested_;
-    vars::var_tseries_real* _demand_delivered_;
-    vars::var_tseries_real* _demand_undelivered_;
-
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
+    FlowSeries m__demand;
+    FlowSeries m__consumption;
+    FlowSeries m__undelivered_demand;
 
  /*--- Constructors ---*/
 public:
     Junction() = delete;
-    Junction(const std::string& id);
+    Junction(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Junction(const Junction& other);
@@ -72,28 +60,22 @@ public:
     // Move assignment operator
     Junction& operator=(Junction&& rhs) noexcept;
 
-    ~Junction() override;
+    virtual ~Junction() = default;
     
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    DemandContainer& demands() {return _demands_;}
-    const DemandContainer& demands() const {return _demands_;}
+    Demands& demands() {return m__demands;}
+    const Demands& demands() const {return m__demands;}
 
-    Demand& demand(const std::string& a_category);
-
-    void add_demand(const Demand& a_demand) {_demands_.push_back(a_demand);}
-    void add_demand(const std::string& a_category, const double a_base_dem, const std::shared_ptr<Pattern> a_pattern);
-    void remove_demand(const std::string& a_category);
-private:
-    auto _find_demand(const std::string& a_category) const;
-public:    
-    vars::var_real& demand_constant() {return *_demand_constant_;}
+    FlowSeries& demand(const std::string& a_category);
+    const FlowSeries& demand(const std::string& a_category) const;
 
     /*---  Results   ---*/
-    const vars::var_tseries_real& demand_requested() const {return *_demand_requested_;}
-    const vars::var_tseries_real& demand_delivered() const {return *_demand_delivered_;}
-    const vars::var_tseries_real& demand_undelivered() const {return *_demand_undelivered_;}
+    const aux::QuantitySeries<double>& demand_requested() const { return m__demand; }
+    const aux::QuantitySeries<double>& demand_delivered() const { return consumption(); }
+    const aux::QuantitySeries<double>& consumption() const { return m__consumption; }
+    const aux::QuantitySeries<double>& demand_undelivered() const { return m__undelivered_demand; }
 
 /*--- Methods ---*/
 public:
@@ -108,8 +90,9 @@ public:
 /*--- EPANET-dependent PVMs ---*/
 public:
     /*--- Properties ---*/
-    void retrieve_properties(EN_Project ph) override;
-
+protected:
+    void __retrieve_EN_properties(EN_Project ph) override;
+public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;
 

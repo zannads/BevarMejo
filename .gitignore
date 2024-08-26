@@ -402,6 +402,7 @@ FodyWeavers.xsd
 
 # For xcode and build
 build/
+build*/
 /CMakeSettings.json
 buildXCode/
 
@@ -418,3 +419,7 @@ data
 **/.tmp/
 **/tmp/
 temp*
+*.py
+*.ipynb
+
+*.sh

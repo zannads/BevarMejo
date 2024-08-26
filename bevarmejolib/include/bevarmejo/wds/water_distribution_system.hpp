@@ -19,30 +19,75 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+
 #include "bevarmejo/io.hpp"
 
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/reservoir.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements/pump.hpp"
-#include "bevarmejo/wds/elements/curve.hpp"
-#include "bevarmejo/wds/elements/curves.hpp"
-#include "bevarmejo/wds/elements/pattern.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
+
+#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+
+#include "bevarmejo/wds/elements/network_element.hpp"
+
+#include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/source.hpp"
+#include "bevarmejo/wds/elements/reservoir.hpp"
+#include "bevarmejo/wds/elements/tank.hpp"
+
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+#include "bevarmejo/wds/elements/pipe.hpp"
+#include "bevarmejo/wds/elements/pump.hpp"
+// #include "bevarmejo/wds/elements/valve.hpp"
+
+
 
 namespace bevarmejo {
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
+static const std::string l__CONSTANT_TS = "Cst";
+static const std::string l__PATTERN_TS = "ENPatt";
+static const std::string l__RESULT_TS = "Res";
+
+class NetworkElement;
+
+template <typename T>
+class UserDefinedElementsGroup;
+using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
+
+class Reservoir;
+using Reservoirs = ElementsGroup<Reservoir>;
+class Tank;
+using Tanks = ElementsGroup<Tank>;
+class Node;
+using Nodes = ElementsGroup<Node>;
+class Junction;
+using Junctions = ElementsGroup<Junction>;
+class Source;
+using Sources = ElementsGroup<Source>;
+class Link;
+using Links = ElementsGroup<Link>;
+class Pipe;
+using Pipes = ElementsGroup<Pipe>;
+class Pump;
+using Pumps = ElementsGroup<Pump>;
+
+class Pattern;
+using Patterns = ElementsGroup<Pattern>;
+
+class Curve;
+using Curves = ElementsGroup<Curve>;
 
 class WaterDistributionSystem {
 
@@ -54,8 +99,8 @@ public:
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
     using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
+    using TimeSeriesMap= std::unordered_map<std::string, aux::TimeSeries>; 
 
-    
 protected:
     // Path to the inp file from which the project will be uploaded.
     std::filesystem::path _inp_file_;
@@ -75,23 +120,50 @@ protected:
     Pipes _pipes_;
     // Valves _valves_;
 
-    Patterns _patterns_;
-    Curves _curves_;
+    struct AuxiliaryElements { 
+        Patterns patterns;
+        Curves curves;
+        // Controls controls;
+        // Rules rules;
+
+        
+    } m__aux_elements_;
 
     // User defined groups of elements (subnetworks is only for nodes and links)
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
     
-    // Bool to turn on/off the report behaviour like in EPANET
-    bool m_save_all_hsteps = true;
+    struct ConfigOptions {
+        bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
+        struct TimeOptions {
+            epanet::GlobalTimeOptions global;
+            epanet::PatternTimeOptions pattern;
+        } times;
+    } m__config_options;
+
+    // Keep the relevant times here:
+    struct RelevantTimes {
+        aux::TimeSeries constant;
+        aux::TimeSeries EN_pattern;
+        mutable aux::TimeSeries results;
+        TimeSeriesMap ud_time_series;
+
+        RelevantTimes() = delete;
+        RelevantTimes(const epanet::GlobalTimeOptions& gto) :
+            constant(gto),
+            EN_pattern(gto),
+            results(gto),
+            ud_time_series() {}
+    };
+    RelevantTimes m__times;
 
 /*--- Constructors ---*/ 
 public:
     // Default constructor
     WaterDistributionSystem();
     
-    WaterDistributionSystem(const std::filesystem::path& inp_file);
+    WaterDistributionSystem(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
 
     // Copy constructor
     WaterDistributionSystem(const WaterDistributionSystem& other);
@@ -110,9 +182,6 @@ public:
 
     std::unique_ptr<WaterDistributionSystem> clone() const;
     
-    // Equivalent to constuctor from .inp file
-    void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-    
 /*--- Getters and setters ---*/
 public:
     const std::filesystem::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
@@ -121,14 +190,14 @@ public:
     /*--- Object-specific Subnetworks ---*/
     const Nodes& nodes() const {return _nodes_;};
     const Links& links() const {return _links_;};
-    const Patterns& patterns() const {return _patterns_;};
+    const Patterns& patterns() const {return m__aux_elements_.patterns;};
     const Junctions& junctions() const {return _junctions_;};
     // const Sources& sources() const {return _sources_;};
     const Tanks& tanks() const {return _tanks_;};
     const Reservoirs& reservoirs() const {return _reservoirs_;};
     const Pipes& pipes() const {return _pipes_;};
     const Pumps& pumps() const {return _pumps_;};
-    const Curves& curves() const {return _curves_;};
+    const Curves& curves() const {return m__aux_elements_.curves;};
 
     /*--- User-defined Subnetworks ---*/
     SubnetworksMap& subnetworks() {return _subnetworks_;};
@@ -141,6 +210,8 @@ public:
     void remove_subnetwork(const std::string& name);
 
     /*--- User-defined Elements Groups ---*/
+
+    const aux::TimeSeries& time_series(const std::string& name) const;
     
     
 /*--- Methods ---*/
@@ -148,11 +219,17 @@ public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
     void cache_indices() const;
-    void assign_patterns_EN();
-    void assign_demands_EN();
-    void assign_curves_EN();
-    void connect_network_EN();
-
+private:
+    // Equivalent to constuctor from .inp file
+    void load_EN_time_settings(EN_Project ph);
+    void load_EN_analysis_options(EN_Project ph);
+    void load_EN_patterns(EN_Project ph);
+    void load_EN_curves(EN_Project ph);
+    void load_EN_nodes(EN_Project ph);
+    void load_EN_links(EN_Project ph);
+    void load_EN_controls(EN_Project ph);
+    void load_EN_rules(EN_Project ph);
+public:
     void clear_results() const;
     
     void run_hydraulics() const;
@@ -211,9 +288,9 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         _links_.insert(a_element);
         _pumps_.insert(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        _patterns_.insert(a_element);
+        m__aux_elements_.patterns.insert(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        _curves_.insert(a_element);
+        m__aux_elements_.curves.insert(a_element);
     } else {
         // Handle other types
         // ...
@@ -259,9 +336,9 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         _links_.remove(a_element);
         _pumps_.remove(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        _patterns_.remove(a_element);
+        m__aux_elements_.patterns.remove(a_element);
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        _curves_.remove(a_element);
+        m__aux_elements_.patterns.remove(a_element);
     } else {
         // Handle other types
         // ...

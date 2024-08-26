@@ -2,11 +2,9 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__CURVES_HPP
 
 #include <string>
+#include <memory>
 
-#include "epanet2_2.h"
-
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curve.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -30,19 +28,19 @@ public:
     using inherited= SpecificCurve<double, double>;
     GenericCurve() = delete;
     GenericCurve(const std::string& id);
-    GenericCurve(const GenericCurve& other);
-    GenericCurve(GenericCurve&& rhs) noexcept;
-    GenericCurve& operator=(const GenericCurve& rhs);
-    GenericCurve& operator=(GenericCurve&& rhs) noexcept;
-    virtual ~GenericCurve() {}
-    std::unique_ptr<GenericCurve> clone() const { return std::unique_ptr<GenericCurve>(this->__clone()); }
+    GenericCurve(const GenericCurve& other) = default;
+    GenericCurve(GenericCurve&& rhs) noexcept = default;
+    GenericCurve& operator=(const GenericCurve& rhs) = default;
+    GenericCurve& operator=(GenericCurve&& rhs) noexcept = default;
+    virtual ~GenericCurve() = default;
+    std::unique_ptr<GenericCurve> clone() const;
 private:
-    virtual GenericCurve* __clone() const override { return new GenericCurve(*this); }
+    virtual GenericCurve* __clone() const override;
 
 /*--- Pure virtual methods override---*/
 public:
-    const std::string& element_name() const override { return l__GENERIC_CURVE; }
-    const unsigned int element_type() const override { return ec__CURVE+EN_GENERIC_CURVE; }
+    const std::string& element_name() const override;
+    const unsigned int element_type() const override;
 
 }; // class GenericCurve
 
@@ -67,20 +65,20 @@ public:
     using inherited= SpecificCurve<Level, Volume>;
     VolumeCurve() = delete;
     VolumeCurve(const std::string& id);
-    //VolumeCurve(const GenericCurve& other);
-    VolumeCurve(const VolumeCurve& other);
-    VolumeCurve(VolumeCurve&& rhs) noexcept;
-    VolumeCurve& operator=(const VolumeCurve& rhs);
-    VolumeCurve& operator=(VolumeCurve&& rhs) noexcept;
-    virtual ~VolumeCurve() {}
-    std::unique_ptr<VolumeCurve> clone() const { return std::unique_ptr<VolumeCurve>(this->__clone()); }
+    VolumeCurve(const GenericCurve& other);
+    VolumeCurve(const VolumeCurve& other) = default;
+    VolumeCurve(VolumeCurve&& rhs) noexcept = default;
+    VolumeCurve& operator=(const VolumeCurve& rhs) = default;
+    VolumeCurve& operator=(VolumeCurve&& rhs) noexcept = default;
+    virtual ~VolumeCurve() = default;
+    std::unique_ptr<VolumeCurve> clone() const;
 private:
-    virtual VolumeCurve* __clone() const override { return new VolumeCurve(*this); }
+    virtual VolumeCurve* __clone() const override;
 
 /*--- Pure virtual methods override---*/
 public:
-    const std::string& element_name() const override { return l__VOLUME_CURVE; }
-    const unsigned int element_type() const override { return ec__CURVE+EN_VOLUME_CURVE; }
+    const std::string& element_name() const override;
+    const unsigned int element_type() const override;
 
 }; // class VolumeCurve
 
@@ -97,19 +95,19 @@ public:
     PumpCurve() = delete;
     PumpCurve(const std::string& id);
     PumpCurve(const GenericCurve& other);
-    PumpCurve(const PumpCurve& other);
-    PumpCurve(PumpCurve&& rhs) noexcept;
-    PumpCurve& operator=(const PumpCurve& rhs);
-    PumpCurve& operator=(PumpCurve&& rhs) noexcept;
-    virtual ~PumpCurve() {}
-    std::unique_ptr<PumpCurve> clone() const { return std::unique_ptr<PumpCurve>(this->__clone()); }
+    PumpCurve(const PumpCurve& other) = default;
+    PumpCurve(PumpCurve&& rhs) noexcept = default;
+    PumpCurve& operator=(const PumpCurve& rhs) = default;
+    PumpCurve& operator=(PumpCurve&& rhs) noexcept = default;
+    virtual ~PumpCurve() = default;
+    std::unique_ptr<PumpCurve> clone() const;
 private:
-    virtual PumpCurve* __clone() const override { return new PumpCurve(*this); }
+    virtual PumpCurve* __clone() const override;
 
 /*--- Pure virtual methods override---*/
 public:
-    const std::string& element_name() const override { return l__PUMP_CURVE; }
-    const unsigned int element_type() const override { return ec__CURVE+EN_PUMP_CURVE; }
+    const std::string& element_name() const override;
+    const unsigned int element_type() const override;
 
 }; // class PumpCurve
 
@@ -125,19 +123,20 @@ public:
     using inherited= SpecificCurve<Flow, Efficiency>;
     EfficiencyCurve() = delete;
     EfficiencyCurve(const std::string& id);
-    EfficiencyCurve(const EfficiencyCurve& other);
-    EfficiencyCurve(EfficiencyCurve&& rhs) noexcept;
-    EfficiencyCurve& operator=(const EfficiencyCurve& rhs);
-    EfficiencyCurve& operator=(EfficiencyCurve&& rhs) noexcept;
-    virtual ~EfficiencyCurve() {}
-    std::unique_ptr<EfficiencyCurve> clone() const { return std::unique_ptr<EfficiencyCurve>(this->__clone()); }
+    EfficiencyCurve(const GenericCurve& other);
+    EfficiencyCurve(const EfficiencyCurve& other) = default;
+    EfficiencyCurve(EfficiencyCurve&& rhs) noexcept = default;
+    EfficiencyCurve& operator=(const EfficiencyCurve& rhs) = default;
+    EfficiencyCurve& operator=(EfficiencyCurve&& rhs) noexcept = default;
+    virtual ~EfficiencyCurve() = default;
+    std::unique_ptr<EfficiencyCurve> clone() const;
 private:
-    virtual EfficiencyCurve* __clone() const override { return new EfficiencyCurve(*this); }
+    virtual EfficiencyCurve* __clone() const override;
 
 /*--- Pure virtual methods override---*/
 public:
-    const std::string& element_name() const override { return l__EFFICIENCY_CURVE; }
-    const unsigned int element_type() const override { return ec__CURVE+EN_EFFIC_CURVE; }
+    const std::string& element_name() const override;
+    const unsigned int element_type() const override;
 
 }; // class EfficiencyCurve
 
@@ -153,25 +152,22 @@ public:
     using inherited= SpecificCurve<Flow, Headloss>;
     HeadlossCurve() = delete;
     HeadlossCurve(const std::string& id);
-    HeadlossCurve(const HeadlossCurve& other);
-    HeadlossCurve(HeadlossCurve&& rhs) noexcept;
-    HeadlossCurve& operator=(const HeadlossCurve& rhs);
-    HeadlossCurve& operator=(HeadlossCurve&& rhs) noexcept;
-    virtual ~HeadlossCurve() {}
-    std::unique_ptr<HeadlossCurve> clone() const { return std::unique_ptr<HeadlossCurve>(this->__clone()); }
+    HeadlossCurve(const GenericCurve& other);
+    HeadlossCurve(const HeadlossCurve& other) = default;
+    HeadlossCurve(HeadlossCurve&& rhs) noexcept = default;
+    HeadlossCurve& operator=(const HeadlossCurve& rhs) = default;
+    HeadlossCurve& operator=(HeadlossCurve&& rhs) noexcept = default;
+    virtual ~HeadlossCurve() = default;
+    std::unique_ptr<HeadlossCurve> clone() const;
 private:
-    virtual HeadlossCurve* __clone() const override { return new HeadlossCurve(*this); }
+    virtual HeadlossCurve* __clone() const override;
 
 /*--- Pure virtual methods override---*/
 public:
-    const std::string& element_name() const override { return l__HEADLOSS_CURVE; }
-    const unsigned int element_type() const override { return ec__CURVE+EN_HLOSS_CURVE; }
+    const std::string& element_name() const override;
+    const unsigned int element_type() const override;
 
 }; // class HeadlossCurve
-
-//-----------------------------------------------------------------------------
-
-
 
 } // namespace wds
 } // namespace bevarmejo

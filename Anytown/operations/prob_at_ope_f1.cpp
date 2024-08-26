@@ -11,23 +11,14 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
-
-#include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_help.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 
@@ -56,8 +47,6 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		* I create an empty one first, add the inp file, modify it thorugh the lambda
 		* and then use init(). 
 	*/
-	m_anytown = std::make_shared<WDS>();
-	
 	auto fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
 		assert(ph != nullptr);
@@ -70,7 +59,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		assert(errorcode <= 100);
 	};
 
-	m_anytown->load_from_inp_file(inp_filename, fix_inp);
+	m_anytown= std::make_shared<WDS>(inp_filename, fix_inp);
 
     // Load the subnetworks
     for (const auto& udeg : settings["WDS"]["UDEGs"]) {
@@ -113,8 +102,8 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
     // Objective function 1: energy cost
     fitv[0] = cost(*m_anytown);
     // Objective function 2: cumulative pressure deficit 
-    auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
-    for (const auto& [t, deficit] : normdeficit_day) {
+    const auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
+    for (const auto [t, deficit] : normdeficit_day) {
         fitv[1] += deficit;
     }
 
@@ -135,7 +124,7 @@ double Problem::cost(const bevarmejo::wds::WaterDistributionSystem& a_wds) const
 		unsigned long t_prec = 0;
 		double power_kW_prec = 0.0;
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
-		for (const auto& [t, power_kW] : pump->instant_energy().value() ) {
+		for (const auto& [t, power_kW] : pump->instant_energy() ) {
 			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * anytown::energy_cost_kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;

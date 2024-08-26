@@ -2,11 +2,12 @@
 #define BEVARMEJOLIB__WDS_ELEMENTS__SOURCE_HPP
 
 #include <string>
-#include <variant>
 
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "epanet2_2.h"
+
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
 #include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -30,17 +31,13 @@ protected:
     /*--- Properties ---*/
 
     /*---  Results   ---*/
-    vars::var_tseries_real* _inflow_;
-    vars::var_tseries_real* _source_elevation_;
-
-protected:
-    void _add_results() override;
-    void _update_pointers() override;
+    aux::QuantitySeries<double> m__inflow;
+    aux::QuantitySeries<double> m__source_elevation;
 
 /*--- Constructors ---*/
 public:
     Source() = delete;
-    Source(const std::string& id);
+    Source(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Source(const Source& other);
@@ -55,15 +52,15 @@ public:
     Source& operator=(Source&& rhs) noexcept;
 
     // Destructor
-    virtual ~Source();
+    virtual ~Source() = default;
 
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
 
     /*---  Results   ---*/
-    vars::var_tseries_real& inflow() const { return *_inflow_; }
-    vars::var_tseries_real& source_elevation() const { return *_source_elevation_; }
+    const aux::QuantitySeries<double>& inflow() const { return m__inflow; }
+    const aux::QuantitySeries<double>& source_elevation() const { return m__source_elevation; }
 
 /*--- Pure virtual methods override---*/
 

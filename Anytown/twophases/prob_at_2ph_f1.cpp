@@ -17,24 +17,16 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/demand.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/io.hpp"
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
@@ -66,8 +58,6 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		* I create an empty one first, add the inp file, modify it thorugh the lambda
 		* and then use init(). 
 	*/
-	_anytown_ = std::make_shared<WDS>();
-	
 	auto fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
 		assert(ph != nullptr);
@@ -80,7 +70,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
 		assert(errorcode <= 100);
 	};
 
-	_anytown_->load_from_inp_file(inp_filename, fix_inp);
+	_anytown_= std::make_shared<WDS>(inp_filename, fix_inp);
 
 	// Load subnetworks
 	for (const auto& udeg : settings["WDS"]["UDEGs"]) {
@@ -276,7 +266,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 		unsigned long t_prec = 0;
 		double power_kW_prec = 0.0;
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
-		for (const auto& [t, power_kW] : pump->instant_energy().value() ) {
+		for (const auto& [t, power_kW] : pump->instant_energy() ) {
 			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * anytown::energy_cost_kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;
@@ -285,7 +275,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 
 	fitv[0] = cost(dvs, total_ene_cost_per_day); // cost is positive when money is going out, like in this case
 	// Resilience index 
-    auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
+    const auto ir_daily = resilience_index_from_min_pressure(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT);
 	//fitv[1] = -1; //-ir_daily.mean();
 	fitv[1] = 0.0;
 	unsigned long t_prec = 0;
@@ -302,14 +292,14 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
     // Constraint : see prob_at_mix_f1.cpp for the motivation
     if (fitv[1] >= 0.0) {
         fitv[1] = 0.0;
-		auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		// just accumulate through the day, no need to average it out
 		for (const auto& [t, deficit] : normdeficit_daily) {
 			fitv[1] += deficit;
 		}
 	}
 	else {
-        auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+        const auto normdeficit_daily = pressure_deficiency(*_anytown_, anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
 		t_prec = 0;
 		double pdef_prec = 0.0;
 		double mean_norm_daily_deficit = 0.0;
@@ -646,7 +636,7 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 		// I should create a new tank at that position and with that volume
 		double tank_volume_gal = _tanks_costs_.at(*(curr_dv+1)).volume_gal;
 		double tank_volume_m3 = tank_volume_gal * 0.00378541;
-		std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx));
+		std::shared_ptr<wds::Tank> new_tank = std::make_shared<wds::Tank>("T"+std::to_string(tank_idx), *anytown);
 		// elevation , min and max level are the same as in the original tanks
 		// Ideally same coordinates of the junction, but I move it slightly in case I want to save the result to file and visualize it
 		// diameter from volume divided by the fixed ratio
@@ -682,7 +672,7 @@ std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::v
 		anytown->insert(new_tank);
 
 		// The riser has a well defined length, diameter could be a dv, but I fix it to 16 inches for now
-		std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx));
+		std::shared_ptr<wds::Pipe> riser = std::make_shared<wds::Pipe>("Ris_"+std::to_string(tank_idx), *anytown);
 		riser->diameter(14.0*MperFT/12*1000);
 		riser->length(anytown::riser_length_ft*MperFT);
 		riser->start_node(new_tank.get());
