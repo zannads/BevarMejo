@@ -90,7 +90,7 @@ std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const bevarmej
 
 // For fitness function:
 //     For apply dv:
-void apply_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 void apply_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
 
 //     For reset dv:
@@ -98,7 +98,7 @@ void reset_dv__new_pipes(WDS& anytown);
 void reset_dv__pumps(WDS& anytown);
 
 //      For cost function:
-double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 double cost__energy_per_day(const WDS& anytown);
 
 //      For reliability (modified) function:
@@ -112,16 +112,16 @@ std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const bevarmej
 
 // For fitness function:
 //     For apply dv:
-std::vector<double> apply_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::pipes_alt_costs> &pipes_alt_costs);
-void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::tanks_costs> &tanks_costs);
+std::vector<double> apply_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 
 //     For reset dv:
 void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<double>& old_HW_coeffs);
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 
 //      For cost function:
-double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::pipes_alt_costs> &pipes_alt_costs);
-double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<anytown::tanks_costs> &tanks_costs, const std::vector<anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 
 } // namespace f1
 
@@ -141,8 +141,8 @@ public:
 protected:
     // Anytown specific data
     mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> m__anytown;
-    std::vector<anytown::pipes_alt_costs> m__pipes_alt_costs;
-    std::vector<anytown::tanks_costs> m__tanks_costs;
+    std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
+    std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
 
     // For constructor:
     void load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});

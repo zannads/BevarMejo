@@ -36,9 +36,9 @@ constexpr std::size_t n_cx = n_dv-n_ix;
 
 
 // Here the problem is actually construted.
-class Problem : public anytown::Problem {
+class Problem : public bevarmejo::anytown::Problem {
 public:
-    using inherited= anytown::Problem;
+    using inherited= bevarmejo::anytown::Problem;
 
 public: 
     Problem() = default;

@@ -40,9 +40,9 @@ constexpr std::size_t n_dv = 80u;
 constexpr std::size_t n_ix = 80u; // Will transform the tank volume to a continuous variable in the future.
 constexpr std::size_t n_cx = n_dv-n_ix;
     
-class Problem : public anytown::Problem {
+class Problem : public bevarmejo::anytown::Problem {
 public:
-    using inherited= anytown::Problem;
+    using inherited= bevarmejo::anytown::Problem;
 public:
     Problem() = default;
     

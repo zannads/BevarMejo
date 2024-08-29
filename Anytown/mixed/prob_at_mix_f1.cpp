@@ -21,6 +21,7 @@ using json = nlohmann::json;
 #include "prob_at_mix_f1.hpp"
 
 namespace fsys = std::filesystem;
+namespace bemeat= bevarmejo::anytown;
 namespace bevarmejo {
 namespace anytown {
 namespace mixed {
@@ -103,7 +104,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 	// Compute OF on res. 
 	std::vector<double> fitv= {
 		cost(*m__anytown, dvs), // cost is positive when money is going out, like in this case
-		anytown::of__reliability(*m__anytown)
+		bemeat::of__reliability(*m__anytown)
 	};
 	
 	reset_dv( m__anytown, dvs, old_HW_coeffs);
@@ -123,10 +124,10 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const 
 		ub.insert(ub.end(), upper.begin(), upper.end());
 	};
 
-	append_bounds(anytown::f1::bounds__exis_pipes);
-	append_bounds(anytown::bounds__new_pipes);
-	append_bounds(anytown::bounds__pumps);
-	append_bounds(anytown::f1::bounds__tanks);
+	append_bounds(bemeat::f1::bounds__exis_pipes);
+	append_bounds(bemeat::bounds__new_pipes);
+	append_bounds(bemeat::bounds__pumps);
+	append_bounds(bemeat::f1::bounds__tanks);
 
 	return {std::move(lb), std::move(ub)};
 }
@@ -134,29 +135,29 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const 
 double Problem::cost(const WDS &anytown, const std::vector<double> &dvs) const {
 	double design_cost = 0.0;
 	
-	design_cost += anytown::f1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+	design_cost += bemeat::f1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
 
-	design_cost += anytown::cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+	design_cost += bemeat::cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 
-	design_cost += anytown::f1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+	design_cost += bemeat::f1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 
-	double energy_cost_per_day = anytown::cost__energy_per_day(anytown);
+	double energy_cost_per_day = bemeat::cost__energy_per_day(anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 	
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
-	return -bevarmejo::net_present_value(design_cost, anytown::discount_rate, -yearly_energy_cost, anytown::amortization_years);
+	return -bevarmejo::net_present_value(design_cost, bemeat::discount_rate, -yearly_energy_cost, bemeat::amortization_years);
 }
 
 std::vector<double> Problem::apply_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &dvs) const {
 	anytown->cache_indices();
 
-	std::vector<double> old_HW_coeffs= anytown::f1::apply_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+	std::vector<double> old_HW_coeffs= bemeat::f1::apply_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
 
-	anytown::apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+	bemeat::apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 	
-	anytown::apply_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
+	bemeat::apply_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
 
-	anytown::f1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs);
+	bemeat::f1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs);
 
 	return old_HW_coeffs;
 }
@@ -165,13 +166,13 @@ void Problem::reset_dv(std::shared_ptr<WDS> anytown, const std::vector<double> &
 	// Do the opposite operations of apply_dv 
 	anytown->cache_indices();
 
-	anytown::f1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), old_HW_coeffs);
+	bemeat::f1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), old_HW_coeffs);
 
-	anytown::reset_dv__new_pipes(*anytown);
+	bemeat::reset_dv__new_pipes(*anytown);
 
-	anytown::reset_dv__pumps(*anytown);
+	bemeat::reset_dv__pumps(*anytown);
 
-	anytown::f1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()));
+	bemeat::f1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()));
 }
 
 } // namespace f1

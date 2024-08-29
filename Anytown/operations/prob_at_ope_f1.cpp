@@ -102,7 +102,7 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
     // Objective function 1: energy cost
     fitv[0] = cost(*m_anytown);
     // Objective function 2: cumulative pressure deficit 
-    const auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
+    const auto normdeficit_day = bevarmejo::pressure_deficiency(*m_anytown, bevarmejo::anytown::min_pressure_psi/PSIperFT*MperFT, /*relative=*/ true);
     for (const auto [t, deficit] : normdeficit_day) {
         fitv[1] += deficit;
     }
@@ -125,7 +125,7 @@ double Problem::cost(const bevarmejo::wds::WaterDistributionSystem& a_wds) const
 		double power_kW_prec = 0.0;
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
 		for (const auto& [t, power_kW] : pump->instant_energy() ) {
-			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * anytown::energy_cost_kWh ; 
+			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost_kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;
 		}
