@@ -228,7 +228,7 @@ double Problem::cost(const WDS &anytown, const std::vector<double> &dvs) const {
 
 	design_cost += bemeat::cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 
-	design_cost += bemeat::f1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+	design_cost += bemeat::f1::cost__tanks(anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 
 	double energy_cost_per_day = bemeat::cost__energy_per_day(anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
