@@ -28,6 +28,6 @@ def naive_pareto_front(data: np.array, f__indexes=False) -> np.array:
     return np.array(pareto_front)
 
 # Example usage
-data = [[1, 2], [3, 1], [2, 3], [4, 0]]
-pareto_front = naive_pareto_front(data)
-print("Naive Pareto Front:", pareto_front)
+# data = [[1, 2], [3, 1], [2, 3], [4, 0]]
+# pareto_front = naive_pareto_front(data)
+# print("Naive Pareto Front:", pareto_front)
