@@ -13,6 +13,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/labels.hpp"
+#include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"
 
 #include "parsers.hpp"
@@ -113,102 +114,69 @@ namespace sim {
 
 Simulation parse(int argc, char *argv[]) {
 
-    if (argc < 3) {
-        throw std::invalid_argument("Not enough arguments.\nUsage: " + std::string(argv[0]) + " <problem_settings_file> <decision_variables_file> [flags]");
+    if (argc < 2) {
+        throw std::invalid_argument("Not enough arguments.\nUsage: " + std::string(argv[0]) + " <simulation_settings_file> [flags]");
     }
     Simulation simu;
 
-    // 1. Parse the problem settings file
+    // 1. Parse the settings file
+    // 1.0 add the cwd to the lookup path for the settings file as it may be a rel path 
+    simu.lookup_paths.push_back(std::filesystem::current_path());
+    
     try {
-        // 1.0 make sure it exists 
-        std::filesystem::path filepath(argv[1]);
-        if (!std::filesystem::exists(filepath)) {
-            throw std::invalid_argument("Settings file does not exist: " + filepath.string());
+        // 1.1 make sure it exists
+        // locate the file
+        auto filepath = bevarmejo::io::locate_file(std::filesystem::path{argv[1]}, simu.lookup_paths);
+        if (!filepath) {
+            throw std::invalid_argument("Simulation settings file not found: " + std::string(argv[1]));
         }
-        if (!std::filesystem::is_regular_file(filepath)) {
-            throw std::invalid_argument("Settings file is not a regular file: " + filepath.string());
-        }
-        // Settings file is fine, save its full path and the folder
-        simu.settings_file = filepath;
-        simu.folder = filepath.parent_path();
-        // settings folder is also the first lookup path
+
+        // Simulation settings file is fine, save its full path
+        simu.settings_file = filepath.value();
+        simu.folder = simu.settings_file.parent_path();
         simu.lookup_paths.push_back(simu.folder);
 
-        // 1.1 read it 
-        std::ifstream file(filepath);
+        // 1.2 read it
+        std::ifstream file(simu.settings_file);
         if (!file.is_open()) {
-            throw std::runtime_error("Failed to open settings file: " + filepath.string());
+            throw std::runtime_error("Failed to open simulation settings file: " + simu.settings_file.string());
         }
         if (file.peek() == std::ifstream::traits_type::eof()) {
             file.close();
-            throw std::runtime_error("Settings file is empty: " + filepath.string());
+            throw std::runtime_error("Simulation settings file is empty: " + simu.settings_file.string());
         }
 
         std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
 
-        // 1.2 parse it
-        json jproblem = json::parse(file_content);
+        // 1.3 parse it
+        json j = json::parse(file_content);
 
-        // 1.3 Check the settings file has the required fields
-        // name, if params not there pass empty -> most likely will throw exception the constructor, 
-        if (!jproblem.contains(label::__name)) {
-            throw std::runtime_error("Settings file does not specifies the name of the User Defined Problem\n");
-        }
-        if (!jproblem.contains(label::__params)) {
-            jproblem[label::__params] = json::object();
-        }
-
-        // 1.4 check the settings file has the optional fields
-        if (jproblem.contains(label::__paths)) {
-            for (const auto& path : jproblem[label::__paths]) {
+        // 1.3.1 Optional keys that may change the behavior of the simulation
+        if (j.contains(label::__paths)) {
+            for (const auto& path : j[label::__paths]) {
                 // Check that is actually a string and an existing directory
                 std::filesystem::path p(path.get<std::string>());
                 if (std::filesystem::exists(p) && std::filesystem::is_directory(p)) {
                     simu.lookup_paths.push_back(p);
                 }
                 else {
-                    std::cerr << "Path in the settings file is not a valid directory: " << p.string() << std::endl;
+                    std::cerr << "Path in the simulation settings file is not a valid directory: " << p.string() << std::endl;
                 }
             }
         }
-
-        // 1.5 build the problem
-        simu.p = std::move(build_problem( jproblem, simu.lookup_paths ));
-    }
-    catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse problem settings file: " + simu.settings_file.string() + "\n" + e.what());
-    }
-    
-    // 2. Parse the decision variables file
-    // 2.0 add the cwd to the lookup path for the decision variables file as it may be a rel path 
-    simu.lookup_paths.push_back(std::filesystem::current_path());
-    try {
-        // 2.1 make sure it exists
-        // locate the file
-        auto filepath = bevarmejo::io::locate_file(std::filesystem::path{argv[2]}, simu.lookup_paths);
-        if (!filepath) {
-            throw std::invalid_argument("Decision variables file not found: " + std::string(argv[2]));
-        }
-        // Decision variables file is fine, save its full path
-        simu.dv_file = filepath.value();
-        // 2.2 read it
-        std::ifstream file(simu.dv_file);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open decision variables file: " + simu.dv_file.string());
-        }
-        if (file.peek() == std::ifstream::traits_type::eof()) {
-            file.close();
-            throw std::runtime_error("Decision variables file is empty: " + simu.dv_file.string());
+        // it could be for a old version of a library
+        if (j.contains(bevarmejo::to_kebab_case(label::__version)) )
+            j[label::__version] = j[bevarmejo::to_kebab_case(label::__version)];
+        
+        if (j.contains(label::__version)) {
+            auto ud_version = j[label::__version].get<std::string>();
+            VersionManager::instance().set(ud_version);
         }
 
-        std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        file.close();
-
-        // 2.3 parse it
-        json j = json::parse(file_content);
+        // 1.3.2 mandatory keys first: dv, udp
         // the file keys can be normal case or kebab case
-        std::vector<std::string> keys = {label::__dv, label::__id, "Print"};
+        std::vector<std::string> keys = {label::__dv, label::__problem_sh};
         for (auto& key : keys) {
             // if found normal just skip
             // othwersie check for kebab, if found re-add as normal key
@@ -217,18 +185,53 @@ Simulation parse(int argc, char *argv[]) {
                 continue;
             }
             else if (j.contains(bevarmejo::to_kebab_case(key))) {
-                j[key] = j[bevarmejo::to_kebab_case(key)]; // TODO: check if you can simply change the string instead of copyingthe object 
+                j[key] = j[bevarmejo::to_kebab_case(key)];
+                j.erase(bevarmejo::to_kebab_case(key));
             }
             else {
-                throw std::runtime_error("Key "+key+ " not found in the decision variables file.\n" );
+                throw std::runtime_error("Key "+key+ " not found in the simulation settings file.\n" );
             }
         }
         simu.dvs            = j[label::__dv].get<std::vector<double>>();
-        simu.id             = j[label::__id].get<unsigned long long>();
-        simu.extra_message  = j["Print"].get<std::string>();
 
-    } catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse decision variables file: " + simu.dv_file.string() + "\n" + e.what());
+        json jproblem = j[label::__problem_sh];
+
+        // 1.3 Check the settings file has the required fields
+        // name, if params not there pass empty -> most likely will throw exception the constructor, 
+        if (!jproblem.contains(label::__name)) {
+            throw std::runtime_error("Simulation settings file does not specifies the name of the User Defined Problem\n");
+        }
+        if (!jproblem.contains(label::__params)) {
+            jproblem[label::__params] = json::object();
+        }
+
+        // 1.5 build the problem
+        simu.p = std::move(build_problem( jproblem, simu.lookup_paths ));
+
+        // 1.6 optional keys that don't change the behavior of the simulation
+        if (j.contains(label::__fv)) {
+            simu.fvs = j[label::__fv].get<std::vector<double>>();
+        }
+        else if (j.contains(bevarmejo::to_kebab_case(label::__fv))) {
+            simu.fvs = j[bevarmejo::to_kebab_case(label::__fv)].get<std::vector<double>>();
+        }
+
+        if (j.contains(label::__id)) {
+            simu.id = j[label::__id].get<unsigned long long>();
+        }
+        else if (j.contains(bevarmejo::to_kebab_case(label::__id))) {
+            simu.id = j[bevarmejo::to_kebab_case(label::__id)].get<unsigned long long>();
+        }
+
+        if (j.contains("Print")) {
+            simu.extra_message = j["Print"].get<std::string>();
+        }
+        else if (j.contains("print")) {
+            simu.extra_message = j["print"].get<std::string>();
+        }
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error("Failed to parse the simulation settings file: " + simu.settings_file.string() + "\n" + e.what());
     }
 
     // 3. Check the flags
