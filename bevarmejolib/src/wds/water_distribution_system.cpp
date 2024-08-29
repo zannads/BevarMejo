@@ -196,7 +196,7 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const 
 }
 
 void WaterDistributionSystem::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
-    _subnetworks_.emplace(std::make_pair(name, subnetwork));
+    _subnetworks_.insert(std::make_pair(name, subnetwork));
 }
 
 void WaterDistributionSystem::add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork){

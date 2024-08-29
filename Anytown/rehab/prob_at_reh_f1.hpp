@@ -11,6 +11,9 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
+#include "bevarmejo/io.hpp"
+#include "bevarmejo/constants.hpp"
+#include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "Anytown/prob_anytown.hpp"
@@ -34,7 +37,9 @@ constexpr std::size_t n_dv = 80u;
 constexpr std::size_t n_ix = 80u; // Will transform the tank volume to a continuous variable in the future.
 constexpr std::size_t n_cx = n_dv-n_ix;
     
-class Problem {
+class Problem : public anytown::Problem {
+public:
+    using inherited= anytown::Problem;
 public: 
     Problem() = default;
 
@@ -84,22 +89,17 @@ public:
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
     void save_solution(const std::vector<double>& dv, const fsys::path& out_file) const {
-        auto pass_on_info = apply_dv(this->_anytown_, dv);
+        auto pass_on_info = apply_dv(this->m__anytown, dv);
 
-	    int errco = EN_saveinpfile(this->_anytown_->ph_, out_file.c_str());
+	    int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.c_str());
 	    assert(errco <= 100);
 
-	    reset_dv(this->_anytown_, dv, pass_on_info);
+	    reset_dv(this->m__anytown, dv, pass_on_info);
     }
 
 private: 
-    /* Anytonw specific data */
-    mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> _anytown_;
-    std::vector<anytown::pipes_alt_costs> _pipes_alt_costs_;
-    std::vector<anytown::tanks_costs> _tanks_costs_;
-
     /* Anytown specific functions */
-    double cost(const std::vector<double>& dv, const double energy_cost_per_day) const;
+    double cost(const WDS &anytown, const std::vector<double>& dv) const;
     
     /* Helper functions */
     std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;

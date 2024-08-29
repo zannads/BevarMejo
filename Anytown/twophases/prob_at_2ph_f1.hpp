@@ -40,7 +40,9 @@ constexpr std::size_t n_dv = 80u;
 constexpr std::size_t n_ix = 80u; // Will transform the tank volume to a continuous variable in the future.
 constexpr std::size_t n_cx = n_dv-n_ix;
     
-class Problem {
+class Problem : public anytown::Problem {
+public:
+    using inherited= anytown::Problem;
 public:
     Problem() = default;
     
@@ -90,25 +92,22 @@ public:
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
     void save_solution(const std::vector<double>& dv, const fsys::path& out_file) const {
-        auto pass_on_info = apply_dv(this->_anytown_, dv);
+        auto pass_on_info = apply_dv(this->m__anytown, dv);
 
-	    int errco = EN_saveinpfile(this->_anytown_->ph_, out_file.c_str());
+	    int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.c_str());
 	    assert(errco <= 100);
 
-	    reset_dv(this->_anytown_, dv, pass_on_info);
+	    reset_dv(this->m__anytown, dv, pass_on_info);
     }
 
 private: 
-    /* Anytonw specific data */
-    std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> _anytown_;
-    std::vector<anytown::pipes_alt_costs> _pipes_alt_costs_;
-    std::vector<anytown::tanks_costs> _tanks_costs_;
+
     // internal operation problem 
     pagmo::algorithm m_algo;
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
     /* Anytown specific functions */
-    double cost(const std::vector<double>& dv, const double energy_cost_per_day) const;
+    double cost(const WDS &anytown, const std::vector<double>& dv) const;
     
     /* Helper functions */
     std::vector<double> apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dv) const;
@@ -130,7 +129,7 @@ template <>
 inline std::pair<nl::json, std::string> json::detail::static_params<bevarmejo::anytown::twophases::f1::Problem>(const bevarmejo::anytown::twophases::f1::Problem& prob) {
     
     nl::json jparams { };
-    jparams[to_kebab_case(std::string("inp"))] = prob._anytown_->inp_file();
+    jparams[to_kebab_case(std::string("inp"))] = prob.m__anytown->inp_file();
     // Skip pipes alt costs and tanks costs even if they should be there 
     jparams[to_kebab_case(std::string("m_algo"))] = json::static_descr(prob.m_algo)[to_kebab_case(label::__algorithm)];
     

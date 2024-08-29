@@ -43,7 +43,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
     /* Fix the bug where the curve 2 (i.e., the pump characteristic curve
 		* is uploaded as a generic curve and not as a pump curve). 
 		* Thus instead of the automatic constructor from inp file: 
-		* _anytown_ = std::make_shared<WDS>(inp_filename);
+		* m__anytown = std::make_shared<WDS>(inp_filename);
 		* I create an empty one first, add the inp file, modify it thorugh the lambda
 		* and then use init(). 
 	*/
