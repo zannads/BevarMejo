@@ -18,7 +18,7 @@ from io import BytesIO
 import warnings
 warnings.filterwarnings('ignore')
 
-from pybeme.beme_experiment import load_experiment_results, extract_dataframe, filter_problem_settings, save_individual_json
+from pybeme.beme_experiment import load_experiment_results, save_simulation_settings
 from pybeme.reference_set import naive_pareto_front
 
 import wntr 
@@ -28,7 +28,7 @@ exps_names = [d for d in os.listdir('../data') if os.path.isdir(os.path.join('..
 # print(exps_names)
 
 # List of the experiments to always remove
-exps2rem=["bemeopt__nsga2__hanoi_fbiobj", "bemeopt__nsga2__anytown_opers_f1__exp01"]
+exps2rem=["bemeopt__nsga2__hanoi_fbiobj", "bemeopt__nsga2__anytown_opers_f1__exp01", "bemeopt__nsga2__anytown_mixed_f1__exp01"]
 exps_names=[expname for expname in exps_names if expname not in exps2rem] 
 exps_names.sort()
 
@@ -37,8 +37,9 @@ experiments={}
 for expname in exps_names:
     try:
         experiments[expname] = load_experiment_results(os.path.join('../data', expname, 'output', expname+'__exp.json'))
-    except:
-        print('Error loading experiment: ', expname)
+    except Exception as e:
+        print('Error loading experiment:', expname)
+        print('Exception:', e)
         continue
 
 exps_shortnames= {
@@ -163,19 +164,13 @@ def update_sim(expname, individual_idx):
         return "", go.Figure(), go.Figure()
 
     beme_folder='../'
+
+    individual_id = save_simulation_settings(os.path.join(experiments[expname]['folder'], 'bemeopt__settings.json'), 
+                                             experiments[expname], 
+                                             individual_idx)
     
-    exp=experiments[expname]
-    
-    all_individuals = [ind for island in exp['archipelago']['islands'] for ind in island['generations'][-1]['individuals'] ]
-
-    filter_problem_settings(os.path.join(exp['folder'], 'bemeopt__settings.json'),
-                            folder=os.path.abspath(exp['folder']))
-
-    individual_id = all_individuals[individual_idx]['id']
-    save_individual_json(all_individuals[individual_idx])
-
     # run the simulation of beme to save the inp file from shell
-    command=f'{beme_folder}build-vs-code/cli/beme-sim .tmp/bemesim__settings.json .tmp/bemesim__{individual_id}__dv.json --saveinp'
+    command=f'{beme_folder}build-vs-code/cli/beme-sim .tmp/bemesim__{individual_id}__settings.json --saveinp'
     subprocess.run(command, shell=True, check=True)
 
     subprocess.run('mv *.inp .tmp/', shell=True, check=True)
