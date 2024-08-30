@@ -112,7 +112,7 @@ const std::string __specs = "Specializations";
 const std::string __rand_starts = "Random starts"; 
 
 //--- Part 4 metadata ---
-const std::string __version = "Version";
+const std::string __version = "Bemelib version";
 
 } /* namespace label */
 
