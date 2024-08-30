@@ -54,6 +54,11 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
         print(f"Results of experiment {experiment_name} loaded successfully.")
 
     experiment_results['name'] = experiment_name
+    # However I have a relative path to were I am runnign the script, so I need to join it before saving it
+    experiment_folder = os.path.realpath(experiment_folder)
+    if experiment_folder.startswith(os.path.expanduser("~")):
+        experiment_folder = experiment_folder.replace(os.path.expanduser("~"), "~", 1)
+
     experiment_results['folder'] = experiment_folder
 
     return experiment_results
@@ -116,15 +121,15 @@ def save_simulation_settings(opt_settings_file, exp, individual_idx, save_in_fol
 
     # First load the settings from the optimisation settings file (for the user defined problem)
     # Second use the results of the exp and the bemelib version
-    with open(opt_settings_file, 'r') as file:
+    with open(os.path.expanduser(opt_settings_file), 'r') as file:
         opt_sett = json.load(file)
 
     all_individuals = [ind for island in exp['archipelago']['islands'] for ind in island['generations'][-1]['individuals'] ]
 
     individual = all_individuals[individual_idx]
     bemelib_version = "v24.08.0"
-    if 'bemelib-version' in exp:
-        bemelib_version = exp['bemelib-version']
+    if 'bemelib-version' in exp['software']:
+        bemelib_version = exp['software']['bemelib-version']
     
     udp_sett = opt_sett['Typical configuration']['UDP']
     # TODO: based on the island of the individual, the UDP settings could be slightly different
@@ -138,14 +143,14 @@ def save_simulation_settings(opt_settings_file, exp, individual_idx, save_in_fol
         "bemelib-version": bemelib_version,
         "UDP": udp_sett,
         "lookup-paths": [
-            exp['folder']
+            os.path.expanduser(exp['folder'])
         ]
     }    
-    
-    with open(f'{save_in_folder}/bemesim__{individual['id']}__settings.json', 'w') as file:
+    id = simu_sett['id']
+    with open(f'{save_in_folder}/bemesim__{id}__settings.json', 'w') as file:
         json.dump(simu_sett, file)
 
-    return simu_sett['id']
+    return id
 
 if __name__ == "__main__":
     if len(os.sys.argv) > 1:

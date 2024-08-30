@@ -153,6 +153,10 @@ Simulation parse(int argc, char *argv[]) {
         json j = json::parse(file_content);
 
         // 1.3.1 Optional keys that may change the behavior of the simulation
+        if (j.contains(bevarmejo::to_kebab_case(label::__paths))) {
+            j[label::__paths] = j[bevarmejo::to_kebab_case(label::__paths)];
+            j.erase(bevarmejo::to_kebab_case(label::__paths));
+        }
         if (j.contains(label::__paths)) {
             for (const auto& path : j[label::__paths]) {
                 // Check that is actually a string and an existing directory
@@ -166,8 +170,10 @@ Simulation parse(int argc, char *argv[]) {
             }
         }
         // it could be for a old version of a library
-        if (j.contains(bevarmejo::to_kebab_case(label::__version)) )
+        if (j.contains(bevarmejo::to_kebab_case(label::__version)) ) {
             j[label::__version] = j[bevarmejo::to_kebab_case(label::__version)];
+            j.erase(bevarmejo::to_kebab_case(label::__version));
+        }
         
         if (j.contains(label::__version)) {
             auto ud_version = j[label::__version].get<std::string>();
@@ -237,7 +243,7 @@ Simulation parse(int argc, char *argv[]) {
     // 3. Check the flags
     // 3.1 save inp file
     simu.save_inp = false;
-    for (int i = 3; i < argc; ++i) {
+    for (int i = 2; i < argc; ++i) {
         if (std::string(argv[i]) == "--saveinp") {
             simu.save_inp = true;
         }
