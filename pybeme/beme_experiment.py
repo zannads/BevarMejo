@@ -103,23 +103,49 @@ def extract_dataframe(experiment_results: dict) -> pd.DataFrame:
     # Concatenate all the island dataframes into a single dataframe
     return pd.concat(island_dataframes, keys=island_names, names=['island'])
 
-def filter_problem_settings(settings_file, folder=""):
-    with open(settings_file, 'r') as file:
-        settings = json.load(file)
+# Create a Simulation Settings file for beme-sim
+def save_simulation_settings(opt_settings_file, exp, individual_idx, save_in_folder =".tmp") -> str:
+    # I need to create a file with:
+    # - the individual dv
+    # - the individual fv (optional)
+    # - the individual id (optional)
+    # - print message (optional)
+    # - version of bemelib used (optional)
+    # - user defined problem settings
+    # - lookup paths (optional)
 
-    with open(f'.tmp/bemesim__settings.json', 'w') as file:
-        sett2write = settings['Typical configuration']['UDP']
-        if len(folder)>0:
-            sett2write['Lookup paths']=folder
-        json.dump(settings['Typical configuration']['UDP'], file)
+    # First load the settings from the optimisation settings file (for the user defined problem)
+    # Second use the results of the exp and the bemelib version
+    with open(opt_settings_file, 'r') as file:
+        opt_sett = json.load(file)
+
+    all_individuals = [ind for island in exp['archipelago']['islands'] for ind in island['generations'][-1]['individuals'] ]
+
+    individual = all_individuals[individual_idx]
+    bemelib_version = "v24.08.0"
+    if 'bemelib-version' in exp:
+        bemelib_version = exp['bemelib-version']
     
-# Create a file with the individual that you want to save
-def save_individual_json(individual):
-    id = individual['id']
-    with open(f'.tmp/bemesim__{id}__dv.json', 'w') as file:
-        individual["Print"]="" # add this to avoid error 
-        json.dump(individual, file)
+    udp_sett = opt_sett['Typical configuration']['UDP']
+    # TODO: based on the island of the individual, the UDP settings could be slightly different
+    # for example. different islands, were run with different water demand profiles
 
+    simu_sett= {
+        "decision-vector": individual['decision-vector'],
+        "fitness-vector": individual['fitness-vector'],
+        "id": individual['id'],
+        "print": "",
+        "bemelib-version": bemelib_version,
+        "UDP": udp_sett,
+        "lookup-paths": [
+            exp['folder']
+        ]
+    }    
+    
+    with open(f'{save_in_folder}/bemesim__{individual['id']}__settings.json', 'w') as file:
+        json.dump(simu_sett, file)
+
+    return simu_sett['id']
 
 if __name__ == "__main__":
     if len(os.sys.argv) > 1:
