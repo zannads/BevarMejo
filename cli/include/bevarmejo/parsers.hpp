@@ -32,22 +32,24 @@ struct ExperimentSettings {
 
 namespace sim {
 struct Simulation {
-    // pagmo::problem containing the UDP loaded from the settings file
+    // The full path to the settings file
+    std::filesystem::path settings_file;
+    // Decision variables to assign the problem (mandatory input)
+    std::vector<double> dvs;
+    // Fitness of the decision variables (optional input, defaults to nothing, used to check the results)
+    std::vector<double> fvs;
+    // ID of the decision vector to be used (optional input, defaults to 0, used to print in stdout)
+    unsigned long long id;
+    // Additional print out information after the simulation (optional input, defaults to nothing)
+    std::string extra_message;
+    // Version requested for the simulation (optional input, defaults to last)
+    std::string version;
+    // pagmo::problem containing the UDP loaded from the settings file (mandatory input)
     pagmo::problem p;
     // The folder where the experiment is stored or going to be saved
     std::filesystem::path folder;
-    // The full path to the settings file
-    std::filesystem::path settings_file;
     // Additional lookup paths for the internal files
     std::vector<std::filesystem::path> lookup_paths;
-    // Decision variables to assign the problem
-    std::vector<double> dvs;
-    // The full path to the decision variables file
-    std::filesystem::path dv_file;
-    // ID of the decision vector to be used
-    unsigned long long id;
-    // Additional print out information after the simulation
-    std::string extra_message;
     // Starting time of the simulation
     std::chrono::high_resolution_clock::time_point start;
     // Ending time of the simulation

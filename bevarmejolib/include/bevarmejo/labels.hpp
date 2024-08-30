@@ -111,6 +111,9 @@ const std::string __specs = "Specializations";
 // times with random seeds.
 const std::string __rand_starts = "Random starts"; 
 
+//--- Part 4 metadata ---
+const std::string __version = "Version";
+
 } /* namespace label */
 
 // convert any STL string to camel case
