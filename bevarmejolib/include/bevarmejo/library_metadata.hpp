@@ -7,6 +7,7 @@
 
 namespace bevarmejo {
 
+namespace detail {
 constexpr const char* version_str = "v24.08.0";
 
 constexpr unsigned int version_year = 2024;
@@ -91,26 +92,41 @@ struct Version {
 
 constexpr unsigned int version = Version::numeric(version_year, version_month, version_release);
 
+} // namespace detail
+
 class VersionManager {
 public:
 
-    static VersionManager& instance() {
-        static VersionManager instance;
-        return instance;
+    static VersionManager& user() {
+        static VersionManager user_requested_version;
+        return user_requested_version;
+    }
+
+    static const VersionManager& library() {
+        static const VersionManager library_version;
+        return library_version;
     }
 
     void set( const std::string &version ) {
-        version_ = Version::parse(version);
+        version_ = detail::Version::parse(version);
     }
 
-    Version version() {
+    detail::Version version() const {
         return version_;
     }
 
-private:
-    Version version_; // User requested version
+    static detail::Version v(const unsigned int year, const unsigned int month, const unsigned int release) {
+        return detail::Version{year, month, release};
+    }
 
-    VersionManager() : version_{version_year, version_month, version_release} {}
+    static detail::Version v(const std::string &version_str) {
+        return detail::Version::parse(version_str);
+    }
+
+private:
+    detail::Version version_; // Just hold the version, either for the static library or the static user requested version
+
+    VersionManager() : version_{detail::version_year, detail::version_month, detail::version_release} {}
 
     // Disable copy and move constructor and assignment operator
     VersionManager(const VersionManager&) = delete;

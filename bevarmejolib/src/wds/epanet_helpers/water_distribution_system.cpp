@@ -87,7 +87,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
 
         // 1.3 Load analysis options
         // TODO: this->load_EN_analysis_options(ph_);
-        if ( VersionManager::instance().version() < Version{2024,4,0} ) 
+        if ( VersionManager::user().version() < VersionManager::v(2024,4,0) ) 
             m__config_options.save_all_hsteps = false;
         // else m__config_options.save_all_hsteps = true;
 

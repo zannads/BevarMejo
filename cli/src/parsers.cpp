@@ -177,7 +177,7 @@ Simulation parse(int argc, char *argv[]) {
         
         if (j.contains(label::__version)) {
             auto ud_version = j[label::__version].get<std::string>();
-            VersionManager::instance().set(ud_version);
+            VersionManager::user().set(ud_version);
         }
 
         // 1.3.2 mandatory keys first: dv, udp
