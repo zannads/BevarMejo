@@ -124,7 +124,7 @@ void TimeSeries::commit(time_t time__s) {
     if (time__s > m__gto.duration__s())
         throw std::invalid_argument("TimeSeries::commit: Can not add time steps greater than the duration.");
 
-    if (time__s == m__time_steps.back())
+    if (time__s == m__time_steps.back() || time__s == m__gto.duration__s())
         return; // No need to commit anything
 
     if (time__s < m__time_steps.back())
