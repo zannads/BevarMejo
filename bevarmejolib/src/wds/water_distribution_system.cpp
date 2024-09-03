@@ -293,6 +293,7 @@ void WaterDistributionSystem::run_hydraulics() const{
     
     do {
         errorcode = EN_runH(ph_, &t);
+
         if (errorcode >= 100) {
             solution_has_failed = true;
             break;
@@ -317,8 +318,8 @@ void WaterDistributionSystem::run_hydraulics() const{
 
     } while (delta_t > 0);
 
-    errorcode = EN_closeH(ph_);
-    assert(errorcode < 100);
+    int errorcode2 = EN_closeH(ph_);
+    assert(errorcode2 < 100);
 
     if (solution_has_failed)
         throw std::runtime_error("Hydraulic solution failed.");

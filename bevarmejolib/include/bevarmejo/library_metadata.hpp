@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <iostream>
+#include <iomanip>
+#include <stdexcept>
 #include <string>
 #include <sstream>
 #include <tuple>
@@ -8,39 +10,55 @@
 namespace bevarmejo {
 
 namespace detail {
-constexpr const char* version_str = "v24.08.0";
 
 constexpr unsigned int version_year = 2024;
-constexpr unsigned int version_month = 8;
+constexpr unsigned int version_month = 9;
 constexpr unsigned int version_release = 0;
 
-struct Version {
-    unsigned int year;
-    unsigned int month;
-    unsigned int release;
+class Version {
+
+private:
+    unsigned int m_year;
+    unsigned int m_month;
+    unsigned int m_release;
+
+public:
+    Version() : m_year{version_year}, m_month{version_month}, m_release{version_release} {}
+    Version(unsigned int year, unsigned int month, unsigned int release) :
+        m_year{year}, m_month{month}, m_release{release}
+    {
+        if (year < 2023 || year > version_year)
+            throw std::invalid_argument("Year must be between 2023 and " + std::to_string(version_year));
+        
+        if (month < 1 || month > 12 || (year == version_year && month > version_month) || (year == 2023 && month < 6))
+            throw std::invalid_argument("Month must be between 1 and 12");
+
+        if (release < 0 || release > 99 || (year == version_year && month == version_month && release > version_release))
+            throw std::invalid_argument("Release must be between 0 and 99");
+    }
 
     bool operator<(const Version& other) const {
-        return std::tie(year, month, release) < std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) < std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator==(const Version& other) const {
-        return std::tie(year, month, release) == std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) == std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator>(const Version& other) const {
-        return std::tie(year, month, release) > std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) > std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator<=(const Version& other) const {
-        return std::tie(year, month, release) <= std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) <= std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator>=(const Version& other) const {
-        return std::tie(year, month, release) >= std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) >= std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator!=(const Version& other) const {
-        return std::tie(year, month, release) != std::tie(other.year, other.month, other.release);
+        return std::tie(m_year, m_month, m_release) != std::tie(other.m_year, other.m_month, other.m_release);
     }
 
     bool operator<(const std::string& other) const {
@@ -70,27 +88,41 @@ struct Version {
     static Version parse( const std::string &version_str ) {
         std::stringstream ss(version_str);
         std::string token;
-        Version version;
 
         // Skip the 'v' at the beginning
         std::getline(ss, token, 'v');
 
         std::getline(ss, token, '.');
-        version.year = std::stoi(token) +2000;
+        auto year = std::stoi(token) +2000;
         std::getline(ss, token, '.');
-        version.month = std::stoi(token);
+        auto month = std::stoi(token);
         std::getline(ss, token, '.');
-        version.release = std::stoi(token);
+        auto release = std::stoi(token);
 
-        return version;
+        return Version(year, month, release);
     }
 
     static constexpr unsigned int numeric( const unsigned int year, const unsigned int month, const unsigned int release ) {
         return (year-2000) * 10000 + month * 100 + release;
     }
+
+    static std::string str( const unsigned int year, const unsigned int month, const unsigned int release ) {
+        std::stringstream ss;
+        ss << "v" << year-2000 << '.' 
+            << std::setw(2) <<std::setfill('0') << month << '.' 
+            << release;
+        return ss.str();
+    }
+
+    std::string str() const {
+        return str(m_year, m_month, m_release);
+    }
+
 }; // struct Version
 
 constexpr unsigned int version = Version::numeric(version_year, version_month, version_release);
+// constexpr const char* version_str = "v24.09.0";
+static const std::string version_str = Version::str(version_year, version_month, version_release);
 
 } // namespace detail
 

@@ -23,6 +23,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/labels.hpp"
+#include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/pagmo_helpers/udc_help.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
@@ -130,6 +131,8 @@ void Experiment::save_outcome()
 
     json jsys;
     // example machine, OS etc ... 
+    json jsoft;
+    jsoft[to_kebab_case(label::__beme_version)] = VersionManager::library().version().str();
 
     json jarchipelago; 
     {
@@ -152,7 +155,8 @@ void Experiment::save_outcome()
     // 3. Save the file
     json jout = {
         {to_kebab_case(label::__system), jsys},
-        {to_kebab_case(label::__archi), jarchipelago}
+        {to_kebab_case(label::__archi), jarchipelago},
+        {to_kebab_case(label::__software), jsoft}
     };
     ofs << jout.dump(4);
     ofs.close();

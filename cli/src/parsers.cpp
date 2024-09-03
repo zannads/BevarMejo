@@ -170,13 +170,13 @@ Simulation parse(int argc, char *argv[]) {
             }
         }
         // it could be for a old version of a library
-        if (j.contains(bevarmejo::to_kebab_case(label::__version)) ) {
-            j[label::__version] = j[bevarmejo::to_kebab_case(label::__version)];
-            j.erase(bevarmejo::to_kebab_case(label::__version));
+        if (j.contains(bevarmejo::to_kebab_case(label::__beme_version)) ) {
+            j[label::__beme_version] = j[bevarmejo::to_kebab_case(label::__beme_version)];
+            j.erase(bevarmejo::to_kebab_case(label::__beme_version));
         }
         
-        if (j.contains(label::__version)) {
-            auto ud_version = j[label::__version].get<std::string>();
+        if (j.contains(label::__beme_version)) {
+            auto ud_version = j[label::__beme_version].get<std::string>();
             VersionManager::user().set(ud_version);
         }
 
