@@ -48,43 +48,12 @@ bool TimeSeries::is_constant() const {
 }
 
 TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto) : 
-    m__gto(a_gto), 
-    m__time_steps({0l}) 
-{
-    check_valid();
-}
+    TimeSeries(a_gto, TimeSteps({0l})) 
+{ }
 
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions &a_gto, std::initializer_list<time_t> ilist) :
-    m__gto(a_gto),
-    m__time_steps(ilist) 
-{
-    check_valid();
-}
-
-template <typename... Args>
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions &a_gto, Args &&...args) : 
-    m__gto(a_gto),
-    m__time_steps(std::forward<Args>(args)...)
-{
-    check_valid();
-}
-
-TimeSeries& TimeSeries::operator= (const TimeSeries& other) {
-    if (this != &other) {
-        // m__gto = other.m__gto; // const reference cannot be assigned
-        m__time_steps = other.m__time_steps;
-        check_valid();
-    }
-    return *this;
-}
-
-TimeSeries& TimeSeries::operator= (TimeSeries&& other) noexcept {
-    if (this != &other) {
-        // m__gto = std::move(other.m__gto); // const reference cannot be assigned
-        m__time_steps = std::move(other.m__time_steps);
-        check_valid();
-    }
-    return *this;
+TimeSeries::~TimeSeries() {
+    // you have to de-register from the GTO
+    m__gto.remove_time_series(this);
 }
 
 TimeSeries::size_type TimeSeries::not_found() const noexcept { return this->m__time_steps.size() + 1; }
@@ -179,15 +148,11 @@ void TimeSeries::shrink_to_duration() {
         return;
     }
     
-    // If there is a time step equal to the duration, I need to keep it too.
-    if (m__time_steps[pos] == m__gto.duration__s())
-        ++pos;
+    if (pos == m__time_steps.size()) // The duration is greater than the last time step.
+        return;
 
-    if (pos < m__time_steps.size())
-        m__time_steps.resize(pos);
-
-    // If pos == m__time_steps.size(), it means that the duration is bigger than the last time step.
-    // In this case, I do nothing.
+    assert(pos > 0 && pos < m__time_steps.size() && "Shrink to duration is not shrinking.");
+    m__time_steps.resize(pos); 
 }
 
 void TimeSeries::swap_time_steps(TimeSeries& other) noexcept { m__time_steps.swap(other.m__time_steps); }
@@ -199,15 +164,9 @@ void TimeSeries::swap_time_steps(TimeSeries& other) noexcept { m__time_steps.swa
 /*----------------------------------------------------------------------------*/
 TimeSeries::size_type TimeSeries::count(time_t time__s) const { return find_pos(time__s) != not_found() ? 1 : 0; }
 
-TimeSeries::iterator TimeSeries::find(time_t time__s) {
-    size_type pos = find_pos(time__s);
-    return iterator(this, pos);
-}
+TimeSeries::iterator TimeSeries::find(time_t time__s) { return iterator(this, find_pos(time__s)); }
 
-TimeSeries::const_iterator TimeSeries::find(time_t time__s) const {
-    size_type pos = find_pos(time__s);
-    return const_iterator(this, pos);
-}
+TimeSeries::const_iterator TimeSeries::find(time_t time__s) const { return const_iterator(this, find_pos(time__s)); }
 
 TimeSeries::size_type TimeSeries::find_pos(time_t time__s) const {
 

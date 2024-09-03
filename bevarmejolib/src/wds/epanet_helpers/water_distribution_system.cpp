@@ -36,7 +36,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
     _subnetworks_(),
     _groups_(),
     m__config_options(),
-    m__times(m__config_options.times.global)
+    m__times(*m__config_options.times.global)
     {
         assert(!inp_file.empty());
 
@@ -72,14 +72,13 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         this->load_EN_time_settings(ph_);
 
         // 1.2 Allocate space for the TimeSeries objects
-        // Since I loaded the time options for simulation and the pattern, I can
-        // already create the necessary TimeSeries objects.
-        // Constant object has already been created in the constructor (see m__times)
-        aux::time_t currt= m__config_options.times.pattern.shift_start_time__s;
-        while (currt < m__config_options.times.global.duration__s()) {
-            m__times.EN_pattern.commit(currt);
-            currt += m__config_options.times.pattern.timestep__s;
+        aux::time_t curr_t= m__config_options.times.pattern.shift_start_time__s;
+        aux::TimeSteps time_steps;
+        while (curr_t < m__config_options.times.global->duration__s()) {
+            time_steps.push_back(curr_t);
+            curr_t += m__config_options.times.pattern.timestep__s;
         }
+        m__times.EN_pattern= m__config_options.times.global->create_time_series(time_steps);
 
         // The result object has already been created in the constructor (see m__times)
         // BUT, it will be the hydraulic solver that allocates the memory for the results.
@@ -111,7 +110,7 @@ void WaterDistributionSystem::load_EN_time_settings(EN_Project ph) {
     aux::time_t a_time= 0l;
     int errorcode= EN_gettimeparam(ph, EN_DURATION, &a_time);
     assert(errorcode < 100);
-    m__config_options.times.global.duration__s(a_time);
+    m__config_options.times.global->duration__s(a_time);
 
     errorcode= EN_gettimeparam(ph, EN_STARTTIME, &a_time);
     assert(errorcode < 100);

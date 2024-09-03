@@ -55,7 +55,7 @@ set(WDS_AUX
 
 set(WDS_HELPERS
         "${WDS_INC_ROOT}/epanet_helpers/en_help.hpp"
-        "${WDS_INC_ROOT}/epanet_helpers/en_time_options.hpp"
+        "${WDS_INC_ROOT}/epanet_helpers/en_time_options.hpp" "${WDS_SRC_ROOT}/epanet_helpers/en_time_options.cpp"
 )
 
 set(HELPERS     
@@ -77,6 +77,7 @@ add_library(bemelib
         ${WDS_LINKS}
         ${WDS_AUX}
         ${WDS_DATAS}
+        ${WDS_HELPERS}
         ${HELPERS}
 )
             
@@ -90,11 +91,12 @@ target_include_directories(bemelib PUBLIC
 )
 
 target_include_directories(bemelib PRIVATE
-                            "include/bevarmejo"
-                            "include/bevarmejo/epanet_helpers"
-                            "include/bevarmejo/pagmo_helpers"
-                            "include/bevarmejo/pagmo_helpers/algorithms"
-                            "include/bevarmejo/wds"
-                            "include/bevarmejo/wds/elements"
-                            "include/bevarmejo/wds/auxiliary"
+                        "include/bevarmejo"
+                        "include/bevarmejo/epanet_helpers"
+                        "include/bevarmejo/pagmo_helpers"
+                        "include/bevarmejo/pagmo_helpers/algorithms"
+                        "include/bevarmejo/wds"
+                        "include/bevarmejo/wds/elements"
+                        "include/bevarmejo/wds/auxiliary"
+                        "include/bevarmejo/wds/epanet_helpers"
 )

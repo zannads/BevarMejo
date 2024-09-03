@@ -1,14 +1,10 @@
-#ifndef BEVARMEJOLIB__TIME_SERIES_HPP
-#define BEVARMEJOLIB__TIME_SERIES_HPP
+#pragma once
 
-#include <cassert>           // assert
-#include <cstddef>           // std::size_t, std::ptrdiff_t
-#include <initializer_list>  // std::initializer_list
-#include <iterator>          // std::random_access_iterator_tag
-#include <memory>            // std::shared_ptr
-#include <stdexcept>         // std::out_of_range
-#include <utility>           // std::move
-#include <vector>            // std::vector
+#include <cassert>
+#include <cstddef>
+#include <iterator>
+#include <utility>
+#include <vector>
 
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
@@ -55,19 +51,22 @@ public:
 
     TimeSeries( const epanet::GlobalTimeOptions& a_gto );
 
-    TimeSeries( const epanet::GlobalTimeOptions& a_gto, std::initializer_list<time_t> ilist );
-
     // Variadic constructor
     template <typename... Args>
-    TimeSeries( const epanet::GlobalTimeOptions& a_gto, Args&&... args );
+    TimeSeries( const epanet::GlobalTimeOptions& a_gto, Args&&... args ) : 
+        m__gto(a_gto),
+        m__time_steps(std::forward<Args>(args)...)
+    {
+        check_valid();
+    }
 
-    TimeSeries(const TimeSeries& other) = default;
-    TimeSeries(TimeSeries&& other) noexcept = default;
+    TimeSeries(const TimeSeries& other) = delete;
+    TimeSeries(TimeSeries&& other) noexcept = delete;
 
-    TimeSeries& operator=(const TimeSeries& other);
-    TimeSeries& operator=(TimeSeries&& other) noexcept;
+    TimeSeries& operator=(const TimeSeries& other) = delete;
+    TimeSeries& operator=(TimeSeries&& other) noexcept = delete;
 
-    ~TimeSeries() = default;
+    ~TimeSeries();
 
 /*--- Getters and setters ---*/
 public:
@@ -442,5 +441,3 @@ typename TimeSeries::ReverseIterator<TS>& TimeSeries::ReverseIterator<TS>::opera
 } // namespace aux
 } // namespace wds
 } // namespace bevarmejo
-
-#endif // BEVARMEJOLIB__TIME_SERIES_HPP

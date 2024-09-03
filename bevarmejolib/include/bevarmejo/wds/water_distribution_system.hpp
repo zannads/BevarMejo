@@ -99,7 +99,7 @@ public:
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
     using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
-    using TimeSeriesMap= std::unordered_map<std::string, aux::TimeSeries>; 
+    using TimeSeriesMap= std::unordered_map<std::string, std::shared_ptr<aux::TimeSeries>>; 
 
 protected:
     // Path to the inp file from which the project will be uploaded.
@@ -137,24 +137,24 @@ protected:
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
         struct TimeOptions {
-            epanet::GlobalTimeOptions global;
+            std::unique_ptr<epanet::GlobalTimeOptions> global;
             epanet::PatternTimeOptions pattern;
+
+            TimeOptions();
+            TimeOptions(const TimeOptions& other);
+            TimeOptions& operator=(const TimeOptions& other);
+            TimeOptions(TimeOptions&& other) noexcept;
+            TimeOptions& operator=(TimeOptions&& other) noexcept;
         } times;
     } m__config_options;
 
     // Keep the relevant times here:
     struct RelevantTimes {
-        aux::TimeSeries constant;
-        aux::TimeSeries EN_pattern;
-        mutable aux::TimeSeries results;
+        std::unique_ptr<const aux::TimeSeries> EN_pattern;
+        std::unique_ptr<aux::TimeSeries> results;
         TimeSeriesMap ud_time_series;
 
-        RelevantTimes() = delete;
-        RelevantTimes(const epanet::GlobalTimeOptions& gto) :
-            constant(gto),
-            EN_pattern(gto),
-            results(gto),
-            ud_time_series() {}
+        RelevantTimes(const epanet::GlobalTimeOptions& gto);
     };
     RelevantTimes m__times;
 
