@@ -65,7 +65,7 @@ class NetworkElement : public Element {
 
         /*---  Results   ---*/
         const ResultsMap& results() const { return m__ud_results; }
-        void clear_results();
+        virtual void clear_results();
 
     /*--- Pure virtual methods ---*/
     public:

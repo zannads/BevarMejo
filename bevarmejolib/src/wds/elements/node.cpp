@@ -151,5 +151,12 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
     m__pressure.commit(t, val);
 }
 
+void Node::clear_results() {
+    inherited::clear_results();
+
+    m__head.clear();
+    m__pressure.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo

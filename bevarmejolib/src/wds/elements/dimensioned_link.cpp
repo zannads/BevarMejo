@@ -141,5 +141,11 @@ void DimensionedLink::retrieve_results(EN_Project ph, long t) {
     m__velocity.commit(t, val);
 }
 
+void DimensionedLink::clear_results() {
+    inherited::clear_results();
+
+    m__velocity.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo

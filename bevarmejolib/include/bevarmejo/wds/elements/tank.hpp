@@ -124,6 +124,7 @@ public:
     const unsigned int element_type() const override { return ELEMENT_TANK; }
 
     /*--- Results ---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:

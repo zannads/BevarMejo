@@ -86,6 +86,7 @@ public:
     /*--- Properties ---*/
     const std::string& element_name() const override {return LNAME_JUNCTION;}
     const unsigned int element_type() const override {return ELEMENT_JUNCTION;}
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs ---*/
 public:

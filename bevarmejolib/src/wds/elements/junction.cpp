@@ -172,5 +172,13 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     m__consumption.commit(t, d_demand-d_dem_deficit);
 }
 
+void Junction::clear_results() {
+    inherited::clear_results();
+
+    m__demand.clear();
+    m__consumption.clear();
+    m__undelivered_demand.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo

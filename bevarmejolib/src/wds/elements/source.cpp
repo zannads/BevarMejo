@@ -73,5 +73,12 @@ void Source::retrieve_results(EN_Project ph, long t) {
     m__source_elevation.commit(t, val);
 }
 
+void Source::clear_results() {
+    inherited::clear_results();
+
+    m__inflow.clear();
+    m__source_elevation.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo

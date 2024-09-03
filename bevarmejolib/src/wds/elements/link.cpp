@@ -125,5 +125,11 @@ void Link::retrieve_results(EN_Project ph, long t) {
     m__flow.commit(t, d_flow);
 }
 
+void Link::clear_results() {
+    inherited::clear_results();
+
+    m__flow.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo

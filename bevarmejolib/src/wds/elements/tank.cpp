@@ -217,5 +217,12 @@ void Tank::retrieve_results(EN_Project ph, long t) {
     m__volume.commit(t, val);
 }
 
+void Tank::clear_results() {
+    inherited::clear_results();
+
+    m__level.clear();
+    m__volume.clear();
+}
+
 } // namespace wds
 } // namespace bevarmejo
