@@ -137,7 +137,7 @@ protected:
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
         struct TimeOptions {
-            std::unique_ptr<epanet::GlobalTimeOptions> global;
+            std::unique_ptr<aux::GlobalTimeOptions> global;
             epanet::PatternTimeOptions pattern;
 
             TimeOptions();
@@ -154,7 +154,7 @@ protected:
         std::unique_ptr<aux::TimeSeries> results;
         TimeSeriesMap ud_time_series;
 
-        RelevantTimes(const epanet::GlobalTimeOptions& gto);
+        RelevantTimes(const aux::GlobalTimeOptions& gto);
     };
     RelevantTimes m__times;
 

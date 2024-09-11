@@ -257,20 +257,20 @@ public:
     // When the time series is a constant, you can alo access the value with some special methods:
     reference value() {
         check_access();
-        if (m__time_series.is_constant())
+        if (m__time_series.size()==1)
             return m__values.front();
         
         throw std::logic_error("QuantitySeries::value: Time series is not constant.");
     }
     const_reference value() const {
         check_access();
-        if (m__time_series.is_constant())
+        if (m__time_series.size()==1)
             return m__values.front();
         
         throw std::logic_error("QuantitySeries::value: Time series is not constant.");
     }
     void value(const_reference a_value) { 
-        if (m__time_series.is_constant()) {
+        if (m__time_series.size()==1) {
             if (m__values.empty())
                 m__values.push_back(a_value);
             else

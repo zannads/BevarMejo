@@ -110,7 +110,7 @@ TimeSeries::size_type TimeSeries::inner_size() const noexcept { return m__time_s
 
 // The true size is defined as the number of time steps less or equal than the duration plus one for zero time.
 // It is also the number of values that a QuantitySeries will need to be valid.
-TimeSeries::size_type TimeSeries::size() const { 
+TimeSeries::size_type TimeSeries::size() const noexcept { 
     // Find the index of the first time step greater than the duration
     size_type idx = 0;
     while (idx < m__time_steps.size() && m__time_steps[idx] <= m__gto.duration__s())
@@ -135,31 +135,21 @@ TimeSeries::size_type TimeSeries::capacity() const noexcept { return m__time_ste
 
 /*----------------------------------------------------------------------------*/
 
-void TimeSeries::clear() { m__time_steps.clear(); }
+void TimeSeries::clear() noexcept { m__time_steps.clear(); }
 
-void TimeSeries::reset() { clear(); }
+void TimeSeries::reset() noexcept { clear(); }
 
 void TimeSeries::commit(time_t time__s) {
-    if (m__time_steps.empty() && time__s <= 0)
+    if ( time__s < 0 || time__s > m__gto.duration__s() )
         throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
 
-    if (time__s <= m__time_steps.back())
-        throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
+    if (m__time_steps.empty() && time__s == 0)
+        return; // No problem if you commit the zero time as the first time step. As I expect to commit the zero in every simulation.
 
-    // I can insert time steps greater than the duration, but I will print a warning.
-    // if (time__s > m__gto.duration__s())
-        // TODO: print warning
+    if (!m__time_steps.empty() && time__s <= m__time_steps.back())
+        throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
 
     m__time_steps.push_back(time__s);
-}
-
-void TimeSeries::rollback() {
-    if (!m__time_steps.empty()) { // otherwise is UB
-        m__time_steps.pop_back();
-        return;
-    }
-
-    // TODO: print warning
 }
 
 void TimeSeries::shrink_to_duration() {

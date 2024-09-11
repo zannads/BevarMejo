@@ -28,7 +28,7 @@ namespace bevarmejo {
 namespace wds {
 
 WaterDistributionSystem::ConfigOptions::TimeOptions::TimeOptions() :
-    global(std::make_unique<epanet::GlobalTimeOptions>()),
+    global(std::make_unique<aux::GlobalTimeOptions>()),
     pattern() { }
 
 WaterDistributionSystem::ConfigOptions::TimeOptions::TimeOptions(const TimeOptions &other) :
@@ -55,7 +55,7 @@ WaterDistributionSystem::ConfigOptions::TimeOptions& WaterDistributionSystem::Co
     return *this;
 }
 
-WaterDistributionSystem::RelevantTimes::RelevantTimes(const epanet::GlobalTimeOptions& gto) :
+WaterDistributionSystem::RelevantTimes::RelevantTimes(const aux::GlobalTimeOptions& gto) :
     EN_pattern(nullptr),
     results(gto.create_time_series()),
     ud_time_series() { }

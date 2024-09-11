@@ -72,7 +72,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         this->load_EN_time_settings(ph_);
 
         // 1.2 Allocate space for the TimeSeries objects
-        aux::time_t curr_t= m__config_options.times.pattern.shift_start_time__s;
+        time_t curr_t= m__config_options.times.pattern.shift_start_time__s;
         aux::TimeSteps time_steps;
         while (curr_t < m__config_options.times.global->duration__s()) {
             time_steps.push_back(curr_t);
@@ -107,7 +107,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
 
 void WaterDistributionSystem::load_EN_time_settings(EN_Project ph) {
 
-    aux::time_t a_time= 0l;
+    time_t a_time= 0l;
     int errorcode= EN_gettimeparam(ph, EN_DURATION, &a_time);
     assert(errorcode < 100);
     m__config_options.times.global->duration__s(a_time);
