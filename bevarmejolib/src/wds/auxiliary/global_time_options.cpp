@@ -5,10 +5,11 @@
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 
-#include "en_time_options.hpp"
+#include "global_time_options.hpp"
 
 namespace bevarmejo {
-namespace epanet {
+namespace wds {
+namespace aux {
 
 // Constructors 
 
@@ -86,5 +87,6 @@ void GlobalTimeOptions::notify_time_series() {
     }
 }
 
-} // namespace epanet
+} // namespace aux
+} // namespace wds
 } // namespace bevarmejo

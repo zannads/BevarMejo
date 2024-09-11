@@ -20,49 +20,39 @@ set(WDS_SRC_ROOT
         CACHE PATH "Path to the rootfolder of the WDS"
 )
 set(WDS_FILES   
-        "${WDS_INC_ROOT}/water_distribution_system.hpp" 
         "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
         "${WDS_SRC_ROOT}/epanet_helpers/water_distribution_system.cpp"
-        "${WDS_INC_ROOT}/elements_group.hpp" 
-        "${WDS_INC_ROOT}/user_defined_elements_group.hpp" "${WDS_SRC_ROOT}/user_defined_elements_group.cpp"
+        "${WDS_SRC_ROOT}/user_defined_elements_group.cpp"
 )
 
 set(WDS_BASE_ELEMENTS
-                "${WDS_INC_ROOT}/elements/element.hpp" "${WDS_SRC_ROOT}/elements/element.cpp"
-                "${WDS_INC_ROOT}/elements/network_element.hpp" "${WDS_SRC_ROOT}/elements/network_element.cpp"
+        "${WDS_SRC_ROOT}/elements/element.cpp"
+        "${WDS_SRC_ROOT}/elements/network_element.cpp"
 )
 set(WDS_NODES   
-        "${WDS_INC_ROOT}/elements/junction.hpp" "${WDS_SRC_ROOT}/elements/junction.cpp"
-        "${WDS_INC_ROOT}/elements/tank.hpp" "${WDS_SRC_ROOT}/elements/tank.cpp"
-        "${WDS_INC_ROOT}/elements/reservoir.hpp" "${WDS_SRC_ROOT}/elements/reservoir.cpp"
-        "${WDS_INC_ROOT}/elements/source.hpp" "${WDS_SRC_ROOT}/elements/source.cpp"
-        "${WDS_INC_ROOT}/elements/node.hpp" "${WDS_SRC_ROOT}/elements/node.cpp"
+        "${WDS_SRC_ROOT}/elements/junction.cpp"
+        "${WDS_SRC_ROOT}/elements/tank.cpp"
+        "${WDS_SRC_ROOT}/elements/reservoir.cpp"
+        "${WDS_SRC_ROOT}/elements/source.cpp"
+        "${WDS_SRC_ROOT}/elements/node.cpp"
 )
 set(WDS_LINKS   
-        "${WDS_INC_ROOT}/elements/pipe.hpp" "${WDS_SRC_ROOT}/elements/pipe.cpp"
-        "${WDS_INC_ROOT}/elements/dimensioned_link.hpp" "${WDS_SRC_ROOT}/elements/dimensioned_link.cpp"
-        "${WDS_INC_ROOT}/elements/link.hpp" "${WDS_SRC_ROOT}/elements/link.cpp"
-        "${WDS_INC_ROOT}/elements/pump.hpp" "${WDS_SRC_ROOT}/elements/pump.cpp"
+        "${WDS_SRC_ROOT}/elements/pipe.cpp"
+        "${WDS_SRC_ROOT}/elements/dimensioned_link.cpp"
+        "${WDS_SRC_ROOT}/elements/link.cpp"
+        "${WDS_SRC_ROOT}/elements/pump.cpp"
 )
 
 set(WDS_AUX     
-        "${WDS_INC_ROOT}/auxiliary/curve.hpp"
-        "${WDS_INC_ROOT}/auxiliary/curves.hpp" "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
-        "${WDS_INC_ROOT}/auxiliary/pattern.hpp" "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
-        "${WDS_INC_ROOT}/auxiliary/time_series.hpp" "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
-        "${WDS_INC_ROOT}/auxiliary/quantity_series.hpp" 
-)
-
-set(WDS_HELPERS
-        "${WDS_INC_ROOT}/epanet_helpers/en_help.hpp"
-        "${WDS_INC_ROOT}/epanet_helpers/en_time_options.hpp" "${WDS_SRC_ROOT}/epanet_helpers/en_time_options.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/global_time_options.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
 )
 
 set(HELPERS     
-                "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/containers_help.hpp"
-                "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
-                "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/udc_help.hpp"
-                "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp")
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
+)
 
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/io.hpp" "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io.cpp" 
@@ -77,7 +67,6 @@ add_library(bemelib
         ${WDS_LINKS}
         ${WDS_AUX}
         ${WDS_DATAS}
-        ${WDS_HELPERS}
         ${HELPERS}
 )
             

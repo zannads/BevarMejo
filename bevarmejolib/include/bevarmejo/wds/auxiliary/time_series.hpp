@@ -6,13 +6,12 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/global_time_options.hpp"
 
 namespace bevarmejo {
 namespace wds {
 namespace aux {
 
-using time_t= epanet::time_t;
 using TimeSteps= std::vector<time_t>;
 
 bool is_monotonic(const TimeSteps& time_steps);
@@ -34,26 +33,24 @@ public:
 
 /*--- Attributes ---*/
 private:
-    const epanet::GlobalTimeOptions& m__gto; // Necessary to make sure that the time steps are within the duration.
+    const GlobalTimeOptions& m__gto; // Necessary to make sure that the time steps are within the duration.
     container m__time_steps;
 
 /*--- Member methods ---*/
 public:
 
     void check_valid() const;
-
-    bool is_constant() const;
     
 /*--- Constructors ---*/
 public:
 
-    TimeSeries() = delete; // Not existing constructor because I have a const reference to the Global Time Options.
+    TimeSeries() = delete; // No default constructor because I have a const reference to the Global Time Options.
 
-    TimeSeries( const epanet::GlobalTimeOptions& a_gto );
+    TimeSeries( const GlobalTimeOptions& a_gto );
 
     // Variadic constructor
     template <typename... Args>
-    TimeSeries( const epanet::GlobalTimeOptions& a_gto, Args&&... args ) : 
+    TimeSeries( const GlobalTimeOptions& a_gto, Args&&... args ) : 
         m__gto(a_gto),
         m__time_steps(std::forward<Args>(args)...)
     {
@@ -71,7 +68,7 @@ public:
 /*--- Getters and setters ---*/
 public:
     // get Gto, you can't modify it as it is a const reference
-    const epanet::GlobalTimeOptions& gto() const { return m__gto; }
+    const GlobalTimeOptions& gto() const { return m__gto; }
 
     // No access allowed to the time steps, only through the time_t methods. But I can get a copy of the time steps.
     const container& time_steps() const { return m__time_steps; }
@@ -264,10 +261,15 @@ public:
     
     bool empty() const noexcept;
 
+    bool TimeSeries::inner_empty() const noexcept;
+
     // No simple size, because I need to add 1 to the size of the time steps. (final time)
     size_type inner_size() const noexcept;
 
-    // Length is the number of iterations that you can do on the time series.
+    size_type size() const noexcept;
+
+    // Number of iterations that you can do on the time series.
+    size_type n_time_steps() const noexcept;
     size_type length() const noexcept;
 
     size_type max_size() const noexcept;
@@ -282,7 +284,8 @@ public:
 public:
 
     // No clear, because it empties the time steps and I need at least one time step. Also is noexcept.
-    void reset();
+    void clear() noexcept;
+    void reset() noexcept;
 
     // Insert takes care automatically of the monotonicity of the time steps. It works like a insert or assign.
     // However, you can pass a position to insert the time step to be faster :)
