@@ -75,11 +75,6 @@ Problem::Problem(json settings, std::vector<std::filesystem::path> lookup_paths)
 		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
 		assert(errorcode <= 100);
 
-
-		// simulation time step to 1 hour
-		errorcode = EN_settimeparam(ph, EN_HYDSTEP, 3600);
-		assert(errorcode <= 100);
-
 		// Fix pumps' patterns: from 9 to 18 -> 3, from 19 to 8 -> 2 (Siew et al. 2016 https://link.springer.com/article/10.1007/s11269-016-1371-1)
 		for (int i = 0; i < 3; ++i) {
 			// no need to go through the pumps, I know the pattern ID

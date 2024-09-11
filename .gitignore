@@ -412,3 +412,9 @@ buildXCode/
 build-XCode/
 
 nohup.out
+data/
+data
+
+**/.tmp/
+**/tmp/
+temp*
