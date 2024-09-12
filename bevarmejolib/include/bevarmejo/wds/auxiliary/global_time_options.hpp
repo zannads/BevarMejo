@@ -18,7 +18,7 @@ namespace aux {
 // Forward declaration because we will keep track of time series create from this class
 class TimeSeries;
 
-class GlobalTimeOptions  {
+class GlobalTimes  {
 
 public:
     using container= std::unordered_map<std::string, std::unique_ptr<TimeSeries>>;
@@ -35,17 +35,17 @@ private:
     
 public:
     // Constructors
-    GlobalTimeOptions();
-    GlobalTimeOptions(time_t a_duration__s);
-    GlobalTimeOptions(time_t a_shift_start_time__s, time_t a_duration__s);
+    GlobalTimes();
+    GlobalTimes(time_t a_duration__s);
+    GlobalTimes(time_t a_shift_start_time__s, time_t a_duration__s);
 
-    GlobalTimeOptions(const GlobalTimeOptions&);
-    GlobalTimeOptions(GlobalTimeOptions&&);
-    GlobalTimeOptions& operator=(const GlobalTimeOptions&);
-    GlobalTimeOptions& operator=(GlobalTimeOptions&&);
+    GlobalTimes(const GlobalTimes&);
+    GlobalTimes(GlobalTimes&&);
+    GlobalTimes& operator=(const GlobalTimes&);
+    GlobalTimes& operator=(GlobalTimes&&);
 
     // Destructor default implementation
-    ~GlobalTimeOptions() = default;
+    ~GlobalTimes() = default;
 
 // Getters
 public:
@@ -80,7 +80,7 @@ public:
 private:
     void notify_time_series(); // When duration changes, all time series must be notified and if they are dynamic object they are shortened.
     
-}; // class GlobalTimeOptions
+}; // class GlobalTimes
 
 } // namespace aux
 } // namespace wds

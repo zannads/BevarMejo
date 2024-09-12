@@ -43,7 +43,7 @@ void TimeSeries::check_valid() const {
     // ?? how do I keep logs in this library?
 }
 
-TimeSeries::TimeSeries(const GlobalTimeOptions& a_gto) : 
+TimeSeries::TimeSeries(const GlobalTimes& a_gto) : 
     TimeSeries(a_gto, TimeSteps()) 
 { }
 

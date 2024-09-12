@@ -33,7 +33,7 @@ public:
 
 /*--- Attributes ---*/
 private:
-    const GlobalTimeOptions& m__gto; // Necessary to make sure that the time steps are within the duration.
+    const GlobalTimes& m__gto; // Necessary to make sure that the time steps are within the duration.
     container m__time_steps;
 
 /*--- Member methods ---*/
@@ -46,11 +46,11 @@ public:
 
     TimeSeries() = delete; // No default constructor because I have a const reference to the Global Time Options.
 
-    TimeSeries( const GlobalTimeOptions& a_gto );
+    TimeSeries( const GlobalTimes& a_gto );
 
     // Variadic constructor
     template <typename... Args>
-    TimeSeries( const GlobalTimeOptions& a_gto, Args&&... args ) : 
+    TimeSeries( const GlobalTimes& a_gto, Args&&... args ) : 
         m__gto(a_gto),
         m__time_steps(std::forward<Args>(args)...)
     {
@@ -68,7 +68,7 @@ public:
 /*--- Getters and setters ---*/
 public:
     // get Gto, you can't modify it as it is a const reference
-    const GlobalTimeOptions& gto() const { return m__gto; }
+    const GlobalTimes& gto() const { return m__gto; }
 
     // No access allowed to the time steps, only through the time_t methods. But I can get a copy of the time steps.
     const container& time_steps() const { return m__time_steps; }
