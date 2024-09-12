@@ -8,7 +8,7 @@
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 
-#include "global_time_options.hpp"
+#include "global_times.hpp"
 
 namespace bevarmejo {
 namespace wds {

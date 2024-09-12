@@ -2,21 +2,36 @@
 
 #include <cassert>
 #include <cstddef>
+#include <initializer_list>
 #include <iterator>
+#include <stdexcept>
 #include <utility>
 #include <vector>
-
-#include "bevarmejo/wds/auxiliary/global_time_options.hpp"
 
 namespace bevarmejo {
 namespace wds {
 namespace aux {
 
+class GlobalTimes;
+
 using TimeSteps= std::vector<time_t>;
 
 bool is_monotonic(const TimeSteps& time_steps);
 
+bool starts_after_zero(const TimeSteps& time_steps);
+
+bool ends_before_t(const TimeSteps& time_steps, time_t t);
+
 class TimeSeries {
+
+// The TimeSeries class is a sequence of time steps that are greater than 0, 
+// monotonically increasing, and can not go over the duration of the Global Time Options.
+// Zero is always the first time step, but it is not stored in the time steps. Therefore front() always returns 0.
+// The last time step is the duration of the Global Time Options, but it is not stored in the time steps. Therefore back() always returns the duration.
+// The acutal time steps are stored in a vector of time_t in a monotonic increasing order.
+// The first value of the time steps is always greater than 0, because 0 is the beginning of the time series.
+// However, the last value of the time steps can be EQUAL to the duration of the Global Time Options.
+// This is done because during the simulations, there are also results to be retrieved at the end of the simulation.
 
 /*--- Member types ---*/
 public:
@@ -34,12 +49,11 @@ public:
 /*--- Attributes ---*/
 private:
     const GlobalTimes& m__gto; // Necessary to make sure that the time steps are within the duration.
-    container m__time_steps;
+    container m__time_steps; // Actual time steps (greater than 0, monotonically increasing, and can not go over the duration).
 
-/*--- Member methods ---*/
-public:
-
-    void check_valid() const;
+/*--- Support ---*/
+private:
+    friend class GlobalTimes;
     
 /*--- Constructors ---*/
 public:
@@ -58,25 +72,21 @@ public:
     }
 
     TimeSeries(const TimeSeries& other) = delete;
-    TimeSeries(TimeSeries&& other) noexcept = delete;
-
     TimeSeries& operator=(const TimeSeries& other) = delete;
+
+    TimeSeries(TimeSeries&& other) noexcept = delete;
     TimeSeries& operator=(TimeSeries&& other) noexcept = delete;
 
-    ~TimeSeries();
+    ~TimeSeries() = default;
 
 /*--- Getters and setters ---*/
 public:
-    // get Gto, you can't modify it as it is a const reference
-    const GlobalTimes& gto() const { return m__gto; }
 
     // No access allowed to the time steps, only through the time_t methods. But I can get a copy of the time steps.
-    const container& time_steps() const { return m__time_steps; }
-
+    const container& time_steps() const;
+    
 /*--- Element access ---*/
 public:
-    size_type not_found() const noexcept;
-
     // All access, is by value, so I can't modify the time steps.
     // This is done to avoid the time steps to be modified without checking the validity of the time series.
     value_type at( size_type pos );
@@ -118,22 +128,22 @@ private:
     public:
         Iterator(TS* time_series, size_type index) : m__time_series(time_series), m__index(index) {}
 
-        value_type operator*() const;
-        pointer operator->() const;
+        value_type operator*() const { return m__time_series->at(m__index); }
+        pointer operator->() const = delete; // We only return by value.
         value_type operator[](difference_type n) const { return *(*this + n); }
 
         Iterator& operator++() {
-            assert(m__index < m__time_series->length() && "Incrementing end iterator");
+            assert(m__index < m__time_series->size() && "Incrementing end iterator");
             
-            if (m__index < m__time_series->length())
+            if (m__index < m__time_series->size())
                 ++m__index;
             return *this;
         }
         Iterator operator++(int) { 
-            assert(m__index < m__time_series->length() && "Incrementing end iterator");
+            assert(m__index < m__time_series->size() && "Incrementing end iterator");
             
             auto tmp= *this;
-            if (m__index < m__time_series->length())
+            if (m__index < m__time_series->size())
                 ++m__index;
             return tmp;
         }
@@ -153,7 +163,19 @@ private:
             return tmp;
         }
 
-        Iterator& operator+=(difference_type n);
+        Iterator& operator+=(difference_type n) {
+            assert(m__index + n <= m__time_series->size() && "Going out of bounds");
+            
+            // Overflow check
+            if (n < 0 && m__index < -n)
+                m__index = 0;
+            else {
+                size_type upb = m__time_series->size();
+                m__index = (m__index + n > upb) ? upb : m__index + n;
+            }   
+
+            return *this;
+        }
         Iterator operator+(difference_type n) const { auto tmp= *this; return tmp += n; }
         Iterator& operator-=(difference_type n) { return (*this += -n); }
         Iterator operator-(difference_type n) const { return (*this + -n); }
@@ -183,8 +205,8 @@ private:
     public:
         ReverseIterator(TS* time_series, size_type index) : m__time_series(time_series), m__index(index) {}
 
-        value_type operator*() const;
-        pointer operator->() const;
+        value_type operator*() const { return m__time_series->at(m__index-1); }
+        pointer operator->() const = delete; // We only return by value.
         value_type operator[](difference_type n) const { return *(*this + n); }
 
         ReverseIterator& operator++() {
@@ -203,22 +225,34 @@ private:
             return tmp;
         }
         ReverseIterator& operator--() {
-            assert(m__index < m__time_series->length() && "Decrementing rbegin iterator");
+            assert(m__index < m__time_series->size() && "Decrementing rbegin iterator");
 
-            if (m__index < m__time_series->length())
+            if (m__index < m__time_series->size())
                 ++m__index;
             return *this;
         }
         ReverseIterator operator--(int) {
-            assert(m__index < m__time_series->length() && "Decrementing rbegin iterator");
+            assert(m__index < m__time_series->size() && "Decrementing rbegin iterator");
 
             auto tmp= *this;
-            if (m__index < m__time_series->length())
+            if (m__index < m__time_series->size())
                 ++m__index;
             return tmp;
         }
 
-        ReverseIterator& operator+=(difference_type n);
+        ReverseIterator& operator+=(difference_type n) {
+            assert(m__index - n <= m__time_series->size() && "Going out of bounds");
+
+            // Overflow check
+            if (n>0 && m__index < n)
+                m__index = 0;
+            else {
+                size_type upb = m__time_series->size();
+                m__index = (m__index - n > upb) ? upb : m__index - n;
+            }
+
+            return *this;
+        }
         ReverseIterator operator+(difference_type n) const { auto tmp= *this; return tmp += n; }
         ReverseIterator& operator-=(difference_type n) { return (*this += -n); }
         ReverseIterator operator-(difference_type n) const { return (*this + -n); }
@@ -261,16 +295,7 @@ public:
     
     bool empty() const noexcept;
 
-    bool inner_empty() const noexcept;
-
-    // No simple size, because I need to add 1 to the size of the time steps. (final time)
-    size_type inner_size() const noexcept;
-
     size_type size() const noexcept;
-
-    // Number of iterations that you can do on the time series.
-    size_type n_time_steps() const noexcept;
-    size_type length() const noexcept;
 
     size_type max_size() const noexcept;
 
@@ -278,13 +303,22 @@ public:
 
     size_type capacity() const noexcept;
 
-    // No shrink_to_fit.
+    // shrink_to_fit is updated to shrink_to_duration because the time steps should be within the duration.
+    // Equality to duration is allowed, but greater than duration is not allowed.
+    void shrink_to_duration();
+
+    // Same as shrink_to_duration, but equal to duration is not allowed.
+    void shrink_before_duration();
+
+private:
+    
+    bool inner_empty() const noexcept;
+
+    size_type inner_size() const noexcept;
 
 /*--- Modifiers ---*/
 public:
 
-    // No clear, because it empties the time steps and I need at least one time step. Also is noexcept.
-    void clear() noexcept;
     void reset() noexcept;
 
     // Insert takes care automatically of the monotonicity of the time steps. It works like a insert or assign.
@@ -308,45 +342,50 @@ public:
 
     // Resize should be called when the duration of the gto changes. 
     // Failing to call this method after changing the duration of the GTO will result in an invalid time series.
-    void shrink_to_duration();
+    
     void resize( size_type count );
 
     // No emplace, try_emplace, emplace_hint, emplace_back as they are simple longs.
 
     // No swap, because I can't swap the GTO.
-    // but specialize: swap_time_steps
-    void swap_time_steps( TimeSeries& other ) noexcept;
 
     // No extract.
 
     // TODO: define merge and other useful operations for time series.
 
+private:
+    void inner_clear() noexcept;
+
+    void inner_swap( TimeSeries& other ) noexcept;
+
 /*--- Lookup ---*/
 public:
 
-    // No count, each time should be unique.
+    // Each time should be unique or non existing. Only duration can be repeated and return 2.
     size_type count ( time_t time__s ) const;
 
-    // Find, returns an iterator to the first time that is not less than the given time
+    // Find, returns an iterator to the instant that is exactly the given time
     iterator find( time_t time__s );
     const_iterator find( time_t time__s ) const;
 
-    // Find_pos, returns the array position to the first time that is not less than the given time
+    // Find_pos, returns the array position to the instant that is exactly the given time
     size_type find_pos( time_t time__s ) const;
 
+    // Contains, returns true if the time is in the time series.
     bool contains( time_t time__s ) const;
 
-    bool is_in_range( time_t time__s ) const; // Between front() and duration__s()
+    // Can be inserted, returns true if the time can be inserted in the time series (check for monotonicity and duration).
+    bool can_be_inserted( time_t time__s ) const;
 
     // No equal_range, each time should be unique.
 
     TimeSeries sub_series( time_t start_time__s, time_t end_time__s ) const;
 
-    // Lower_bound, returns an iterator to the first time that is not less than the given time
+    // Lower_bound, returns an iterator to the last time that is less than the given time.
     iterator lower_bound( time_t time__s );
     const_iterator lower_bound( time_t time__s ) const;
 
-    // Lower_bound_pos, returns the array position to the last time that is not greater than the given time
+    // Lower_bound_pos, returns the array position to the last time that is less than the given time
     size_type lower_bound_pos( time_t time__s ) const;
             
     // Upper_bound, returns an iterator to the first time that is greater than the given time
@@ -355,91 +394,14 @@ public:
 
     // Upper_bound_pos, returns the array position to the first time that is greater than the given time
     size_type upper_bound_pos( time_t time__s ) const;
+
+/*--- Other methods ---*/
+public:
+
+    // Check if the time series is valid.
+    void check_valid() const;
+
 };
-
-/*----------------------------------------------------------------------------*/
-
-                            /*--- Iterator ---*/
-
-/*----------------------------------------------------------------------------*/
-template <typename TS>
-typename TimeSeries::Iterator<TS>::value_type TimeSeries::Iterator<TS>::operator*() const {
-    assert(m__index < m__time_series->length() && "Dereferencing end iterator");
-
-    // Special case: index == size(), I return the end time.
-    if (m__index == m__time_series->inner_size())
-        return m__time_series->m__gto.duration__s();
-
-    // Default case: 
-    // Let dereference the end iterator be undefined behaviour in Release mode.
-    return m__time_series->m__time_steps[m__index];
-}
-
-template <typename TS>
-typename TimeSeries::Iterator<TS>::pointer TimeSeries::Iterator<TS>::operator->() const {
-    assert(m__index < m__time_series->length() && "Dereferencing end iterator");
-
-    if (m__index == m__time_series->inner_size())
-        return m__time_series->m__gto.duration__s_ptr();
-
-    return &m__time_series->m__time_steps[m__index];
-}
-
-template <typename TS>
-typename TimeSeries::Iterator<TS>& TimeSeries::Iterator<TS>::operator+=(difference_type n) {
-    assert(m__index + n <= m__time_series->length() && "Going out of bounds");
-    
-    // Overflow check
-    if (n < 0 && m__index < -n)
-        m__index = 0;
-    else {
-        size_type upb = m__time_series->length();
-        m__index = (m__index + n > upb) ? upb : m__index + n;
-    }   
-
-    return *this;
-}
-
-/*----------------------------------------------------------------------------*/
-
-                            /*--- Reverse Iterator ---*/
-
-/*----------------------------------------------------------------------------*/
-// Reverse iterator stores an iterator to the next element than the one it actually refers to.
-template <typename TS>
-typename TimeSeries::ReverseIterator<TS>::value_type TimeSeries::ReverseIterator<TS>::operator*() const {
-    assert(m__index > 0 && "Dereferencing rend iterator");
-
-    if (m__index == m__time_series->inner_size()+1)
-        return m__time_series->m__gto.duration__s();
-
-    return m__time_series->m__time_steps[m__index-1];
-}
-
-template <typename TS>
-typename TimeSeries::ReverseIterator<TS>::pointer TimeSeries::ReverseIterator<TS>::operator->() const {
-    assert(m__index > 0 && "Dereferencing rend iterator");
-
-    if (m__index == m__time_series->inner_size()+1)
-        return m__time_series->m__gto.duration__s_ptr();
-
-    return &m__time_series->m__time_steps[m__index-1];
-}
-
-template <typename TS>
-typename TimeSeries::ReverseIterator<TS>& TimeSeries::ReverseIterator<TS>::operator+=(difference_type n) {
-    assert(m__index - n <= m__time_series->length() && "Going out of bounds");
-
-    // Overflow check
-    if (n>0 && m__index < n)
-        m__index = 0;
-    else {
-        size_type upb = m__time_series->length();
-        m__index = (m__index - n > upb) ? upb : m__index - n;
-    }
-
-    return *this;
-}
 
 } // namespace aux
 } // namespace wds

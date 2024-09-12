@@ -82,17 +82,17 @@ public:
     // The quantity series is allowed to be accessed only if the values are as long as the time steps
     // or one value more (for the end time).
     bool is_accessible() const noexcept { 
-        return ((m__time_series.inner_size() == m__values.size()) ||
-                (m__time_series.inner_size()+1 == m__values.size()) );
+        return ((m__time_series.size() == m__values.size()) ||
+                (m__time_series.size()+1 == m__values.size()) );
     }
 
     void check_access() const {
-        if ((m__time_series.inner_size() != m__values.size()) &&
-            (m__time_series.inner_size()+1 != m__values.size()) ) {
+        if ((m__time_series.size() != m__values.size()) &&
+            (m__time_series.size()+1 != m__values.size()) ) {
             std::ostringstream errmessage;
             bevarmejo::io::stream_out(errmessage, 
                 "QuantitySeries::check_access: Impossible to access the values with the current state.",
-                "\n\tExpected value size to be:\n\t\t", m__time_series.inner_size(),
+                "\n\tExpected value size to be:\n\t\t", m__time_series.size(),
                 "\n\tActual value size is:\n\t\t", m__values.size()
             );
             
@@ -117,7 +117,7 @@ public:
         inherited(time_steps),
         m__values() {
             // I have faith in the TimeSeries to be always well defined
-            m__values.assign(m__time_series.inner_size(), a_value);
+            m__values.assign(m__time_series.size(), a_value);
         }
 
     QuantitySeries( const TimeSeries& time_steps, const container& values) : 
@@ -169,7 +169,7 @@ public:
         check_access();
 
         // Only special case, is full quantity series and you want the last element (Tend).
-        if (pos == m__time_series.inner_size() && m__time_series.inner_size() == m__values.size())
+        if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return {m__time_series.back(), m__values.front()};
 
         // Else let the at functions throw the exceptions.
@@ -180,7 +180,7 @@ public:
         check_access();
         
         // Only special case, is full quantity series and you want the last element (Tend).
-        if (pos == m__time_series.inner_size() && m__time_series.inner_size() == m__values.size())
+        if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return {m__time_series.back(), m__values.front()};
 
         // Else let the at functions throw the exceptions.
@@ -195,7 +195,7 @@ public:
         if (pos == m__time_series.not_found())
             throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
 
-        if (pos == m__time_series.inner_size() && m__time_series.inner_size() == m__values.size())
+        if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return m__values.front();
 
         return m__values.at(pos);
@@ -208,7 +208,7 @@ public:
         if (pos == m__time_series.not_found()) 
             throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
 
-        if (pos == m__time_series.inner_size() && m__time_series.inner_size() == m__values.size())
+        if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return m__values.front();
 
         return m__values.at(pos);
@@ -233,19 +233,19 @@ public:
     instant_type back() { 
         check_access();
 
-        if (m__time_series.inner_size() == m__values.size())
+        if (m__time_series.size() == m__values.size())
             return {m__time_series.back(), m__values.front()};
 
-        // else m__time_series.inner_size()+1 == m__values.size()
+        // else m__time_series.size()+1 == m__values.size()
         return {m__time_series.back(), m__values.back()};
     }
     const_instant_type back() const { 
         check_access();
 
-        if (m__time_series.inner_size() == m__values.size())
+        if (m__time_series.size() == m__values.size())
             return {m__time_series.back(), m__values.front()};
 
-        // else m__time_series.inner_size()+1 == m__values.size()
+        // else m__time_series.size()+1 == m__values.size()
         return {m__time_series.back(), m__values.back()};
     }
 
@@ -316,9 +316,9 @@ private:
         Iterator(TS* qs, size_type index) : m__qs(qs), m__index(index), __temp__({0l, T()}) { }
 
         value_type operator*() const {
-            assert(m__index < m__qs->length() && "Dereferencing the end iterator.");
+            assert(m__index < m__qs->size() && "Dereferencing the end iterator.");
 
-            if (m__index == m__qs->length())
+            if (m__index == m__qs->size())
                 return {m__qs->time_series().back(), m__qs->values().front()};
 
             return {m__qs->time_series().at(m__index), m__qs->values()[m__index]};
@@ -327,17 +327,17 @@ private:
         value_type operator[](difference_type n) const { return *(*this + n); }
 
         Iterator& operator++() { 
-            assert(m__index < m__qs->length() && "Incrementing the end iterator.");
+            assert(m__index < m__qs->size() && "Incrementing the end iterator.");
 
-            if (m__index < m__qs->length())
+            if (m__index < m__qs->size())
                 ++m__index;
             return *this;
         }
         Iterator operator++(int) {
-            assert(m__index < m__qs->length() && "Incrementing the end iterator.");
+            assert(m__index < m__qs->size() && "Incrementing the end iterator.");
 
             Iterator tmp= *this;
-            if (m__index < m__qs->length())
+            if (m__index < m__qs->size())
                 ++m__index;
             return tmp;
         }
@@ -358,13 +358,13 @@ private:
         }
 
         Iterator& operator+=(difference_type n) {
-            assert(m__index + n <= m__qs->length() && "Going out of bounds.");
+            assert(m__index + n <= m__qs->size() && "Going out of bounds.");
 
             // Overflow check
             if (n < 0 && m__index < -n)
                 m__index= 0;
             else {
-                size_type upb= m__qs->length();
+                size_type upb= m__qs->size();
                 m__index= (m__index+n > upb) ? upb : m__index+n;
             }
 
@@ -406,7 +406,7 @@ private:
         value_type operator*() const {
             assert(m__index > 0 && "Dereferencing the rend iterator.");
 
-            if (m__index == m__qs->length())
+            if (m__index == m__qs->size())
                 return {m__qs->time_steps().back(), m__qs->values().front()};
 
             return {m__qs->time_steps().at(m__index - 1), m__qs->values()[m__index - 1]};
@@ -430,29 +430,29 @@ private:
             return tmp;
         }
         ReverseIterator& operator--() {
-            assert(m__index < m__qs->length() && "Decrementing the rbegin iterator");
+            assert(m__index < m__qs->size() && "Decrementing the rbegin iterator");
 
-            if (m__index < m__qs->length())
+            if (m__index < m__qs->size())
                 ++m__index;
             return *this;
         }
         ReverseIterator operator--(int) {
-            assert(m__index < m__qs->length() && "Decrementing the rbegin iterator");
+            assert(m__index < m__qs->size() && "Decrementing the rbegin iterator");
 
             auto tmp= *this;
-            if (m__index < m__qs->length())
+            if (m__index < m__qs->size())
                 ++m__index;
             return tmp;
         }
 
         ReverseIterator& operator+=(difference_type n) {
-            assert(m__index - n <= m__qs->length() && "Going out of bounds.");
+            assert(m__index - n <= m__qs->size() && "Going out of bounds.");
 
             // Overflow check
             if (n > 0 && m__index < n)
                 m__index= 0;
             else {
-                size_type upb= m__qs->length();
+                size_type upb= m__qs->size();
                 m__index= (m__index-n > upb) ? upb : m__index-n;
             }
 
@@ -499,20 +499,20 @@ public:
         else                    return cend();
     }
     
-    iterator end() noexcept { return iterator(this, m__time_series.length()); }
-    const_iterator end() const noexcept { return const_iterator(this, m__time_series.length()); }
-    const_iterator cend() const noexcept { return const_iterator(this, m__time_series.length()); }
+    iterator end() noexcept { return iterator(this, m__time_series.size()); }
+    const_iterator end() const noexcept { return const_iterator(this, m__time_series.size()); }
+    const_iterator cend() const noexcept { return const_iterator(this, m__time_series.size()); }
 
     reverse_iterator rbegin() noexcept { 
-        if (is_accessible())    return reverse_iterator(this, m__time_series.length());
+        if (is_accessible())    return reverse_iterator(this, m__time_series.size());
         else                    return rend();
     }
     const_reverse_iterator rbegin() const noexcept { 
-        if (is_accessible())    return const_reverse_iterator(this, m__time_series.length());
+        if (is_accessible())    return const_reverse_iterator(this, m__time_series.size());
         else                    return crend();
     }
     const_reverse_iterator crbegin() const noexcept { 
-        if (is_accessible())    return const_reverse_iterator(this, m__time_series.length());
+        if (is_accessible())    return const_reverse_iterator(this, m__time_series.size());
         else                    return crend();
     }
 
@@ -526,23 +526,23 @@ public:
     bool empty() const noexcept { return m__values.empty(); }
 
     size_type n_missing_values() const noexcept { 
-        if (m__time_series.inner_size() == m__values.size() || m__time_series.inner_size()+1 == m__values.size())
+        if (m__time_series.size() == m__values.size() || m__time_series.size()+1 == m__values.size())
             return 0ul;
         
         // else 
-        difference_type diff= m__time_series.inner_size() - m__values.size();
+        difference_type diff= m__time_series.size() - m__values.size();
         return (diff > 0) ? static_cast<size_type>(diff) : 0ul;
     }
 
     bool is_missing_values() const noexcept { return n_missing_values() > 0ul; }
 
     // No simple size, because I need to add 1 to the size of the time steps
-    size_type inner_size() const noexcept { return m__values.size(); }
+    size_type size() const noexcept { return m__values.size(); }
 
     // Length is the number of iterations you can do on the object.
     // If the quantity is not full, you can not iterate over it.
     // Use n_missing_values() and is_missing() to check if the quantity is full.
-    size_type length() const noexcept { return m__time_series.length(); }
+    size_type size() const noexcept { return m__time_series.size(); }
 
     size_type max_size() const noexcept { 
         // report the minimum of the two sizes
@@ -582,7 +582,7 @@ public:
     void commit( time_t time__s, const_reference value ) {
         auto pos = m__values.size();
 
-        if (pos > m__time_series.inner_size())
+        if (pos > m__time_series.size())
             throw std::out_of_range("QuantitySeries::commit: not enough time steps");
 
         if (time__s != m__time_series.at(pos))
@@ -593,7 +593,7 @@ public:
     void commit( time_t time__s, T&& value ) {
         auto pos = m__values.size(); 
 
-        if (pos > m__time_series.inner_size())
+        if (pos > m__time_series.size())
             throw std::out_of_range("QuantitySeries::commit: not enough time steps");
 
         if (time__s != m__time_series.at(pos))
@@ -612,8 +612,8 @@ public:
     void resize( size_type new_size ); // Resize to a new size 
     // Resize to the inner size of the time steps
     void fit_to_time_steps() {
-        if (m__time_series.inner_size() < m__values.size())
-            m__values.resize(m__time_series.inner_size());
+        if (m__time_series.size() < m__values.size())
+            m__values.resize(m__time_series.size());
     } 
 
     template< class... Args >

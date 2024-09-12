@@ -133,7 +133,7 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
 
             // TODO: this is very much wrong because it doesn't consider the shift time step 
             // and that patterns may have a different length and I may need to wrap around.
-            auto ilen= m__wds.time_series(l__PATTERN_TS).inner_size();
+            auto ilen= m__wds.time_series(l__PATTERN_TS).size();
             for (auto i= 0l; i < ilen; ++i) {
                 auto __time= m__wds.time_series(l__PATTERN_TS).at(i);
                 pdemand.commit(__time, base_demand * pattern->at(i));
