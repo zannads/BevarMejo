@@ -20,15 +20,15 @@ GlobalTimes::GlobalTimes() :
     GlobalTimes(0l, 0l)
 { }
 
-GlobalTimes::GlobalTimes(time_t a_duration__s) : 
+GlobalTimes::GlobalTimes(time::Instant a_duration__s) : 
     GlobalTimes(0l, a_duration__s) 
 { }
 
-GlobalTimes::GlobalTimes(time_t a_shift_start_time__s, time_t a_duration__s) :
+GlobalTimes::GlobalTimes(time::Instant a_shift_start_time__s, time::Instant a_duration__s) :
     m__shift_start_time__s(a_shift_start_time__s),
     m__duration__s(a_duration__s),
-    m__constant(*this),
-    m__results(*this),
+    m__constant(std::make_unique<TimeSeries>(*this)),
+    m__results(std::make_unique<TimeSeries>(*this)),
     m__ud_time_series()
 {
     if (m__duration__s < 0)
@@ -38,8 +38,8 @@ GlobalTimes::GlobalTimes(time_t a_shift_start_time__s, time_t a_duration__s) :
 GlobalTimes::GlobalTimes(const GlobalTimes& other) :
     m__shift_start_time__s(other.m__shift_start_time__s),
     m__duration__s(other.m__duration__s),
-    m__constant(*this),
-    m__results(*this, other.m__results.time_steps()),
+    m__constant(std::make_unique<TimeSeries>(*this)),
+    m__results(std::make_unique<TimeSeries>(*this, other.m__results->time_steps())),
     m__ud_time_series()
 {
     for (const auto& [key, p_time_series] : other.m__ud_time_series) {
@@ -50,8 +50,8 @@ GlobalTimes::GlobalTimes(const GlobalTimes& other) :
 GlobalTimes::GlobalTimes(GlobalTimes&& other) :
     m__shift_start_time__s(other.m__shift_start_time__s),
     m__duration__s(other.m__duration__s),
-    m__constant(*this),
-    m__results(*this, std::move(other.m__results.m__time_steps)),
+    m__constant(std::make_unique<TimeSeries>(*this)),
+    m__results(std::make_unique<TimeSeries>(*this, std::move(other.m__results->m__time_steps))),
     m__ud_time_series()
 {
     for (auto& [key, p_time_series] : other.m__ud_time_series) {
@@ -63,27 +63,27 @@ GlobalTimes::GlobalTimes(GlobalTimes&& other) :
 
 // Getters 
 
-time_t GlobalTimes::shift_start_time__s() const { 
+time::Instant GlobalTimes::shift_start_time__s() const { 
     return m__shift_start_time__s;
 }
 
-time_t GlobalTimes::duration__s() const { 
+time::Instant GlobalTimes::duration__s() const { 
     return m__duration__s; 
 }
-const time_t* GlobalTimes::duration__s_ptr() const { 
+const time::Instant* GlobalTimes::duration__s_ptr() const { 
     return &m__duration__s; 
 }
 
 const wds::aux::TimeSeries& GlobalTimes::constant() const { 
-    return m__constant; 
+    return *m__constant; 
 }
 
 wds::aux::TimeSeries& GlobalTimes::results() { 
-    return m__results; 
+    return *m__results; 
 }
 
 const wds::aux::TimeSeries& GlobalTimes::results() const { 
-    return m__results; 
+    return *m__results; 
 }
 
 std::size_t GlobalTimes::n_time_series() const { 
@@ -108,11 +108,11 @@ wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) {
 
 // Setters
 
-void GlobalTimes::shift_start_time__s(const time_t a_shift_start_time__s) { 
+void GlobalTimes::shift_start_time__s(const time::Instant a_shift_start_time__s) { 
     m__shift_start_time__s = a_shift_start_time__s;
 }
 
-void GlobalTimes::duration__s(const time_t a_duration__s) {
+void GlobalTimes::duration__s(const time::Instant a_duration__s) {
     if (a_duration__s < 0)
         throw std::invalid_argument("GlobalTimes::duration__s: Duration must be greater than or equal to 0.");
     

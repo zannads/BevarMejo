@@ -18,7 +18,7 @@ namespace aux {
 
 // Empty TimeSteps are always monotonic, starting after zero, and ending before t.
 
-bool is_monotonic(const TimeSteps& time_steps) {
+bool is_monotonic(const time::TimeSteps& time_steps) {
     for (std::size_t i = 0; i < time_steps.size() - 1; ++i) {
         if (time_steps[i] >= time_steps[i + 1])
             return false;
@@ -26,11 +26,11 @@ bool is_monotonic(const TimeSteps& time_steps) {
     return true;
 }
 
-bool starts_after_zero(const TimeSteps& time_steps) {
+bool starts_after_zero(const time::TimeSteps& time_steps) {
     return time_steps.empty() || time_steps.front() > 0;
 }
 
-bool ends_before_t(const TimeSteps& time_steps, time_t t) {
+bool ends_before_t(const time::TimeSteps& time_steps, time::Instant t) {
     return time_steps.empty() || time_steps.back() < t;
 }
 
@@ -50,7 +50,7 @@ void TimeSeries::check_valid() const {
 /*----------------------------------------------------------------------------*/
 
 TimeSeries::TimeSeries(const GlobalTimes& a_gto) : 
-    TimeSeries(a_gto, TimeSteps()) 
+    TimeSeries(a_gto, time::TimeSteps()) 
 { }
 
 /*----------------------------------------------------------------------------*/
@@ -150,12 +150,12 @@ void TimeSeries::shrink_before_duration() {
 
 void TimeSeries::reset() noexcept { m__time_steps.clear(); }
 
-void TimeSeries::commit(time_t time__s) {
+void TimeSeries::commit(time::Instant time__s) {
     if ( time__s < 0 || time__s > m__gto.duration__s() )
         throw std::invalid_argument("TimeSeries::commit: Time steps must be >= 0 && <= duration of the simulation.");
 
     if (m__time_steps.empty() && time__s == 0)
-        return; // No problem if you commit the zero time as the first time step. As I expect to commit the zero in every simulation.
+        return; // No problem if you commit the zero time as the first time step. As I expect to commit the zero at the beginning of every simulation.
 
     if (!m__time_steps.empty() && time__s <= m__time_steps.back())
         throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
@@ -169,14 +169,14 @@ void TimeSeries::commit(time_t time__s) {
 
 /*----------------------------------------------------------------------------*/
 
-TimeSeries::iterator TimeSeries::find(time_t time__s) { return iterator(this, find_pos(time__s)); }
+TimeSeries::iterator TimeSeries::find(time::Instant time__s) { return iterator(this, find_pos(time__s)); }
 
-TimeSeries::const_iterator TimeSeries::find(time_t time__s) const { return const_iterator(this, find_pos(time__s)); }
+TimeSeries::const_iterator TimeSeries::find(time::Instant time__s) const { return const_iterator(this, find_pos(time__s)); }
 
-TimeSeries::size_type TimeSeries::find_pos(time_t time__s) const {
+TimeSeries::size_type TimeSeries::find_pos(time::Instant time__s) const {
 
     if (time__s < 0)
-        return size();
+        return this->size();
 
     if (time__s == 0)
         return 0;
@@ -191,7 +191,7 @@ TimeSeries::size_type TimeSeries::find_pos(time_t time__s) const {
     if (time__s == m__gto.duration__s())
         return pos+1;
 
-    return size();
+    return this->size();
 }
 
 } // namespace aux

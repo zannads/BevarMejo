@@ -5,12 +5,21 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 namespace bevarmejo {
 
+namespace time {
 using time_t = bevarmejo::epanet::time_t;
+using Instant= time_t;
+using TimeSteps= std::vector<Instant>;
+
+struct AbsoluteTime { };
+struct RelativeTime { };
+
+} // namespace time
 
 namespace wds {
 namespace aux {
@@ -24,20 +33,20 @@ public:
     using container= std::unordered_map<std::string, std::unique_ptr<TimeSeries>>;
 
 private:
-    time_t m__shift_start_time__s; // Shift for the start time of the simulation in seconds, but this is only for control rules and eventually for visualization. Simulations and times always start at 0.
-    time_t m__duration__s;         // Duration of the simulation in seconds. This will be used for integration purposes in the time series.
+    time::Instant m__shift_start_time__s; // Shift for the start time of the simulation in seconds, but this is only for control rules and eventually for visualization. Simulations and times always start at 0.
+    time::Instant m__duration__s;         // Duration of the simulation in seconds. This will be used for integration purposes in the time series.
 
-    const TimeSeries m__constant; // Special time series for constant values. Always existing and never changing.
+    const std::unique_ptr<const TimeSeries> m__constant; // Special time series for constant values. Always existing and never changing.
 
-    TimeSeries m__results; // Time series for the results of the simulations.
+    const std::unique_ptr<TimeSeries> m__results; // Time series for the results of the simulations.
 
     container m__ud_time_series; // User defined time series.
     
 public:
     // Constructors
     GlobalTimes();
-    GlobalTimes(time_t a_duration__s);
-    GlobalTimes(time_t a_shift_start_time__s, time_t a_duration__s);
+    GlobalTimes(time::Instant a_duration__s);
+    GlobalTimes(time::Instant a_shift_start_time__s, time::Instant a_duration__s);
 
     GlobalTimes(const GlobalTimes&);
     GlobalTimes(GlobalTimes&&);
@@ -49,10 +58,10 @@ public:
 
 // Getters
 public:
-    time_t shift_start_time__s() const;
+    time::Instant shift_start_time__s() const;
 
-    time_t duration__s() const;
-    const time_t* duration__s_ptr() const;
+    time::Instant duration__s() const;
+    const time::Instant* duration__s_ptr() const;
 
     const TimeSeries& constant() const;
 
@@ -66,9 +75,9 @@ public:
 
 // Setters
 public:
-    void shift_start_time__s(const time_t a_shift_start_time__s);
+    void shift_start_time__s(const time::Instant a_shift_start_time__s);
 
-    void duration__s(const time_t a_duration__s);
+    void duration__s(const time::Instant a_duration__s);
 
     template <typename... Args>
     std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) const {

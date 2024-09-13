@@ -8,52 +8,64 @@
 #include <utility>
 #include <vector>
 
+#include "bevarmejo/wds/auxiliary/global_times.hpp"
+
 namespace bevarmejo {
 namespace wds {
 namespace aux {
 
-class GlobalTimes;
+template <typename T>
+class QuantitySeries;
 
-using TimeSteps= std::vector<time_t>;
+bool is_monotonic(const time::TimeSteps& time_steps);
 
-bool is_monotonic(const TimeSteps& time_steps);
+bool starts_after_zero(const time::TimeSteps& time_steps);
 
-bool starts_after_zero(const TimeSteps& time_steps);
-
-bool ends_before_t(const TimeSteps& time_steps, time_t t);
+bool ends_before_t(const time::TimeSteps& time_steps, time::Instant t);
 
 class TimeSeries {
 
-// The TimeSeries class is a sequence of time steps that are greater than 0, 
-// monotonically increasing, and can not go over the duration of the Global Time Options.
-// Zero is always the first time step, but it is not stored in the time steps. Therefore front() always returns 0.
-// The last time step is the duration of the Global Time Options, but it is not stored in the time steps. Therefore back() always returns the duration.
-// The acutal time steps are stored in a vector of time_t in a monotonic increasing order.
-// The first value of the time steps is always greater than 0, because 0 is the beginning of the time series.
-// However, the last value of the time steps can be EQUAL to the duration of the Global Time Options.
-// This is done because during the simulations, there are also results to be retrieved at the end of the simulation.
+// The TimeSeries class is a monotonically increasing sequence of time steps 
+// representing the time shift with respect to the absolute start time of the
+// simulation.
+// The class behaves like a set to mantain the time steps unique and in order. 
+// Therefore, accessing returns by value and not by reference and to modify the
+// time steps, you need to use the insert and erase methods. 
+// Commit and rollback work like push_back and pop_back.
+// Basically it's a mix between a vector and an ordered set.
+// Access and modification can be done in relative (default) or absolute time.
+// Normal iterators are available, but there are extra type of iterators and 
+// methods to get these.
+// Normal iterators goes through the time steps, but starting from the always 
+// present zero time step.
+// Truncated iterators goes through the time steps, starting from the always 
+// present zero time step, but ending at the duration of the GT.
+// Special iterators for the QuantitySeries are available and, along with time, 
+// they return the index of the time step to access the value associated with time.
 
 /*--- Member types ---*/
 public:
-    using container= std::vector<time_t>;
+    using container= time::TimeSteps;
 
-    using key_type= time_t;
-    using value_type= time_t;
+    using key_type= time::Instant;
+    using value_type= time::Instant;
     using size_type= std::size_t;
     using difference_type= std::ptrdiff_t;
-    using reference= time_t&;
-    using const_reference= const time_t&;
-    using pointer= time_t*;
-    using const_pointer= const time_t*;
+    using reference= time::Instant&;
+    using const_reference= const time::Instant&;
+    using pointer= time::Instant*;
+    using const_pointer= const time::Instant*;
 
 /*--- Attributes ---*/
 private:
-    const GlobalTimes& m__gto; // Necessary to make sure that the time steps are within the duration.
-    container m__time_steps; // Actual time steps (greater than 0, monotonically increasing, and can not go over the duration).
+    const GlobalTimes& m__gto; 
+    container m__time_steps; 
 
 /*--- Support ---*/
 private:
     friend class GlobalTimes;
+    template <typename T>
+    friend class QuantitySeries;
     
 /*--- Constructors ---*/
 public:
@@ -82,7 +94,7 @@ public:
 /*--- Getters and setters ---*/
 public:
 
-    // No access allowed to the time steps, only through the time_t methods. But I can get a copy of the time steps.
+    // No access allowed to the time steps, only through the time::Instant methods. But I can get a copy of the time steps.
     const container& time_steps() const;
     
 /*--- Element access ---*/
@@ -323,19 +335,19 @@ public:
 
     // Insert takes care automatically of the monotonicity of the time steps. It works like a insert or assign.
     // However, you can pass a position to insert the time step to be faster :)
-    iterator insert( time_t time__s );
-    iterator insert( const_iterator pos, time_t time__s );
+    iterator insert( time::Instant time__s );
+    iterator insert( const_iterator pos, time::Instant time__s );
     template < class InputIt >
     iterator insert( const_iterator pos, InputIt first, InputIt last );
-    iterator insert( std::initializer_list<time_t> ilist );
-    iterator insert( const_iterator pos, std::initializer_list<time_t> ilist );
+    iterator insert( std::initializer_list<time::Instant> ilist );
+    iterator insert( const_iterator pos, std::initializer_list<time::Instant> ilist );
 
     iterator erase( const_iterator pos );
     iterator erase( const_iterator first, const_iterator last );
-    iterator erase( time_t time__s );
+    iterator erase( time::Instant time__s );
 
     // Push back has a different name more related to a time series.
-    void commit( time_t time__s );
+    void commit( time::Instant time__s );
 
     // Pop back has a different name more related to a time series.
     void rollback();
@@ -362,38 +374,38 @@ private:
 public:
 
     // Each time should be unique or non existing. Only duration can be repeated and return 2.
-    size_type count ( time_t time__s ) const;
+    size_type count ( time::Instant time__s ) const;
 
     // Find, returns an iterator to the instant that is exactly the given time
-    iterator find( time_t time__s );
-    const_iterator find( time_t time__s ) const;
+    iterator find( time::Instant time__s );
+    const_iterator find( time::Instant time__s ) const;
 
     // Find_pos, returns the array position to the instant that is exactly the given time
-    size_type find_pos( time_t time__s ) const;
+    size_type find_pos( time::Instant time__s ) const;
 
     // Contains, returns true if the time is in the time series.
-    bool contains( time_t time__s ) const;
+    bool contains( time::Instant time__s ) const;
 
     // Can be inserted, returns true if the time can be inserted in the time series (check for monotonicity and duration).
-    bool can_be_inserted( time_t time__s ) const;
+    bool can_be_inserted( time::Instant time__s ) const;
 
     // No equal_range, each time should be unique.
 
-    TimeSeries sub_series( time_t start_time__s, time_t end_time__s ) const;
+    TimeSeries sub_series( time::Instant start_time__s, time::Instant end_time__s ) const;
 
     // Lower_bound, returns an iterator to the last time that is less than the given time.
-    iterator lower_bound( time_t time__s );
-    const_iterator lower_bound( time_t time__s ) const;
+    iterator lower_bound( time::Instant time__s );
+    const_iterator lower_bound( time::Instant time__s ) const;
 
     // Lower_bound_pos, returns the array position to the last time that is less than the given time
-    size_type lower_bound_pos( time_t time__s ) const;
+    size_type lower_bound_pos( time::Instant time__s ) const;
             
     // Upper_bound, returns an iterator to the first time that is greater than the given time
-    iterator upper_bound( time_t time__s );
-    const_iterator upper_bound( time_t time__s ) const;
+    iterator upper_bound( time::Instant time__s );
+    const_iterator upper_bound( time::Instant time__s ) const;
 
     // Upper_bound_pos, returns the array position to the first time that is greater than the given time
-    size_type upper_bound_pos( time_t time__s ) const;
+    size_type upper_bound_pos( time::Instant time__s ) const;
 
 /*--- Other methods ---*/
 public:
