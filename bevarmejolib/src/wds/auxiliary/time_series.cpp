@@ -13,6 +13,13 @@
 #include "time_series.hpp"
 
 namespace bevarmejo {
+
+namespace log {
+namespace fname {
+static const std::string check_valid = "check_valid";
+} // namespace fname
+} // namespace log
+
 namespace wds {
 namespace aux {
 
@@ -151,8 +158,17 @@ void TimeSeries::remove_leading_zero() {
 // over the duration but I will print 
 void TimeSeries::check_valid() const {
 
-    if (!is_monotonic(m__time_steps) || !starts_after_zero(m__time_steps))
-        throw std::invalid_argument("TimeSeries::check_valid: Time steps are not valid.");
+    if (!is_monotonic(m__time_steps))
+        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
+                                                  "Time steps are not valid.", 
+            "Time steps are not monotonically increasing.");
+
+     if (!starts_after_zero(m__time_steps))
+        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
+                                                "Time steps are not valid.", 
+            "Time steps do not start after zero.",
+            "First time step: ", m__time_steps.front());
+        
         
 }
 

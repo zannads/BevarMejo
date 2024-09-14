@@ -104,7 +104,8 @@ public:
     std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) {
 
         if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
-            throw std::invalid_argument("GlobalTimes::create_time_series: Time series name already in use.");
+            __format_and_throw<std::invalid_argument>(log::cname::global_times, log::fname::create_time_series,
+            "Time series name is reserved and cannot be used.", "Time series name: ", name);
             
         return m__ud_time_series.emplace(name, std::make_unique<TimeSeries>(*this, std::forward<Args>(args)...));
     }

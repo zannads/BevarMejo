@@ -15,6 +15,8 @@ namespace bevarmejo {
 namespace log {
 namespace fname {
 static const std::string time_series= "time_series";
+static const std::string duration= "duration__s";
+static const std::string discard_time_series= "discard_time_series";
 } // namespace fname 
 } // namespace log 
  
@@ -40,7 +42,10 @@ GlobalTimes::GlobalTimes(time::Instant a_shift_start_time__s, time::Instant a_du
     m__ud_time_series()
 {
     if (m__duration__s < 0)
-        throw std::invalid_argument("GlobalTimes::GlobalTimes: Duration must be greater than or equal to 0.");
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::cname::global_times,
+                                                    "Duration must be greater than or equal to 0.",
+                                                    "Duration: ", a_duration__s);
 }
 
 GlobalTimes::GlobalTimes(const GlobalTimes& other) :
@@ -193,20 +198,30 @@ void GlobalTimes::shift_start_time__s(const time::Instant a_shift_start_time__s)
 
 void GlobalTimes::duration__s(const time::Instant a_duration__s) {
     if (a_duration__s < 0)
-        throw std::invalid_argument("GlobalTimes::duration__s: Duration must be greater than or equal to 0.");
-    
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::duration,
+                                                    "Duration must be greater than or equal to 0.",
+                                                    "Duration: ", a_duration__s);
+                                                    
     m__duration__s = a_duration__s;
 }
 
 void GlobalTimes::discard_time_series(const std::string& name) {
 
     if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
-        throw std::invalid_argument("GlobalTimes::discard_time_series: Cannot discard the constant or results time series.");
-        
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::discard_time_series,
+                                                    "Impossible to discard the requested time series.",
+                                                    "Reason: Time series name is reserved and cannot be used.\n",
+                                                    "TimeSeries name: ", name);
+                                                    
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
-        throw std::invalid_argument("GlobalTimes::discard_time_series: Time series not found.");
-    
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::discard_time_series,
+                                                    "Impossible to discard the requested time series.",
+                                                    "Reason: Time series not found.\n",
+                                                    "TimeSeries name: ", name);
     m__ud_time_series.erase(it);
 }
 

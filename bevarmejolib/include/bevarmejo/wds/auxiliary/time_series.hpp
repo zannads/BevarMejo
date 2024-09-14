@@ -10,9 +10,26 @@
 #include <utility>
 #include <vector>
 
+#include "bevarmejo/bemexcept.hpp"
+
 #include "bevarmejo/wds/auxiliary/global_times.hpp"
 
 namespace bevarmejo {
+
+namespace log {
+
+namespace cname {
+static const std::string time_series= "TimeSeries";
+} // namespace cname
+
+namespace fname {
+static const std::string commit= "commit";
+static const std::string rollback= "rollback";
+} // namespace fname
+
+} // namespace log
+
+
 namespace wds {
 namespace aux {
 
@@ -137,7 +154,10 @@ public:
         if (pos <= m__time_steps.size() )
             return m__time_steps[pos-1];
 
-        throw std::out_of_range("TimeSeries::at: index out of range");
+        __format_and_throw<std::out_of_range>(log::cname::time_series, log::fname::at, 
+                                                "Index out of range.", 
+            "Valid index range: [0, ", m__time_steps.size(), "]\n",
+            "Index = ", pos);
     }
 
     // No operator[] because it is not safe to use it with this setup
@@ -544,14 +564,19 @@ public:
         // ======== Actual Implementation (hyp: RTT == time::RelativeTime) ========
 
         if ( time__s < 0 )
-            throw std::invalid_argument("TimeSeries::commit: Time steps must be >= 0 && <= duration of the simulation.");
-
+            __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::commit, 
+                                                        "Time steps must be >= 0.",
+                "Time step = ", time__s);
+                
         if (m__time_steps.empty() && time__s == 0)
             return; // No problem if you commit the zero time as the first time step. As I expect to commit the zero at the beginning of every simulation.
 
         if (!m__time_steps.empty() && time__s <= m__time_steps.back())
-            throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
-
+            __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::commit, 
+                                                        "Time steps must be monotonic.",
+                "Back of the TimeSeries = ", m__time_steps.back(), "\n",
+                "Time step = ", time__s);
+                
         m__time_steps.push_back(time__s);
     }
 
