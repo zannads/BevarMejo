@@ -136,7 +136,7 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
             auto ilen= m__wds.time_series(label::__EN_PATTERN_TS).size();
             for (auto i= 0l; i < ilen; ++i) {
                 auto __time= m__wds.time_series(label::__EN_PATTERN_TS).at(i);
-                pdemand.commit(__time, base_demand * pattern->at(i));
+                pdemand.commit(__time, base_demand * pattern->at(i % pattern->size()));
             }
 
             m__demands.insert(std::make_pair(demand_category, pdemand));
