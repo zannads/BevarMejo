@@ -25,16 +25,16 @@ namespace wds {
 
 Tank::Tank(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
-    m__diameter(wds.time_series(l__CONSTANT_TS)),
-    m__min_volume(wds.time_series(l__CONSTANT_TS)),
-    m__min_level(wds.time_series(l__CONSTANT_TS)),
-    m__max_volume(wds.time_series(l__CONSTANT_TS)),
-    m__max_level(wds.time_series(l__CONSTANT_TS)),
-    m__can_overflow(wds.time_series(l__CONSTANT_TS)),
-    m__initial_volume(wds.time_series(l__CONSTANT_TS)),
-    m__initial_level(wds.time_series(l__CONSTANT_TS)),
-    m__volume(wds.time_series(l__RESULT_TS)),
-    m__level(wds.time_series(l__RESULT_TS)) { }
+    m__diameter(wds.time_series(label::__CONSTANT_TS)),
+    m__min_volume(wds.time_series(label::__CONSTANT_TS)),
+    m__min_level(wds.time_series(label::__CONSTANT_TS)),
+    m__max_volume(wds.time_series(label::__CONSTANT_TS)),
+    m__max_level(wds.time_series(label::__CONSTANT_TS)),
+    m__can_overflow(wds.time_series(label::__CONSTANT_TS)),
+    m__initial_volume(wds.time_series(label::__CONSTANT_TS)),
+    m__initial_level(wds.time_series(label::__CONSTANT_TS)),
+    m__volume(wds.time_series(label::__RESULTS_TS)),
+    m__level(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Tank::Tank(const Tank& other) : 

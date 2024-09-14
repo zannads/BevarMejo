@@ -6,11 +6,19 @@
 #include <unordered_map>
 #include <utility>
 
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
-
 #include "global_times.hpp"
 
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+
 namespace bevarmejo {
+
+namespace log {
+namespace fname {
+static const std::string time_series= "time_series";
+} // namespace fname 
+} // namespace log 
+ 
+
 namespace wds {
 namespace aux {
 
@@ -141,30 +149,38 @@ std::size_t GlobalTimes::n_time_series() const {
 
 const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) const {
 
-    if (name == label::__constant_ts)
+    if (name == label::__CONSTANT_TS)
         return constant();
 
-    if (name == label::__results_ts)
+    if (name == label::__RESULTS_TS)
         return results();
 
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
-        throw std::invalid_argument("GlobalTimes::time_series: Time series not found.");
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::time_series,
+                                                    "Time series not found.",
+                                                    "TimeSeries name: ", name);
     
     return *it->second;
 }
 
 wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) {
 
-    if (name == label::__constant_ts)
-        throw std::invalid_argument("GlobalTimes::time_series: Cannot access the constant time series from a non const GlobalTimes object.");
-
-    if (name == label::__results_ts)
+    if (name == label::__CONSTANT_TS)
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::time_series,
+                                                    "Cannot access the constant time series from a non const GlobalTimes object.");
+    
+    if (name == label::__RESULTS_TS)
         return results();
 
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
-        throw std::invalid_argument("GlobalTimes::time_series: Time series not found.");
+        __format_and_throw<std::invalid_argument>(log::cname::global_times,
+                                                    log::fname::time_series,
+                                                    "Time series not found.",
+                                                    "TimeSeries name: ", name);
     
     return *it->second;
 }
@@ -184,7 +200,7 @@ void GlobalTimes::duration__s(const time::Instant a_duration__s) {
 
 void GlobalTimes::discard_time_series(const std::string& name) {
 
-    if (name == label::__constant_ts || name == label::__results_ts)
+    if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
         throw std::invalid_argument("GlobalTimes::discard_time_series: Cannot discard the constant or results time series.");
         
     auto it= m__ud_time_series.find(name);

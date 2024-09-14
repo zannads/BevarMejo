@@ -27,7 +27,7 @@ namespace wds {
 
 Pipe::Pipe(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    m__length(wds.time_series(l__CONSTANT_TS)) { }
+    m__length(wds.time_series(label::__CONSTANT_TS)) { }
 
 // Copy constructor
 Pipe::Pipe(const Pipe& other) : 

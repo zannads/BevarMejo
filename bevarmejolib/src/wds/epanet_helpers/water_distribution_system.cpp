@@ -125,7 +125,7 @@ void WaterDistributionSystem::load_EN_time_settings(EN_Project ph) {
         curr_t += pto.timestep__s;
     }
 
-    m__times.create_time_series(label::__en_pattern_ts, time_steps);
+    m__times.create_time_series(label::__EN_PATTERN_TS, time_steps);
 
     // What we don't care for now is:
     // EN_HYDSTEP (1)

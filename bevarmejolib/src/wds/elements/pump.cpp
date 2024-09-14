@@ -29,12 +29,12 @@ Pump::Pump(const std::string& id, const WaterDistributionSystem& wds) :
     _energy_cost_pattern_(nullptr),
     _pump_curve_(nullptr),
     _efficiency_curve_(nullptr),
-    m__init_setting(wds.time_series(l__CONSTANT_TS)),
-    m__power_rating(wds.time_series(l__CONSTANT_TS)),
-    m__energy_cost(wds.time_series(l__CONSTANT_TS)),
-    m__instant_energy(wds.time_series(l__RESULT_TS)),
-    m__state(wds.time_series(l__RESULT_TS)),
-    m__efficiency(wds.time_series(l__RESULT_TS)) { }
+    m__init_setting(wds.time_series(label::__CONSTANT_TS)),
+    m__power_rating(wds.time_series(label::__CONSTANT_TS)),
+    m__energy_cost(wds.time_series(label::__CONSTANT_TS)),
+    m__instant_energy(wds.time_series(label::__RESULTS_TS)),
+    m__state(wds.time_series(label::__RESULTS_TS)),
+    m__efficiency(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Pump::Pump(const Pump& other) : 

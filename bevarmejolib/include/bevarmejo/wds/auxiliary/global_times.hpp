@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include "bevarmejo/bemexcept.hpp"
+
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 namespace bevarmejo {
@@ -23,10 +25,22 @@ struct RelativeTime { };
 
 namespace label {
 
-static const std::string __constant_ts = "Constant";
-static const std::string __results_ts = "Results";
+static const std::string __CONSTANT_TS = "Constant";
+static const std::string __RESULTS_TS = "Results";
 
 } // namespace label 
+
+
+namespace log {
+namespace cname {
+static const std::string global_times= "GlobalTimes";
+} // namespace cname
+
+namespace fname {
+static const std::string create_time_series= "create_time_series";
+} // namespace fname
+    
+} // namespace log
 
 namespace wds {
 namespace aux {
@@ -89,7 +103,7 @@ public:
     template <typename... Args>
     std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) {
 
-        if (name == label::__constant_ts || name == label::__results_ts)
+        if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
             throw std::invalid_argument("GlobalTimes::create_time_series: Time series name already in use.");
             
         return m__ud_time_series.emplace(name, std::make_unique<TimeSeries>(*this, std::forward<Args>(args)...));

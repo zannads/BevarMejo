@@ -14,8 +14,8 @@ namespace wds {
 
 Source::Source(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    m__inflow(wds.time_series(l__RESULT_TS)),
-    m__source_elevation(wds.time_series(l__RESULT_TS)) { }
+    m__inflow(wds.time_series(label::__RESULTS_TS)),
+    m__source_elevation(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Source::Source(const Source& other) : 

@@ -27,8 +27,8 @@ Link::Link(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
     _node_start_(nullptr),
     _node_end_(nullptr),
-    m__initial_status(wds.time_series(l__CONSTANT_TS)),
-    m__flow(wds.time_series(l__RESULT_TS)) { }
+    m__initial_status(wds.time_series(label::__CONSTANT_TS)),
+    m__flow(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Link::Link(const Link& other) : 

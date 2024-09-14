@@ -31,8 +31,8 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     _y_coord_(0.0),
     m__links(),
     _elevation_(0.0),
-    m__head(wds.time_series(l__RESULT_TS)),
-    m__pressure(wds.time_series(l__RESULT_TS)) { }
+    m__head(wds.time_series(label::__RESULTS_TS)),
+    m__pressure(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Node::Node(const Node& other) : 

@@ -19,6 +19,9 @@ namespace aux {
 // Empty TimeSteps are always monotonic, starting after zero, and ending before t.
 
 bool is_monotonic(const time::TimeSteps& time_steps) {
+    if (time_steps.empty())
+        return true;
+
     for (std::size_t i = 0; i < time_steps.size() - 1; ++i) {
         if (time_steps[i] >= time_steps[i + 1])
             return false;

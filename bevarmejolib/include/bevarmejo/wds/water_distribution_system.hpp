@@ -23,6 +23,7 @@
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
@@ -55,15 +56,12 @@
 namespace bevarmejo {
 
 namespace label {
-static const std::string __en_pattern_ts = "ENPatt";
+static const std::string __EN_PATTERN_TS = "ENPatt";
 } // namespace label
 
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
-static const std::string l__CONSTANT_TS = "Cst";
-static const std::string l__PATTERN_TS = "ENPatt";
-static const std::string l__RESULT_TS = "Res";
 
 class NetworkElement;
 
