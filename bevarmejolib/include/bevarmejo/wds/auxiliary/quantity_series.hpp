@@ -1,5 +1,4 @@
-#ifndef BEVARMEJOLIB__QUANTITY_SERIES_HPP
-#define BEVARMEJOLIB__QUANTITY_SERIES_HPP
+#pragma once
 
 #include <cassert>
 #include <cstddef>
@@ -79,7 +78,11 @@ protected:
 
 /*--- Member methods ---*/
 public:
-    // The quantity series is allowed to be accessed only if the values are as long as the time steps
+    // The quantity series is allowed to be accessed only if the values are one 
+    // or two more values than the time steps. One value is for the zero time 
+    // and one (optional) for the end time. If the latter is not there and 
+    // m__values.size() == m__time_series.inner_size()+1, then the last value
+    // is the same as the first one
     // or one value more (for the end time).
     bool is_accessible() const noexcept { 
         return ((m__time_series.size() == m__values.size()) ||
@@ -192,7 +195,7 @@ public:
 
         size_type pos= m__time_series.find_pos(time__s);
 
-        if (pos == m__time_series.not_found())
+        if (pos == m__time_series.size())
             throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
 
         if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
@@ -205,7 +208,7 @@ public:
 
         size_type pos= m__time_series.find_pos(time__s);
 
-        if (pos == m__time_series.not_found()) 
+        if (pos == m__time_series.size()) 
             throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
 
         if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
@@ -537,7 +540,7 @@ public:
     bool is_missing_values() const noexcept { return n_missing_values() > 0ul; }
 
     // No simple size, because I need to add 1 to the size of the time steps
-    size_type size() const noexcept { return m__values.size(); }
+    size_type inner_size() const noexcept { return m__values.size(); }
 
     // Length is the number of iterations you can do on the object.
     // If the quantity is not full, you can not iterate over it.
@@ -680,5 +683,3 @@ QuantitySeries<T>& extract_quantity_series(QuantitiesMap& quantities, const std:
 } // namespace aux
 } // namespace wds
 } // namespace bevarmejo
-
-#endif // BEVARMEJOLIB__QUANTITY_SERIES_HPP

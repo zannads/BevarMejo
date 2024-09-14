@@ -21,6 +21,13 @@ struct RelativeTime { };
 
 } // namespace time
 
+namespace label {
+
+static const std::string __constant_ts = "Constant";
+static const std::string __results_ts = "Results";
+
+} // namespace label 
+
 namespace wds {
 namespace aux {
 
@@ -38,7 +45,7 @@ private:
 
     const std::unique_ptr<const TimeSeries> m__constant; // Special time series for constant values. Always existing and never changing.
 
-    const std::unique_ptr<TimeSeries> m__results; // Time series for the results of the simulations.
+    std::unique_ptr<TimeSeries> m__results; // Time series for the results of the simulations. Always existing and mutable by the user.
 
     container m__ud_time_series; // User defined time series.
     
@@ -50,6 +57,7 @@ public:
 
     GlobalTimes(const GlobalTimes&);
     GlobalTimes(GlobalTimes&&);
+    
     GlobalTimes& operator=(const GlobalTimes&);
     GlobalTimes& operator=(GlobalTimes&&);
 
@@ -61,7 +69,6 @@ public:
     time::Instant shift_start_time__s() const;
 
     time::Instant duration__s() const;
-    const time::Instant* duration__s_ptr() const;
 
     const TimeSeries& constant() const;
 
@@ -80,15 +87,12 @@ public:
     void duration__s(const time::Instant a_duration__s);
 
     template <typename... Args>
-    std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) const {
+    std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) {
         return m__ud_time_series.emplace(name, std::make_unique<TimeSeries>(*this, std::forward<Args>(args)...));
     }
 
     void discard_time_series(const std::string& name);
 
-private:
-    void notify_time_series(); // When duration changes, all time series must be notified and if they are dynamic object they are shortened.
-    
 }; // class GlobalTimes
 
 } // namespace aux

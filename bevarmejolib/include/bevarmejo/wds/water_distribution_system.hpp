@@ -53,6 +53,11 @@
 
 
 namespace bevarmejo {
+
+namespace label {
+static const std::string __en_pattern_ts = "ENPatt";
+} // namespace label
+
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
@@ -133,30 +138,13 @@ protected:
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
+
+    // User defined and default TimeSeries for the simulation
+    aux::GlobalTimes m__times;
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
-        struct TimeOptions {
-            std::unique_ptr<aux::GlobalTimes> global;
-            epanet::PatternTimeOptions pattern;
-
-            TimeOptions();
-            TimeOptions(const TimeOptions& other);
-            TimeOptions& operator=(const TimeOptions& other);
-            TimeOptions(TimeOptions&& other) noexcept;
-            TimeOptions& operator=(TimeOptions&& other) noexcept;
-        } times;
     } m__config_options;
-
-    // Keep the relevant times here:
-    struct RelevantTimes {
-        std::unique_ptr<const aux::TimeSeries> EN_pattern;
-        std::unique_ptr<aux::TimeSeries> results;
-        TimeSeriesMap ud_time_series;
-
-        RelevantTimes(const aux::GlobalTimes& gto);
-    };
-    RelevantTimes m__times;
 
 /*--- Constructors ---*/ 
 public:
@@ -232,7 +220,7 @@ private:
 public:
     void clear_results() const;
     
-    void run_hydraulics() const;
+    void run_hydraulics();
 
     /*--- ?? ---*/
     template <typename T>

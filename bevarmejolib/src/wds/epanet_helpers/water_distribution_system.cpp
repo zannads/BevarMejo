@@ -36,7 +36,7 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
     _subnetworks_(),
     _groups_(),
     m__config_options(),
-    m__times(*m__config_options.times.global)
+    m__times()
     {
         assert(!inp_file.empty());
 
@@ -71,19 +71,6 @@ WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& in
         // 1.1 Load time information
         this->load_EN_time_settings(ph_);
 
-        // 1.2 Allocate space for the TimeSeries objects
-        time_t curr_t= m__config_options.times.pattern.shift_start_time__s;
-        aux::TimeSteps time_steps;
-        while (curr_t < m__config_options.times.global->duration__s()) {
-            time_steps.push_back(curr_t);
-            curr_t += m__config_options.times.pattern.timestep__s;
-        }
-        m__times.EN_pattern= m__config_options.times.global->create_time_series(time_steps);
-
-        // The result object has already been created in the constructor (see m__times)
-        // BUT, it will be the hydraulic solver that allocates the memory for the results.
-        // This is why it is marked mutable.
-
         // 1.3 Load analysis options
         // TODO: this->load_EN_analysis_options(ph_);
         if ( VersionManager::user().version() < VersionManager::v(2024,4,0) ) 
@@ -110,20 +97,35 @@ void WaterDistributionSystem::load_EN_time_settings(EN_Project ph) {
     time_t a_time= 0l;
     int errorcode= EN_gettimeparam(ph, EN_DURATION, &a_time);
     assert(errorcode < 100);
-    m__config_options.times.global->duration__s(a_time);
+    m__times.duration__s(a_time);
 
     errorcode= EN_gettimeparam(ph, EN_STARTTIME, &a_time);
     assert(errorcode < 100);
-    // TODO: m__config_options.times.global.start_time__s(a_time);
+    m__times.shift_start_time__s(a_time);
 
+
+    // Prepare for the inputs that are patterns
+    epanet::PatternTimeOptions pto;
     errorcode= EN_gettimeparam(ph, EN_PATTERNSTEP, &a_time);
     assert(errorcode < 100);
-    m__config_options.times.pattern.timestep__s= a_time;
-    assert(a_time > 0);
+    pto.timestep__s= a_time;
 
     errorcode= EN_gettimeparam(ph, EN_PATTERNSTART, &a_time);
     assert(errorcode < 100);
-    m__config_options.times.pattern.shift_start_time__s= a_time;
+    pto.shift_start_time__s= a_time;
+
+    assert(epanet::is_valid_pto(pto));
+    time_t curr_t= pto.shift_start_time__s;
+    if (curr_t == 0)
+        curr_t = pto.timestep__s; // Because I can't commit to a timeSeries starting at 0
+
+    std::vector<time_t> time_steps;
+    while (curr_t <= m__times.duration__s()) {
+        time_steps.push_back(curr_t);
+        curr_t += pto.timestep__s;
+    }
+
+    m__times.create_time_series(label::__en_pattern_ts, time_steps);
 
     // What we don't care for now is:
     // EN_HYDSTEP (1)
