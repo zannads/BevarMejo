@@ -57,7 +57,7 @@ public:
 
     GlobalTimes(const GlobalTimes&);
     GlobalTimes(GlobalTimes&&);
-    
+
     GlobalTimes& operator=(const GlobalTimes&);
     GlobalTimes& operator=(GlobalTimes&&);
 
@@ -88,6 +88,10 @@ public:
 
     template <typename... Args>
     std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) {
+
+        if (name == label::__constant_ts || name == label::__results_ts)
+            throw std::invalid_argument("GlobalTimes::create_time_series: Time series name already in use.");
+            
         return m__ud_time_series.emplace(name, std::make_unique<TimeSeries>(*this, std::forward<Args>(args)...));
     }
 

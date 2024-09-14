@@ -140,6 +140,13 @@ std::size_t GlobalTimes::n_time_series() const {
 }
 
 const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) const {
+
+    if (name == label::__constant_ts)
+        return constant();
+
+    if (name == label::__results_ts)
+        return results();
+
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
         throw std::invalid_argument("GlobalTimes::time_series: Time series not found.");
@@ -148,6 +155,13 @@ const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) co
 }
 
 wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) {
+
+    if (name == label::__constant_ts)
+        throw std::invalid_argument("GlobalTimes::time_series: Cannot access the constant time series from a non const GlobalTimes object.");
+
+    if (name == label::__results_ts)
+        return results();
+
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
         throw std::invalid_argument("GlobalTimes::time_series: Time series not found.");
@@ -169,6 +183,10 @@ void GlobalTimes::duration__s(const time::Instant a_duration__s) {
 }
 
 void GlobalTimes::discard_time_series(const std::string& name) {
+
+    if (name == label::__constant_ts || name == label::__results_ts)
+        throw std::invalid_argument("GlobalTimes::discard_time_series: Cannot discard the constant or results time series.");
+        
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
         throw std::invalid_argument("GlobalTimes::discard_time_series: Time series not found.");
