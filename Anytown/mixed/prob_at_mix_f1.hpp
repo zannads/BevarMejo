@@ -21,9 +21,6 @@ namespace bevarmejo {
 namespace anytown {
 namespace mixed {
 namespace f1 {
-
-const std::string name = "bevarmejo::anytown::mixed::f1";
-const std::string extra_info = "\tVersion 1 of Anytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
     
 // Dimensions of the problem.
 constexpr std::size_t n_obj = 2u;
@@ -76,10 +73,10 @@ public:
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
 
     // Name of the problem
-    std::string get_name() const { return name; }
+    std::string get_name() const { return anytown::io::value::mixed_f1; }
 
     // Extra information about the problem
-    std::string get_extra_info() const { return extra_info; }
+    std::string get_extra_info() const { return anytown::io::other::mixed_f1_exinfo; }
 
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.

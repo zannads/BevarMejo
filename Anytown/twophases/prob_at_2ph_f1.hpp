@@ -27,9 +27,6 @@ namespace bevarmejo {
 namespace anytown {
 namespace twophases {
 namespace f1 {
-
-const std::string name = "bevarmejo::anytown::twophases::f1";
-const std::string extra_info = "\tVersion 1 of Anytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
     
 // Dimensions of the problem.
 constexpr std::size_t n_obj = 2u;
@@ -79,10 +76,10 @@ public:
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
 
     // Name of the problem
-    std::string get_name() const { return name; }
+    std::string get_name() const { return io::value::twoph_f1; }
 
     // Extra information about the problem
-    std::string get_extra_info() const { return extra_info; }
+    std::string get_extra_info() const { return io::other::twoph_f1_exinfo; }
 
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.

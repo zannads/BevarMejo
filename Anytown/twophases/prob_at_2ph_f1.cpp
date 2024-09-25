@@ -26,6 +26,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/io.hpp"
+namespace bemeio = bevarmejo::io;
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
@@ -83,7 +84,7 @@ Problem::Problem(json settings, std::vector<fsys::path> lookup_paths) {
     assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
     m_algo = pagmo::algorithm( bevarmejo::Nsga2( json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
 
-    assert(udp.contains(label::__name) && udp[label::__name] == bemeat::operations::f1::name && udp.contains(label::__params));
+    assert(udp.contains(label::__name) && udp[label::__name] == (std::string("bevarmejo::anytown::")+bemeat::io::value::opertns_f1) && udp.contains(label::__params));
     pagmo::problem prob{ bemeat::operations::f1::Problem(udp[label::__params], lookup_paths)};
     
     assert(udpop.contains(label::__size));
@@ -186,7 +187,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 	try {
 		m__anytown->run_hydraulics();
 	} catch (...) {
-		io::stream_out( std::cerr, "Error in the hydraulic simulation.\n");
+		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation.\n");
 		reset_dv(m__anytown, dvs, old_HW_coeffs);
 		return std::vector<double>(n_fit, std::numeric_limits<double>::max());
 	}

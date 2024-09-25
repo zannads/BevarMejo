@@ -20,9 +20,6 @@ namespace anytown{
 namespace operations {
 namespace f1 {
 
-const std::string name = "bevarmejo::anytown::operations::f1";
-const std::string extra_info = "\tAnytown Operations-only problem. Pure 24-h scheduling.\n";
-
 constexpr std::size_t n_obj = 2u;
 constexpr std::size_t n_ec = 0u;
 constexpr std::size_t n_ic = 0u;
@@ -69,10 +66,10 @@ public:
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
 
     // Name of the problem
-    std::string get_name() const { return name; }
+    std::string get_name() const { return io::value::opertns_f1; }
 
     // Extra information about the problem
-    std::string get_extra_info() const { return extra_info; }
+    std::string get_extra_info() const { return io::other::opertns_f1_exinfo; }
 
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.

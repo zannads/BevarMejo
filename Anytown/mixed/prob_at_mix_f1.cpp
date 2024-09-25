@@ -12,6 +12,7 @@
 using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
+namespace bemeio = bevarmejo::io;
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
@@ -96,7 +97,7 @@ std::vector<double> Problem::fitness(const std::vector<double> &dvs) const {
 	try {
 		m__anytown->run_hydraulics();
 	} catch (const std::exception& e) {
-		io::stream_out(std::cerr, "Error in the hydraulic simulation:\n", e.what(), "\n");
+		bemeio::stream_out(std::cerr, "Error in the hydraulic simulation:\n", e.what(), "\n");
 		reset_dv(m__anytown, dvs, old_HW_coeffs);
 		return std::vector<double>(n_fit, std::numeric_limits<double>::max());
 	}

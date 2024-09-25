@@ -312,6 +312,18 @@ inline nl::json dynamic_params(const T& udc) {
 } // namespace detail
 } // namespace json
 
+// Given any problem, I can identify it as suite::problem. After that I could pass
+// extra info to the problem, for example, the formulation or the version.
+namespace detail {
+struct ProblemName
+{
+    std::string_view suite;
+    std::string_view problem;
+    std::string_view formulation;
+};
+} // namespace detail
+detail::ProblemName split_problem_name(std::string_view problem_name);
+
 namespace inp {
 namespace detail {
 

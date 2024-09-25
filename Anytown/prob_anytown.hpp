@@ -83,6 +83,47 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 // Forward definition of the Problem class, we need this first, 
 class Problem;
 
+// Definition of all possible formulations:
+enum class Formulation {
+    rehab_f1,
+    mixed_f1,
+    opertns_f1,
+    twoph_f1,
+    rehab_f2,
+    mixed_f2
+}; // enum class Formulation
+
+namespace io {
+namespace key {
+
+} // namespace key
+
+namespace value {
+
+    // Values for the allowed formulations in the json file.
+    static const std::string rehab_f1 = "rehab::f1";
+    static const std::string mixed_f1 = "mixed::f1";
+    static const std::string opertns_f1 = "operations::f1";
+    static const std::string twoph_f1 = "twophases::f1";
+    static const std::string rehab_f2 = "rehab::f2";
+    static const std::string mixed_f2 = "mixed::f2";
+
+} // namespace value
+
+namespace other {
+
+    // Extra information for the formulations.
+    static const std::string rehab_f1_exinfo =  "\tAnytown Rehabilitation Formulation 1\nOperations from input, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+    static const std::string mixed_f1_exinfo =  "\tAnytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+    static const std::string opertns_f1_exinfo = "\tAnytown Operations-only problem. Pure 24-h scheduling.\n";
+    static const std::string twoph_f1_exinfo = "\tAnytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
+    static const std::string rehab_f2_exinfo =  "\tAnytown Rehabilitation Formulation 2\nOperations from input, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+    static const std::string mixed_f2_exinfo =  "\tAnytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+
+} // namespace other
+
+} // namespace io
+
 // Anytown functions for all formulations:
 // For the bounds
 std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const bevarmejo::anytown::Problem &prob);
@@ -106,6 +147,7 @@ double of__reliability(const WDS& anytown);
 
 // Anytown functions for specific formulations
 namespace f1 {
+
 // For the bounds
 std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const bevarmejo::anytown::Problem &prob);
 std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const bevarmejo::anytown::Problem &prob);
@@ -127,6 +169,23 @@ double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std
 
 namespace f2 {
 
+// For the bounds
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const bevarmejo::anytown::Problem &prob);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const bevarmejo::anytown::Problem &prob);
+
+// For fitness function:
+//     For apply dv:
+std::vector<double> apply_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+
+//     For reset dv:
+void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<double>& old_HW_coeffs);
+void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
+
+//      For cost function:
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+
 } // namespace f2
 
 class Problem {
@@ -143,6 +202,7 @@ protected:
     mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> m__anytown;
     std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
+    Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
 
     // For constructor:
     void load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});

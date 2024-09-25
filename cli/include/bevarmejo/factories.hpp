@@ -27,23 +27,46 @@ namespace bevarmejo {
 inline pagmo::problem build_problem(json jinput, std::vector<std::filesystem::path> lookup_paths) {
     pagmo::problem p{};
 
-    auto probname = jinput[label::__name].get<std::string>();
+    auto probname_s = jinput[label::__name].get<std::string>();
+    bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(probname_s);
+
     auto pparams = jinput[label::__params];
 
-    if ( probname == bevarmejo::anytown::rehab::f1::name) {
-        p = bevarmejo::anytown::rehab::f1::Problem(pparams, lookup_paths);
+    if ( probname.suite == "bevarmejo" ) {
+
+        if ( probname.problem == "hanoi" ) {
+            p = bevarmejo::hanoi::fbiobj::Problem(pparams, lookup_paths);
+        }
+        else if ( probname.problem == "anytown" ) {
+
+            if (probname.formulation == bevarmejo::anytown::io::value::rehab_f1)
+                p = bevarmejo::anytown::rehab::f1::Problem(pparams, lookup_paths);
+
+            else if (probname.formulation == bevarmejo::anytown::io::value::mixed_f1)
+                p = bevarmejo::anytown::mixed::f1::Problem(pparams, lookup_paths);
+
+            else if (probname.formulation == bevarmejo::anytown::io::value::opertns_f1)
+                p = bevarmejo::anytown::operations::f1::Problem(pparams, lookup_paths);
+
+            else if (probname.formulation == bevarmejo::anytown::io::value::twoph_f1)
+                // p = bevarmejo::anytown::twophases::f1::Problem(pparams, lookup_paths);
+                throw std::runtime_error("The twophases formulation is not yet implemented.");
+
+            else {
+                throw std::runtime_error("The problem formulation is not recognized.");
+            }
+            
+        }
+        else {
+            throw std::runtime_error("The problem name is not recognized.");
+        }
+
     }
-    else if ( probname == bevarmejo::anytown::mixed::f1::name) {
-        p = bevarmejo::anytown::mixed::f1::Problem(pparams, lookup_paths);
-    }
-    else if ( probname == bevarmejo::anytown::operations::f1::name) {
-        p = bevarmejo::anytown::operations::f1::Problem(pparams, lookup_paths);
-    }
-    else if ( probname == bevarmejo::hanoi::fbiobj::name) {
-        p = bevarmejo::hanoi::fbiobj::Problem(pparams, lookup_paths);
+    else if ( probname.suite == "pagmo" ) {
+        throw std::runtime_error("The pagmo problems are not yet implemented.");
     }
     else {
-        throw std::runtime_error("The problem name is not recognized.");
+        throw std::runtime_error("The problem suite is not recognized.");
     }
 
     return p;

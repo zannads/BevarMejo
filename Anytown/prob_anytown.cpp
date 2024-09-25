@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "bevarmejo/io.hpp"
+namespace bemeio = bevarmejo::io;
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
@@ -29,20 +30,20 @@ namespace anytown {
 
 std::istream& operator>>(std::istream& is, bevarmejo::anytown::tanks_costs& tc)
 {
-	io::stream_in(is, tc.volume_gal); is.ignore(1000, ';');
-	io::stream_in(is, tc.cost);
+	bemeio::stream_in(is, tc.volume_gal); is.ignore(1000, ';');
+	bemeio::stream_in(is, tc.cost);
 
 	return is;
 }
 
 std::istream& operator>>(std::istream& is, bevarmejo::anytown::pipes_alt_costs& pac) {
-	io::stream_in(is, pac.diameter_in); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.diameter_in); is.ignore(1000, ';');
 
-	io::stream_in(is, pac.new_cost); is.ignore(1000, ';');
-	io::stream_in(is, pac.dup_city); is.ignore(1000, ';');
-	io::stream_in(is, pac.dup_residential); is.ignore(1000, ';');
-	io::stream_in(is, pac.clean_city); is.ignore(1000, ';');
-	io::stream_in(is, pac.clean_residential);
+	bemeio::stream_in(is, pac.new_cost); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.dup_city); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.dup_residential); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.clean_city); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.clean_residential);
 
 	return is;
 }
@@ -71,7 +72,7 @@ void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, 
 	assert(settings != nullptr);
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
+	auto file = bemeio::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
 	if (!file.has_value()) {
 		throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
 	}
@@ -83,7 +84,7 @@ void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, 
 void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
 	for (const auto& udeg : settings["WDS"]["UDEGs"]) {
 		// Locate the file in the lookup paths
-		auto file = bevarmejo::io::locate_file(fsys::path{udeg}, lookup_paths);
+		auto file = bemeio::locate_file(fsys::path{udeg}, lookup_paths);
 		if (file.has_value()) {
 			try{
 				m__anytown->add_subnetwork(file.value());
@@ -100,7 +101,7 @@ void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) 
 
 void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_paths) {
 	// Load Pipe rehabilitation alternative costs 
-	auto file = bevarmejo::io::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
+	auto file = bemeio::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
 	if (!file.has_value()) {
 		throw std::runtime_error("The provided available diameters file does not exist in the lookup paths. Check the settings file.\n");
 	}
@@ -112,13 +113,13 @@ void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_path
 		throw std::runtime_error("Could not open file " + prac_filename.string());
 	}
 
-	std::size_t n_alt_costs = io::load_dimensions(prac_file, "#DATA");
+	std::size_t n_alt_costs = bemeio::load_dimensions(prac_file, "#DATA");
 	m__pipes_alt_costs.resize(n_alt_costs);
-	io::stream_in(prac_file, m__pipes_alt_costs);
+	bemeio::stream_in(prac_file, m__pipes_alt_costs);
 	
 
 	// Load Tank costs 
-	file = bevarmejo::io::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
+	file = bemeio::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
 	if (!file.has_value()) {
 		throw std::runtime_error("The provided tank costs file does not exist in the lookup paths. Check the settings file.\n");
 	}
@@ -128,9 +129,9 @@ void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_path
 		throw std::runtime_error("Could not open file " + tanks_filename.string());
 	}
 	
-	std::size_t n_tanks = io::load_dimensions(tanks_file, "#DATA");
+	std::size_t n_tanks = bemeio::load_dimensions(tanks_file, "#DATA");
 	m__tanks_costs.resize(n_tanks);
-	io::stream_in(tanks_file, m__tanks_costs);
+	bemeio::stream_in(tanks_file, m__tanks_costs);
 }
 
 std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const bevarmejo::anytown::Problem &prob) {
@@ -612,7 +613,7 @@ void f1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std
 		++curr_dv;
 
 #ifdef DEBUGSIM
-		io::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
 		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 		" Elev ", elev, " Min level ", min_lev, " Max lev ", max_lev, " Diam ", diam_m, "\n");
 #endif
