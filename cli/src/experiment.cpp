@@ -24,16 +24,11 @@ using json = nlohmann::json;
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
-#include "bevarmejo/pagmo_helpers/udc_help.hpp"
+#include "bevarmejo/io/json_serializers.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
 #include "Anytown/prob_anytown.hpp"
-#include "Anytown/rehab/prob_at_reh_f1.hpp"
-#include "Anytown/mixed/prob_at_mix_f1.hpp"
-#include "Anytown/operations/prob_at_ope_f1.hpp"
-#include "Anytown/twophases/prob_at_2ph_f1.hpp"
-
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
 #include "experiment.hpp"

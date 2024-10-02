@@ -50,12 +50,16 @@ set(WDS_AUX
         "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
 )
 
+set(IO_FILES
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/json_serializers.cpp"
+)
+
 set(HELPERS     
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
 )
 
 add_library(bemelib 
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/io.hpp" "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io.cpp" 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/constants.hpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/econometric_functions.hpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/hydraulic_functions.hpp" "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
@@ -67,6 +71,7 @@ add_library(bemelib
         ${WDS_LINKS}
         ${WDS_AUX}
         ${WDS_DATAS}
+        ${IO_FILES}
         ${HELPERS}
 )
             

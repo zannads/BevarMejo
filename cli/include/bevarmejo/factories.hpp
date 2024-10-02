@@ -16,10 +16,6 @@ using json = nlohmann::json;
 
 // now include all the specific Bevarmejo problems
 #include "Anytown/prob_anytown.hpp"
-#include "Anytown/rehab/prob_at_reh_f1.hpp"
-#include "Anytown/mixed/prob_at_mix_f1.hpp"
-#include "Anytown/operations/prob_at_ope_f1.hpp"
-
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
 namespace bevarmejo {

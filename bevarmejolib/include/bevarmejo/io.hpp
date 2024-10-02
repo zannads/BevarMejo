@@ -282,36 +282,6 @@ inline void stream_param(std::ostream &os, const std::string& param_name, const 
     detail::stream_output(os, param_name, " : ", param_value, "\n");
 }
 
-// Given any pagmo container (island, algorithm, etc) return a json object with
-// name of the UD class, Parameters for input to the UD class, and extra info.
-// Two formulations are available, one for static parameters and one for dynamic.
-// The dynamic parameters are the ones that change at runtime, the static ones are
-// set at the beginning and don't change.
-// For each user defined class in an experiment (udc), this could have a set of 
-// static parameters and a set of dynamic parameters (more like states of the class).
-// The static parameters remain the same during en evolution, while the dynamic
-// parameters change. Together with the static parameters, I allow a string with
-// extra information that can be used to store any other information (e.g., an
-// explanation of the problem, the topology, etc.)
-
-namespace json {
-namespace detail {
-
-template <typename T>
-inline std::pair<nl::json,std::string> static_params(const T& udc) {
-    auto extra_info = udc.get_extra_info();
-    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
-    return std::make_pair(nl::json{}, extra_info);
-}
-
-template <typename T>
-inline nl::json dynamic_params(const T& udc) {
-    return nl::json{};
-}
-
-} // namespace detail
-} // namespace json
-
 // Given any problem, I can identify it as suite::problem. After that I could pass
 // extra info to the problem, for example, the formulation or the version.
 namespace detail {

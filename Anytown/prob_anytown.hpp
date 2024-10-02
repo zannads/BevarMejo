@@ -129,6 +129,15 @@ namespace other {
 
 } // namespace other
 
+namespace json {
+namespace detail {
+
+std::pair<nl::json,std::string> static_params(const bevarmejo::anytown::Problem &prob);
+
+nl::json dynamic_params(const bevarmejo::anytown::Problem &prob);
+
+} // namespace detail
+} // namespace json
 } // namespace io
 
 // For the bounds
@@ -252,6 +261,11 @@ protected:
     
     void apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
     void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+
+private:
+    // make the serializer a friend
+    friend std::pair<nl::json,std::string> io::json::detail::static_params(const Problem &prob);
+    friend nl::json io::json::detail::dynamic_params(const Problem &prob);
     
 }; // class Problem
 

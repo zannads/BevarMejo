@@ -142,7 +142,8 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 
 	if (m__formulation == Formulation::twoph_f1) {
 		__format_and_throw<std::invalid_argument>(bevarmejo::io::log::cname::anytown_problem, bevarmejo::io::log::cname::anytown_problem,
-			"Formulation 1 of twophase problem is not yet implemented.");
+			"Formulation 1 of twophase problem is not supported anymore.");
+		/*
 		// Prepare the internal optimization problem 
 		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
 		&& settings["Internal optimization"].contains("UDP") && settings["Internal optimization"].contains("Population") );
@@ -162,6 +163,7 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 		m_pop = pagmo::population( prob, udpop[label::__size].get<unsigned int>()-2u ); // -2 because I will manually add the two extreme solutions (the bounds)
 		m_pop.push_back(prob.get_bounds().first); // all zero operations not running 
 		m_pop.push_back(prob.get_bounds().second); // all operations running at max
+		*/
 	}
 }
 
