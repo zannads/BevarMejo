@@ -81,78 +81,18 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
-	std::function<void (EN_Project)> fix_inp = nullptr;
+	// Unfortunately, this is always necessary because of the way that the inp file is loaded
+	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
+		// change curve ID 2 to a pump curve
+		assert(ph != nullptr);
+		std::string curve_id = "2";
+		int curve_idx = 0;
+		int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
+		assert(errorcode <= 100);
 
-	switch (m__formulation)
-	{
-	// Rehabiliation formulation
-	case Formulation::rehab_f1:
-		[[fallthrough]];
-	case Formulation::rehab_f2: {
-		// Fix the bug where the curve 2 (i.e., the pump characteristic curve
-		// is uploaded as a generic curve and not as a pump curve). 
-		// Also fix the operations before constructions (so it's like having a new inp file)
-		std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
-		assert(operations.size() == 24);
-
-		fix_inp = [&operations](EN_Project ph) {
-			// change curve ID 2 to a pump curve
-			assert(ph != nullptr);
-			assert(operations.size() == 24);
-			std::string curve_id = "2";
-			int curve_idx = 0;
-			int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
-			assert(errorcode <= 100);
-
-			errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
-			assert(errorcode <= 100);
-
-			// Fix pumps' patterns
-			for (int i = 0; i < 3; ++i) {
-				// no need to go through the pumps, I know the pattern ID
-				int pattern_idx = 0;
-				errorcode = EN_getpatternindex(ph, std::to_string(i+2).c_str(), &pattern_idx);
-				assert(errorcode <= 100);
-
-				std::vector<double> temp(24, 0.0);
-				for (int j = 0; j < 24; ++j) {
-					temp[j] = operations[j] > i ? 1.0 : 0.0;
-				}
-
-				errorcode = EN_setpattern(ph, pattern_idx, temp.data(), temp.size());
-				assert(errorcode <= 100);
-			}
-		};
-		break;
-	}
-	// Mixed formulations, but also operations only
-	case Formulation::mixed_f1:
-		[[fallthrough]];
-	case Formulation::mixed_f2:
-		[[fallthrough]]; 
-	case Formulation::opertns_f1:
-		[[fallthrough]];	
-	case Formulation::twoph_f1:	{
-		// Same thing for the pump curve.
-		fix_inp = [](EN_Project ph) {
-			// change curve ID 2 to a pump curve
-			assert(ph != nullptr);
-			std::string curve_id = "2";
-			int curve_idx = 0;
-			int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
-			assert(errorcode <= 100);
-
-			errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
-			assert(errorcode <= 100);
-		};
-		break;
-	}
-	default: {
-		// ERROR in the formulation
-		__format_and_throw<std::invalid_argument>(bemeio::log::cname::anytown_problem, bemeio::log::cname::anytown_problem, 
-			"Invalid formulation for the problem. Check the settings file.");
-	}	
-	}
+		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
+		assert(errorcode <= 100);
+	};
 
 	load_network(settings, lookup_paths, fix_inp);
 
@@ -163,6 +103,32 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 		m__anytown->add_subnetwork(label::__temp_elems, wds::Subnetwork{});
 
 		load_other_data(settings, lookup_paths);
+	}
+
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
+		// Need to se the operations for the rehabilitation problems
+		std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
+		assert(operations.size() == 24);
+
+		// Fix pumps' patterns
+		for (int i = 0; i < 3; ++i) {
+			// no need to go through the pumps, I know the pattern ID
+			int pattern_idx = 0;
+			int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+			assert(errorcode <= 100);
+
+			std::vector<double> temp(24, 0.0);
+			for (int j = 0; j < 24; ++j) {
+				temp[j] = operations[j] > i ? 1.0 : 0.0;
+			}
+
+			errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+			assert(errorcode <= 100);
+
+			// Should be the same as
+			// m__anytown->pumps().find(std::to_string(i+2))->operator->()->speed_pattern() = temp;
+			// but I can avoid as it is not used yet
+		}
 	}
 }
 
