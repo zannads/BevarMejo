@@ -124,69 +124,61 @@ namespace other {
 
 } // namespace io
 
-// Anytown functions for all formulations:
 // For the bounds
+namespace fep1 {
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
+namespace fep2 {
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}  
 std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pumps &pumps);
+namespace fnt1 {
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+}
 
 // For fitness function:
 //     For apply dv:
+namespace fep1 {
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
+namespace fep2 {
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
 void apply_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 void apply_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
-
-//     For reset dv:
-void reset_dv__new_pipes(WDS& anytown);
-void reset_dv__pumps(WDS& anytown);
+namespace fnt1 {
+void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+}
 
 //      For cost function:
+namespace fep1 {
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
+namespace fep2 {
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
 double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 double cost__energy_per_day(const WDS& anytown);
+namespace fnt1 {
+double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+}
 
 //      For reliability (modified) function:
 double of__reliability(const WDS& anytown);
 
-// Anytown functions for specific formulations
-namespace f1 {
-
-// For the bounds
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
-
-// For fitness function:
-//     For apply dv:
-void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
-
 //     For reset dv:
+namespace fep1 {
 void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::unordered_map<std::string, double> &old_HW_coeffs);
-void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
-
-//      For cost function:
-double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-
-} // namespace f1
-
-namespace f2 {
-
-// For the bounds
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
-
-// For fitness function:
-//     For apply dv:
-void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
-
-//     For reset dv:
+}
+namespace fep2 {
 void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::unordered_map<std::string, double> &old_HW_coeffs);
+}
+void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs);
+void reset_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
+namespace fnt1 {
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
-
-//      For cost function:
-double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-
-} // namespace f2
+}
 
 class Problem {
 public:
