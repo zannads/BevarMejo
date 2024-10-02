@@ -12,7 +12,7 @@ namespace bevarmejo {
 namespace detail {
 
 constexpr unsigned int version_year = 2024;
-constexpr unsigned int version_month = 9;
+constexpr unsigned int version_month = 10;
 constexpr unsigned int version_release = 0;
 
 class Version {
