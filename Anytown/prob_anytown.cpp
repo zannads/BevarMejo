@@ -12,6 +12,15 @@ namespace fsys = std::filesystem;
 #include <utility>
 #include <vector>
 
+#include <pagmo/problem.hpp>
+#include <pagmo/algorithms/nsga2.hpp>
+#include <pagmo/algorithm.hpp>
+#include <pagmo/population.hpp>
+#include <pagmo/island.hpp>
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 #include "bevarmejo/io.hpp"
 namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
@@ -19,8 +28,7 @@ namespace bemeio = bevarmejo::io;
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
+#include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -107,6 +115,7 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 
 	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
 		// Need to se the operations for the rehabilitation problems
+		assert(settings.contains("Operations"));
 		std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
 		assert(operations.size() == 24);
 
@@ -129,6 +138,30 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 			// m__anytown->pumps().find(std::to_string(i+2))->operator->()->speed_pattern() = temp;
 			// but I can avoid as it is not used yet
 		}
+	}
+
+	if (m__formulation == Formulation::twoph_f1) {
+		__format_and_throw<std::invalid_argument>(bevarmejo::io::log::cname::anytown_problem, bevarmejo::io::log::cname::anytown_problem,
+			"Formulation 1 of twophase problem is not yet implemented.");
+		// Prepare the internal optimization problem 
+		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
+		&& settings["Internal optimization"].contains("UDP") && settings["Internal optimization"].contains("Population") );
+		auto uda = settings["Internal optimization"]["UDA"];
+		auto udp = settings["Internal optimization"]["UDP"];
+		auto udpop = settings["Internal optimization"]["Population"];
+
+		// this is nasty but as of now it will work // I am not passing any info for now 
+		assert(udpop.contains(label::__report_gen_sh));
+		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
+		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
+
+		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
+		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
+		
+		assert(udpop.contains(label::__size));
+		m_pop = pagmo::population( prob, udpop[label::__size].get<unsigned int>()-2u ); // -2 because I will manually add the two extreme solutions (the bounds)
+		m_pop.push_back(prob.get_bounds().first); // all zero operations not running 
+		m_pop.push_back(prob.get_bounds().second); // all operations running at max
 	}
 }
 
@@ -348,7 +381,42 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> 
 		return;
 	}
 	case Formulation::twoph_f1: {
-		//TODO: implement the two-phase formulation
+		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs);
+
+		// Forward these changes also to the internal optimization problem
+		auto udp = m_pop.get_problem().extract<bevarmejo::anytown::Problem>();
+		assert(udp != nullptr);
+		udp->m__anytown = this->m__anytown;
+
+		// I need to force the re-evaluation of the current solutions in the population
+		// So I create a "new population", that has the same elements of the previous one,
+		// but now, since the problem has changed, it will re-evaluate the solutions.
+		// I will then replace the old population with the new one.
+		// Super light to copy the internal problem as it only has the internal shared pointer to the network
+		pagmo::population new_pop( *udp /*, pop_size = 0, seed = m_pop.get_seed() */); 
+		for (const auto& dv: m_pop.get_x()) {
+			new_pop.push_back(dv);
+		}
+		m_pop = std::move(new_pop);
+
+		// Run the internal optimization problem which evolve n solutions m times
+		m_pop = m_algo.evolve(m_pop);
+
+		// The best solution is the one that minimizes the second objective function
+		// of the internal optimization problem (Pressure deficit). Ideally, after a
+		// while this is like a Single Objective problem trying to minimize cost.
+		auto dvs_internal = m_pop.get_x();
+		auto fvs_internal = m_pop.get_f();
+		std::vector<std::size_t> idx(fvs_internal.size());
+		std::iota(idx.begin(), idx.end(), 0u);
+		std::sort(idx.begin(), idx.end(), [&fvs_internal] (auto a, auto b) {return fvs_internal[a][1] < fvs_internal[b][1];});
+		
+		// To calculate the reliability index, since I lost the results in the internal optimization
+		// I have to apply the selected pattern to the network and run the simulation again. 
+		apply_dv__pumps(*anytown, m_pop.get_x().at(idx.front()));
+		return;
 	}
 	case Formulation::opertns_f1: {
 		apply_dv__pumps(*anytown, dvs);
@@ -510,7 +578,10 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> 
 		return;
 	}
 	case Formulation::twoph_f1: {
-		// TODO: implement the two-phase formulation
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
+		// No pumps reset and no need to do anything to the internal opt problem.
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()));
 		return;
 	}
 	case Formulation::opertns_f1: {
@@ -795,18 +866,13 @@ void apply_dv__pumps(WDS& anyt_wds, const std::vector<double>& dvs) {
 	assert(dvs.size() == 24); // 24 hours x [npr]
 	// Let's assume that indices are already cached
 
-	auto curr_dv = dvs.begin();
-	auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, curr_dv+24), anyt_wds.pumps().size());
-	for (std::size_t i = 0; i < patterns.size(); ++i) {
-		// I know pump patterns IDs are from 2, 3, and 4
-		int pump_idx = i + 2;
-		std::string pump_id = std::to_string(pump_idx);
-		int errorcode = EN_getpatternindex(anyt_wds.ph_, pump_id.c_str(), &pump_idx);
-		assert(errorcode <= 100);
-
+	auto patterns = decompose_pumpgroup_pattern(dvs, anyt_wds.pumps().size());
+	std::size_t i = 0;
+	for (auto& pump : anyt_wds.pumps()) {
 		// set the pattern
-		errorcode = EN_setpattern(anyt_wds.ph_, pump_idx, patterns[i].data(), patterns[i].size());
+		int errorcode = EN_setpattern(anyt_wds.ph_, pump->speed_pattern()->index(), patterns[i].data(), patterns[i].size());
 		assert(errorcode <= 100);
+		++i;
 	}
 }
 

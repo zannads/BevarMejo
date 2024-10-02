@@ -14,7 +14,14 @@ namespace fsys = std::filesystem;
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
+#include <pagmo/problem.hpp>
+#include <pagmo/algorithms/nsga2.hpp>
+#include <pagmo/algorithm.hpp>
+#include <pagmo/population.hpp>
+#include <pagmo/island.hpp>
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
@@ -231,6 +238,9 @@ protected:
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
     mutable std::unordered_map<std::string, double> m__old_HW_coeffs; // Store the old HW coefficients for reset_dv
+    // internal operation optimisation problem:
+    pagmo::algorithm m_algo;
+    mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
     // For constructor:
     void load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
