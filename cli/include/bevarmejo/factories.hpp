@@ -40,13 +40,13 @@ inline pagmo::problem build_problem(json jinput, std::vector<std::filesystem::pa
         else if ( probname.problem == "anytown" ) {
 
             if (probname.formulation == bevarmejo::anytown::io::value::rehab_f1)
-                p = bevarmejo::anytown::rehab::f1::Problem(pparams, lookup_paths);
+                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::rehab_f1, pparams, lookup_paths);
 
             else if (probname.formulation == bevarmejo::anytown::io::value::mixed_f1)
-                p = bevarmejo::anytown::mixed::f1::Problem(pparams, lookup_paths);
+                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::mixed_f1, pparams, lookup_paths);
 
             else if (probname.formulation == bevarmejo::anytown::io::value::opertns_f1)
-                p = bevarmejo::anytown::operations::f1::Problem(pparams, lookup_paths);
+                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::opertns_f1, pparams, lookup_paths);
 
             else if (probname.formulation == bevarmejo::anytown::io::value::twoph_f1)
                 // p = bevarmejo::anytown::twophases::f1::Problem(pparams, lookup_paths);

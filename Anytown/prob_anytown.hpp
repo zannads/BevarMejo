@@ -126,8 +126,8 @@ namespace other {
 
 // Anytown functions for all formulations:
 // For the bounds
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const bevarmejo::anytown::Problem &prob);
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const bevarmejo::anytown::Problem &prob);
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pumps &pumps);
 
 // For fitness function:
 //     For apply dv:
@@ -149,16 +149,16 @@ double of__reliability(const WDS& anytown);
 namespace f1 {
 
 // For the bounds
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const bevarmejo::anytown::Problem &prob);
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const bevarmejo::anytown::Problem &prob);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 
 // For fitness function:
 //     For apply dv:
-std::vector<double> apply_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 
 //     For reset dv:
-void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<double>& old_HW_coeffs);
+void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::unordered_map<std::string, double> &old_HW_coeffs);
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 
 //      For cost function:
@@ -170,16 +170,16 @@ double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std
 namespace f2 {
 
 // For the bounds
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const bevarmejo::anytown::Problem &prob);
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const bevarmejo::anytown::Problem &prob);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 
 // For fitness function:
 //     For apply dv:
-std::vector<double> apply_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 
 //     For reset dv:
-void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<double>& old_HW_coeffs);
+void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const std::unordered_map<std::string, double> &old_HW_coeffs);
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 
 //      For cost function:
@@ -191,11 +191,46 @@ double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std
 class Problem {
 public:
     Problem() = default;
+    Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;
     Problem& operator=(Problem&& rhs) noexcept = default;
     ~Problem() = default;
+
+/*----------------------*/
+// PUBLIC functions for Pagmo Algorihtm 
+/*----------------------*/
+
+public:
+    // Number of objective functions
+    std::vector<double>::size_type get_nobj() const;
+
+    // Number of equality constraints
+    std::vector<double>::size_type get_nec() const;
+
+    // Number of INequality constraints
+    std::vector<double>::size_type get_nic() const;
+
+    // Number of integer decision variables
+    std::vector<double>::size_type get_nix() const;
+
+    // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
+
+    // Name of the problem
+    std::string get_name() const;
+
+    // Extra information about the problem
+    std::string get_extra_info() const;
+
+    // Mandatory public functions necessary for the optimization algorithm:
+    // Implementation of the objective function.
+    std::vector<double> fitness(const std::vector<double>& dvs) const;
+
+    // Implementation of the box bounds.
+    std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
+
+    void save_solution(const std::vector<double>& dvs, const fsys::path& out_file) const;
 
 protected:
     // Anytown specific data
@@ -203,17 +238,19 @@ protected:
     std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
+    mutable std::unordered_map<std::string, double> m__old_HW_coeffs; // Store the old HW coefficients for reset_dv
 
     // For constructor:
     void load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
     void load_subnets(json settings, std::vector<fsys::path> lookup_paths);
     void load_other_data(json settings, std::vector<fsys::path> lookup_paths);
 
-    // For the bounds:
-    friend std::pair<std::vector<double>, std::vector<double>> f1::bounds__exis_pipes(const bevarmejo::anytown::Problem &prob);
-    friend std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const bevarmejo::anytown::Problem &prob);
-    friend std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const bevarmejo::anytown::Problem &prob);
-    friend std::pair<std::vector<double>, std::vector<double>> f1::bounds__tanks(const bevarmejo::anytown::Problem &prob);
+    // For fitness function:
+    double cost(const WDS &anytown, const std::vector<double>& dv) const;
+    
+    void apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    
 }; // class Problem
 
 } // namespace anytown
