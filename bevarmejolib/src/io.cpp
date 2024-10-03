@@ -20,18 +20,7 @@
 namespace bevarmejo {
 namespace io {
 
-std::optional<std::filesystem::path> locate_file(const std::filesystem::path &filename, const std::vector<std::filesystem::path> &lookup_paths) {
 
-    // To be successful, the file must exist and be a regular file. Otherwise, it is not found.
-    for (const auto &path : lookup_paths) {
-        std::filesystem::path candidate = path / filename;
-        if (std::filesystem::exists(candidate) && std::filesystem::is_regular_file(candidate)) {
-            return candidate;
-        }
-    }
-    // Else not found
-    return std::nullopt;
-}
 
 detail::ProblemName split_problem_name(std::string_view problem_name) {
     // A valid problem name is suite::problem::formulation or suite::problem, since

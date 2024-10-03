@@ -2,6 +2,10 @@
 
 #include <string>
 
+namespace bevarmejo::io::log::nname {
+static const std::string beme_l = "bevarmejo::"; // "bevarmejo::"
+}
+
 namespace bevarmejo::io::other {
 
 static const std::string beme_filenames_separator = "__"; // "__"

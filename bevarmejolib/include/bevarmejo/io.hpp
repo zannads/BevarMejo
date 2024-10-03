@@ -25,7 +25,6 @@ namespace nl = nlohmann;
 
 namespace bevarmejo {
 namespace io {
-std::optional<std::filesystem::path> locate_file(const std::filesystem::path& filename, const std::vector<std::filesystem::path>& lookup_paths);
 
 namespace detail {
 

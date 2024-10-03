@@ -27,6 +27,7 @@ namespace fsys = std::filesystem;
 using json = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
+#include "bevarmejo/wds_problem.hpp"
 
 namespace bevarmejo {
 
@@ -100,45 +101,21 @@ enum class Formulation {
     mixed_f2
 }; // enum class Formulation
 
-namespace io {
-namespace key {
+// Values for the allowed formulations in the json file. (Must be visible outside this translation unit)
+namespace io::value {
+static const std::string rehab_f1 = "rehab::f1";
+static const std::string mixed_f1 = "mixed::f1";
+static const std::string opertns_f1 = "operations::f1";
+static const std::string twoph_f1 = "twophases::f1";
+static const std::string rehab_f2 = "rehab::f2";
+static const std::string mixed_f2 = "mixed::f2";
+} // namespace io::value
 
-} // namespace key
-
-namespace value {
-
-    // Values for the allowed formulations in the json file.
-    static const std::string rehab_f1 = "rehab::f1";
-    static const std::string mixed_f1 = "mixed::f1";
-    static const std::string opertns_f1 = "operations::f1";
-    static const std::string twoph_f1 = "twophases::f1";
-    static const std::string rehab_f2 = "rehab::f2";
-    static const std::string mixed_f2 = "mixed::f2";
-
-} // namespace value
-
-namespace other {
-
-    // Extra information for the formulations.
-    static const std::string rehab_f1_exinfo =  "\tAnytown Rehabilitation Formulation 1\nOperations from input, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
-    static const std::string mixed_f1_exinfo =  "\tAnytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
-    static const std::string opertns_f1_exinfo = "\tAnytown Operations-only problem. Pure 24-h scheduling.\n";
-    static const std::string twoph_f1_exinfo = "\tAnytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
-    static const std::string rehab_f2_exinfo =  "\tAnytown Rehabilitation Formulation 2\nOperations from input, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
-    static const std::string mixed_f2_exinfo =  "\tAnytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
-
-} // namespace other
-
-namespace json {
-namespace detail {
-
+// For the json serializer
+namespace io::json::detail {
 std::pair<nl::json,std::string> static_params(const bevarmejo::anytown::Problem &prob);
-
 nl::json dynamic_params(const bevarmejo::anytown::Problem &prob);
-
-} // namespace detail
-} // namespace json
-} // namespace io
+}
 
 // For the bounds
 namespace fep1 {
@@ -196,7 +173,10 @@ namespace fnt1 {
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 }
 
-class Problem {
+class Problem : public WDSProblem {
+private:
+    using inherithed = WDSProblem;
+
 public:
     Problem() = default;
     Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths);
@@ -224,12 +204,6 @@ public:
     std::vector<double>::size_type get_nix() const;
 
     // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
-
-    // Name of the problem
-    std::string get_name() const;
-
-    // Extra information about the problem
-    std::string get_extra_info() const;
 
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.

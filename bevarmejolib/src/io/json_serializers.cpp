@@ -55,47 +55,41 @@ nl::json static_descr(const pagmo::problem& prob) {
     };
 
     // based on the problem, I can call its own specific implementation
-    /*
+    
     if ( prob.is<bevarmejo::anytown::Problem>() ) {
         auto [jparams, jextra] = bevarmejo::anytown::io::json::detail::static_params(*prob.extract<bevarmejo::anytown::Problem>());
         j[to_kebab_case(label::__params)] = jparams;
         j[to_kebab_case(label::__extra_info)] = jextra;
-    } else if ( prob.is<bevarmejo::hanoi::fbiobj::Problem>() ) {
+    } /*else if ( prob.is<bevarmejo::hanoi::fbiobj::Problem>() ) {
         auto [jparams, jextra] = bevarmejo::hanoi::fbiobj::io::json::detail::static_params(*prob.extract<bevarmejo::hanoi::fbiobj::Problem>());
         j[to_kebab_case(label::__params)] = jparams;
         j[to_kebab_case(label::__extra_info)] = jextra;
-    } else {
+    }*/ else {
         // Default implementation
         j[to_kebab_case(label::__extra_info)] = prob.get_extra_info();
     }
-    */
-    // but for now simply do
-    j[to_kebab_case(label::__params)] = nl::json{}; // Fake that it is empty
-    j[to_kebab_case(label::__extra_info)] = prob.get_extra_info();
-
+    
     return nl::json{ {to_kebab_case(label::__problem), j} };
 }
 
 nl::json dynamic_descr(const pagmo::problem& prob) {
     
     // Name is NOT a dynamic parameter, so it is not saved here, same for extra info
-    /*
+    
     nl::json j { };
     
     // Based on the problem, I can call its own specific implementation
     if ( prob.is<bevarmejo::anytown::Problem>() ) { 
-        j[to_kebab_case(label::__params)] = bevarmejo::anytown::io::json::detail::dynamic_params(*prob.extract<bevarmejo::anytown::Problem>());
-    }
-    else {
-        // Default implementation is empty
-        return nl::json{};
+        nl::json jdp = bevarmejo::anytown::io::json::detail::dynamic_params(*prob.extract<bevarmejo::anytown::Problem>());
+        
+        if (!jdp.empty()) j[to_kebab_case(label::__params)] = jdp;
     }
     
+    if (j.empty()) 
+        return j;
 
     // If I reach here, I have to return the dynamic parameters
     return nl::json{ {to_kebab_case(label::__problem), j} };
-    */
-   return nl::json{}; // Fake that it is empty
 }
 
 /*-------------------- Island --------------------*/

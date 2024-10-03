@@ -24,6 +24,7 @@ using json = nlohmann::json;
 #include "bevarmejo/io.hpp"
 namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
@@ -35,16 +36,34 @@ namespace bemeio = bevarmejo::io;
 #include "prob_anytown.hpp"
 
 namespace bevarmejo {
-
-namespace io {
-namespace log {
-namespace cname {
-static const std::string anytown_problem = "anytown::Problem";
-} // namespace cname
-} // namespace log
-} // namespace io
-
 namespace anytown {
+
+// For the io functions
+static const std::string nname = "anytown::";
+
+namespace io::log::cname {
+static const std::string anytown_problem = "Problem"; 
+} // namespace cname
+
+namespace io::key {
+// TODO: keys
+static const std::string opers = "Operations";
+static const std::string avail_diam = "Available diameters";
+static const std::string tank_costs = "Tank costs";
+static const std::string __wds__ = "WDS";
+static const std::string __udegs__ = "UDEGs";
+static const std::string __inp__ = "inp";
+} // namespace key
+
+// Extra information for the formulations.
+namespace io::other {
+static const std::string rehab_f1_exinfo =  "Anytown Rehabilitation Formulation 1\nOperations from input, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+static const std::string mixed_f1_exinfo =  "Anytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+static const std::string opertns_f1_exinfo = "Anytown Operations-only problem. Pure 24-h scheduling.\n";
+static const std::string twoph_f1_exinfo = "Anytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
+static const std::string rehab_f2_exinfo =  "Anytown Rehabilitation Formulation 2\nOperations from input, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+static const std::string mixed_f2_exinfo =  "Anytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+}
 
 std::istream& operator>>(std::istream& is, bevarmejo::anytown::tanks_costs& tc)
 {
@@ -89,6 +108,37 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1:
+		m__name = io::value::rehab_f1;
+		m__extra_info = io::other::rehab_f1_exinfo;
+		break;
+	case Formulation::mixed_f1:
+		m__name = io::value::mixed_f1;
+		m__extra_info = io::other::mixed_f1_exinfo;
+		break;
+	case Formulation::opertns_f1:
+		m__name = io::value::opertns_f1;
+		m__extra_info = io::other::opertns_f1_exinfo;
+		break;
+	case Formulation::twoph_f1:
+		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"Formulation 1 of twophase problem is not supported anymore.");
+	case Formulation::rehab_f2:
+		m__name = io::value::rehab_f2;
+		m__extra_info = io::other::rehab_f2_exinfo;
+		break;
+	case Formulation::mixed_f2:
+		m__name = io::value::mixed_f2;
+		m__extra_info = io::other::mixed_f2_exinfo;
+		break;
+	default:
+		__format_and_throw<std::invalid_argument, ClassError>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"The provided Anytown formulation is not yet implemented.");
+	}
+
+
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
@@ -115,8 +165,8 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 
 	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
 		// Need to se the operations for the rehabilitation problems
-		assert(settings.contains("Operations"));
-		std::vector<double> operations = settings["Operations"].get<std::vector<double>>();
+		assert(settings.contains(io::key::opers));
+		std::vector<double> operations = settings[io::key::opers].get<std::vector<double>>();
 		assert(operations.size() == 24);
 
 		// Fix pumps' patterns
@@ -141,8 +191,6 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 	}
 
 	if (m__formulation == Formulation::twoph_f1) {
-		__format_and_throw<std::invalid_argument>(bevarmejo::io::log::cname::anytown_problem, bevarmejo::io::log::cname::anytown_problem,
-			"Formulation 1 of twophase problem is not supported anymore.");
 		/*
 		// Prepare the internal optimization problem 
 		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
@@ -169,28 +217,21 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 
 void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
 	assert(settings != nullptr);
+	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	auto file = bemeio::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto inp_filename = file.value();
-
-	m__anytown = std::make_shared<WDS>(inp_filename, preprocessf);
+	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths), preprocessf);
 }
 
 void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
-	for (const auto& udeg : settings["WDS"]["UDEGs"]) {
-		// Locate the file in the lookup paths
-		auto file = bemeio::locate_file(fsys::path{udeg}, lookup_paths);
-		if (file.has_value()) {
-			try{
-				m__anytown->add_subnetwork(file.value());
-			}
-			catch (const std::exception& ex) {
-				std::cerr << ex.what();
-			}
+	for (const auto& udeg : settings[io::key::__wds__][io::key::__udegs__]) {
+		
+		try
+		{
+			m__anytown->add_subnetwork(bemeio::locate_file(fsys::path{udeg}, lookup_paths));
+		}
+		catch (const std::exception& ex) {
+			std::cerr << ex.what();
 		}
 		// else skip but log the error 
 		// TODO: log the error in case it fails at later stages
@@ -199,12 +240,9 @@ void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) 
 }
 
 void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_paths) {
+	assert(settings.contains(io::key::avail_diam) && settings.contains(io::key::tank_costs));
 	// Load Pipe rehabilitation alternative costs 
-	auto file = bemeio::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided available diameters file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto prac_filename = file.value();
+	auto prac_filename = bemeio::locate_file(fsys::path{settings[io::key::avail_diam]}, lookup_paths);
 
 	// TODO: move also this to json?
 	std::ifstream prac_file{prac_filename};
@@ -216,13 +254,8 @@ void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_path
 	m__pipes_alt_costs.resize(n_alt_costs);
 	bemeio::stream_in(prac_file, m__pipes_alt_costs);
 	
-
 	// Load Tank costs 
-	file = bemeio::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided tank costs file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto tanks_filename = file.value();
+	auto tanks_filename = bemeio::locate_file(fsys::path{settings[io::key::tank_costs]}, lookup_paths);
 	std::ifstream tanks_file{tanks_filename};
 	if (!tanks_file.is_open()) {
 		throw std::runtime_error("Could not open file " + tanks_filename.string());
@@ -267,6 +300,7 @@ std::vector<double>::size_type Problem::get_nix() const {
 	}
 }
 
+/*
 std::string Problem::get_name() const {
 	switch (m__formulation)
 	{
@@ -306,6 +340,7 @@ std::string Problem::get_extra_info() const {
 		return "No extra information available.\nReason:\n\tUnknown Anytown formulation.";
 	}
 }
+*/
 
 // ------------------- 1st level ------------------- //
 std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {

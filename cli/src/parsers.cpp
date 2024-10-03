@@ -13,6 +13,7 @@ using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
 #include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"
@@ -169,15 +170,8 @@ Simulation parse(int argc, char *argv[]) {
     simu.lookup_paths.push_back(std::filesystem::current_path());
     
     try {
-        // 1.1 make sure it exists
-        // locate the file
-        auto filepath = bevarmejo::io::locate_file(std::filesystem::path{argv[1]}, simu.lookup_paths);
-        if (!filepath) {
-            throw std::invalid_argument("Simulation settings file not found: " + std::string(argv[1]));
-        }
-
-        // Simulation settings file is fine, save its full path
-        simu.settings_file = filepath.value();
+        // 1.1 Locate in the system and save the full path of the settings file and other  info
+        simu.settings_file = bevarmejo::io::locate_file(std::filesystem::path{argv[1]}, simu.lookup_paths);
         simu.folder = simu.settings_file.parent_path();
         simu.lookup_paths.push_back(simu.folder);
 
