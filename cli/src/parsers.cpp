@@ -12,6 +12,7 @@ using json = nlohmann::json;
 #include <pagmo/problem.hpp>
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"

@@ -60,11 +60,8 @@ set(HELPERS
 )
 
 add_library(bemelib 
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/constants.hpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/econometric_functions.hpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/hydraulic_functions.hpp" "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/labels.hpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/type_traits.hpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
         ${WDS_FILES}
         ${WDS_BASE_ELEMENTS}
         ${WDS_NODES}
@@ -86,6 +83,7 @@ target_include_directories(bemelib PUBLIC
 
 target_include_directories(bemelib PRIVATE
                         "include/bevarmejo"
+                        "include/bevarmejo/io"
                         "include/bevarmejo/epanet_helpers"
                         "include/bevarmejo/pagmo_helpers"
                         "include/bevarmejo/pagmo_helpers/algorithms"

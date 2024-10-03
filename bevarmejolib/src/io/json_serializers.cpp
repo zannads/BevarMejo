@@ -18,7 +18,7 @@ namespace nl = nlohmann;
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
-#include "bevarmejo/io/json_serializers.hpp"
+#include "json_serializers.hpp"
 
 namespace bevarmejo {
 namespace io {
@@ -69,8 +69,8 @@ nl::json static_descr(const pagmo::problem& prob) {
         j[to_kebab_case(label::__extra_info)] = prob.get_extra_info();
     }
     */
-   // but for now simply do
-   j[to_kebab_case(label::__params)] = nl::json{}; // Fake that it is empty
+    // but for now simply do
+    j[to_kebab_case(label::__params)] = nl::json{}; // Fake that it is empty
     j[to_kebab_case(label::__extra_info)] = prob.get_extra_info();
 
     return nl::json{ {to_kebab_case(label::__problem), j} };
@@ -79,9 +79,9 @@ nl::json static_descr(const pagmo::problem& prob) {
 nl::json dynamic_descr(const pagmo::problem& prob) {
     
     // Name is NOT a dynamic parameter, so it is not saved here, same for extra info
-
-    nl::json j { };
     /*
+    nl::json j { };
+    
     // Based on the problem, I can call its own specific implementation
     if ( prob.is<bevarmejo::anytown::Problem>() ) { 
         j[to_kebab_case(label::__params)] = bevarmejo::anytown::io::json::detail::dynamic_params(*prob.extract<bevarmejo::anytown::Problem>());
@@ -90,10 +90,12 @@ nl::json dynamic_descr(const pagmo::problem& prob) {
         // Default implementation is empty
         return nl::json{};
     }
-    */
+    
 
     // If I reach here, I have to return the dynamic parameters
     return nl::json{ {to_kebab_case(label::__problem), j} };
+    */
+   return nl::json{}; // Fake that it is empty
 }
 
 /*-------------------- Island --------------------*/

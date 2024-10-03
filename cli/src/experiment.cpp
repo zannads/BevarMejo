@@ -22,6 +22,7 @@
 using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/factories.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/io/json_serializers.hpp"
@@ -46,48 +47,7 @@ void Experiment::build(const ExperimentSettings &settings) {
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
     // Construct a pagmo::problem 
-    pagmo::problem p{};
-    
-    auto probname_s = settings.jinput[label::__typconfig][label::__problem_sh][label::__name].get<std::string>();
-    bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(probname_s);
-
-    auto pparams = settings.jinput[label::__typconfig][label::__problem_sh][label::__params];
-
-    if ( probname.suite == "bevarmejo" ) {
-
-        if ( probname.problem == "hanoi" ) {
-            p = bevarmejo::hanoi::fbiobj::Problem(pparams, settings.lookup_paths);
-        }
-        else if ( probname.problem == "anytown" ) {
-
-            if (probname.formulation == bevarmejo::anytown::io::value::rehab_f1)
-                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::rehab_f1, pparams, settings.lookup_paths);
-
-            else if (probname.formulation == bevarmejo::anytown::io::value::mixed_f1)
-                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::mixed_f1, pparams, settings.lookup_paths);
-
-            else if (probname.formulation == bevarmejo::anytown::io::value::opertns_f1)
-                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::opertns_f1, pparams, settings.lookup_paths);
-
-            else if (probname.formulation == bevarmejo::anytown::io::value::twoph_f1)
-                p = bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::twoph_f1, pparams, settings.lookup_paths);
-
-            else {
-                throw std::runtime_error("The problem formulation is not recognized.");
-            }
-            
-        }
-        else {
-            throw std::runtime_error("The problem name is not recognized.");
-        }
-
-    }
-    else if ( probname.suite == "pagmo" ) {
-        throw std::runtime_error("The pagmo problems are not yet implemented.");
-    }
-    else {
-        throw std::runtime_error("The problem suite is not recognized.");
-    }
+    pagmo::problem p{ bevarmejo::build_problem(settings.jinput[label::__typconfig][label::__problem_sh], settings.lookup_paths) };
         
     // and instantiate population
     pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
