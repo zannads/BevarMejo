@@ -1048,62 +1048,65 @@ double fep1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs
 	return design_cost;
 }
 double fep2::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
-	assert(dvs.size() == 2*anytown.subnetwork("existing_pipes").size());
+	assert(dvs.size() == anytown.subnetwork("existing_pipes").size());
+
 	// Let's assume that indices are already cached
 
 	double design_cost = 0.0;
-	// 35 pipes x [action, prc]
-	auto curr_dv = dvs.begin();
+	// 35 pipes x [prc+2]
+	auto it_dv = dvs.begin();
+	auto it_net_elem = anytown.subnetwork("existing_pipes").begin();
+	int errorcode = 0;
 
-	for(auto& wp_curr_net_ele : anytown.subnetwork("existing_pipes")) {
-		if (*curr_dv == 0){
-			++curr_dv;
-			++curr_dv;
+	while(it_dv != dvs.end() && it_net_elem != anytown.subnetwork("existing_pipes").end()) {
+		auto dv = *it_dv;
+
+		if (dv == 0){
+			// Do nothing and skip
+			++it_dv;
+			++it_net_elem;
 			continue;
 		}
+		
+		// There are some costs associated with this action
+		auto net_ele = it_net_elem->lock();
+		assert(net_ele != nullptr);
+		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
+		assert(pipe != nullptr);
 
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::string link_id = curr_net_ele->id();
-		bool city = anytown.subnetwork("city_pipes").contains(link_id);
+		bool city = anytown.subnetwork("city_pipes").contains(pipe->id());
 		// I assume is in the residential as they are mutually exclusive
 
-		// Either duplicate or clean I can use dvs[i*2+1] to get the cost and
-		// the length of the pipe from the network object (in case of the 
-		// duplicate pipe the length is the same of the original pipe).
+		// I need the length of the pipe because the cost is by unit of length.
 		double pipe_cost_per_ft = 0.0;
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
-
-		if (*curr_dv == 1) { // clean
-			// I can't use dvs[i*2+1] to get the costs, but I have to search 
-			// for the diameter in the table.
+		if (dv == 1) { // clean
+			// The cost per unit of length is a function of the diameter of the pipe.
 			auto it = std::find_if(pipes_alt_costs.begin(), pipes_alt_costs.end(), 
-				[&curr_pipe](const bevarmejo::anytown::pipes_alt_costs& pac) { 
-					return std::abs(pac.diameter_in*MperFT/12*1000 - curr_pipe->diameter().value()) < 0.0001; 
+				[&pipe](const bevarmejo::anytown::pipes_alt_costs& pac) { 
+					return std::abs(pac.diameter_in*MperFT/12*1000 - pipe->diameter().value()) < 0.0001; 
 				});
 
 			// Check I actually found it 
-			if (it == pipes_alt_costs.end()) 
-				throw std::runtime_error("Could not find the diameter of the pipe in the cost table.");
-
+			assert(it != pipes_alt_costs.end());
+				
 			if (city)
 				pipe_cost_per_ft = (*it).clean_city;
 			else
 				pipe_cost_per_ft = (*it).clean_residential;
 		}
-		else if (*curr_dv == 2) { // duplicate
+		else { // if (dv >= 2) duplicate
+			std::size_t diam_idx = dv-2; // remove options 0 and 1
 			if (city) 
-				pipe_cost_per_ft = pipes_alt_costs.at(*(curr_dv+1)).dup_city;
+				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_city;
 			else
-				pipe_cost_per_ft = pipes_alt_costs.at(*(curr_dv+1)).dup_residential;
+				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_residential;
 		} 
 
-		design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value(); 
+		design_cost += pipe_cost_per_ft/MperFT * pipe->length().value(); 
 		// again I save the length in mm, but the table is in $/ft
 
-		++curr_dv;
-		++curr_dv;
+		++it_dv;
+		++it_net_elem;
 	}
 
 	return design_cost;
@@ -1237,60 +1240,72 @@ void fep1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 	}
 }
 void fep2::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, const std::unordered_map<std::string, double> &old_HW_coeffs) {
-	assert(dvs.size() == 2*anytown.subnetwork("existing_pipes").size());
+	assert(dvs.size() == anytown.subnetwork("existing_pipes").size());
 	// Let's assume that indices are already cached
 
-	auto curr_dv = dvs.begin();
+	auto it_dv = dvs.begin();
+	auto it_net_elem = anytown.subnetwork("existing_pipes").begin();
 	int errorcode = 0;
 
-	// 1. existing pipes
-	for (auto& wp_curr_net_ele : anytown.subnetwork("existing_pipes")) {
-		// if dvs[i*2] == 0 do nothing
-		if (*curr_dv == 0){
-			++curr_dv;
-			++curr_dv;
+	
+	while (it_dv != dvs.end() && it_net_elem != anytown.subnetwork("existing_pipes").end()) {
+		auto dv = *it_dv;
+
+		if (dv == 0){
+			// Do nothing and skip
+			++it_dv;
+			++it_net_elem;
 			continue;
 		}
 
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
+		// Something was changed for this element.
+		auto net_ele = it_net_elem->lock();
+		assert(net_ele != nullptr);
+		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
+		assert(pipe != nullptr);
 		
-		if (*curr_dv == 1) { // reset clean
+		if (dv == 1) { // reset clean
 			// re set the HW coefficients
-			errorcode = EN_setlinkvalue(anytown.ph_, curr_pipe->index(), EN_ROUGHNESS, old_HW_coeffs.at(curr_pipe->id()));
+			errorcode = EN_setlinkvalue(anytown.ph_, pipe->index(), EN_ROUGHNESS, old_HW_coeffs.at(pipe->id()));
 			assert(errorcode <= 100);
 
-			curr_pipe->roughness(old_HW_coeffs.at(curr_pipe->id()));
+			pipe->roughness(old_HW_coeffs.at(pipe->id()));
+
+			++it_dv;
+			++it_net_elem;
+			continue;
 		}
-		else if (*curr_dv == 2) { // remove duplicate
-			// duplicate pipe has been named Dxx where xx is the original pipe name
-			// they are also saved in the subnetwork l__TEMP_ELEMS
-			auto it = std::find_if(anytown.subnetwork(label::__temp_elems).begin(), anytown.subnetwork(label::__temp_elems).end(), 
-				[&curr_pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
-					auto ne_ptr = ne.lock();
-					if (ne_ptr == nullptr)
-						return false; // it didn't found it, meaning it doesn't exist anymore!
-					return ne_ptr->id() == "D"+curr_pipe->id(); 
-				});
 
-			std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
-
-			// remove the new pipe
-			errorcode = EN_deletelink(anytown.ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
-			assert(errorcode <= 100);
-
-			// remove the new pipe from my network object
-			anytown.remove(dup_pipe_to_rem);
-			anytown.cache_indices();
-			// remove the new pipe from the set of the "to be removed" elements
-			anytown.subnetwork(label::__temp_elems).remove(dup_pipe_to_rem);
-		} 
+		// else, i.e., dv >= 2, we duplicate the pipe 
 		
-		++curr_dv;
-		++curr_dv;
-	}
+		// duplicate pipe has been named Dxx where xx is the original pipe name
+		// they are also saved in the subnetwork l__TEMP_ELEMS
+		auto it = std::find_if(anytown.subnetwork(label::__temp_elems).begin(), anytown.subnetwork(label::__temp_elems).end(), 
+			[&pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
+				auto ne_ptr = ne.lock();
+				if (ne_ptr == nullptr)
+					return false; // it didn't found it, meaning it doesn't exist anymore!
+				return ne_ptr->id() == "D"+pipe->id(); 
+			});
+
+		std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
+
+		// remove the new pipe
+		errorcode = EN_deletelink(anytown.ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
+		assert(errorcode <= 100);
+
+		// remove the new pipe from my network object
+		anytown.remove(dup_pipe_to_rem);
+		anytown.cache_indices();
+		// remove the new pipe from the set of the "to be removed" elements
+		anytown.subnetwork(label::__temp_elems).remove(dup_pipe_to_rem);
+	
+		++it_dv;
+		++it_net_elem;
+	
+	} // end while
+
+	return;
 }
 
 void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs) {

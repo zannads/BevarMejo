@@ -80,8 +80,8 @@ pagmo::problem build_problem(json jinput, std::vector<std::filesystem::path> loo
                 // return pagmo::problem{ bevarmejo::anytown::twophases::f1::Problem(pparams, lookup_paths) };
                 __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
                     io::log::mex::build_problem_error, 
-                    "\tReason : ", io::log::mex::unsupported_problem_feature(io::log::mex::problem_formulation),
-                    "\n\t", io::log::mex::__problem_formulation, probname.formulation
+                    io::log::mex::unsupported_problem_feature(io::log::mex::problem_formulation),
+                    io::log::mex::__problem_formulation, probname.formulation
                 );
 
             if (probname.formulation == bevarmejo::anytown::io::value::rehab_f2)
@@ -93,15 +93,15 @@ pagmo::problem build_problem(json jinput, std::vector<std::filesystem::path> loo
             // Get to this point it's unrecongnized
             __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
                 io::log::mex::build_problem_error, 
-                "\tReason : ", io::log::mex::unknown_problem_feature(io::log::mex::problem_formulation),
-                "\n\t", io::log::mex::__problem_formulation, probname.formulation
+                io::log::mex::unknown_problem_feature(io::log::mex::problem_formulation),
+                io::log::mex::__problem_formulation, probname.formulation
             );
         }
 
         __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
             io::log::mex::build_problem_error, 
-            "\tReason : ", io::log::mex::unknown_problem_feature(io::log::mex::problem_name),
-            "\n\t", io::log::mex::__problem_name, probname.problem
+            io::log::mex::unknown_problem_feature(io::log::mex::problem_name),
+            io::log::mex::__problem_name, probname.problem
         );
     }
     
@@ -109,15 +109,15 @@ pagmo::problem build_problem(json jinput, std::vector<std::filesystem::path> loo
     if ( probname.suite == "pagmo" ) {
         __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
             io::log::mex::build_problem_error, 
-            "\tReason : ", io::log::mex::unimplemented_problem_feature(io::log::mex::problem_suite),
-            "\n\t", io::log::mex::__problem_suite, probname.suite
+            io::log::mex::unimplemented_problem_feature(io::log::mex::problem_suite),
+            io::log::mex::__problem_suite, probname.suite
         ); 
     }
     
     __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
         io::log::mex::build_problem_error, 
-        "\tReason : ", io::log::mex::unknown_problem_feature(io::log::mex::problem_suite),
-        "\n\t", io::log::mex::__problem_suite, probname.suite
+        io::log::mex::unknown_problem_feature(io::log::mex::problem_suite),
+        io::log::mex::__problem_suite, probname.suite
     );
 
 }

@@ -22,6 +22,15 @@ static const std::string at= "at";
 
 namespace detail {
 
+template <typename... Args>
+inline std::string __format_mex(const std::string &reason, Args&&... args)
+{
+    std::ostringstream oss;
+    io::stream_out(oss, "\tReason : ", reason, "\n\t", std::forward<Args>(args)...);
+    return oss.str(); 
+
+}
+
 // Specialisation for class errors.
 inline std::string __format_c(  const std::string& class_name,
                                 const std::string& function_name,
@@ -52,8 +61,7 @@ inline std::string __format_c(  const std::string& class_name,
                                 Args&&... args)
 {
     std::ostringstream oss;
-    io::stream_out(oss, __format_c(class_name, function_name, problem_message), 
-                        std::forward<Args>(args)...);
+    io::stream_out(oss, __format_c(class_name, function_name, problem_message), __format_mex(std::forward<Args>(args)...) );
     io::stream_out(oss, "\n");
     return oss.str();
 }
@@ -64,8 +72,7 @@ inline std::string __format_f(  const std::string& function_name,
                                 Args&&... args)
 {
     std::ostringstream oss;
-    io::stream_out(oss, __format_f(function_name, problem_message), 
-                        std::forward<Args>(args)...);
+    io::stream_out(oss, __format_f(function_name, problem_message), __format_mex(std::forward<Args>(args)...) );
     io::stream_out(oss, "\n");
     return oss.str();
 }
