@@ -21,17 +21,51 @@ using json = nlohmann::json;
 
 namespace bevarmejo {
 
+namespace io {
+namespace log {
+namespace nname {
+static const std::string exp = "experiment::";
+static const std::string sim = "simulation::";
+}
+namespace fname {
+static const std::string parse = "parse";
+}
+namespace mex {
+static const std::string parse_error = "Error parsing the settings file.";
+
+static const std::string nearg = "Not enough arguments.";
+static const std::string usage_start = "Usage: ";
+static const std::string usage_end = " <settings_file> [flags]";
+}
+} // namespace log
+
+namespace other {
+static const std::string settings_file = "Settings file : ";
+}
+} // namespace io
+
+
+
+
 ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
-    if (argc < 2) {
-        throw std::invalid_argument("Not enough arguments.\nUsage: " + std::string(argv[0]) + " <settings_file> [flags]");
-    }
+    if (argc < 2) 
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            io::log::mex::nearg,
+            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+    
     std::filesystem::path settings_file(argv[1]);
-    if (!std::filesystem::exists(settings_file)) {
-        throw std::invalid_argument("Settings file does not exist: " + settings_file.string());
-    }
-    if (!std::filesystem::is_regular_file(settings_file)) {
-        throw std::invalid_argument("Settings file is not a regular file: " + settings_file.string());
-    }
+    if (!std::filesystem::exists(settings_file))
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file does not exist.",
+            io::other::settings_file+settings_file.string());
+
+    if (!std::filesystem::is_regular_file(settings_file)) 
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file is not a regular file.",
+            io::other::settings_file+settings_file.string());
 
     ExperimentSettings settings;
     // Settings file is fine, save its full path and the folder
@@ -42,12 +76,19 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
 
     // 2. Now actually parse the settings file
     std::ifstream file(settings_file);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open settings file: " + settings_file.string());
-    }
+    if (!file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Failed to open settings file.",
+            io::other::settings_file+settings_file.string());
+
     if (file.peek() == std::ifstream::traits_type::eof()) {
         file.close();
-        throw std::runtime_error("Settings file is empty: " + settings_file.string());
+
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file is empty.",
+            io::other::settings_file+settings_file.string());
     }
 
     std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -56,7 +97,10 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
     try {
         settings.jinput = json::parse(file_contents);
     } catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse settings file as JSON: " + settings_file.string() + "\n" + e.what());
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Failed to parse settings file as JSON.",
+            io::other::settings_file+settings_file.string()+"\n"+e.what());
     }
 
     // 3. Check the settings file has the required fields
