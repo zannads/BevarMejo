@@ -220,7 +220,7 @@ void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, 
 	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths), preprocessf);
+	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths, true), preprocessf);
 }
 
 void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
