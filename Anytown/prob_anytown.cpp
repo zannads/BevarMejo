@@ -1585,6 +1585,29 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 	reset_dv(this->m__anytown, dv);
 }
 
+// Json serializers 
+std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
+	nl::json j;
+	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
+	j[io::key::avail_diam] = "available_diams.txt";
+	j[io::key::tank_costs] = "tanks_costs.txt";
+	j[io::key::__wds__] = nl::json{};
+	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
+	j[io::key::__wds__][io::key::__udegs__] = nl::json{
+                        "city_pipes.snt",
+                        "existing_pipes.snt",
+                        "new_pipes.snt",
+                        "new_park.snt",
+                        "possible_tank_locations.snt",
+                        "residential_pipes.snt"
+	};
+
+	return {j, std::string{} };
+}
+
+nl::json io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
+	return nl::json(); 
+}
 
 } // namespace anytown
 } // namespace bevarmejo
