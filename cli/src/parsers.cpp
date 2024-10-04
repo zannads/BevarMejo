@@ -243,15 +243,23 @@ Simulation parse(int argc, char *argv[]) {
 
         // 1.3 Check the settings file has the required fields
         // name, if params not there pass empty -> most likely will throw exception the constructor, 
-        if (!jproblem.contains(label::__name)) {
+        if (!jproblem.contains(label::__name) && !jproblem.contains(bevarmejo::to_kebab_case(label::__name))) {
             throw std::runtime_error("Simulation settings file does not specifies the name of the User Defined Problem\n");
         }
-        if (!jproblem.contains(label::__params)) {
+        if (!jproblem.contains(label::__params) && !jproblem.contains(bevarmejo::to_kebab_case(label::__params))) {
             jproblem[label::__params] = json::object();
+        }
+        if (jproblem.contains(bevarmejo::to_kebab_case(label::__name))) {
+            jproblem[label::__name] = jproblem[bevarmejo::to_kebab_case(label::__name)];
+            jproblem.erase(bevarmejo::to_kebab_case(label::__name));
+        }
+        if (jproblem.contains(bevarmejo::to_kebab_case(label::__params))) {
+            jproblem[label::__params] = jproblem[bevarmejo::to_kebab_case(label::__params)];
+            jproblem.erase(bevarmejo::to_kebab_case(label::__params));
         }
 
         // 1.5 build the problem
-        simu.p = std::move(build_problem( jproblem, simu.lookup_paths ));
+        simu.p = std::move(build_problem( jproblem[label::__name].get<std::string>(), jproblem[label::__params], simu.lookup_paths ));
 
         // 1.6 optional keys that don't change the behavior of the simulation
         if (j.contains(label::__fv)) {

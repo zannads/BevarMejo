@@ -52,12 +52,9 @@ static const std::string __problem_formulation = "Problem formulation : ";
 } // namespace log
 } // namespace io
 
-pagmo::problem build_problem(json jinput, std::vector<std::filesystem::path> lookup_paths) {
+pagmo::problem build_problem(const std::string &problem_name_str, json pparams, const std::vector<std::filesystem::path> &lookup_paths) {
 
-    auto probname_s = jinput[label::__name].get<std::string>();
-    bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(probname_s);
-
-    auto pparams = jinput[label::__params];
+    bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(problem_name_str);
 
     if ( probname.suite == "bevarmejo" ) {
 

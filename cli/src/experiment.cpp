@@ -47,8 +47,9 @@ void Experiment::build(const ExperimentSettings &settings) {
     json jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
-    // Construct a pagmo::problem 
-    pagmo::problem p{ bevarmejo::build_problem(settings.jinput[label::__typconfig][label::__problem_sh], settings.lookup_paths) };
+    // Construct a pagmo::problem
+    const nl::json &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
+    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__name] , settings.lookup_paths) };
         
     // and instantiate population
     pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
