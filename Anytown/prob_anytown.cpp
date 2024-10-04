@@ -39,20 +39,19 @@ namespace bevarmejo {
 namespace anytown {
 
 // For the io functions
-static const std::string nname = "anytown::";
+static const std::string nname = "anytown::"; // "anytown::"
 
 namespace io::log::cname {
-static const std::string anytown_problem = "Problem"; 
+static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-// TODO: keys
-static const std::string opers = "Operations";
-static const std::string avail_diam = "Available diameters";
-static const std::string tank_costs = "Tank costs";
-static const std::string __wds__ = "WDS";
-static const std::string __udegs__ = "UDEGs";
-static const std::string __inp__ = "inp";
+static const std::string opers = "Operations"; // "Operations"
+static const std::string avail_diam = "Available diameters"; // "Available diameters"
+static const std::string tank_costs = "Tank costs"; // "Tank costs"
+static const std::string __wds__ = "WDS"; // "WDS"
+static const std::string __udegs__ = "UDEGs"; // "UDEGs"
+static const std::string __inp__ = "inp"; // "inp"
 } // namespace key
 
 // Extra information for the formulations.
@@ -108,29 +107,31 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
+	std::string full_name{"bevarmejo::"};
+	full_name += nname;
 	switch (m__formulation)
 	{
 	case Formulation::rehab_f1:
-		m__name = io::value::rehab_f1;
+		m__name = full_name+io::value::rehab_f1;
 		m__extra_info = io::other::rehab_f1_exinfo;
 		break;
 	case Formulation::mixed_f1:
-		m__name = io::value::mixed_f1;
+		m__name = full_name+io::value::mixed_f1;
 		m__extra_info = io::other::mixed_f1_exinfo;
 		break;
 	case Formulation::opertns_f1:
-		m__name = io::value::opertns_f1;
+		m__name = full_name+io::value::opertns_f1;
 		m__extra_info = io::other::opertns_f1_exinfo;
 		break;
 	case Formulation::twoph_f1:
 		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
 			"Formulation 1 of twophase problem is not supported anymore.");
 	case Formulation::rehab_f2:
-		m__name = io::value::rehab_f2;
+		m__name = full_name+io::value::rehab_f2;
 		m__extra_info = io::other::rehab_f2_exinfo;
 		break;
 	case Formulation::mixed_f2:
-		m__name = io::value::mixed_f2;
+		m__name = full_name+io::value::mixed_f2;
 		m__extra_info = io::other::mixed_f2_exinfo;
 		break;
 	default:
@@ -299,48 +300,6 @@ std::vector<double>::size_type Problem::get_nix() const {
 		return 0ul;
 	}
 }
-
-/*
-std::string Problem::get_name() const {
-	switch (m__formulation)
-	{
-	case Formulation::rehab_f1:
-		return io::value::rehab_f1;
-	case Formulation::mixed_f1:
-		return io::value::mixed_f1;
-	case Formulation::opertns_f1:
-		return io::value::opertns_f1;
-	case Formulation::twoph_f1:
-		return io::value::twoph_f1;
-	case Formulation::rehab_f2:
-		return io::value::rehab_f2;
-	case Formulation::mixed_f2:
-		return io::value::mixed_f2;
-	default:
-		return "Unknown Anytown formulation.";
-	}
-}
-
-std::string Problem::get_extra_info() const {
-	switch (m__formulation)
-	{
-	case Formulation::rehab_f1:
-		return io::other::rehab_f1_exinfo;
-	case Formulation::mixed_f1:
-		return io::other::mixed_f1_exinfo;
-	case Formulation::opertns_f1:
-		return io::other::opertns_f1_exinfo;
-	case Formulation::twoph_f1:
-		return io::other::twoph_f1_exinfo;
-	case Formulation::rehab_f2:
-		return io::other::rehab_f2_exinfo;
-	case Formulation::mixed_f2:
-		return io::other::mixed_f2_exinfo;
-	default:
-		return "No extra information available.\nReason:\n\tUnknown Anytown formulation.";
-	}
-}
-*/
 
 // ------------------- 1st level ------------------- //
 std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
