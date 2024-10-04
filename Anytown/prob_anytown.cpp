@@ -1550,6 +1550,21 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
 	j[io::key::avail_diam] = "available_diams.txt";
 	j[io::key::tank_costs] = "tanks_costs.txt";
+	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
+		// I need to merge the pumping patterns
+		std::vector<double> pumpgroup_pattern(24, 0.0);
+		for (auto& pump : prob.m__anytown->pumps()) {
+			auto pump_pattern_idx = pump->speed_pattern()->index();
+			for (std::size_t i = 1; i <= 24; ++i) {
+				double val = 0.0;
+				int errorcode = EN_getpatternvalue(prob.m__anytown->ph_, pump_pattern_idx, i, &val);
+				pumpgroup_pattern[i-1] += val;
+			}
+		}
+		
+		j[io::key::opers] = nl::json{pumpgroup_pattern};
+	}
+		
 	j[io::key::__wds__] = nl::json{};
 	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
 	j[io::key::__wds__][io::key::__udegs__] = nl::json{

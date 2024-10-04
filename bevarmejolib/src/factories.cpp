@@ -52,7 +52,7 @@ static const std::string __problem_formulation = "Problem formulation : ";
 } // namespace log
 } // namespace io
 
-pagmo::problem build_problem(const std::string &problem_name_str, json pparams, const std::vector<std::filesystem::path> &lookup_paths) {
+pagmo::problem build_problem(const std::string &problem_name_str, const json &pparams, const std::vector<std::filesystem::path> &lookup_paths) {
 
     bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(problem_name_str);
 

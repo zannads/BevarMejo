@@ -239,7 +239,7 @@ Simulation parse(int argc, char *argv[]) {
         }
         simu.dvs            = j[label::__dv].get<std::vector<double>>();
 
-        json jproblem = j[label::__problem_sh];
+        json &jproblem = j[label::__problem_sh];
 
         // 1.3 Check the settings file has the required fields
         // name, if params not there pass empty -> most likely will throw exception the constructor, 

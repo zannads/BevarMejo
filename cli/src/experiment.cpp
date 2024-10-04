@@ -49,7 +49,7 @@ void Experiment::build(const ExperimentSettings &settings) {
 
     // Construct a pagmo::problem
     const nl::json &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
-    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__name] , settings.lookup_paths) };
+    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__params] , settings.lookup_paths) };
         
     // and instantiate population
     pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
