@@ -17,8 +17,7 @@ target_include_directories(beme-opt PRIVATE
 		"${CMAKE_CURRENT_SOURCE_DIR}/include/bevarmejo"
 )
 
-add_executable(beme-sim "bemesim.cpp" 
-							"include/bevarmejo/factories.hpp"
+add_executable(beme-sim "bemesim.cpp"
 							"src/parsers.cpp" "include/bevarmejo/parsers.hpp"
 							
 )

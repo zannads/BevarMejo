@@ -4,16 +4,10 @@
 #include <string>
 
 #include "epanet2_2.h"
-#include "types.h"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
-
-#include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -39,22 +33,17 @@ protected:
     Node* _node_start_;
     Node* _node_end_;
 
-    vars::var_int* _initial_status_;
+    aux::QuantitySeries<int> m__initial_status; // Constant
 
     /*---  Results   ---*/ 
-    vars::var_tseries_real* _flow_;
+    aux::QuantitySeries<double> m__flow;
     // TODO: water quality
-
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
 
 /*--- Constructors ---*/
 public:
     Link() = delete;
 
-    Link(const std::string& id);
+    Link(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Link(const Link& other);
@@ -69,7 +58,7 @@ public:
     Link& operator=(Link&& rhs) noexcept;
 
     // Destructor
-    virtual ~Link();
+    virtual ~Link() = default;
 
 /*--- Getters and setters ---*/
 public:
@@ -79,18 +68,21 @@ public:
     Node* to_node() const { return _node_end_; }
     void end_node(Node* a_node) { _node_end_ = a_node; }
 
-    vars::var_int& initial_status() const { return *_initial_status_; }
+    aux::QuantitySeries<int>& initial_status() { return m__initial_status; }
+    const aux::QuantitySeries<int>& initial_status() const { return m__initial_status; }
 
     /*---  Results   ---*/
-    const vars::var_tseries_real& flow() const { return *_flow_; }
+    const aux::QuantitySeries<double>& flow() const { return m__flow; }
 
 /*--- Pure virtual methods override---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:
     void retrieve_index(EN_Project ph) override;
-    void retrieve_properties(EN_Project ph) override;
     void retrieve_results(EN_Project ph, long t) override;
+protected:
+    void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Link
 

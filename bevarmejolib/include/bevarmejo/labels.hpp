@@ -26,6 +26,8 @@ const std::string __extra_info = "Extra info"; // To print extra info of the cla
 const std::string __islands = "Islands"; // To list the filenames of the single islands
 const std::string __errors = "Errors";
 const std::string __system = "System";
+const std::string __software = "Software";
+const std::string __beme_version = "Bemelib version";
 //const std::string __libraries = "Libraries"; //TODO: implement this
 
 // Output island file 

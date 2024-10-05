@@ -59,9 +59,9 @@ public:
     // TODO: fix the constructors 
     
     /* Setters and getters */
-    const std::string& name() const { return m_name; }
-    const fsys::path& folder() const { return m_folder; }
-    const fsys::path output_folder() const { return m_folder / "output"; }
+    const std::string& name() const;
+    const fsys::path& folder() const;
+    const fsys::path output_folder() const;
 
     fsys::path runtime_file();
 

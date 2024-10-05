@@ -7,17 +7,16 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__NODE_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__NODE_HPP
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements/variable.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
+
 
 namespace bevarmejo {
 namespace wds {
@@ -45,7 +44,7 @@ class Node : public NetworkElement {
         double _x_coord_;
         double _y_coord_;
 
-        std::unordered_set<Link*> _links_;
+        std::unordered_set<Link*> m__links;
 
         // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
@@ -53,23 +52,17 @@ class Node : public NetworkElement {
         // TODO: add a parameter(option) that when true also forces the deletion
         // of the links connected to the node.
 
-        /*---  Results   ---*/ 
-        // pointer to the result property in the results object
-        vars::var_tseries_real* _head_;
-        vars::var_tseries_real* _pressure_;
+        /*---  Results   ---*/
+        aux::QuantitySeries<double> m__head;
+        aux::QuantitySeries<double> m__pressure;
         // TODO: water quality 
-
-    protected:
-        void _add_properties() override;
-        void _add_results() override;
-        void _update_pointers() override;
 
     /*--- Constructors ---*/
     public:
         /// @brief Default constructor
         Node() = delete;
 
-        Node(const std::string& id);
+        Node(const std::string& id, const WaterDistributionSystem& wds);
 
         // Copy constructor
         Node(const Node& other);
@@ -84,7 +77,7 @@ class Node : public NetworkElement {
         Node& operator=(Node&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~Node();
+        virtual ~Node() = default;
 
     /*--- Getters and setters ---*/
     public:
@@ -96,7 +89,8 @@ class Node : public NetworkElement {
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
         // TODO: See Issue #32
-        std::unordered_set<Link*>& connected_links() {return _links_;}
+        std::unordered_set<Link*>& connected_links() {return m__links;}
+        const std::unordered_set<Link*>& connected_links() const {return m__links;}
         void add_link(Link* a_link);
         void remove_link(Link* a_link);
 
@@ -105,20 +99,22 @@ class Node : public NetworkElement {
         void elevation(const double elevation) {_elevation_ = elevation;}
 
         /*--- Results ---*/
-        const vars::var_tseries_real& head() const {return *_head_;}
-        const vars::var_tseries_real& pressure() const {return *_pressure_;}
+        const aux::QuantitySeries<double>& head() const {return m__head;}
+        const aux::QuantitySeries<double>& pressure() const {return m__pressure;}
 
     /*--- Methods ---*/
     public:
         virtual const bool has_demand() const {return false;}
 
     /*--- Pure virtual methods override---*/
+        virtual void clear_results() override;
 
     /*--- EPANET-dependent PVMs override ---*/
     public:
         void retrieve_index(EN_Project ph) override;
-        void retrieve_properties(EN_Project ph) override;
         void retrieve_results(EN_Project ph, long t) override;
+    protected:
+        void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Node
 

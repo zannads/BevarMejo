@@ -1,9 +1,11 @@
-#include <iostream>
 #include <vector>
 
 #include "bevarmejo/constants.hpp"
-#include "bevarmejo/wds/elements/temporal.hpp"
-#include "bevarmejo/wds/elements_group.hpp"
+
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+
+#include "bevarmejo/wds/elements/junction.hpp"
+
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "hydraulic_functions.hpp"
@@ -11,7 +13,7 @@
 namespace bevarmejo {
 
 bool is_head_deficient(const wds::Junction& a_junction, const double min_head) { 
-    for (const auto& [t, head] : a_junction.head().value() ) {
+    for (const auto& [t, head] : a_junction.head() ) {
         if (head < min_head) {
             return true;
         }
@@ -20,7 +22,7 @@ bool is_head_deficient(const wds::Junction& a_junction, const double min_head) {
 }
 
 bool is_pressure_deficient(const wds::Junction &a_junction, const double min_pressure) {
-    for (const auto& [t, pressure] : a_junction.pressure().value() ) {
+    for (const auto& [t, pressure] : a_junction.pressure() ) {
         if (pressure < min_pressure) {
             return true;
         }
@@ -29,83 +31,71 @@ bool is_pressure_deficient(const wds::Junction &a_junction, const double min_pre
     
 }
 
-wds::vars::timeseries_real head_deficiency(const wds::Junction &a_junction, const double min_head, const bool relative) {
-    wds::vars::timeseries_real deficiency;
+wds::aux::QuantitySeries<double> head_deficiency(const wds::Junction &a_junction, const double min_head, const bool relative) {
+    wds::aux::QuantitySeries<double> deficiency(a_junction.head().time_series());
 
     assert(min_head > 0.0);
     double weight = 1.0;
     if (relative) weight = 1/min_head;
 
-    for (const auto& [t, head] : a_junction.head().value() ) {
+    for (const auto& [t, head] : a_junction.head() ) {
 
         double deficit = head < min_head ? (min_head - head)*weight : 0.0;
 
-        deficiency.insert(std::make_pair(t, deficit));
+        deficiency.commit(t, deficit);
     }
 
     return deficiency;
 }
 
-wds::vars::timeseries_real pressure_deficiency(const wds::Junction &a_junction, const double min_pressure, const bool relative) {
-    wds::vars::timeseries_real deficiency;
+wds::aux::QuantitySeries<double> pressure_deficiency(const wds::Junction &a_junction, const double min_pressure, const bool relative) {
+    wds::aux::QuantitySeries<double> deficiency(a_junction.pressure().time_series());
 
     assert(min_pressure > 0.0);
     double weight = 1.0;
     if (relative) weight = 1/min_pressure;
 
-    for (const auto& [t, pressure] : a_junction.pressure().value() ) {
+    for (const auto& [t, pressure] : a_junction.pressure() ) {
 
         double deficit = pressure < min_pressure ? (min_pressure - pressure)*weight : 0.0;
 
-        deficiency.insert(std::make_pair(t, deficit));
+        deficiency.commit(t, deficit);
     }
 
     return deficiency;
     
 }
 
-wds::vars::timeseries_real head_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_head, const bool relative) {
-    wds::vars::timeseries_real deficiency;
+wds::aux::QuantitySeries<double> head_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_head, const bool relative) {
+    wds::aux::QuantitySeries<double> deficiency(a_wds.time_series(label::__RESULTS_TS), 0.0);
 
     assert(min_head > 0.0);
     double weight = 1.0;
     if (relative) weight = 1/ min_head/ a_wds.junctions().size();
 
-    // just allocate the memory for the timeseries
-    auto first_junc = *a_wds.junctions().begin();
-    for (const auto& [t, head] : first_junc->head().value() ) {
-        deficiency.insert(std::make_pair(t, 0.0));
-    }
-
     // cumulative deficiency of each junction
     for (const auto& junction : a_wds.junctions() ) {
-        for (const auto& [t, head] : junction->head().value() ) {
+        for (const auto& [t, head] : junction->head() ) {
             if (head < min_head) 
-                deficiency.at(t) += (min_head - head)*weight;
+                deficiency.when_t(t) += (min_head - head)*weight;
         }
     }
     
     return deficiency;
 }
 
-wds::vars::timeseries_real pressure_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_pressure, const bool relative) {
-    wds::vars::timeseries_real deficiency;
+wds::aux::QuantitySeries<double> pressure_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_pressure, const bool relative) {
+    wds::aux::QuantitySeries<double> deficiency(a_wds.time_series(label::__RESULTS_TS), 0.0);
 
     assert(min_pressure > 0.0);
     double weight = 1.0;
     if (relative) weight = 1/ min_pressure/ a_wds.junctions().size();
 
-    // just allocate the memory for the timeseries
-    auto first_junc = *a_wds.junctions().begin();
-    for (const auto& [t, pressure] : first_junc->pressure().value() ) {
-        deficiency.insert(std::make_pair(t, 0.0));
-    }
-
     // cumulative deficiency of each junction
     for (const auto& junction : a_wds.junctions() ) {
-        for (const auto& [t, pressure] : junction->pressure().value() ) {
+        for (const auto& [t, pressure] : junction->pressure() ) {
             if (pressure < min_pressure) 
-                deficiency.at(t) += (min_pressure - pressure)*weight;
+                deficiency.when_t(t) += (min_pressure - pressure)*weight;
         }
     }
     
@@ -128,7 +118,7 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
 
         double min_sim_lev = max_tank_lev;
         double max_sim_lev = min_tank_lev;
-        for (const auto& [t, level] : tank->level().value() ) {
+        for (const auto& [t, level] : tank->level() ) {
             if (level < min_sim_lev) min_sim_lev = level;
             if (level > max_sim_lev) max_sim_lev = level;
         }
@@ -142,7 +132,7 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
     return sum_levels;
 }
 
-    wds::vars::timeseries_real resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
+    wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
                                                 const double min_press_dnodes_m) {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
@@ -161,8 +151,8 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
         ++ith;
     }
 
-    wds::vars::timeseries_real res_index;
-    for (const auto& [t, temp] : (*a_wds.junctions().begin())->demand_requested().value() ) {
+    wds::aux::QuantitySeries<double> res_index(a_wds.time_series(label::__RESULTS_TS));
+    for (const auto& [t, temp] : (*a_wds.junctions().begin())->demand_requested() ) {
  
         std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.junctions().size());
         std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.junctions().size());
@@ -171,31 +161,30 @@ double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
         std::vector<double> powers_pumps;       powers_pumps.reserve(a_wds.pumps().size());
 
         for (const auto& junction : a_wds.junctions() ) {
-            req_flows_dnodes.push_back(junction->demand_requested().value().at(t));
-            heads_dnodes.push_back(junction->head().value().at(t));
+            req_flows_dnodes.push_back(junction->demand_requested().when_t(t));
+            heads_dnodes.push_back(junction->head().when_t(t));
         }
         for (const auto& reservoir : a_wds.reservoirs() ) {
-            flows_sources.push_back(reservoir->inflow().value().at(t));
-            heads_sources.push_back(reservoir->head().value().at(t));
+            flows_sources.push_back(reservoir->inflow().when_t(t));
+            heads_sources.push_back(reservoir->head().when_t(t));
         }
         for (const auto& tank : a_wds.tanks() ) {
-            flows_sources.push_back(tank->inflow().value().at(t));
-            heads_sources.push_back(tank->head().value().at(t));
+            flows_sources.push_back(tank->inflow().when_t(t));
+            heads_sources.push_back(tank->head().when_t(t));
         }
         for (const auto& pump : a_wds.pumps() ) {
-            powers_pumps.push_back(pump->instant_energy().value().at(t));
+            powers_pumps.push_back(pump->instant_energy().when_t(t));
         }
 
 
-        res_index.insert(std::make_pair(t, 
-                    resilience_index(   req_flows_dnodes, 
+        res_index.commit(t, 
+            resilience_index(   req_flows_dnodes, 
                                         heads_dnodes,
                                         req_heads_dnodes_m,
                                         flows_sources,
                                         heads_sources,
                                         powers_pumps
-                                    )));
-        
+                                    ));
     }
 
     return res_index;
