@@ -113,6 +113,7 @@ public:
 public:
     const std::string& element_name() const override { return l__NAME_PUMP; }
     const unsigned int element_type() const override { return ELEMENT_PUMP; }
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs ---*/
 public:

@@ -31,8 +31,8 @@ Node::Node(const std::string& id, const WaterDistributionSystem& wds) :
     _y_coord_(0.0),
     m__links(),
     _elevation_(0.0),
-    m__head(wds.time_series(l__RESULT_TS)),
-    m__pressure(wds.time_series(l__RESULT_TS)) { }
+    m__head(wds.time_series(label::__RESULTS_TS)),
+    m__pressure(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Node::Node(const Node& other) : 
@@ -149,6 +149,13 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;
     m__pressure.commit(t, val);
+}
+
+void Node::clear_results() {
+    inherited::clear_results();
+
+    m__head.clear();
+    m__pressure.clear();
 }
 
 } // namespace wds

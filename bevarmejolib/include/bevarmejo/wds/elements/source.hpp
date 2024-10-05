@@ -63,6 +63,7 @@ public:
     const aux::QuantitySeries<double>& source_elevation() const { return m__source_elevation; }
 
 /*--- Pure virtual methods override---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:

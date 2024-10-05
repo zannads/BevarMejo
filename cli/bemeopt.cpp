@@ -17,7 +17,6 @@ int main(int argc, char* argv[]) {
     
     // 1. Parse the inputs, ideally I could change anything and should perform checks.
     // argv[1] the settings file (it also implicitly defines the experiment folder unless copy flag is active)
-    // TODO: argv[2, ...] optional flags 
     bevarmejo::ExperimentSettings settings;
     try {
         settings = bevarmejo::parse_optimization_settings(argc, argv);

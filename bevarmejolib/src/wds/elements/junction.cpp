@@ -30,9 +30,9 @@ namespace wds {
 Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
     m__demands(),
-    m__demand(wds.time_series(l__RESULT_TS)),
-    m__consumption(wds.time_series(l__RESULT_TS)),
-    m__undelivered_demand(wds.time_series(l__RESULT_TS)) { }
+    m__demand(wds.time_series(label::__RESULTS_TS)),
+    m__consumption(wds.time_series(label::__RESULTS_TS)),
+    m__undelivered_demand(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Junction::Junction(const Junction& other) : 
@@ -119,13 +119,13 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
         // Pattern id can be "" if the demand is constant
         if (pattern_id.empty()) {
             // Means it's a constant demand
-            aux::QuantitySeries<double> cdemand(m__wds.time_series(l__CONSTANT_TS));
+            aux::QuantitySeries<double> cdemand(m__wds.time_series(label::__CONSTANT_TS));
             cdemand.commit(0l, base_demand);
 
             m__demands.insert(std::make_pair(demand_category, cdemand));
         }
         else { // It's a pattern demand
-            aux::QuantitySeries<double> pdemand(m__wds.time_series(l__PATTERN_TS));
+            aux::QuantitySeries<double> pdemand(m__wds.time_series(label::__EN_PATTERN_TS));
 
             auto it= patterns.find(pattern_id);
             assert(it != patterns.end());
@@ -133,10 +133,10 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
 
             // TODO: this is very much wrong because it doesn't consider the shift time step 
             // and that patterns may have a different length and I may need to wrap around.
-            auto ilen= m__wds.time_series(l__PATTERN_TS).inner_size();
+            auto ilen= m__wds.time_series(label::__EN_PATTERN_TS).size();
             for (auto i= 0l; i < ilen; ++i) {
-                auto __time= m__wds.time_series(l__PATTERN_TS).at(i);
-                pdemand.commit(__time, base_demand * pattern->at(i));
+                auto __time= m__wds.time_series(label::__EN_PATTERN_TS).at(i);
+                pdemand.commit(__time, base_demand * pattern->at(i % pattern->size()));
             }
 
             m__demands.insert(std::make_pair(demand_category, pdemand));
@@ -170,6 +170,14 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     m__undelivered_demand.commit(t, d_dem_deficit);
 
     m__consumption.commit(t, d_demand-d_dem_deficit);
+}
+
+void Junction::clear_results() {
+    inherited::clear_results();
+
+    m__demand.clear();
+    m__consumption.clear();
+    m__undelivered_demand.clear();
 }
 
 } // namespace wds

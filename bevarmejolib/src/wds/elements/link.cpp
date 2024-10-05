@@ -27,8 +27,8 @@ Link::Link(const std::string& id, const WaterDistributionSystem& wds) :
     inherited(id, wds),
     _node_start_(nullptr),
     _node_end_(nullptr),
-    m__initial_status(wds.time_series(l__CONSTANT_TS)),
-    m__flow(wds.time_series(l__RESULT_TS)) { }
+    m__initial_status(wds.time_series(label::__CONSTANT_TS)),
+    m__flow(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Link::Link(const Link& other) : 
@@ -123,6 +123,12 @@ void Link::retrieve_results(EN_Project ph, long t) {
         d_flow = epanet::convert_flow_to_L_per_s(ph, d_flow);
 
     m__flow.commit(t, d_flow);
+}
+
+void Link::clear_results() {
+    inherited::clear_results();
+
+    m__flow.clear();
 }
 
 } // namespace wds

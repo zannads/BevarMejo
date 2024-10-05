@@ -75,6 +75,7 @@ public:
     const aux::QuantitySeries<double>& flow() const { return m__flow; }
 
 /*--- Pure virtual methods override---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:

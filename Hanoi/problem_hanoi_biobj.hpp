@@ -27,6 +27,8 @@ constexpr double a = 1.1;
 constexpr double b = 1.5;
 
 namespace fbiobj {
+class Problem;
+
 const std::string name = "bevarmejo::hanoi::fbiobj";
 const std::string extra_info = "\tFormulation of the Hanoi problem using cost and reliablity.\n";
 
@@ -44,6 +46,18 @@ constexpr std::array<const char*, n_dv> changeable_pipe_ids = { "1", "2", "3", "
 namespace label {
 const std::string __changeable_pipes = "cp";
 } // namespace label
+
+namespace io {
+namespace json {
+namespace detail {
+
+std::pair<nl::json,std::string> static_params(const bevarmejo::hanoi::fbiobj::Problem &prob);
+
+nl::json dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
+
+} // namespace detail
+} // namespace json
+} // namespace io
 
 class Problem {
 
@@ -104,6 +118,9 @@ private:
     void apply_dv(wds::WaterDistributionSystem& a_wds, const std::vector<double>& dv) const;
 
     // No need to use reset as at every run the same design variables are for sure overwritten.
+
+private:
+    friend std::pair<nl::json,std::string> io::json::detail::static_params(const Problem &prob);
 };
 
 } // namespace fbiobj

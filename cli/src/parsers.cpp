@@ -12,6 +12,8 @@ using json = nlohmann::json;
 #include <pagmo/problem.hpp>
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"
@@ -20,17 +22,51 @@ using json = nlohmann::json;
 
 namespace bevarmejo {
 
+namespace io {
+namespace log {
+namespace nname {
+static const std::string exp = "experiment::";
+static const std::string sim = "simulation::";
+}
+namespace fname {
+static const std::string parse = "parse";
+}
+namespace mex {
+static const std::string parse_error = "Error parsing the settings file.";
+
+static const std::string nearg = "Not enough arguments.";
+static const std::string usage_start = "Usage: ";
+static const std::string usage_end = " <settings_file> [flags]";
+}
+} // namespace log
+
+namespace other {
+static const std::string settings_file = "Settings file : ";
+}
+} // namespace io
+
+
+
+
 ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
-    if (argc < 2) {
-        throw std::invalid_argument("Not enough arguments.\nUsage: " + std::string(argv[0]) + " <settings_file> [flags]");
-    }
+    if (argc < 2) 
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            io::log::mex::nearg,
+            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+    
     std::filesystem::path settings_file(argv[1]);
-    if (!std::filesystem::exists(settings_file)) {
-        throw std::invalid_argument("Settings file does not exist: " + settings_file.string());
-    }
-    if (!std::filesystem::is_regular_file(settings_file)) {
-        throw std::invalid_argument("Settings file is not a regular file: " + settings_file.string());
-    }
+    if (!std::filesystem::exists(settings_file))
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file does not exist.",
+            io::other::settings_file+settings_file.string());
+
+    if (!std::filesystem::is_regular_file(settings_file)) 
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file is not a regular file.",
+            io::other::settings_file+settings_file.string());
 
     ExperimentSettings settings;
     // Settings file is fine, save its full path and the folder
@@ -41,12 +77,19 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
 
     // 2. Now actually parse the settings file
     std::ifstream file(settings_file);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open settings file: " + settings_file.string());
-    }
+    if (!file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Failed to open settings file.",
+            io::other::settings_file+settings_file.string());
+
     if (file.peek() == std::ifstream::traits_type::eof()) {
         file.close();
-        throw std::runtime_error("Settings file is empty: " + settings_file.string());
+
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file is empty.",
+            io::other::settings_file+settings_file.string());
     }
 
     std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -55,7 +98,10 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
     try {
         settings.jinput = json::parse(file_contents);
     } catch (const std::exception& e) {
-        throw std::runtime_error("Failed to parse settings file as JSON: " + settings_file.string() + "\n" + e.what());
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Failed to parse settings file as JSON.",
+            io::other::settings_file+settings_file.string()+"\n"+e.what());
     }
 
     // 3. Check the settings file has the required fields
@@ -124,15 +170,8 @@ Simulation parse(int argc, char *argv[]) {
     simu.lookup_paths.push_back(std::filesystem::current_path());
     
     try {
-        // 1.1 make sure it exists
-        // locate the file
-        auto filepath = bevarmejo::io::locate_file(std::filesystem::path{argv[1]}, simu.lookup_paths);
-        if (!filepath) {
-            throw std::invalid_argument("Simulation settings file not found: " + std::string(argv[1]));
-        }
-
-        // Simulation settings file is fine, save its full path
-        simu.settings_file = filepath.value();
+        // 1.1 Locate in the system and save the full path of the settings file and other  info
+        simu.settings_file = bevarmejo::io::locate_file(std::filesystem::path{argv[1]}, simu.lookup_paths);
         simu.folder = simu.settings_file.parent_path();
         simu.lookup_paths.push_back(simu.folder);
 
@@ -170,14 +209,14 @@ Simulation parse(int argc, char *argv[]) {
             }
         }
         // it could be for a old version of a library
-        if (j.contains(bevarmejo::to_kebab_case(label::__version)) ) {
-            j[label::__version] = j[bevarmejo::to_kebab_case(label::__version)];
-            j.erase(bevarmejo::to_kebab_case(label::__version));
+        if (j.contains(bevarmejo::to_kebab_case(label::__beme_version)) ) {
+            j[label::__beme_version] = j[bevarmejo::to_kebab_case(label::__beme_version)];
+            j.erase(bevarmejo::to_kebab_case(label::__beme_version));
         }
         
-        if (j.contains(label::__version)) {
-            auto ud_version = j[label::__version].get<std::string>();
-            VersionManager::instance().set(ud_version);
+        if (j.contains(label::__beme_version)) {
+            auto ud_version = j[label::__beme_version].get<std::string>();
+            VersionManager::user().set(ud_version);
         }
 
         // 1.3.2 mandatory keys first: dv, udp
@@ -200,19 +239,27 @@ Simulation parse(int argc, char *argv[]) {
         }
         simu.dvs            = j[label::__dv].get<std::vector<double>>();
 
-        json jproblem = j[label::__problem_sh];
+        json &jproblem = j[label::__problem_sh];
 
         // 1.3 Check the settings file has the required fields
         // name, if params not there pass empty -> most likely will throw exception the constructor, 
-        if (!jproblem.contains(label::__name)) {
+        if (!jproblem.contains(label::__name) && !jproblem.contains(bevarmejo::to_kebab_case(label::__name))) {
             throw std::runtime_error("Simulation settings file does not specifies the name of the User Defined Problem\n");
         }
-        if (!jproblem.contains(label::__params)) {
+        if (!jproblem.contains(label::__params) && !jproblem.contains(bevarmejo::to_kebab_case(label::__params))) {
             jproblem[label::__params] = json::object();
+        }
+        if (jproblem.contains(bevarmejo::to_kebab_case(label::__name))) {
+            jproblem[label::__name] = jproblem[bevarmejo::to_kebab_case(label::__name)];
+            jproblem.erase(bevarmejo::to_kebab_case(label::__name));
+        }
+        if (jproblem.contains(bevarmejo::to_kebab_case(label::__params))) {
+            jproblem[label::__params] = jproblem[bevarmejo::to_kebab_case(label::__params)];
+            jproblem.erase(bevarmejo::to_kebab_case(label::__params));
         }
 
         // 1.5 build the problem
-        simu.p = std::move(build_problem( jproblem, simu.lookup_paths ));
+        simu.p = std::move(build_problem( jproblem[label::__name].get<std::string>(), jproblem[label::__params], simu.lookup_paths ));
 
         // 1.6 optional keys that don't change the behavior of the simulation
         if (j.contains(label::__fv)) {

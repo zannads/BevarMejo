@@ -25,12 +25,12 @@ namespace wds {
 
 DimensionedLink::DimensionedLink(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    m__diameter(wds.time_series(l__CONSTANT_TS)),
-    m__roughness(wds.time_series(l__CONSTANT_TS)),
-    m__minor_loss(wds.time_series(l__CONSTANT_TS)),
-    m__bulk_coeff(wds.time_series(l__CONSTANT_TS)),
-    m__wall_coeff(wds.time_series(l__CONSTANT_TS)),
-    m__velocity(wds.time_series(l__RESULT_TS)) { }
+    m__diameter(wds.time_series(label::__CONSTANT_TS)),
+    m__roughness(wds.time_series(label::__CONSTANT_TS)),
+    m__minor_loss(wds.time_series(label::__CONSTANT_TS)),
+    m__bulk_coeff(wds.time_series(label::__CONSTANT_TS)),
+    m__wall_coeff(wds.time_series(label::__CONSTANT_TS)),
+    m__velocity(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 DimensionedLink::DimensionedLink(const DimensionedLink& other) : 
@@ -139,6 +139,12 @@ void DimensionedLink::retrieve_results(EN_Project ph, long t) {
         val = val*MperFT; // from ft/s to m/s
 
     m__velocity.commit(t, val);
+}
+
+void DimensionedLink::clear_results() {
+    inherited::clear_results();
+
+    m__velocity.clear();
 }
 
 } // namespace wds

@@ -107,6 +107,7 @@ class Node : public NetworkElement {
         virtual const bool has_demand() const {return false;}
 
     /*--- Pure virtual methods override---*/
+        virtual void clear_results() override;
 
     /*--- EPANET-dependent PVMs override ---*/
     public:

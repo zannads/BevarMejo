@@ -22,17 +22,15 @@
 using json = nlohmann::json;
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/factories.hpp"
 #include "bevarmejo/labels.hpp"
-#include "bevarmejo/pagmo_helpers/udc_help.hpp"
+#include "bevarmejo/library_metadata.hpp"
+#include "bevarmejo/io/json_serializers.hpp"
+#include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
 #include "Anytown/prob_anytown.hpp"
-#include "Anytown/rehab/prob_at_reh_f1.hpp"
-#include "Anytown/mixed/prob_at_mix_f1.hpp"
-#include "Anytown/operations/prob_at_ope_f1.hpp"
-#include "Anytown/twophases/prob_at_2ph_f1.hpp"
-
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
 #include "experiment.hpp"
@@ -49,30 +47,9 @@ void Experiment::build(const ExperimentSettings &settings) {
     json jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
-    // Construct a pagmo::problem for ANYTOWN model
-    pagmo::problem p{};
-    auto probname = settings.jinput[label::__typconfig][label::__problem_sh][label::__name].get<std::string>();
-    auto pparams = settings.jinput[label::__typconfig][label::__problem_sh][label::__params];
-    if ( probname == bevarmejo::anytown::rehab::f1::name) {
-        p = bevarmejo::anytown::rehab::f1::Problem(pparams, settings.lookup_paths);
-    }
-    else if ( probname == bevarmejo::anytown::mixed::f1::name) {
-        p = bevarmejo::anytown::mixed::f1::Problem(pparams, settings.lookup_paths);
-    }
-    else if (probname == bevarmejo::anytown::operations::f1::name) {
-        p = bevarmejo::anytown::operations::f1::Problem(pparams, settings.lookup_paths);
-    }
-
-    else if (probname == bevarmejo::anytown::twophases::f1::name) {
-        p = bevarmejo::anytown::twophases::f1::Problem(pparams, settings.lookup_paths);
-    }
-
-    else if ( probname == bevarmejo::hanoi::fbiobj::name) {
-        p = bevarmejo::hanoi::fbiobj::Problem(pparams, settings.lookup_paths);
-    }
-    else {
-        throw std::runtime_error("The problem name is not recognized.");
-    }
+    // Construct a pagmo::problem
+    const nl::json &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
+    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__params] , settings.lookup_paths) };
         
     // and instantiate population
     pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
@@ -130,6 +107,8 @@ void Experiment::save_outcome()
 
     json jsys;
     // example machine, OS etc ... 
+    json jsoft;
+    jsoft[to_kebab_case(label::__beme_version)] = VersionManager::library().version().str();
 
     json jarchipelago; 
     {
@@ -152,17 +131,14 @@ void Experiment::save_outcome()
     // 3. Save the file
     json jout = {
         {to_kebab_case(label::__system), jsys},
-        {to_kebab_case(label::__archi), jarchipelago}
+        {to_kebab_case(label::__archi), jarchipelago},
+        {to_kebab_case(label::__software), jsoft}
     };
     ofs << jout.dump(4);
     ofs.close();
 }
 
-fsys::path Experiment::main_filename() const {
-    std::string complete_filename = label::__beme_prefix+m_name+label::__beme_suffix;
-    
-    return output_folder()/complete_filename;
-}
+
 
 std::pair<std::vector<std::string>, std::string> Experiment::save_final_results() const {
     
@@ -181,15 +157,21 @@ std::pair<std::vector<std::string>, std::string> Experiment::save_final_results(
     assert(m_archipelago.size() == m_islands_filenames.size());
     auto isl_it = m_archipelago.begin();
     auto isl_fn_it = m_islands_filenames.begin();
-    for (; isl_it != m_archipelago.end(); ++isl_it, ++isl_fn_it){
-
-        try {
-            saved_islands.push_back(
-                save_final_result(*isl_it, *isl_fn_it).string()
-            );
-        } catch (std::runtime_error& e) {
+    while (isl_it != m_archipelago.end() && isl_fn_it != m_islands_filenames.end())
+    {
+        try
+        {
+            save_final_result(*isl_it, *isl_fn_it);
+            
+            saved_islands.push_back(fsys::relative(*isl_fn_it, output_folder()));
+        }
+        catch (std::runtime_error& e)
+        {
             io::stream_out(oss, e.what());
         }
+
+        ++isl_it;
+        ++isl_fn_it;
     }
 
     return std::make_pair(saved_islands, oss.str());
@@ -350,10 +332,40 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
 }
 
 
-fsys::path Experiment::runtime_file() {
-    std::string outtemp_filename = label::__beme_prefix+m_name+"__"+std::to_string(_seed_)+".json";
+const std::string& Experiment::name() const {
+    return m_name;
+}
 
-    return output_folder()/outtemp_filename;
+const fsys::path& Experiment::folder() const {
+    return m_folder;
+}
+
+const fsys::path Experiment::output_folder() const {
+    return m_folder/io::other::bemeexp_out_folder;
+}
+
+fsys::path Experiment::main_filename() const {
+    std::string temp = (
+        io::other::bemeexp_prefix+
+        io::other::beme_filenames_separator+
+        m_name+
+        io::other::bemeexp_exp_suffix+".json"
+    );
+    
+    return output_folder()/temp;
+}
+
+fsys::path Experiment::runtime_file() {
+    std::string temp = (
+        io::other::bemeexp_prefix+
+        io::other::beme_filenames_separator+
+        m_name+
+        io::other::beme_filenames_separator+
+        std::to_string(_seed_)+
+        io::other::bemeexp_isl_suffix+".json"
+    );
+        
+    return output_folder()/temp;
 }
 
 } // namespace bevarmejo
