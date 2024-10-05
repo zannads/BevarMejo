@@ -1,5 +1,6 @@
 import os 
 import json
+import re
 
 import pandas as pd
 
@@ -7,12 +8,28 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     """
     Load the results of an experiment from a json file.
     """
+    # Check if the file exists
+    if not os.path.exists(experiment_namefile):
+        raise FileNotFoundError(f"File {experiment_namefile} does not exist.")
+
+    # Before version 2024.10.0:
+    """
     # The name of the experiment is included in the name of the file between the
-    # name prefix and the name suffix. You can find it between the first '__' and
-    # the last '__' in the name of the file. First need to remove the path 
-    # and the extension of the file.
-    experiment_name = os.path.basename(experiment_namefile).split('__')[1:-1]
-    experiment_name = '__'.join(experiment_name)
+    # name prefix (bemeopt__) and the name suffix (__exp). You can find it 
+    # between the first '__' and the last '__' in the name of the file. 
+    # First need to remove the path and the extension of the file.
+    """
+    # After version 2024.10.0:
+    """
+    # The name of the experiment is included after the name prefix (bemeexp__) and
+    # before the name suffix (.exp), which comes before the extension of the file.
+    # The experiment folder is one level outside the full file path.
+    """
+    if os.path.basename(experiment_namefile).startswith("bemeopt__"):
+        experiment_name = re.match(r"bemeopt__(.*)__exp", os.path.basename(experiment_namefile)).group(1)
+    else : # assume bemeexp__
+        experiment_name = re.match(r"bemeexp__(.*)\.exp", os.path.basename(experiment_namefile)).group(1)
+    
     # Experiment folder is one level outside the full file path
     experiment_folder = os.path.dirname(os.path.dirname(experiment_namefile))
 
@@ -49,6 +66,10 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     experiment_results['archipelago']['island'] = island_names      # access by name
 
     # TODO: convert the current-time in each generation to a datetime object
+    for island in experiment_results['archipelago']['islands']:
+        for generation in island['generations']:
+            generation['current-time'] = pd.to_datetime(generation['current-time'])
+
 
     if verbose:
         print(f"Results of experiment {experiment_name} loaded successfully.")
@@ -108,8 +129,41 @@ def extract_dataframe(experiment_results: dict) -> pd.DataFrame:
     # Concatenate all the island dataframes into a single dataframe
     return pd.concat(island_dataframes, keys=island_names, names=['island'])
 
+class IndividualCoordinates:
+    def __init__(self, island_idx, generation_idx, individual_idx):
+        self.island_idx = island_idx
+        self.generation_idx = generation_idx
+        self.individual_idx = individual_idx
+
+# Extract the individual information from the experiment results dictionary
+def extract_individual_from_coordinates(experiment_results: dict, ind_coord: IndividualCoordinates) -> dict:
+    """
+    Extract the information of an individual from the results of an experiment.
+
+    Inputs:
+    - experiment_results: dictionary with the results of the experiment
+    - individual_idx: coordinates of the individual in the experiment results
+
+    Outputs:
+    - individual: dictionary with the information of the individual
+    """    
+    return experiment_results['archipelago']['islands'][ind_coord.island_idx]['generations'][ind_coord.generation_idx]['individuals'][ind_coord.individual_idx]
+
+def list_all_final_individuals(experiment_results: dict, coordinate=True) -> list:
+    """
+    List the coordinates of all the final individuals in the experiment results.
+    """
+    inds = []
+    for island_idx, island in enumerate(experiment_results['archipelago']['islands']):
+        for ind_idx, _ in enumerate(island['generations'][-1]['individuals']):
+            if coordinate:
+                inds.append(IndividualCoordinates(island_idx, -1, ind_idx))
+            else:
+                inds.append(experiment_results['archipelago']['islands'][island_idx]['generations'][-1]['individuals'][ind_idx])
+    return inds
+
 # Create a Simulation Settings file for beme-sim
-def save_simulation_settings(opt_settings_file, exp, individual_idx, save_in_folder =".tmp") -> str:
+def save_simulation_settings(exp, individual_coord, save_in_folder =".tmp") -> str:
     # I need to create a file with:
     # - the individual dv
     # - the individual fv (optional)
@@ -119,21 +173,23 @@ def save_simulation_settings(opt_settings_file, exp, individual_idx, save_in_fol
     # - user defined problem settings
     # - lookup paths (optional)
 
-    # First load the settings from the optimisation settings file (for the user defined problem)
-    # Second use the results of the exp and the bemelib version
-    with open(os.path.expanduser(opt_settings_file), 'r') as file:
-        opt_sett = json.load(file)
-
-    all_individuals = [ind for island in exp['archipelago']['islands'] for ind in island['generations'][-1]['individuals'] ]
-
-    individual = all_individuals[individual_idx]
-    bemelib_version = "v24.08.0"
+    individual = extract_individual_from_coordinates(exp, individual_coord)
+    individual_island = exp['archipelago']['islands'][individual_coord.island_idx]
+    bemelib_version = "v24.10.0"
     if 'bemelib-version' in exp['software']:
         bemelib_version = exp['software']['bemelib-version']
     
-    udp_sett = opt_sett['Typical configuration']['UDP']
-    # TODO: based on the island of the individual, the UDP settings could be slightly different
-    # for example. different islands, were run with different water demand profiles
+    # Based on the island of the individual, the UDP settings could be slightly different.
+    # For example, different islands may have been run with different water demand profiles.
+    # So I extract the UDP settings from the island file. If this is empty, or 
+    # the version is before 24.10.0, I use the UDP settings from the optimisation settings file.
+    if bemelib_version < "v24.10.0" or 'problem' not in individual_island:
+        # Open the optimisation settings file 
+        with open(os.path.expanduser(os.path.join(exp['folder'], 'bemeopt__settings.json')), 'r') as file:
+            opt_sett = json.load(file)
+        udp_sett = opt_sett['Typical configuration']['UDP']
+    else:
+        udp_sett = individual_island['problem']
 
     simu_sett= {
         "decision-vector": individual['decision-vector'],
