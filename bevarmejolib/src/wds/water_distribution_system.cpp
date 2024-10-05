@@ -42,7 +42,7 @@ WaterDistributionSystem::WaterDistributionSystem() :
     _subnetworks_(),
     _groups_(),
     m__config_options(),
-    m__times(m__config_options.times.global) { }
+    m__times() { }
     
 
     WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
@@ -149,9 +149,6 @@ WaterDistributionSystem::~WaterDistributionSystem(){
     m__aux_elements_.curves.clear();
 
     _elements_.clear();
-
-    m__times.ud_time_series.clear();
-    // m__config_options can die in piece
 }
 
 
@@ -240,25 +237,12 @@ void WaterDistributionSystem::clear_results() const {
 }
 
 const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const {
-    if (name == l__CONSTANT_TS)
-        return m__times.constant;
-    
-    if (name == l__PATTERN_TS)
-        return m__times.EN_pattern;
-    
-    if (name == l__RESULT_TS)
-        return m__times.results;
-
-    auto it = m__times.ud_time_series.find(name);
-    if (it != m__times.ud_time_series.end())
-        return it->second;
-    else
-        throw std::runtime_error("Time series with name " + name + " not found.");
+    return m__times.time_series(name);
 }
 
-void WaterDistributionSystem::run_hydraulics() const{
+void WaterDistributionSystem::run_hydraulics() {
     this->clear_results();
-    m__times.results.reset();
+    m__times.results().reset();
 
     assert(ph_ != nullptr);
     // I assume indices are cached already 
@@ -284,7 +268,7 @@ void WaterDistributionSystem::run_hydraulics() const{
     assert(errorcode < 100);
 
     long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
-    m__times.results.reserve(n_reports);
+    m__times.results().reserve(n_reports);
 
     bool solution_has_failed = false;
     bool scheduled; // is the current time a reporting time?
@@ -293,6 +277,7 @@ void WaterDistributionSystem::run_hydraulics() const{
     
     do {
         errorcode = EN_runH(ph_, &t);
+
         if (errorcode >= 100) {
             solution_has_failed = true;
             break;
@@ -302,7 +287,7 @@ void WaterDistributionSystem::run_hydraulics() const{
         // if the current time is a reporting time, I save all the results
         scheduled = (t % r_step == 0);
         if (m__config_options.save_all_hsteps || scheduled) {
-            m__times.results.commit(t);
+            m__times.results().commit(t);
             // Use polymorphism to get the results from EPANET
             for (auto node : _nodes_) {
                 node->retrieve_results(ph_, t);
@@ -317,8 +302,8 @@ void WaterDistributionSystem::run_hydraulics() const{
 
     } while (delta_t > 0);
 
-    errorcode = EN_closeH(ph_);
-    assert(errorcode < 100);
+    int errorcode2 = EN_closeH(ph_);
+    assert(errorcode2 < 100);
 
     if (solution_has_failed)
         throw std::runtime_error("Hydraulic solution failed.");

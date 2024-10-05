@@ -23,6 +23,7 @@
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
@@ -53,12 +54,14 @@
 
 
 namespace bevarmejo {
+
+namespace label {
+static const std::string __EN_PATTERN_TS = "ENPatt";
+} // namespace label
+
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
-static const std::string l__CONSTANT_TS = "Cst";
-static const std::string l__PATTERN_TS = "ENPatt";
-static const std::string l__RESULT_TS = "Res";
 
 class NetworkElement;
 
@@ -99,7 +102,7 @@ public:
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
     using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
-    using TimeSeriesMap= std::unordered_map<std::string, aux::TimeSeries>; 
+    using TimeSeriesMap= std::unordered_map<std::string, std::shared_ptr<aux::TimeSeries>>; 
 
 protected:
     // Path to the inp file from which the project will be uploaded.
@@ -133,30 +136,13 @@ protected:
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
+
+    // User defined and default TimeSeries for the simulation
+    aux::GlobalTimes m__times;
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
-        struct TimeOptions {
-            epanet::GlobalTimeOptions global;
-            epanet::PatternTimeOptions pattern;
-        } times;
     } m__config_options;
-
-    // Keep the relevant times here:
-    struct RelevantTimes {
-        aux::TimeSeries constant;
-        aux::TimeSeries EN_pattern;
-        mutable aux::TimeSeries results;
-        TimeSeriesMap ud_time_series;
-
-        RelevantTimes() = delete;
-        RelevantTimes(const epanet::GlobalTimeOptions& gto) :
-            constant(gto),
-            EN_pattern(gto),
-            results(gto),
-            ud_time_series() {}
-    };
-    RelevantTimes m__times;
 
 /*--- Constructors ---*/ 
 public:
@@ -232,7 +218,7 @@ private:
 public:
     void clear_results() const;
     
-    void run_hydraulics() const;
+    void run_hydraulics();
 
     /*--- ?? ---*/
     template <typename T>

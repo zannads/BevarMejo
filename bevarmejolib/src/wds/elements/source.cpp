@@ -14,8 +14,8 @@ namespace wds {
 
 Source::Source(const std::string& id, const WaterDistributionSystem& wds) : 
     inherited(id, wds),
-    m__inflow(wds.time_series(l__RESULT_TS)),
-    m__source_elevation(wds.time_series(l__RESULT_TS)) { }
+    m__inflow(wds.time_series(label::__RESULTS_TS)),
+    m__source_elevation(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Source::Source(const Source& other) : 
@@ -71,6 +71,13 @@ void Source::retrieve_results(EN_Project ph, long t) {
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__source_elevation.commit(t, val);
+}
+
+void Source::clear_results() {
+    inherited::clear_results();
+
+    m__inflow.clear();
+    m__source_elevation.clear();
 }
 
 } // namespace wds

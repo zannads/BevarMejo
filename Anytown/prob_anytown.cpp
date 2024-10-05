@@ -6,43 +6,80 @@
 
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <pagmo/problem.hpp>
+#include <pagmo/algorithms/nsga2.hpp>
+#include <pagmo/algorithm.hpp>
+#include <pagmo/population.hpp>
+#include <pagmo/island.hpp>
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 #include "bevarmejo/io.hpp"
+namespace bemeio = bevarmejo::io;
+#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
+#include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "prob_anytown.hpp"
 
 namespace bevarmejo {
-
 namespace anytown {
+
+// For the io functions
+static const std::string nname = "anytown::"; // "anytown::"
+
+namespace io::log::cname {
+static const std::string anytown_problem = "Problem"; // "Problem"
+} // namespace cname
+
+namespace io::key {
+static const std::string opers = "Operations"; // "Operations"
+static const std::string avail_diam = "Available diameters"; // "Available diameters"
+static const std::string tank_costs = "Tank costs"; // "Tank costs"
+static const std::string __wds__ = "WDS"; // "WDS"
+static const std::string __udegs__ = "UDEGs"; // "UDEGs"
+static const std::string __inp__ = "inp"; // "inp"
+} // namespace key
+
+// Extra information for the formulations.
+namespace io::other {
+static const std::string rehab_f1_exinfo =  "Anytown Rehabilitation Formulation 1\nOperations from input, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+static const std::string mixed_f1_exinfo =  "Anytown Mixed Formulation 1\nOperations as dv, pipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete)\n";
+static const std::string opertns_f1_exinfo = "Anytown Operations-only problem. Pure 24-h scheduling.\n";
+static const std::string twoph_f1_exinfo = "Anytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
+static const std::string rehab_f2_exinfo =  "Anytown Rehabilitation Formulation 2\nOperations from input, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+static const std::string mixed_f2_exinfo =  "Anytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+}
 
 std::istream& operator>>(std::istream& is, bevarmejo::anytown::tanks_costs& tc)
 {
-	io::stream_in(is, tc.volume_gal); is.ignore(1000, ';');
-	io::stream_in(is, tc.cost);
+	bemeio::stream_in(is, tc.volume_gal); is.ignore(1000, ';');
+	bemeio::stream_in(is, tc.cost);
 
 	return is;
 }
 
 std::istream& operator>>(std::istream& is, bevarmejo::anytown::pipes_alt_costs& pac) {
-	io::stream_in(is, pac.diameter_in); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.diameter_in); is.ignore(1000, ';');
 
-	io::stream_in(is, pac.new_cost); is.ignore(1000, ';');
-	io::stream_in(is, pac.dup_city); is.ignore(1000, ';');
-	io::stream_in(is, pac.dup_residential); is.ignore(1000, ';');
-	io::stream_in(is, pac.clean_city); is.ignore(1000, ';');
-	io::stream_in(is, pac.clean_residential);
+	bemeio::stream_in(is, pac.new_cost); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.dup_city); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.dup_residential); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.clean_city); is.ignore(1000, ';');
+	bemeio::stream_in(is, pac.clean_residential);
 
 	return is;
 }
@@ -67,30 +104,135 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 	return patterns;
 }
 
+Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
+	m__formulation{a_formulation}
+{
+	std::string full_name{"bevarmejo::"};
+	full_name += nname;
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1:
+		m__name = full_name+io::value::rehab_f1;
+		m__extra_info = io::other::rehab_f1_exinfo;
+		break;
+	case Formulation::mixed_f1:
+		m__name = full_name+io::value::mixed_f1;
+		m__extra_info = io::other::mixed_f1_exinfo;
+		break;
+	case Formulation::opertns_f1:
+		m__name = full_name+io::value::opertns_f1;
+		m__extra_info = io::other::opertns_f1_exinfo;
+		break;
+	case Formulation::twoph_f1:
+		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"Formulation 1 of twophase problem is not supported anymore.");
+	case Formulation::rehab_f2:
+		m__name = full_name+io::value::rehab_f2;
+		m__extra_info = io::other::rehab_f2_exinfo;
+		break;
+	case Formulation::mixed_f2:
+		m__name = full_name+io::value::mixed_f2;
+		m__extra_info = io::other::mixed_f2_exinfo;
+		break;
+	default:
+		__format_and_throw<std::invalid_argument, ClassError>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"The provided Anytown formulation is not yet implemented.");
+	}
+
+
+	// Unfortunately, this is always necessary because of the way that the inp file is loaded
+	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
+		// change curve ID 2 to a pump curve
+		assert(ph != nullptr);
+		std::string curve_id = "2";
+		int curve_idx = 0;
+		int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
+		assert(errorcode <= 100);
+
+		errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
+		assert(errorcode <= 100);
+	};
+
+	load_network(settings, lookup_paths, fix_inp);
+
+	load_subnets(settings, lookup_paths);
+
+	if (m__formulation != Formulation::opertns_f1) {
+		// Custom made subnetworks for the temporary elements 
+		m__anytown->add_subnetwork(label::__temp_elems, wds::Subnetwork{});
+
+		load_other_data(settings, lookup_paths);
+	}
+
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
+		// Need to se the operations for the rehabilitation problems
+		assert(settings.contains(io::key::opers));
+		std::vector<double> operations = settings[io::key::opers].get<std::vector<double>>();
+		assert(operations.size() == 24);
+
+		// Fix pumps' patterns
+		for (int i = 0; i < 3; ++i) {
+			// no need to go through the pumps, I know the pattern ID
+			int pattern_idx = 0;
+			int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+			assert(errorcode <= 100);
+
+			std::vector<double> temp(24, 0.0);
+			for (int j = 0; j < 24; ++j) {
+				temp[j] = operations[j] > i ? 1.0 : 0.0;
+			}
+
+			errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+			assert(errorcode <= 100);
+
+			// Should be the same as
+			// m__anytown->pumps().find(std::to_string(i+2))->operator->()->speed_pattern() = temp;
+			// but I can avoid as it is not used yet
+		}
+	}
+
+	if (m__formulation == Formulation::twoph_f1) {
+		/*
+		// Prepare the internal optimization problem 
+		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
+		&& settings["Internal optimization"].contains("UDP") && settings["Internal optimization"].contains("Population") );
+		auto uda = settings["Internal optimization"]["UDA"];
+		auto udp = settings["Internal optimization"]["UDP"];
+		auto udpop = settings["Internal optimization"]["Population"];
+
+		// this is nasty but as of now it will work // I am not passing any info for now 
+		assert(udpop.contains(label::__report_gen_sh));
+		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
+		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
+
+		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
+		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
+		
+		assert(udpop.contains(label::__size));
+		m_pop = pagmo::population( prob, udpop[label::__size].get<unsigned int>()-2u ); // -2 because I will manually add the two extreme solutions (the bounds)
+		m_pop.push_back(prob.get_bounds().first); // all zero operations not running 
+		m_pop.push_back(prob.get_bounds().second); // all operations running at max
+		*/
+	}
+}
+
 void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
 	assert(settings != nullptr);
+	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto inp_filename = file.value();
-
-	m__anytown = std::make_shared<WDS>(inp_filename, preprocessf);
+	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths, true), preprocessf);
 }
 
 void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
-	for (const auto& udeg : settings["WDS"]["UDEGs"]) {
-		// Locate the file in the lookup paths
-		auto file = bevarmejo::io::locate_file(fsys::path{udeg}, lookup_paths);
-		if (file.has_value()) {
-			try{
-				m__anytown->add_subnetwork(file.value());
-			}
-			catch (const std::exception& ex) {
-				std::cerr << ex.what();
-			}
+	for (const auto& udeg : settings[io::key::__wds__][io::key::__udegs__]) {
+		
+		try
+		{
+			m__anytown->add_subnetwork(bemeio::locate_file(fsys::path{udeg}, lookup_paths));
+		}
+		catch (const std::exception& ex) {
+			std::cerr << ex.what();
 		}
 		// else skip but log the error 
 		// TODO: log the error in case it fails at later stages
@@ -99,12 +241,9 @@ void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) 
 }
 
 void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_paths) {
+	assert(settings.contains(io::key::avail_diam) && settings.contains(io::key::tank_costs));
 	// Load Pipe rehabilitation alternative costs 
-	auto file = bevarmejo::io::locate_file(fsys::path{settings["Available diameters"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided available diameters file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto prac_filename = file.value();
+	auto prac_filename = bemeio::locate_file(fsys::path{settings[io::key::avail_diam]}, lookup_paths);
 
 	// TODO: move also this to json?
 	std::ifstream prac_file{prac_filename};
@@ -112,179 +251,240 @@ void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_path
 		throw std::runtime_error("Could not open file " + prac_filename.string());
 	}
 
-	std::size_t n_alt_costs = io::load_dimensions(prac_file, "#DATA");
+	std::size_t n_alt_costs = bemeio::load_dimensions(prac_file, "#DATA");
 	m__pipes_alt_costs.resize(n_alt_costs);
-	io::stream_in(prac_file, m__pipes_alt_costs);
+	bemeio::stream_in(prac_file, m__pipes_alt_costs);
 	
-
 	// Load Tank costs 
-	file = bevarmejo::io::locate_file(fsys::path{settings["Tank costs"]}, lookup_paths);
-	if (!file.has_value()) {
-		throw std::runtime_error("The provided tank costs file does not exist in the lookup paths. Check the settings file.\n");
-	}
-	auto tanks_filename = file.value();
+	auto tanks_filename = bemeio::locate_file(fsys::path{settings[io::key::tank_costs]}, lookup_paths);
 	std::ifstream tanks_file{tanks_filename};
 	if (!tanks_file.is_open()) {
 		throw std::runtime_error("Could not open file " + tanks_filename.string());
 	}
 	
-	std::size_t n_tanks = io::load_dimensions(tanks_file, "#DATA");
+	std::size_t n_tanks = bemeio::load_dimensions(tanks_file, "#DATA");
 	m__tanks_costs.resize(n_tanks);
-	io::stream_in(tanks_file, m__tanks_costs);
+	bemeio::stream_in(tanks_file, m__tanks_costs);
 }
 
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const bevarmejo::anytown::Problem &prob) {
-// Structure of the decision variables:
-// 6 pipes x [pra]
-// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
-	assert(prob.m__anytown->subnetwork("new_pipes").size() == 6);
-	assert(prob.m__pipes_alt_costs.size() == 10);
-
-	auto n_dvs= prob.m__anytown->subnetwork("new_pipes").size();
-	double n_pra= prob.m__pipes_alt_costs.size();
-
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, n_pra-1);
-
-    return std::make_pair(lb, ub);
+// ------------------- Pagmo functions ------------------- //
+// For now, all formulations have a fixed number of objectives, constraints, but different number of variables
+std::vector<double>::size_type Problem::get_nobj() const {
+	return 2ul; 
 }
 
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const bevarmejo::anytown::Problem &prob) {
-// Structure of the decision variables:
-// 24 hours x [npr]
-// npr: 4 options indicate the number of pumps running -> 0 - 3
-	assert(prob.m__anytown->pumps().size() == 3);
-
-	auto n_dvs= 24;
-	double n_npr= 3.0;
-
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, n_npr);
-
-	return std::make_pair(lb, ub);
+std::vector<double>::size_type Problem::get_nec() const {
+	return 0ul;
 }
 
-void apply_dv__new_pipes(WDS &anyt_wds, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
-{
-    assert(dvs.size() == anyt_wds.subnetwork("new_pipes").size());
-	// Let's assume that indices are already cached
+std::vector<double>::size_type Problem::get_nic() const {
+	return 0ul;
+}
 
-	auto curr_dv = dvs.begin();
-	for (const auto& wp_curr_net_ele : anyt_wds.subnetwork("new_pipes")) {
-		auto curr_net_ele = wp_curr_net_ele.lock();	
-		// retrieve the link ID from the subnetwork
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
-
-		std::string link_id = curr_pipe->id();
-		int link_idx = curr_pipe->index();
-
-		// change the new pipe properties:
-		// diameter =  row dvs[70+i] column diameter of m__pipes_alt_costs
-		double diameter_in = pipes_alt_costs.at(*curr_dv).diameter_in;
-		int errorcode = EN_setlinkvalue(anyt_wds.ph_, link_idx, EN_DIAMETER, diameter_in);
-		assert(errorcode <= 100);
-		curr_pipe->diameter(diameter_in*MperFT/12*1000); //save in mm
-
-#ifdef DEBUGSIM
-		std::cout << "New pipe with ID " << link_id << " installed with diam of " << diameter_in << " in (" <<curr_pipe->diameter()() <<" mm)\n";
-#endif
-
-		++curr_dv;
+std::vector<double>::size_type Problem::get_nix() const {
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1:
+		[[fallthrough]];
+	case Formulation::twoph_f1:
+		return 80ul;
+	case Formulation::mixed_f1:
+		return 104ul;
+	case Formulation::opertns_f1:
+		return 24ul;
+	case Formulation::rehab_f2:
+		return 45ul;
+	case Formulation::mixed_f2:
+		return 69ul;
+	default:
+		return 0ul;
 	}
 }
 
-void apply_dv__pumps(WDS& anyt_wds, const std::vector<double>& dvs) {
-	assert(dvs.size() == 24); // 24 hours x [npr]
-	// Let's assume that indices are already cached
+// ------------------- 1st level ------------------- //
+std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
+	// things to do 
+	// 1. EPS 
+	//   [x]   apply dvs to the network
+	// 	 [x]	run EPS as it is
+	// 	 [x]	check energy consumption
+	// 	 [x]	check pressure for reliability
+	// 	 [x]	check min pressure constraint
+	// 	 [ ]	check tanks complete emptying and filling
+	// 2. instantenous peak flow
+	// 		apply changes wrt EPS
+	//      	not running anymore for 24h but instantenous 
+	// 			the multiplier is different 
+	//		check min pressure constraint 
+	// 3. fire flow conditions 
+	// 		apply changes wrt IPF
+	//			runs for 2h 
+	//			the multiplier is different
+	//			add the emitters and then remove them and repeat for the next condition
+	// 		check min pressure constraint 
 
-	auto curr_dv = dvs.begin();
-	auto patterns = decompose_pumpgroup_pattern(std::vector(curr_dv, curr_dv+24), anyt_wds.pumps().size());
-	for (std::size_t i = 0; i < patterns.size(); ++i) {
-		// I know pump patterns IDs are from 2, 3, and 4
-		int pump_idx = i + 2;
-		std::string pump_id = std::to_string(pump_idx);
-		int errorcode = EN_getpatternindex(anyt_wds.ph_, pump_id.c_str(), &pump_idx);
-		assert(errorcode <= 100);
 
-		// set the pattern
-		errorcode = EN_setpattern(anyt_wds.ph_, pump_idx, patterns[i].data(), patterns[i].size());
-		assert(errorcode <= 100);
-	}
-}
+	// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
+	// This doesn't allow parallelization unless you have different copies of the problem.
+	// For duplicate pipes they will have name Dxx where xx is the original pipe name.
+	// For cleaned pipes I write on a vector the original HW coefficients and then I reset them.
+	// For new pipes and pumps (dvs from 71 onwards) I don't need to reset them as they are always overwritten.
 
-void reset_dv__new_pipes(WDS& anytown) {
-	// Let's assume that indices are already cached
-
-	for (auto& wp_curr_net_ele : anytown.subnetwork("new_pipes") ) {
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		// retrieve the link ID and idx from the subnetwork
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		assert(curr_pipe != nullptr);
-
-		// change the new pipe properties:
-		double diameter = bevarmejo::anytown::_nonexisting_pipe_diam_ft;
-		int errorcode = EN_setlinkvalue(anytown.ph_, curr_pipe->index(), EN_DIAMETER, diameter);
-		assert(errorcode <= 100);
-
-		curr_pipe->diameter(bevarmejo::anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
-	}
-}
-
-void reset_dv__pumps(WDS& anytown) {
-	for (std::size_t i = 0; i < 3; ++i) {
-		// I know pump patterns IDs are from 2, 3, and 4
-		int pump_idx = i + 2;
-		std::string pump_id = std::to_string(pump_idx);
-		int errorcode = EN_getpatternindex(anytown.ph_, pump_id.c_str(), &pump_idx);
-		assert(errorcode <= 100);
-
-		// set the pattern, use empty array of 24 double to zero
-		errorcode = EN_setpattern(anytown.ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
-		assert(errorcode <= 100);
-	}
-
-}
-
-double cost__new_pipes(const WDS &anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
-	assert(dvs.size() == anytown.subnetwork("new_pipes").size());
-	// Let's assume that indices are already cached
+	// 1. EPS
+	//auto anytown_temp = m__anytown->clone(); 
+	// in the future this will be a perfect copy and I will be able to call 
+	// everything in a new thread and then simply discard it.
 	
-	// 6 pipes x [prc]
-	// This must be installed, thus minimum cost will never be 0.
-	double design_cost = 0.0;
-	auto curr_dv = dvs.begin();
-	for (const auto& wp_curr_net_ele : anytown.subnetwork("new_pipes")) {
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
-		
-		// dvs[i] is the row of the m__pipes_alt_costs table
-		double pipe_cost_per_ft = pipes_alt_costs.at(*curr_dv).new_cost;
-		design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value();
-
-		++curr_dv;
+	apply_dv(m__anytown, dvs);
+	
+	try {
+		m__anytown->run_hydraulics();
+	} catch (...) {
+		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation.\n");
+		reset_dv(m__anytown, dvs);
+		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
+					std::numeric_limits<double>::max());
 	}
 
-	return design_cost;
+	// Compute OF on res. 
+	std::vector<double> fitv= {
+		cost(*m__anytown, dvs), // cost is positive when money is going out, like in this case
+		of__reliability(*m__anytown) // Special modification of the reliability function
+	};
+	
+	reset_dv(m__anytown, dvs);
+	return fitv;
 }
 
-double cost__energy_per_day(const WDS &anytown)
-{
-    double total_ene_cost_per_day = 0.0;
-	for (const auto& pump : anytown.pumps() ) {
-		unsigned long t_prec = 0;
-		double power_kW_prec = 0.0;
-		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
-		for (const auto& [t, power_kW] : pump->instant_energy() ) {
-			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost_kWh ; 
-			t_prec = t;
-			power_kW_prec = power_kW;
-		}
+// ------------------- 2nd level ------------------- //
+void Problem::apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
+	anytown->cache_indices();
+
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1: {
+		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		// No pump apply
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs);
+		return;
 	}
-	return total_ene_cost_per_day;
+	case Formulation::mixed_f1: {
+		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		apply_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs);
+		return;
+	}
+	case Formulation::twoph_f1: {
+		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs);
+
+		// Forward these changes also to the internal optimization problem
+		auto udp = m_pop.get_problem().extract<bevarmejo::anytown::Problem>();
+		assert(udp != nullptr);
+		udp->m__anytown = this->m__anytown;
+
+		// I need to force the re-evaluation of the current solutions in the population
+		// So I create a "new population", that has the same elements of the previous one,
+		// but now, since the problem has changed, it will re-evaluate the solutions.
+		// I will then replace the old population with the new one.
+		// Super light to copy the internal problem as it only has the internal shared pointer to the network
+		pagmo::population new_pop( *udp /*, pop_size = 0, seed = m_pop.get_seed() */); 
+		for (const auto& dv: m_pop.get_x()) {
+			new_pop.push_back(dv);
+		}
+		m_pop = std::move(new_pop);
+
+		// Run the internal optimization problem which evolve n solutions m times
+		m_pop = m_algo.evolve(m_pop);
+
+		// The best solution is the one that minimizes the second objective function
+		// of the internal optimization problem (Pressure deficit). Ideally, after a
+		// while this is like a Single Objective problem trying to minimize cost.
+		auto dvs_internal = m_pop.get_x();
+		auto fvs_internal = m_pop.get_f();
+		std::vector<std::size_t> idx(fvs_internal.size());
+		std::iota(idx.begin(), idx.end(), 0u);
+		std::sort(idx.begin(), idx.end(), [&fvs_internal] (auto a, auto b) {return fvs_internal[a][1] < fvs_internal[b][1];});
+		
+		// To calculate the reliability index, since I lost the results in the internal optimization
+		// I have to apply the selected pattern to the network and run the simulation again. 
+		apply_dv__pumps(*anytown, m_pop.get_x().at(idx.front()));
+		return;
+	}
+	case Formulation::opertns_f1: {
+		apply_dv__pumps(*anytown, dvs);
+		return;
+	}
+	case Formulation::rehab_f2: {
+		fep2::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		// No pumps apply
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()), m__tanks_costs);
+		return;
+	}
+	case Formulation::mixed_f2: {
+		fep2::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		apply_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
+		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+65, dvs.end()), m__tanks_costs);
+	}
+	default:
+		break;
+	}
+
+	return;
+}
+
+double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const {
+
+	if (m__formulation == Formulation::opertns_f1) {
+		// Just the operational cost!
+		return cost__energy_per_day(anytown);
+	}
+
+	// If it is a design or integrated problem, we need to consider design cost and net present value of the energy cost.
+	double design_cost = 0.0;
+	
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1:
+		[[fallthrough]];
+	case Formulation::twoph_f1: {
+		design_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		break;
+	}
+	case Formulation::mixed_f1: {
+		design_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		break;
+	}
+	case Formulation::rehab_f2: {
+		design_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+41, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		break;
+	}
+	case Formulation::mixed_f2: {
+		design_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+65, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		break;
+	}
+	default:
+		break;
+	}
+		
+	double energy_cost_per_day = cost__energy_per_day(anytown);
+	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
+	
+	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
+	return -bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
 }
 
 double of__reliability(const WDS &anytown) {
@@ -353,58 +553,64 @@ double of__reliability(const WDS &anytown) {
 	return value;
 }
 
-// FORMULATION 1
-std::pair<std::vector<double>, std::vector<double>> f1::bounds__exis_pipes(const bevarmejo::anytown::Problem &prob) {
-// Structure of the decision variables:
-// [35 pipes x [action, pra]
-// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
-// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
+void Problem::reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
+	// Do the opposite operations of apply_dv 
+	anytown->cache_indices();
 
-	assert(prob.m__anytown->subnetwork("existing_pipes").size() == 35);
-	assert(prob.m__pipes_alt_costs.size() == 10);
-
-	auto n_dvs= 2ul*prob.m__anytown->subnetwork("existing_pipes").size();
-	double n_pra= prob.m__pipes_alt_costs.size();
-
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, 0.0);
-	for (std::size_t i = 0; i < n_dvs; i+=2) {
-		ub[i] = 2.0;
-		ub[i+1] = n_pra-1;
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1: {
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
+		// No pumps reset
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()));
+		return;
+	}
+	case Formulation::mixed_f1: {
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
+		reset_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()));
+		return;
+	}
+	case Formulation::twoph_f1: {
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
+		// No pumps reset and no need to do anything to the internal opt problem.
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()));
+		return;
+	}
+	case Formulation::opertns_f1: {
+		// No need to reset the pumps as they are overwritten
+		return;
+	}
+	case Formulation::rehab_f2: {
+		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
+		// No pumps reset
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()));
+		return;
+	}
+	case Formulation::mixed_f2: {
+		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), m__old_HW_coeffs);
+		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
+		reset_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
+		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+65, dvs.end()));
+		return;
+	}
+	default:
+		break;
 	}
 
-	return std::make_pair(lb, ub);
+	return;
 }
 
-std::pair<std::vector<double>, std::vector<double>> f1::bounds__tanks(const bevarmejo::anytown::Problem &prob) {
-// Structure of the decision variables:
-// 2 tanks x [tpl, tvol]
-// tpl: tank possible location nodes (plus 0, do nothing) -> 0 - x
-// tvol: 5 discrete tank volume possible -> 0 - 4 (to be transformed in continuous between the limits)
-
-	assert(prob.m__anytown->subnetwork("possible_tank_locations").size() == 17);
-	assert(prob.m__tanks_costs.size() == 5);
-
-	auto n_dvs= 2*bevarmejo::anytown::max_n_installable_tanks;
-	double n_tpl= prob.m__anytown->subnetwork("possible_tank_locations").size();
-	double n_tvol= prob.m__tanks_costs.size();
-
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, 0.0);
-	for (std::size_t i = 0; i < n_dvs; i+=2) {
-		ub[i] = n_tpl; // 0 is a valid option, so no minus one
-		ub[i+1] = n_tvol-1;
-	}
-
-	return std::make_pair(lb, ub);
-}
-
-std::vector<double> f1::apply_dv__exis_pipes(WDS &anyt_wds, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+// ------------------- 3rd level ------------------- //
+// ------------------- apply_dv ------------------- //
+void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 	assert(dvs.size() == 2*anyt_wds.subnetwork("existing_pipes").size());
 	// Let's assume that indices are already cached
 
-	// I need to return the old HW coefficients to reset them later
-	std::vector<double> old_HW_coeffs;
 	auto curr_dv = dvs.begin();
 	int errorcode = 0;
 
@@ -431,7 +637,7 @@ std::vector<double> f1::apply_dv__exis_pipes(WDS &anyt_wds, const std::vector<do
 		if (*curr_dv == 1) { // clean
 			// retrieve and save the old HW coefficients
 			double old_pipe_roughness = curr_pipe->roughness().value();
-			old_HW_coeffs.push_back(old_pipe_roughness);
+			old_HW_coeffs.insert({curr_pipe->id(), old_pipe_roughness});
 #ifdef DEBUGSIM
 			std::cout << "Cleaning pipe " << link_id << "\n";
 #endif
@@ -509,10 +715,164 @@ std::vector<double> f1::apply_dv__exis_pipes(WDS &anyt_wds, const std::vector<do
 		++curr_dv;
 	}
 
-	return old_HW_coeffs;
+	return;
+}
+void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+	assert(dvs.size() == anyt_wds.subnetwork("existing_pipes").size());
+	// Let's assume that indices are already cached
+
+	auto it_dv = dvs.begin();
+	auto it_net_elem = anyt_wds.subnetwork("existing_pipes").begin();
+	int errorcode = 0;
+
+	while (it_dv != dvs.end() && it_net_elem != anyt_wds.subnetwork("existing_pipes").end()) {
+		auto dv = *it_dv;
+		
+		if (dv == 0){
+			// Do nothing and skip
+#ifdef DEBUGSIM
+			std::cout << "No action for pipe " << it_net_elem->lock()->id() << "\n";
+#endif
+			++it_dv;
+			++it_net_elem;
+			continue;
+		}
+
+		// something needs to be changed, let's get the pipe
+		auto net_ele = it_net_elem->lock();
+		assert(net_ele != nullptr);
+		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
+		assert(pipe != nullptr);
+
+		if (dv == 1) { // clean
+#ifdef DEBUGSIM
+			std::cout << "Cleaning pipe " << pipe->id() << "\n";
+#endif
+			// retrieve and save the old HW coefficients
+			double old_pipe_roughness = pipe->roughness().value();
+			old_HW_coeffs.insert({pipe->id(), old_pipe_roughness});
+
+			// set the new HW coefficients
+			errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe->index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
+			assert(errorcode <= 100);
+			pipe->roughness(bevarmejo::anytown::coeff_HW_cleaned);
+
+			++it_dv;
+			++it_net_elem;
+			continue;
+		}
+
+		// else, i.e., dv >= 2, we duplicate the pipe 
+#ifdef DEBUGSIM
+		std::cout << "Duplicated pipe " << pipe->id() << " with diam " << m__pipes_alt_costs.at(dv-2).diameter_in <<"in\n";
+#endif
+
+		// DUPLICATE on EPANET project
+		// new name is Dxx where xx is the original pipe name
+		std::string new_link_id = "D"+pipe->id();
+		int dup_pipe_idx = 0;
+
+		// retrieve the old property of the already existing pipe
+		int out_node1_idx = 0;
+		int out_node2_idx = 0;
+		errorcode = EN_getlinknodes(anyt_wds.ph_, pipe->index(), &out_node1_idx, &out_node2_idx);
+		assert(errorcode <= 100);
+
+		std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
+		std::string out_node2_id = epanet::get_node_id(anyt_wds.ph_, out_node2_idx);
+		
+		// create the new pipe
+		errorcode = EN_addlink(anyt_wds.ph_, new_link_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &dup_pipe_idx);
+		assert(errorcode <= 100);
+		
+		// change the new pipe properties:
+		// 1. diameter =  row dvs[i]-2 column diameter of m__pipes_alt_costs
+		// 2. roughness = coeff_HV_new
+		// 3. length  = value of link_idx
+		double diameter_in = pipes_alt_costs.at(dv-2).diameter_in;
+		errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_DIAMETER, diameter_in);
+		assert(errorcode <= 100);
+		// errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
+		// assert(errorcode <= 100);
+		double link_length = 0.0;
+		errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe->index(), EN_LENGTH, &link_length);
+		assert(errorcode <= 100);
+		errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_LENGTH, link_length);
+		assert(errorcode <= 100);
+
+
+		// DUPLICATE on my network object 
+		// ok, the unique_ptr is passed as rvalue reference, so I can't use it anymore
+		std::shared_ptr<wds::Pipe> dup_pipe = pipe->duplicate();
+		// ADD to the network (should be fine doing it in the loop 
+		// as I am not using any iterator of the standard groups
+		// this holds as long as I don't add it to existing_pipes or if 
+		// I add them after this loop)
+		anyt_wds.insert(dup_pipe);
+		anyt_wds.cache_indices();
+		// add to the set of the "to be removed" elements
+		anyt_wds.subnetwork(label::__temp_elems).insert(dup_pipe);
+		// Since I duplicated the pipe every property is the same except:
+		// the new pipe may have a different diameter and
+		// the new pipe MUST have the roughness of a new pipe.
+		assert(dup_pipe->index() != 0);
+		dup_pipe->diameter(pipes_alt_costs.at(dv-2).diameter_in*MperFT/12*1000);
+		dup_pipe->roughness(bevarmejo::anytown::coeff_HW_new);
+
+		++it_dv;
+		++it_net_elem;	
+
+	} // end while
+
+	return;
 }
 
-void f1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs) {
+void apply_dv__new_pipes(WDS &anyt_wds, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+{
+    assert(dvs.size() == anyt_wds.subnetwork("new_pipes").size());
+	// Let's assume that indices are already cached
+
+	auto curr_dv = dvs.begin();
+	for (const auto& wp_curr_net_ele : anyt_wds.subnetwork("new_pipes")) {
+		auto curr_net_ele = wp_curr_net_ele.lock();	
+		// retrieve the link ID from the subnetwork
+		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
+		if (curr_pipe == nullptr)
+			throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
+
+		std::string link_id = curr_pipe->id();
+		int link_idx = curr_pipe->index();
+
+		// change the new pipe properties:
+		// diameter =  row dvs[70+i] column diameter of m__pipes_alt_costs
+		double diameter_in = pipes_alt_costs.at(*curr_dv).diameter_in;
+		int errorcode = EN_setlinkvalue(anyt_wds.ph_, link_idx, EN_DIAMETER, diameter_in);
+		assert(errorcode <= 100);
+		curr_pipe->diameter(diameter_in*MperFT/12*1000); //save in mm
+
+#ifdef DEBUGSIM
+		std::cout << "New pipe with ID " << link_id << " installed with diam of " << diameter_in << " in (" <<curr_pipe->diameter()() <<" mm)\n";
+#endif
+
+		++curr_dv;
+	}
+}
+
+void apply_dv__pumps(WDS& anyt_wds, const std::vector<double>& dvs) {
+	assert(dvs.size() == 24); // 24 hours x [npr]
+	// Let's assume that indices are already cached
+
+	auto patterns = decompose_pumpgroup_pattern(dvs, anyt_wds.pumps().size());
+	std::size_t i = 0;
+	for (auto& pump : anyt_wds.pumps()) {
+		// set the pattern
+		int errorcode = EN_setpattern(anyt_wds.ph_, pump->speed_pattern()->index(), patterns[i].data(), patterns[i].size());
+		assert(errorcode <= 100);
+		++i;
+	}
+}
+
+void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs) {
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 	// Let's assume that indices are already cached
 
@@ -612,74 +972,15 @@ void f1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std
 		++curr_dv;
 
 #ifdef DEBUGSIM
-		io::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
 		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 		" Elev ", elev, " Min level ", min_lev, " Max lev ", max_lev, " Diam ", diam_m, "\n");
 #endif
 	}
 }
 
-void f1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, const std::vector<double> &old_HW_coeffs) {
-	assert(dvs.size() == 2*anytown.subnetwork("existing_pipes").size());
-	// Let's assume that indices are already cached
-
-	auto old_HW_coeffs_iter = old_HW_coeffs.begin();
-	auto curr_dv = dvs.begin();
-	int errorcode = 0;
-
-	// 1. existing pipes
-	for (auto& wp_curr_net_ele : anytown.subnetwork("existing_pipes")) {
-		// if dvs[i*2] == 0 do nothing
-		if (*curr_dv == 0){
-			++curr_dv;
-			++curr_dv;
-			continue;
-		}
-
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
-		
-		if (*curr_dv == 1) { // reset clean
-			// re set the HW coefficients
-			errorcode = EN_setlinkvalue(anytown.ph_, curr_pipe->index(), EN_ROUGHNESS, *old_HW_coeffs_iter);
-			assert(errorcode <= 100);
-
-			curr_pipe->roughness(*old_HW_coeffs_iter);
-
-			++old_HW_coeffs_iter;
-		}
-		else if (*curr_dv == 2) { // remove duplicate
-			// duplicate pipe has been named Dxx where xx is the original pipe name
-			// they are also saved in the subnetwork l__TEMP_ELEMS
-			auto it = std::find_if(anytown.subnetwork(label::__temp_elems).begin(), anytown.subnetwork(label::__temp_elems).end(), 
-				[&curr_pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
-					auto ne_ptr = ne.lock();
-					if (ne_ptr == nullptr)
-						return false; // it didn't found it, meaning it doesn't exist anymore!
-					return ne_ptr->id() == "D"+curr_pipe->id(); 
-				});
-
-			std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
-
-			// remove the new pipe
-			errorcode = EN_deletelink(anytown.ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
-			assert(errorcode <= 100);
-
-			// remove the new pipe from my network object
-			anytown.remove(dup_pipe_to_rem);
-			anytown.cache_indices();
-			// remove the new pipe from the set of the "to be removed" elements
-			anytown.subnetwork(label::__temp_elems).remove(dup_pipe_to_rem);
-		} 
-		
-		++curr_dv;
-		++curr_dv;
-	}
-}
-
-double f1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+// -------------------   cost   ------------------- //
+double fep1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 	assert(dvs.size() == 2*anytown.subnetwork("existing_pipes").size());
 	// Let's assume that indices are already cached
 
@@ -740,8 +1041,112 @@ double f1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, 
 
 	return design_cost;
 }
+double fep2::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+	assert(dvs.size() == anytown.subnetwork("existing_pipes").size());
 
-double f1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+	// Let's assume that indices are already cached
+
+	double design_cost = 0.0;
+	// 35 pipes x [prc+2]
+	auto it_dv = dvs.begin();
+	auto it_net_elem = anytown.subnetwork("existing_pipes").begin();
+	int errorcode = 0;
+
+	while(it_dv != dvs.end() && it_net_elem != anytown.subnetwork("existing_pipes").end()) {
+		auto dv = *it_dv;
+
+		if (dv == 0){
+			// Do nothing and skip
+			++it_dv;
+			++it_net_elem;
+			continue;
+		}
+		
+		// There are some costs associated with this action
+		auto net_ele = it_net_elem->lock();
+		assert(net_ele != nullptr);
+		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
+		assert(pipe != nullptr);
+
+		bool city = anytown.subnetwork("city_pipes").contains(pipe->id());
+		// I assume is in the residential as they are mutually exclusive
+
+		// I need the length of the pipe because the cost is by unit of length.
+		double pipe_cost_per_ft = 0.0;
+		if (dv == 1) { // clean
+			// The cost per unit of length is a function of the diameter of the pipe.
+			auto it = std::find_if(pipes_alt_costs.begin(), pipes_alt_costs.end(), 
+				[&pipe](const bevarmejo::anytown::pipes_alt_costs& pac) { 
+					return std::abs(pac.diameter_in*MperFT/12*1000 - pipe->diameter().value()) < 0.0001; 
+				});
+
+			// Check I actually found it 
+			assert(it != pipes_alt_costs.end());
+				
+			if (city)
+				pipe_cost_per_ft = (*it).clean_city;
+			else
+				pipe_cost_per_ft = (*it).clean_residential;
+		}
+		else { // if (dv >= 2) duplicate
+			std::size_t diam_idx = dv-2; // remove options 0 and 1
+			if (city) 
+				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_city;
+			else
+				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_residential;
+		} 
+
+		design_cost += pipe_cost_per_ft/MperFT * pipe->length().value(); 
+		// again I save the length in mm, but the table is in $/ft
+
+		++it_dv;
+		++it_net_elem;
+	}
+
+	return design_cost;
+}
+
+double cost__new_pipes(const WDS &anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+	assert(dvs.size() == anytown.subnetwork("new_pipes").size());
+	// Let's assume that indices are already cached
+	
+	// 6 pipes x [prc]
+	// This must be installed, thus minimum cost will never be 0.
+	double design_cost = 0.0;
+	auto curr_dv = dvs.begin();
+	for (const auto& wp_curr_net_ele : anytown.subnetwork("new_pipes")) {
+		auto curr_net_ele = wp_curr_net_ele.lock();
+		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
+		if (curr_pipe == nullptr)
+			throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
+		
+		// dvs[i] is the row of the m__pipes_alt_costs table
+		double pipe_cost_per_ft = pipes_alt_costs.at(*curr_dv).new_cost;
+		design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value();
+
+		++curr_dv;
+	}
+
+	return design_cost;
+}
+
+double cost__energy_per_day(const WDS &anytown)
+{
+    double total_ene_cost_per_day = 0.0;
+	for (const auto& pump : anytown.pumps() ) {
+		unsigned long t_prec = 0;
+		double power_kW_prec = 0.0;
+		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
+		for (const auto& [t, power_kW] : pump->instant_energy() ) {
+			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost_kWh ; 
+			t_prec = t;
+			power_kW_prec = power_kW;
+		}
+	}
+	return total_ene_cost_per_day;
+}
+
+double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 	// Let's assume that indices are already cached
 
@@ -769,7 +1174,168 @@ double f1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, const
 	return design_cost;
 }
 
-void f1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) {
+// ------------------- of__reliability ------------------- //
+
+// ------------------- reset_dv ------------------- //
+void fep1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, const std::unordered_map<std::string, double> &old_HW_coeffs) {
+	assert(dvs.size() == 2*anytown.subnetwork("existing_pipes").size());
+	// Let's assume that indices are already cached
+
+	auto curr_dv = dvs.begin();
+	int errorcode = 0;
+
+	// 1. existing pipes
+	for (auto& wp_curr_net_ele : anytown.subnetwork("existing_pipes")) {
+		// if dvs[i*2] == 0 do nothing
+		if (*curr_dv == 0){
+			++curr_dv;
+			++curr_dv;
+			continue;
+		}
+
+		auto curr_net_ele = wp_curr_net_ele.lock();
+		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
+		if (curr_pipe == nullptr)
+			throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
+		
+		if (*curr_dv == 1) { // reset clean
+			// re set the HW coefficients
+			errorcode = EN_setlinkvalue(anytown.ph_, curr_pipe->index(), EN_ROUGHNESS, old_HW_coeffs.at(curr_pipe->id()));
+			assert(errorcode <= 100);
+
+			curr_pipe->roughness(old_HW_coeffs.at(curr_pipe->id()));
+		}
+		else if (*curr_dv == 2) { // remove duplicate
+			// duplicate pipe has been named Dxx where xx is the original pipe name
+			// they are also saved in the subnetwork l__TEMP_ELEMS
+			auto it = std::find_if(anytown.subnetwork(label::__temp_elems).begin(), anytown.subnetwork(label::__temp_elems).end(), 
+				[&curr_pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
+					auto ne_ptr = ne.lock();
+					if (ne_ptr == nullptr)
+						return false; // it didn't found it, meaning it doesn't exist anymore!
+					return ne_ptr->id() == "D"+curr_pipe->id(); 
+				});
+
+			std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
+
+			// remove the new pipe
+			errorcode = EN_deletelink(anytown.ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+
+			// remove the new pipe from my network object
+			anytown.remove(dup_pipe_to_rem);
+			anytown.cache_indices();
+			// remove the new pipe from the set of the "to be removed" elements
+			anytown.subnetwork(label::__temp_elems).remove(dup_pipe_to_rem);
+		} 
+		
+		++curr_dv;
+		++curr_dv;
+	}
+}
+void fep2::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, const std::unordered_map<std::string, double> &old_HW_coeffs) {
+	assert(dvs.size() == anytown.subnetwork("existing_pipes").size());
+	// Let's assume that indices are already cached
+
+	auto it_dv = dvs.begin();
+	auto it_net_elem = anytown.subnetwork("existing_pipes").begin();
+	int errorcode = 0;
+
+	
+	while (it_dv != dvs.end() && it_net_elem != anytown.subnetwork("existing_pipes").end()) {
+		auto dv = *it_dv;
+
+		if (dv == 0){
+			// Do nothing and skip
+			++it_dv;
+			++it_net_elem;
+			continue;
+		}
+
+		// Something was changed for this element.
+		auto net_ele = it_net_elem->lock();
+		assert(net_ele != nullptr);
+		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
+		assert(pipe != nullptr);
+		
+		if (dv == 1) { // reset clean
+			// re set the HW coefficients
+			errorcode = EN_setlinkvalue(anytown.ph_, pipe->index(), EN_ROUGHNESS, old_HW_coeffs.at(pipe->id()));
+			assert(errorcode <= 100);
+
+			pipe->roughness(old_HW_coeffs.at(pipe->id()));
+
+			++it_dv;
+			++it_net_elem;
+			continue;
+		}
+
+		// else, i.e., dv >= 2, we duplicate the pipe 
+		
+		// duplicate pipe has been named Dxx where xx is the original pipe name
+		// they are also saved in the subnetwork l__TEMP_ELEMS
+		auto it = std::find_if(anytown.subnetwork(label::__temp_elems).begin(), anytown.subnetwork(label::__temp_elems).end(), 
+			[&pipe](const std::weak_ptr<wds::NetworkElement>& ne) {
+				auto ne_ptr = ne.lock();
+				if (ne_ptr == nullptr)
+					return false; // it didn't found it, meaning it doesn't exist anymore!
+				return ne_ptr->id() == "D"+pipe->id(); 
+			});
+
+		std::shared_ptr<wds::Pipe> dup_pipe_to_rem = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(it->lock());
+
+		// remove the new pipe
+		errorcode = EN_deletelink(anytown.ph_, dup_pipe_to_rem->index(), EN_UNCONDITIONAL);
+		assert(errorcode <= 100);
+
+		// remove the new pipe from my network object
+		anytown.remove(dup_pipe_to_rem);
+		anytown.cache_indices();
+		// remove the new pipe from the set of the "to be removed" elements
+		anytown.subnetwork(label::__temp_elems).remove(dup_pipe_to_rem);
+	
+		++it_dv;
+		++it_net_elem;
+	
+	} // end while
+
+	return;
+}
+
+void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs) {
+	// Let's assume that indices are already cached
+
+	for (auto& wp_curr_net_ele : anytown.subnetwork("new_pipes") ) {
+		auto curr_net_ele = wp_curr_net_ele.lock();
+		// retrieve the link ID and idx from the subnetwork
+		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
+		assert(curr_pipe != nullptr);
+
+		// change the new pipe properties:
+		double diameter = bevarmejo::anytown::_nonexisting_pipe_diam_ft;
+		int errorcode = EN_setlinkvalue(anytown.ph_, curr_pipe->index(), EN_DIAMETER, diameter);
+		assert(errorcode <= 100);
+
+		curr_pipe->diameter(bevarmejo::anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small
+	}
+}
+
+void reset_dv__pumps(WDS& anytown, const std::vector<double>& dvs) {
+	for (std::size_t i = 0; i < 3; ++i) {
+		// I know pump patterns IDs are from 2, 3, and 4
+		int pump_idx = i + 2;
+		std::string pump_id = std::to_string(pump_idx);
+		int errorcode = EN_getpatternindex(anytown.ph_, pump_id.c_str(), &pump_idx);
+		assert(errorcode <= 100);
+
+		// set the pattern, use empty array of 24 double to zero
+		errorcode = EN_setpattern(anytown.ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
+		assert(errorcode <= 100);
+	}
+
+}
+
+void fnt1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) {
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 	// Let's assume that indices are already cached
 
@@ -819,7 +1385,202 @@ void f1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) {
 	}
 }
 
+// ------------------- 1st level ------------------- //
+// -------------------   Bounds  ------------------- //
+std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const {
+	std::vector<double> lb;
+	std::vector<double> ub;
+
+	const auto append_bounds= [&lb, &ub](auto&& bounds_func, auto&&... args) {
+		auto [lower, upper] = bounds_func(std::forward<decltype(args)>(args)...);
+		lb.insert(lb.end(), lower.begin(), lower.end());
+		ub.insert(ub.end(), upper.begin(), upper.end());
+	};
+
+	// Existing pipes (all design problems)
+	switch (m__formulation)
+	{
+		case Formulation::rehab_f1:
+			[[fallthrough]];
+		case Formulation::mixed_f1:
+			[[fallthrough]];
+		case Formulation::twoph_f1:
+			append_bounds(fep1::bounds__exis_pipes, m__anytown->subnetwork("existing_pipes"), m__pipes_alt_costs);
+			break;
+		case Formulation::rehab_f2:
+			[[fallthrough]];
+		case Formulation::mixed_f2:
+			append_bounds(fep2::bounds__exis_pipes, m__anytown->subnetwork("existing_pipes"), m__pipes_alt_costs);
+			break;
+		default:
+			break;
+	}
+
+	// New pipes (all design problems)
+	if (m__formulation != Formulation::opertns_f1)
+		append_bounds(bounds__new_pipes, m__anytown->subnetwork("new_pipes"), m__pipes_alt_costs);
+
+	// Pumps (all problems with operations)
+	switch (m__formulation)
+	{
+		case Formulation::mixed_f1:
+			[[fallthrough]];
+		case Formulation::opertns_f1:
+			[[fallthrough]];
+		case Formulation::mixed_f2:
+			append_bounds(bounds__pumps, m__anytown->pumps());
+			break;
+		default:
+			break;
+	}
+
+	// Tanks (all design problems)
+	if (m__formulation != Formulation::opertns_f1)
+		append_bounds(fnt1::bounds__tanks, m__anytown->subnetwork("possible_tank_locations"), m__tanks_costs);
+
+	return {std::move(lb), std::move(ub)};
+}
+
+// ------------------- 2nd level ------------------- //
+std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+// Structure of the decision variables:
+// [35 pipes x [action, pra]
+// action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
+// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
+
+	assert(exis_pipes.size() == 35);
+	assert(pipes_alt_costs.size() == 10);
+
+	auto n_dvs= 2ul*exis_pipes.size();
+	double n_pra= pipes_alt_costs.size();
+
+	std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, 0.0);
+	for (std::size_t i = 0; i < n_dvs; i+=2) {
+		ub[i] = 2.0;
+		ub[i+1] = n_pra-1;
+	}
+
+	return std::make_pair(lb, ub);
+}
+std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+// Structure of the decision variables:
+// [35 pipes x action]
+// action: 2+pra options -> 0 - do nothing, 1 - clean, 2- pra
+// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
+
+	assert(exis_pipes.size() == 35);
+	assert(pipes_alt_costs.size() == 10);
+
+	auto n_dvs= exis_pipes.size();
+	double n_actions= 2+pipes_alt_costs.size();
+
+	return std::make_pair(std::vector<double>(n_dvs, 0), std::vector<double>(n_dvs, n_actions-1));
+}
+
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+// Structure of the decision variables:
+// 6 pipes x [pra]
+// pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
+	assert(new_pipes.size() == 6);
+	assert(pipes_alt_costs.size() == 10);
+
+	auto n_dvs= new_pipes.size();
+	double n_pra= pipes_alt_costs.size();
+
+	std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, n_pra-1);
+
+    return std::make_pair(lb, ub);
+}
+
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pumps &pumps) {
+// Structure of the decision variables:
+// 24 hours x [npr]
+// npr: 4 options indicate the number of pumps running -> 0 - 3
+	assert(pumps.size() == 3);
+
+	auto n_dvs= 24;
+	double n_npr= 3.0;
+
+	std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, n_npr);
+
+	return std::make_pair(lb, ub);
+}
+
+std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs) {
+// Structure of the decision variables:
+// 2 tanks x [tpl, tvol]
+// tpl: tank possible location nodes (plus 0, do nothing) -> 0 - x
+// tvol: 5 discrete tank volume possible -> 0 - 4 (to be transformed in continuous between the limits)
+
+	assert(tank_locs.size() == 17);
+	assert(tanks_costs.size() == 5);
+
+	auto n_dvs= 2*bevarmejo::anytown::max_n_installable_tanks;
+	double n_tpl= tank_locs.size();
+	double n_tvol= tanks_costs.size();
+
+	std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, 0.0);
+	for (std::size_t i = 0; i < n_dvs; i+=2) {
+		ub[i] = n_tpl; // 0 is a valid option, so no minus one
+		ub[i+1] = n_tvol-1;
+	}
+
+	return std::make_pair(lb, ub);
+}
+
+
+// ------------------- 1st level ------------------- //
+// -------------------   Save  ------------------- //
+void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out_file) const {
+	apply_dv(this->m__anytown, dv);
+
+	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.c_str());
+	assert(errco <= 100);
+
+	reset_dv(this->m__anytown, dv);
+}
+
+// Json serializers 
+std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
+	nl::json j;
+	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
+	j[io::key::avail_diam] = "available_diams.txt";
+	j[io::key::tank_costs] = "tanks_costs.txt";
+	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
+		// I need to merge the pumping patterns
+		std::vector<double> pumpgroup_pattern(24, 0.0);
+		for (auto& pump : prob.m__anytown->pumps()) {
+			auto pump_pattern_idx = pump->speed_pattern()->index();
+			for (std::size_t i = 1; i <= 24; ++i) {
+				double val = 0.0;
+				int errorcode = EN_getpatternvalue(prob.m__anytown->ph_, pump_pattern_idx, i, &val);
+				pumpgroup_pattern[i-1] += val;
+			}
+		}
+		j[io::key::opers] = pumpgroup_pattern;
+	}
+		
+	j[io::key::__wds__] = nl::json{};
+	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
+	j[io::key::__wds__][io::key::__udegs__] = nl::json{
+                        "city_pipes.snt",
+                        "existing_pipes.snt",
+                        "new_pipes.snt",
+                        "new_park.snt",
+                        "possible_tank_locations.snt",
+                        "residential_pipes.snt"
+	};
+
+	return {j, std::string{} };
+}
+
+nl::json io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
+	return nl::json(); 
+}
+
 } // namespace anytown
 } // namespace bevarmejo
-
-

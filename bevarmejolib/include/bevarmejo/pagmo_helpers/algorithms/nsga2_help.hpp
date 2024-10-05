@@ -17,8 +17,8 @@ descr: A quick definition of functions to upload the data in the right way.
 #include <nlohmann/json.hpp>
 namespace nl = nlohmann;
 
-#include "bevarmejo/io.hpp"
 #include "bevarmejo/labels.hpp"
+#include "bevarmejo/io/json_serializers.hpp"
 
 namespace bevarmejo {
 namespace nsga2 {

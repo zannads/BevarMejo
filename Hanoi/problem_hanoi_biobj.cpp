@@ -27,6 +27,7 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements_group.hpp"
 
 #include "bevarmejo/io.hpp"
+#include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "problem_hanoi_biobj.hpp"
@@ -40,11 +41,7 @@ Problem::Problem(const json& settings, const std::vector<std::filesystem::path>&
     assert(settings != nullptr);
 
     // Add here load of problem specific settings.
-    auto file = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
-    if (!file.has_value()) {
-        throw std::runtime_error("The provided inp file does not exist in the lookup paths. Check the settings file.\n");
-	}
-    auto inp_filename = file.value();
+    auto inp_filename = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
 
     m_hanoi= std::make_shared<WDS>(inp_filename);
 

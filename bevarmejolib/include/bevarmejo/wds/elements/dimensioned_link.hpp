@@ -89,6 +89,7 @@ public:
     const aux::QuantitySeries<double>& velocity() const { return m__velocity; }
 
 /*--- Pure virtual methods override---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:
