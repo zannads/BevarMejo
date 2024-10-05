@@ -17,6 +17,7 @@ descr: A quick definition of functions to upload the data in the right way.
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
+#include "bevarmejo/utils/string_manip.hpp"
 #include "bevarmejo/labels.hpp"
 
 namespace bevarmejo {

@@ -11,9 +11,10 @@ using json = nlohmann::json;
 
 #include <pagmo/problem.hpp>
 
-#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/utils/string_manip.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"

@@ -25,6 +25,7 @@ using json_o = nlohmann::json;
 namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/io/key.hpp"
 #include "bevarmejo/.legacy/io.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
@@ -47,12 +48,12 @@ static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-static const std::string opers = "Operations"; // "Operations"
-static const std::string avail_diam = "Available diameters"; // "Available diameters"
-static const std::string tank_costs = "Tank costs"; // "Tank costs"
-static const std::string __wds__ = "WDS"; // "WDS"
-static const std::string __udegs__ = "UDEGs"; // "UDEGs"
-static const std::string __inp__ = "inp"; // "inp"
+static const bevarmejo::io::key::Key opers {"Operations"}; // "Operations"
+static const bevarmejo::io::key::Key avail_diam {"Available diameters"}; // "Available diameters"
+static const bevarmejo::io::key::Key tank_costs {"Tank costs"}; // "Tank costs"
+static const bevarmejo::io::key::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
+static const bevarmejo::io::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
+static const bevarmejo::io::key::Key __inp__ {"inp"}; // "inp"
 } // namespace key
 
 // Extra information for the formulations.
@@ -167,8 +168,8 @@ Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<s
 
 	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
 		// Need to se the operations for the rehabilitation problems
-		assert(settings.contains(io::key::opers));
-		std::vector<double> operations = settings[io::key::opers].get<std::vector<double>>();
+		assert(io::key::opers.exists_in(settings));
+		std::vector<double> operations = bemeio::json::extract(io::key::opers).from(settings).get<std::vector<double>>();
 		assert(operations.size() == 24);
 
 		// Fix pumps' patterns
@@ -218,15 +219,25 @@ Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<s
 }
 
 void Problem::load_network(json_o settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
-	assert(settings != nullptr);
-	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
+	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
+	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
+	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
+	const auto inp_filename = bemeio::json::extract(io::key::__inp__).from(wds_settings).get<fsys::path>();
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths, true), preprocessf);
+	m__anytown = std::make_shared<WDS>(
+		bemeio::locate_file(inp_filename, lookup_paths, /*log= */ true), 
+		preprocessf
+	);
 }
 
 void Problem::load_subnets(json_o settings, std::vector<fsys::path> lookup_paths) {
-	for (const auto& udeg : settings[io::key::__wds__][io::key::__udegs__]) {
+	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
+	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
+	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
+	const auto& udegs = bemeio::json::extract(io::key::__udegs__).from(wds_settings);
+
+	for (const auto& udeg : udegs) {
 		
 		try
 		{
@@ -242,9 +253,16 @@ void Problem::load_subnets(json_o settings, std::vector<fsys::path> lookup_paths
 }
 
 void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_paths) {
-	assert(settings.contains(io::key::avail_diam) && settings.contains(io::key::tank_costs));
+	assert(
+		settings != nullptr && 
+		io::key::avail_diam.exists_in(settings) && 
+		io::key::tank_costs.exists_in(settings)
+	);
+
 	// Load Pipe rehabilitation alternative costs 
-	auto prac_filename = bemeio::locate_file(fsys::path{settings[io::key::avail_diam]}, lookup_paths);
+	auto prac_filename = bemeio::locate_file(
+		bemeio::json::extract(io::key::avail_diam).from(settings).get<fsys::path>(),
+		lookup_paths);
 
 	// TODO: move also this to json_o?
 	std::ifstream prac_file{prac_filename};
@@ -257,7 +275,10 @@ void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_pa
 	bemeio::stream_in(prac_file, m__pipes_alt_costs);
 	
 	// Load Tank costs 
-	auto tanks_filename = bemeio::locate_file(fsys::path{settings[io::key::tank_costs]}, lookup_paths);
+	auto tanks_filename = bemeio::locate_file(
+		bemeio::json::extract(io::key::tank_costs).from(settings).get<fsys::path>(), 
+		lookup_paths);
+
 	std::ifstream tanks_file{tanks_filename};
 	if (!tanks_file.is_open()) {
 		throw std::runtime_error("Could not open file " + tanks_filename.string());
@@ -1549,8 +1570,8 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
 	json_o j;
 	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
-	j[io::key::avail_diam] = "available_diams.txt";
-	j[io::key::tank_costs] = "tanks_costs.txt";
+	j[io::key::avail_diam()] = "available_diams.txt";
+	j[io::key::tank_costs()] = "tanks_costs.txt";
 	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
@@ -1562,12 +1583,12 @@ std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::a
 				pumpgroup_pattern[i-1] += val;
 			}
 		}
-		j[io::key::opers] = pumpgroup_pattern;
+		j[io::key::opers()] = pumpgroup_pattern;
 	}
 		
-	j[io::key::__wds__] = json_o{};
-	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
-	j[io::key::__wds__][io::key::__udegs__] = json_o{
+	j[io::key::__wds__()] = json_o{};
+	j[io::key::__wds__()][io::key::__inp__()] = "anytown.inp";
+	j[io::key::__wds__()][io::key::__udegs__()] = json_o{
                         "city_pipes.snt",
                         "existing_pipes.snt",
                         "new_pipes.snt",

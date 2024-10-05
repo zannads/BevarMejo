@@ -1,5 +1,5 @@
 #include <filesystem>
-// #include <sstream>
+#include <sstream>
 #include <vector>
 
 #include "bevarmejo/io/streams.hpp"

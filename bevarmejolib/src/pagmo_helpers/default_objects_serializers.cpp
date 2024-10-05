@@ -12,7 +12,7 @@ using json_o = nlohmann::json;
 #include <pagmo/s_policies/select_best.hpp>
 #include <pagmo/topologies/unconnected.hpp>
 
-#include "bevarmejo/labels.hpp"
+#include "bevarmejo/utils/string_manip.hpp"
 
 #include "default_objects_serializers.hpp"
 
