@@ -18,43 +18,59 @@ from io import BytesIO
 import warnings
 warnings.filterwarnings('ignore')
 
-from pybeme.beme_experiment import load_experiment_results, save_simulation_settings
+from pybeme.beme_experiment import load_experiment_results, save_simulation_settings, list_all_final_individuals, extract_individual_from_coordinates
 from pybeme.reference_set import naive_pareto_front
 
 import wntr 
 
-# Load all the names of the experiments in the results folder in a list
-exps_names = [d for d in os.listdir('../data') if os.path.isdir(os.path.join('../data', d))]
-# print(exps_names)
+def load_experiments_from_data() -> dict:
+    # Load all the names of the experiments in the results folder in a list
+    exp_dirs = [d for d in os.listdir('../data') if os.path.isdir(os.path.join('../data', d))]
+    # print(exp_dirs)
 
-# List of the experiments to always remove
-exps2rem=["bemeopt__nsga2__hanoi_fbiobj", "bemeopt__nsga2__anytown_opers_f1__exp01", "bemeopt__nsga2__anytown_mixed_f1__exp01"]
-exps_names=[expname for expname in exps_names if expname not in exps2rem] 
-exps_names.sort()
+    # List of the experiments to always remove
+    exps2rem=["bemeopt__nsga2__hanoi_fbiobj", "bemeopt__nsga2__anytown_opers_f1__exp01", "bemeopt__nsga2__anytown_mixed_f1__exp01"]
+    exp_dirs=[expname for expname in exp_dirs if expname not in exps2rem] 
+    exp_dirs.sort()
 
-# Load the results of the experiments in a dictionary
-experiments={}
-for expname in exps_names:
-    try:
-        experiments[expname] = load_experiment_results(os.path.join('../data', expname, 'output', expname+'__exp.json'))
-    except Exception as e:
-        print('Error loading experiment:', expname)
-        print('Exception:', e)
-        continue
+    # Load the results of the experiments in a dictionary
+    experiments={}
+    for expdir in exp_dirs:
+        # We have two different behaviours for before and after version 2024.10.0
+        # Starts with after, if it fails, then it is before
+        exp_files = [f for f in os.listdir(os.path.join('../data', expdir, 'output')) if os.path.splitext(f)[0].startswith('bemeexp__') and os.path.splitext(f)[0].endswith('.exp')]
+        if len(exp_files) == 0:
+            exp_files = [f for f in os.listdir(os.path.join('../data', expdir, 'output')) if os.path.splitext(f)[0].startswith('bemeopt__') and os.path.splitext(f)[0].endswith('__exp')]
+        if len(exp_files) == 0:
+            print(f'No experiment files found in {expdir}')
+            continue
+        for expfile in exp_files:
+            try:
+                exp = load_experiment_results(os.path.join('../data', expdir, 'output', expfile))
+                experiments[exp['name']] = exp
+            except Exception as e:
+                print('Error loading experiment:', expfile)
+                print('Exception:', e)
+                continue
+            
+    return experiments
 
+experiments = load_experiments_from_data()
 exps_shortnames= {
-    'bemeopt__nsga2__anytown_mixed_f1__exp02': "Integrated-1h-bug",
-    'bemeopt__nsga2__anytown_mixed_f1__exp03': "Integrated-1h-fix",
-    'bemeopt__nsga2__anytown_mixed_f1__exp04': "Integrated-30m-fix",
-    'bemeopt__nsga2__anytown_mixed_f1__exp05': "Integrated-15m-fix",
-    'bemeopt__nsga2__anytown_2ph_f1__nsga2inside': "2Ph-1h-bug",
-    'bemeopt__nsga2__anytown_rehab_f1__exp03': "Design-1h-bug-wrongSiew",
-    'bemeopt__nsga2__anytown_rehab_f1__median': "Design-1h-bug-median",
-    'bemeopt__nsga2__anytown_rehab_f1__fullpower': "Design-1h-bug-fullpower",
-    'bemeopt__nsga2__anytown_rehab_f1__exp04': "Design-1h-fix-wrongSiew",
-    'bemeopt__nsga2__anytown_rehab_f1__exp05': "Design-1h-fix-Siew",
-    'bemeopt__nsga2__anytown_rehab_f1__exp06': "Design-30m-fix-Siew",
-    'bemeopt__nsga2__anytown_rehab_f1__exp07': "Design-15m-fix-Siew"
+    'nsga2__anytown_mixed_f1__exp02': "Integrated-1h-bug",
+    'nsga2__anytown_mixed_f1__exp03': "Integrated-1h-fix",
+    'nsga2__anytown_mixed_f1__exp04': "Integrated-30m-fix",
+    'nsga2__anytown_mixed_f1__exp05': "Integrated-15m-fix",
+    'nsga2__anytown_2ph_f1__nsga2inside': "2Ph-1h-bug",
+    'nsga2__anytown_rehab_f1__exp03': "Design-1h-bug-wrongSiew",
+    'nsga2__anytown_rehab_f1__median': "Design-1h-bug-median",
+    'nsga2__anytown_rehab_f1__fullpower': "Design-1h-bug-fullpower",
+    'nsga2__anytown_rehab_f1__exp04': "Design-1h-fix-wrongSiew",
+    'nsga2__anytown_rehab_f1__exp05': "Design-1h-fix-Siew",
+    'nsga2__anytown_rehab_f1__exp06': "Design-30m-fix-Siew",
+    'nsga2__anytown_rehab_f1__exp07': "Design-15m-fix-Siew",
+    '016': 'Design-15min-f2',
+    '017': 'Integrated-15min-f2'
 }
 
 def at_dash_layout(experiments_names):
@@ -134,8 +150,10 @@ def update_pareto_f(exps):
         return fxl(fig)
     
     for e, expname, in enumerate(exps):
+        # Extract the fitness vector for all final individuals across all islands
+        final_individuals = list_all_final_individuals(experiments[expname], coordinate=False)
         # for each island in islands and individual in individual extract the fitness-vector and put it in a numpy array
-        fitness = np.array([ind['fitness-vector'] for island in experiments[expname]['archipelago']['islands'] for ind in island['generations'][-1]['individuals']])
+        fitness = np.array([ind['fitness-vector'] for ind in final_individuals])
 
         #fitness.append([9.97392e+06, -0.200667])
         # I want full color the best pareto front of each solution and a lighter color for the rest, which are still pareto fronts but for the individual islands
@@ -159,19 +177,24 @@ import subprocess
     Input('simproblem', 'value'),
     Input('simsolutionidx', 'value')
 )
-def update_sim(expname, individual_idx):
-    if (expname == None) or (individual_idx == None):
+def update_sim(expname, final_individuals_idx):
+    if (expname == None) or (final_individuals_idx == None):
         return "", go.Figure(), go.Figure()
 
     beme_folder='../'
 
-    individual_id = save_simulation_settings(os.path.join(experiments[expname]['folder'], 'bemeopt__settings.json'), 
-                                             experiments[expname], 
-                                             individual_idx)
+    # After version 2024.10.0, the optimisation settings file can have different names and in the same folder there can be multiple files
+    # But they always start with "bemeopt__". Prefereably they are called "bemeopt__${expname}.json", but if they have a
+    # different name, I need to open every optimisation settings file and make sure it is the right one
+    final_indv_coord = list_all_final_individuals(experiments[expname], coordinate=True)[final_individuals_idx]
+    individual_id = extract_individual_from_coordinates(experiments[expname], final_indv_coord)['id']
+    save_simulation_settings(experiments[expname], final_indv_coord)
     
     # run the simulation of beme to save the inp file from shell
     command=f'{beme_folder}build-vs-code/cli/beme-sim .tmp/bemesim__{individual_id}__settings.json --saveinp'
-    subprocess.run(command, shell=True, check=True)
+    simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
+    print("Standard Output:\n", simre.stdout)
+    print("Standard Error:\n", simre.stderr)
 
     subprocess.run('mv *.inp .tmp/', shell=True, check=True)
    
