@@ -1,26 +1,13 @@
-//
-//  io.cpp
-//  BèvarMéjo
-//
-//  Created by Dennis Zanutto on 06/07/23.
-//
-
-#include <filesystem>
-#include <iostream>
-#include <optional>
-#include <sstream>
+#include <cctype>
+#include <cstddef>
+#include <iterator>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
-#include "io.hpp"
-#include "bemexcept.hpp"
+#include "wds_problem.hpp"
 
-namespace bevarmejo {
-namespace io {
-
-
+namespace bevarmejo::io {
 
 detail::ProblemName split_problem_name(std::string_view problem_name) {
     // A valid problem name is suite::problem::formulation or suite::problem, since
@@ -79,5 +66,4 @@ detail::ProblemName split_problem_name(std::string_view problem_name) {
                                std::string_view(problem_name).substr(starts[2], durations[2])};
 }
 
-} // namespace io
-} // namespace bevarmejo
+} // namespace bevarmejo::io

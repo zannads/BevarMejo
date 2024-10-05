@@ -8,7 +8,7 @@
 #include <string>
 #include <stdexcept>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/parsers.hpp"
 
 #include "bevarmejo/experiment.hpp"

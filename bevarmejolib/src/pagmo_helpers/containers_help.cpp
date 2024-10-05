@@ -10,6 +10,7 @@
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
 #include "containers_help.hpp"
+#include "bevarmejo/.legacy/io.hpp"
 
 namespace bevarmejo {
 namespace io {

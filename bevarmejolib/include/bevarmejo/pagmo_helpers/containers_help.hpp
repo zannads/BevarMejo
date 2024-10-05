@@ -16,7 +16,7 @@
 #include <nlohmann/json.hpp>
 namespace nl = nlohmann;
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/labels.hpp"
 
 namespace bevarmejo {

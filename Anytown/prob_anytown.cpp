@@ -21,10 +21,11 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/.legacy/io.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"

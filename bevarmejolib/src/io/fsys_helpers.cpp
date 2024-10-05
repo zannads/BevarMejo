@@ -2,7 +2,7 @@
 // #include <sstream>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/bemexcept.hpp"
 
 #include "fsys_helpers.hpp"

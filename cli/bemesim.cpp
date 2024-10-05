@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/parsers.hpp"
 
 // temp until I fix 

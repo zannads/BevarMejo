@@ -13,7 +13,7 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/library_metadata.hpp"
 
 #include "water_distribution_system.hpp"

@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 namespace wds {

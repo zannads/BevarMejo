@@ -9,7 +9,7 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -47,24 +47,17 @@ namespace label {
 const std::string __changeable_pipes = "cp";
 } // namespace label
 
-namespace io {
-namespace json {
-namespace detail {
-
-std::pair<nl::json,std::string> static_params(const bevarmejo::hanoi::fbiobj::Problem &prob);
-
-nl::json dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
-
-} // namespace detail
-} // namespace json
-} // namespace io
+namespace io::json::detail {
+std::pair<json_o,std::string> static_params(const bevarmejo::hanoi::fbiobj::Problem &prob);
+json_o dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
+} // namespace io::json::detail
 
 class Problem {
 
 public:
     Problem() = default;
 
-    Problem(const json& settings, const std::vector<std::filesystem::path>& lookup_paths);
+    Problem(const json_o& settings, const std::vector<std::filesystem::path>& lookup_paths);
 
     // Copy constructor
     Problem(const Problem& other) = default;
@@ -120,7 +113,7 @@ private:
     // No need to use reset as at every run the same design variables are for sure overwritten.
 
 private:
-    friend std::pair<nl::json,std::string> io::json::detail::static_params(const Problem &prob);
+    friend std::pair<json_o,std::string> io::json::detail::static_params(const Problem &prob);
 };
 
 } // namespace fbiobj

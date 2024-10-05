@@ -18,7 +18,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
 

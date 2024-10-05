@@ -51,7 +51,6 @@ set(WDS_AUX
 )
 
 set(IO_FILES
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/fsys_helpers.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/json_serializers.cpp"
 )
@@ -64,6 +63,7 @@ add_library(bemelib
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem_detail.cpp"
         ${WDS_FILES}
         ${WDS_BASE_ELEMENTS}
         ${WDS_NODES}

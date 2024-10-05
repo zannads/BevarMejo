@@ -22,7 +22,7 @@
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"

@@ -21,7 +21,7 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/factories.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"

@@ -26,7 +26,7 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 

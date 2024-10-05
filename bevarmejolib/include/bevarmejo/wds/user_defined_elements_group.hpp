@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 
