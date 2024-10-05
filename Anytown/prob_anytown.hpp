@@ -179,7 +179,7 @@ private:
 
 public:
     Problem() = default;
-    Problem(Formulation a_formulation, json_o settings, const std::vector<std::filesystem::path>& lookup_paths);
+    Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;

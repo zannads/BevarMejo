@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <string>
 #include <utility>
 #include <vector>

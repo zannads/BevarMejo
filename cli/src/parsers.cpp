@@ -104,7 +104,7 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
     file.close();
 
     try {
-        settings.jinput = json::parse(file_contents);
+        settings.jinput = json_o::parse(file_contents);
     } catch (const std::exception& e) {
         __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
             io::log::mex::parse_error,
@@ -161,7 +161,7 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
             // Paths could be a string or an array of strings. In both case we need to check if they are directories 
 
             if (paths.is_string()) {
-                json_o jpath = json::array();
+                json_o jpath = json_o::array();
                 jpath.push_back(paths.get<std::string>());
                 paths = jpath;
             }
@@ -222,7 +222,7 @@ Simulation parse(int argc, char *argv[]) {
         file.close();
 
         // 1.3 parse it
-        json_o j = json::parse(file_content);
+        json_o j = json_o::parse(file_content);
 
         // 1.3.1 Optional keys that may change the behavior of the simulation
         if(io::key::lookup_paths.exists_in(j)) {
@@ -232,7 +232,7 @@ Simulation parse(int argc, char *argv[]) {
                 // Paths could be a string or an array of strings. In both case we need to check if they are directories 
 
                 if (paths.is_string()) {
-                    json_o jpath = json::array();
+                    json_o jpath = json_o::array();
                     jpath.push_back(paths.get<std::string>());
                     paths = jpath;
                 }

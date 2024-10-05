@@ -1,4 +1,5 @@
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <sstream>
 #include <vector>
 
@@ -20,23 +21,23 @@ namespace bevarmejo::io::other {
 static const std::string filename_pre = "Filename : ";
 }
 
-std::filesystem::path bevarmejo::io::locate_file(const std::filesystem::path &filename, const std::vector<std::filesystem::path> &lookup_paths, bool log) {
+fsys::path bevarmejo::io::locate_file(const fsys::path &filename, const std::vector<fsys::path> &lookup_paths, bool log) {
     
     // If file is already absolute, simply test for validity and return it.
     if (filename.is_absolute()) {
-        if (std::filesystem::exists(filename) && std::filesystem::is_regular_file(filename)) {
+        if (fsys::exists(filename) && fsys::is_regular_file(filename)) {
             return filename;
         }
 
         // Apparently, you passed an absolute path to an invalid file.
-        if (!std::filesystem::exists(filename))
+        if (!fsys::exists(filename))
             __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::fname::locate_file, 
                 io::log::mex::file_not_found,
                 "The requested file is an absolute path pointing to a non existing file.",
                 io::other::filename_pre, filename.string()
             );
 
-        if (!std::filesystem::is_regular_file(filename))
+        if (!fsys::is_regular_file(filename))
             __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::fname::locate_file, 
                 io::log::mex::file_not_found,
                 "The requested file has been found (from the absolute path), but it is not a regular file.",
@@ -49,8 +50,8 @@ std::filesystem::path bevarmejo::io::locate_file(const std::filesystem::path &fi
 
     // To be successful, the file must exist and be a regular file. Otherwise, it is not found.
     for (const auto &path : lookup_paths) {
-        std::filesystem::path candidate = path / filename;
-        if (std::filesystem::exists(candidate) && std::filesystem::is_regular_file(candidate)) {
+        fsys::path candidate = path / filename;
+        if (fsys::exists(candidate) && fsys::is_regular_file(candidate)) {
             return candidate;
         }
 

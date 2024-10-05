@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <memory>
 #include <utility>
 #include <vector>
@@ -57,7 +58,7 @@ class Problem {
 public:
     Problem() = default;
 
-    Problem(const json_o& settings, const std::vector<std::filesystem::path>& lookup_paths);
+    Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths);
 
     // Copy constructor
     Problem(const Problem& other) = default;

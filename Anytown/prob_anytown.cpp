@@ -7,6 +7,7 @@
 #include <iostream>
 #include <filesystem>
 namespace fsys = std::filesystem;
+namespace fsys = std::filesystem;
 #include <memory>
 #include <string>
 #include <utility>
@@ -109,7 +110,7 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 	return patterns;
 }
 
-Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<std::filesystem::path>& lookup_paths) :
+Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
 	std::string full_name{"bevarmejo::"};

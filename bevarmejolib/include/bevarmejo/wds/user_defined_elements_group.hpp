@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <string>

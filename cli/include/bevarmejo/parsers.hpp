@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <iostream>
 #include <string>
 #include <vector>
@@ -10,21 +11,21 @@
 #include <pagmo/problem.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 namespace bevarmejo {
 
 struct ExperimentSettings {
     // JSON containing the settings uploaded from the file
-    json jinput;
+    json_o jinput;
     // The folder where the experiment is stored or going to be saved
-    std::filesystem::path folder;
+    fsys::path folder;
     // The full path to the settings file
-    std::filesystem::path settings_file;
+    fsys::path settings_file;
     // Name of the experiment
     std::string name;
     // Additional lookup paths for the internal files
-    std::vector<std::filesystem::path> lookup_paths;
+    std::vector<fsys::path> lookup_paths;
     // Number of times it is necessary to call evolve to reach the desired number of generations
     unsigned int n_evolve;
     // TODO: Add additional flags 
@@ -33,7 +34,7 @@ struct ExperimentSettings {
 namespace sim {
 struct Simulation {
     // The full path to the settings file
-    std::filesystem::path settings_file;
+    fsys::path settings_file;
     // Decision variables to assign the problem (mandatory input)
     std::vector<double> dvs;
     // Fitness of the decision variables (optional input, defaults to nothing, used to check the results)
@@ -47,9 +48,9 @@ struct Simulation {
     // pagmo::problem containing the UDP loaded from the settings file (mandatory input)
     pagmo::problem p;
     // The folder where the experiment is stored or going to be saved
-    std::filesystem::path folder;
+    fsys::path folder;
     // Additional lookup paths for the internal files
-    std::vector<std::filesystem::path> lookup_paths;
+    std::vector<fsys::path> lookup_paths;
     // Starting time of the simulation
     std::chrono::high_resolution_clock::time_point start;
     // Ending time of the simulation

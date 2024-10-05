@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -19,7 +20,7 @@
 #include <pagmo/population.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/labels.hpp"
@@ -46,7 +47,7 @@ void Experiment::build(const ExperimentSettings &settings) {
     m_folder = settings.folder;
 
     //TODO: compose based on the settings
-    json jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
+    json_o jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
     // Construct a pagmo::problem
@@ -107,12 +108,12 @@ void Experiment::save_outcome()
     if (!ofs.is_open())
         return; // TODO: critical error! I will loose the data on the archipelago
 
-    json jsys;
+    json_o jsys;
     // example machine, OS etc ... 
-    json jsoft;
+    json_o jsoft;
     jsoft[to_kebab_case(label::__beme_version)] = VersionManager::library().version().str();
 
-    json jarchipelago; 
+    json_o jarchipelago; 
     {
         auto jtopology = io::json::static_descr(m_archipelago.get_topology());
         if ( !jtopology.empty() ) jarchipelago.update(jtopology);
@@ -131,7 +132,7 @@ void Experiment::save_outcome()
         jarchipelago[to_kebab_case(label::__errors)] = errors;
 
     // 3. Save the file
-    json jout = {
+    json_o jout = {
         {to_kebab_case(label::__system), jsys},
         {to_kebab_case(label::__archi), jarchipelago},
         {to_kebab_case(label::__software), jsoft}
@@ -190,7 +191,7 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
 
     // 2.1. Load the runtime data of this island
     std::ifstream ifs(filename);
-    json jdyn;
+    json_o jdyn;
     if (!ifs.is_open()) {
         // Critical error, I could not find the data of the island, no point on
         // continuing
@@ -202,7 +203,7 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
     // Loading was successfully, the dynamic part of the results is now in jdyn
 
     // 2.2. Add the static part of the island
-    json jstat;
+    json_o jstat;
     // 2.2.1. The User Defined Island infos 
     {   // reporting::static_part_to_json calls the correct transformation to 
         // json for the static part of the object (here the island). The same 
@@ -242,7 +243,7 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
     }
     
     // 2.3. Save the file
-    json& jout = jstat;
+    json_o& jout = jstat;
     jout[to_kebab_case(label::__generations)] = jdyn[to_kebab_case(label::__generations)];
 
     std::ofstream ofs(filename);
@@ -270,9 +271,9 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
 
     // 1. Load the file to see what was there before
     std::ifstream ifs(filename);
-    json j;
+    json_o j;
     if (ifs.is_open()  ) {
-        if (!ifs.eof() && json::accept(ifs)) {
+        if (!ifs.eof() && json_o::accept(ifs)) {
             // I most likely consumed the stream already with accept so I have 
             // to go back to the beginning
             ifs.seekg(0, std::ios::beg);
@@ -281,12 +282,12 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
         ifs.close();
     }
 
-    json jpop;
+    json_o jpop;
     pagmo::population pop = isl.get_population();
 
     // 2. Add the info of each population
     // 2.1 Mandatory info: time, fitness evaulations 
-    jpop = {
+    jpop_o = {
         {to_kebab_case(label::__fevals), pop.get_problem().get_fevals()},
         {to_kebab_case(label::__currtime), currtime_str}
     };

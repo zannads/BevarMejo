@@ -1,5 +1,6 @@
 #include <cassert>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <iostream>
 #include <map>
 #include <memory>
@@ -21,7 +22,7 @@
 namespace bevarmejo {
 namespace wds {
 
-WaterDistributionSystem::WaterDistributionSystem(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf) :
+WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
     ph_(nullptr),
     _inp_file_(inp_file),
     _elements_(),
