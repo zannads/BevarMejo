@@ -17,13 +17,12 @@ descr: A quick definition of functions to upload the data in the right way.
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
+#include "bevarmejo/io/key.hpp"
 #include "bevarmejo/utils/string_manip.hpp"
-#include "bevarmejo/labels.hpp"
 
-namespace bevarmejo {
-namespace nsga2 {
+namespace bevarmejo::nsga2 {
+
 namespace defaults {
-
 constexpr unsigned int gen = 1u;
 constexpr double cr = 0.9;
 constexpr double eta_c = 15.;
@@ -32,13 +31,16 @@ constexpr double eta_m = 7.;
 // default for seed is random_device::next()
 } // namespace defaults
 
-namespace label {
-const std::string __cr = "Crossover probability";
-const std::string __eta_c = "Distribution index for crossover";
-const std::string __m = "Mutation probability";
-const std::string __eta_m = "Distribution index for mutation";
-} // namespace label
-} // namespace nsga2
+namespace io::key {
+static const bevarmejo::io::key::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
+static const bevarmejo::io::key::Key eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
+static const bevarmejo::io::key::Key m{"Mutation probability", "m"}; // "Mutation probability", "m"
+static const bevarmejo::io::key::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
+static const bevarmejo::io::key::Key seed{"Seed"}; // "Seed"
+} // namespace io::key
+} // namespace bevarmejo::nsga2
+
+namespace bevarmejo {
 
 inline pagmo::nsga2 Nsga2(json_o settings) {
 	unsigned int gen = settings.contains("Report gen") ? settings["Report gen"].get<unsigned int>() : nsga2::defaults::gen;
@@ -54,9 +56,7 @@ inline pagmo::nsga2 Nsga2(json_o settings) {
 	return pagmo::nsga2(gen, cr, eta_c, m, eta_m);
 }
 
-namespace io {
-namespace json {
-namespace detail {
+namespace io::json::detail {
 
 // Specializations for nsga2 class
 inline std::pair<json_o,std::string> static_params(const pagmo::nsga2& algo) {
@@ -80,14 +80,14 @@ inline std::pair<json_o,std::string> static_params(const pagmo::nsga2& algo) {
 
         // If the key is in my list of convertible parameters I add it to the json object
         // otherwise repush all the tokens to the extra info string stream
-        if (key == nsga2::label::__cr || 
-            key == nsga2::label::__eta_c || 
-            key == nsga2::label::__m || 
-            key == nsga2::label::__eta_m) {
+        if (key == nsga2::io::key::cr[0] || 
+            key == nsga2::io::key::eta_c[0] || 
+            key == nsga2::io::key::m[0] || 
+            key == nsga2::io::key::eta_m[0]) {
                 assert(tokens.size() == 2); // quite sure I have a key and a value
                 j[to_kebab_case(key)] = std::stod(tokens[1]);
 
-        } else if (key == label::__seed) {
+        } else if (key == nsga2::io::key::seed[0]) {
             assert(tokens.size() == 2);
             j[to_kebab_case(key)] = std::stoull(tokens[1]);
 
@@ -104,9 +104,8 @@ inline std::pair<json_o,std::string> static_params(const pagmo::nsga2& algo) {
 
 inline json_o dynamic_params(const pagmo::nsga2& algo) = delete;
 	
-} // namespace detail
-} // namespace json
-} // namespace io
+} // namespace io::json::detail
+
 } // namespace bevarmejo
 
 #endif /* BEVARMEJOLIB__NSGA2_HELPER_HPP */

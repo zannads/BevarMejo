@@ -11,7 +11,6 @@
 using json = nlohmann::json;
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/labels.hpp"
 
 // now include all the specific Bevarmejo problems
 #include "Anytown/prob_anytown.hpp"

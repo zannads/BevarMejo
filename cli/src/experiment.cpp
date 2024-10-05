@@ -21,11 +21,13 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-#include "bevarmejo/io/streams.hpp"
-#include "bevarmejo/factories.hpp"
-#include "bevarmejo/labels.hpp"
-#include "bevarmejo/library_metadata.hpp"
+#include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/labels.hpp"
+#include "bevarmejo/io/streams.hpp"
+
+#include "bevarmejo/factories.hpp"
+#include "bevarmejo/library_metadata.hpp"
+
 #include "bevarmejo/pagmo_helpers/containers_serializers.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"

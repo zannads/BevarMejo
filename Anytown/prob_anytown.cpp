@@ -48,13 +48,16 @@ static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-static const bevarmejo::io::key::Key opers {"Operations"}; // "Operations"
-static const bevarmejo::io::key::Key avail_diam {"Available diameters"}; // "Available diameters"
-static const bevarmejo::io::key::Key tank_costs {"Tank costs"}; // "Tank costs"
-static const bevarmejo::io::key::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
-static const bevarmejo::io::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
-static const bevarmejo::io::key::Key __inp__ {"inp"}; // "inp"
+static const bemeio::key::Key opers {"Operations"}; // "Operations"
+static const bemeio::key::Key avail_diam {"Available diameters"}; // "Available diameters"
+static const bemeio::key::Key tank_costs {"Tank costs"}; // "Tank costs"
+static const bemeio::key::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
+static const bemeio::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
+static const bemeio::key::Key __inp__ {"inp"}; // "inp"
 } // namespace key
+namespace io::value {
+
+} // namespace value
 
 // Extra information for the formulations.
 namespace io::other {
