@@ -1561,8 +1561,7 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 				pumpgroup_pattern[i-1] += val;
 			}
 		}
-		
-		j[io::key::opers] = nl::json{pumpgroup_pattern};
+		j[io::key::opers] = pumpgroup_pattern;
 	}
 		
 	j[io::key::__wds__] = nl::json{};
