@@ -1,6 +1,4 @@
-#include <nlohmann/json.hpp>
-namespace nl = nlohmann;
-
+// Include the pagmo containers
 #include <pagmo/algorithm.hpp>
 #include <pagmo/island.hpp>
 #include <pagmo/problem.hpp>
@@ -8,24 +6,23 @@ namespace nl = nlohmann;
 #include <pagmo/s_policy.hpp>
 #include <pagmo/topology.hpp>
 
-#include <pagmo/algorithms/nsga2.hpp>
-#include <pagmo/islands/thread_island.hpp>
-#include <pagmo/r_policies/fair_replace.hpp>
-#include <pagmo/s_policies/select_best.hpp>
-#include <pagmo/topologies/unconnected.hpp>
+// Include the stream out library
+#include <nlohmann/json.hpp>
+using json_o = nlohmann::json;
 
+// Include the detailed implementation of each object 
+#include "bevarmejo/pagmo_helpers/default_objects_serializers.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
-#include "json_serializers.hpp"
+#include "containers_serializers.hpp"
 
-namespace bevarmejo {
-namespace io {
-namespace json {
+namespace bevarmejo::io::json {
+
 /*-------------------- Algorithm --------------------*/
-nl::json static_descr(const pagmo::algorithm& algo) {
-    nl::json j = {
+json_o static_descr(const pagmo::algorithm& algo) {
+    json_o j = {
         {to_kebab_case(label::__name), algo.get_name()},
     };
 
@@ -40,17 +37,17 @@ nl::json static_descr(const pagmo::algorithm& algo) {
         j[to_kebab_case(label::__extra_info)] = algo.get_extra_info();
     }
 
-    return nl::json{ {to_kebab_case(label::__algorithm), j} };
+    return json_o{ {to_kebab_case(label::__algorithm), j} };
 }
 
-nl::json dynamic_descr(const pagmo::algorithm& algo) {
-    return nl::json{}; // No algorithm has dynamic parameters for now
+json_o dynamic_descr(const pagmo::algorithm& algo) {
+    return json_o{}; // No algorithm has dynamic parameters for now
 }
 
 /*-------------------- Problem --------------------*/
 
-nl::json static_descr(const pagmo::problem& prob) {
-    nl::json j = {
+json_o static_descr(const pagmo::problem& prob) {
+    json_o j = {
         {to_kebab_case(label::__name), prob.get_name()},
     };
 
@@ -69,18 +66,18 @@ nl::json static_descr(const pagmo::problem& prob) {
         j[to_kebab_case(label::__extra_info)] = prob.get_extra_info();
     }
     
-    return nl::json{ {to_kebab_case(label::__problem), j} };
+    return json_o{ {to_kebab_case(label::__problem), j} };
 }
 
-nl::json dynamic_descr(const pagmo::problem& prob) {
+json_o dynamic_descr(const pagmo::problem& prob) {
     
     // Name is NOT a dynamic parameter, so it is not saved here, same for extra info
     
-    nl::json j { };
+    json_o j { };
     
     // Based on the problem, I can call its own specific implementation
     if ( prob.is<bevarmejo::anytown::Problem>() ) { 
-        nl::json jdp = bevarmejo::anytown::io::json::detail::dynamic_params(*prob.extract<bevarmejo::anytown::Problem>());
+        json_o jdp = bevarmejo::anytown::io::json::detail::dynamic_params(*prob.extract<bevarmejo::anytown::Problem>());
         
         if (!jdp.empty()) j[to_kebab_case(label::__params)] = jdp;
     }
@@ -89,12 +86,12 @@ nl::json dynamic_descr(const pagmo::problem& prob) {
         return j;
 
     // If I reach here, I have to return the dynamic parameters
-    return nl::json{ {to_kebab_case(label::__problem), j} };
+    return json_o{ {to_kebab_case(label::__problem), j} };
 }
 
 /*-------------------- Island --------------------*/
-nl::json static_descr(const pagmo::island& isl) {
-    nl::json j = {
+json_o static_descr(const pagmo::island& isl) {
+    json_o j = {
         {to_kebab_case(label::__name), isl.get_name()},
     };
 
@@ -111,12 +108,12 @@ nl::json static_descr(const pagmo::island& isl) {
     // specific for an islands, make sense to add it here.
     j[to_kebab_case(label::__pop_seed)] = isl.get_population().get_seed();
 
-    return nl::json{ {to_kebab_case(label::__island), j} };
+    return json_o{ {to_kebab_case(label::__island), j} };
 }
 
 /*-------------------- Replacement policy --------------------*/
-nl::json static_descr(const pagmo::r_policy& rp) {
-    nl::json j = {
+json_o static_descr(const pagmo::r_policy& rp) {
+    json_o j = {
         {to_kebab_case(label::__name), rp.get_name()}
     };
 
@@ -128,12 +125,12 @@ nl::json static_descr(const pagmo::r_policy& rp) {
         j[to_kebab_case(label::__extra_info)] = rp.get_extra_info();
     }
 
-    return nl::json{ {to_kebab_case(label::__r_policy), j} };
+    return json_o{ {to_kebab_case(label::__r_policy), j} };
 }
 
 /*-------------------- Selection policy --------------------*/
-nl::json static_descr(const pagmo::s_policy& sp) {
-    nl::json j = {
+json_o static_descr(const pagmo::s_policy& sp) {
+    json_o j = {
         {to_kebab_case(label::__name), sp.get_name()}
     };
 
@@ -145,12 +142,12 @@ nl::json static_descr(const pagmo::s_policy& sp) {
         j[to_kebab_case(label::__extra_info)] = sp.get_extra_info();
     }
 
-    return nl::json{ {to_kebab_case(label::__s_policy), j} };
+    return json_o{ {to_kebab_case(label::__s_policy), j} };
 }
 
 /*-------------------- Topology --------------------*/
-nl::json static_descr(const pagmo::topology& tp) {
-    nl::json j = {
+json_o static_descr(const pagmo::topology& tp) {
+    json_o j = {
         {to_kebab_case(label::__name), tp.get_name()}
     };
 
@@ -160,65 +157,7 @@ nl::json static_descr(const pagmo::topology& tp) {
         j[to_kebab_case(label::__extra_info)] = tp.get_extra_info();
     }
 
-    return nl::json{ {to_kebab_case(label::__topology), j} };
+    return json_o{ {to_kebab_case(label::__topology), j} };
 }
 
-namespace detail {
-
-/*----------------------- Thread island ------------------ */
-std::pair<nl::json,std::string> static_params(const pagmo::thread_island& isl) {
-    static const std::string threadisl__label__pool_flag = "Using pool";
-    std::string extra_info = isl.get_extra_info(); // I know it returns "\tUsing pool: yes" or no
-    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
-    auto tokens = bevarmejo::split(extra_info, ':');
-    assert(tokens.size() == 2);
-
-    nl::json j;
-    j[to_kebab_case(threadisl__label__pool_flag)] = tokens[1] == " yes" ? true : false; // space is there too
-
-    return std::make_pair(j, std::string{});
-}
-
-/*----------------------- Fair replace ------------------ */
-std::pair<nl::json,std::string> static_params(const pagmo::fair_replace& rp) {
-    // I know the extra info returns "\tAbsolute migration rate: 1" and the 
-    // number is an integer or a "\tFractional migration rate: 0.1" and the
-    // number is a double.
-    std::string extra_info = rp.get_extra_info(); 
-    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
-    auto tokens = bevarmejo::split(extra_info, ':');
-    assert(tokens.size() == 2);
-
-    nl::json j;
-    if (tokens[0] == "Absolute migration rate") {
-        j[to_kebab_case(tokens[0])] = std::stoi(tokens[1]);
-    } else /* if (tokens[0] == "Fractional migration rate") */ {
-        j[to_kebab_case(tokens[0])] = std::stod(tokens[1]);
-    }
-
-    return std::make_pair(j, std::string{});
-}
-
-/*----------------------- Select best ------------------ */
-// exactly like fair replace
-std::pair<nl::json,std::string> static_params(const pagmo::select_best& sp) {
-    std::string extra_info = sp.get_extra_info(); 
-    extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
-    auto tokens = bevarmejo::split(extra_info, ':');
-    assert(tokens.size() == 2);
-
-    nl::json j;
-    if (tokens[0] == "Absolute migration rate") {
-        j[to_kebab_case(tokens[0])] = std::stoi(tokens[1]);
-    } else /* if (tokens[0] == "Fractional migration rate") */ {
-        j[to_kebab_case(tokens[0])] = std::stod(tokens[1]);
-    }
-
-    return std::make_pair(j, std::string{});
-}
-
-} // namespace detail
-
-} // namespace json
-} // namespace io
-} // namespace bevarmejo
+}   // namespace bevarmejo::io::json

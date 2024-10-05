@@ -14,7 +14,7 @@
 #include <pagmo/topology.hpp>
 
 #include <nlohmann/json.hpp>
-namespace nl = nlohmann;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/labels.hpp"

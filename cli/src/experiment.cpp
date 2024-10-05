@@ -25,8 +25,8 @@ using json = nlohmann::json;
 #include "bevarmejo/factories.hpp"
 #include "bevarmejo/labels.hpp"
 #include "bevarmejo/library_metadata.hpp"
-#include "bevarmejo/io/json_serializers.hpp"
 #include "bevarmejo/io/labels.hpp"
+#include "bevarmejo/pagmo_helpers/containers_serializers.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
@@ -48,7 +48,7 @@ void Experiment::build(const ExperimentSettings &settings) {
     pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
 
     // Construct a pagmo::problem
-    const nl::json &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
+    const json_o &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
     pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__params] , settings.lookup_paths) };
         
     // and instantiate population

@@ -52,11 +52,15 @@ set(WDS_AUX
 
 set(IO_FILES
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/fsys_helpers.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/json_serializers.cpp"
 )
 
 set(HELPERS     
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
+)
+
+set(PAGMO_H
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_serializers.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/default_objects_serializers.cpp"
 )
 
 add_library(bemelib 
@@ -72,6 +76,7 @@ add_library(bemelib
         ${WDS_DATAS}
         ${IO_FILES}
         ${HELPERS}
+        ${PAGMO_H}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)

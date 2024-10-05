@@ -19,7 +19,7 @@ namespace fsys = std::filesystem;
 #include <pagmo/island.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/io/streams.hpp"
 namespace bemeio = bevarmejo::io;
@@ -105,7 +105,7 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 	return patterns;
 }
 
-Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
+Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<std::filesystem::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
 	std::string full_name{"bevarmejo::"};
@@ -204,7 +204,7 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 		// this is nasty but as of now it will work // I am not passing any info for now 
 		assert(udpop.contains(label::__report_gen_sh));
 		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
-		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
+		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json_o{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
 
 		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
 		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
@@ -217,7 +217,7 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 	}
 }
 
-void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
+void Problem::load_network(json_o settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
 	assert(settings != nullptr);
 	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
 
@@ -225,7 +225,7 @@ void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, 
 	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths, true), preprocessf);
 }
 
-void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
+void Problem::load_subnets(json_o settings, std::vector<fsys::path> lookup_paths) {
 	for (const auto& udeg : settings[io::key::__wds__][io::key::__udegs__]) {
 		
 		try
@@ -241,12 +241,12 @@ void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) 
 	// TODO: assert that all the required subnetworks are present
 }
 
-void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_paths) {
+void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_paths) {
 	assert(settings.contains(io::key::avail_diam) && settings.contains(io::key::tank_costs));
 	// Load Pipe rehabilitation alternative costs 
 	auto prac_filename = bemeio::locate_file(fsys::path{settings[io::key::avail_diam]}, lookup_paths);
 
-	// TODO: move also this to json?
+	// TODO: move also this to json_o?
 	std::ifstream prac_file{prac_filename};
 	if (!prac_file.is_open()) {
 		throw std::runtime_error("Could not open file " + prac_filename.string());
@@ -1546,8 +1546,8 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 }
 
 // Json serializers 
-std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
-	nl::json j;
+std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
+	json_o j;
 	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
 	j[io::key::avail_diam] = "available_diams.txt";
 	j[io::key::tank_costs] = "tanks_costs.txt";
@@ -1565,9 +1565,9 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 		j[io::key::opers] = pumpgroup_pattern;
 	}
 		
-	j[io::key::__wds__] = nl::json{};
+	j[io::key::__wds__] = json_o{};
 	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
-	j[io::key::__wds__][io::key::__udegs__] = nl::json{
+	j[io::key::__wds__][io::key::__udegs__] = json_o{
                         "city_pipes.snt",
                         "existing_pipes.snt",
                         "new_pipes.snt",
@@ -1579,8 +1579,8 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 	return {j, std::string{} };
 }
 
-nl::json io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
-	return nl::json(); 
+json_o io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
+	return json_o(); 
 }
 
 } // namespace anytown

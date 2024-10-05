@@ -15,10 +15,9 @@ descr: A quick definition of functions to upload the data in the right way.
 #include <pagmo/algorithms/nsga2.hpp>
 
 #include <nlohmann/json.hpp>
-namespace nl = nlohmann;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/labels.hpp"
-#include "bevarmejo/io/json_serializers.hpp"
 
 namespace bevarmejo {
 namespace nsga2 {
@@ -40,7 +39,7 @@ const std::string __eta_m = "Distribution index for mutation";
 } // namespace label
 } // namespace nsga2
 
-inline pagmo::nsga2 Nsga2(nl::json settings) {
+inline pagmo::nsga2 Nsga2(json_o settings) {
 	unsigned int gen = settings.contains("Report gen") ? settings["Report gen"].get<unsigned int>() : nsga2::defaults::gen;
 	double cr = settings.contains("cr") ? settings["cr"].get<double>() : nsga2::defaults::cr;
 	double eta_c = settings.contains("eta_c") ? settings["eta_c"].get<double>() : nsga2::defaults::eta_c;
@@ -59,9 +58,9 @@ namespace json {
 namespace detail {
 
 // Specializations for nsga2 class
-inline std::pair<nl::json,std::string> static_params(const pagmo::nsga2& algo) {
+inline std::pair<json_o,std::string> static_params(const pagmo::nsga2& algo) {
     
-    nl::json j;
+    json_o j;
    
     // I known it returns some extra info and I know the type of these info,
     // this ways the specialization.
@@ -102,7 +101,7 @@ inline std::pair<nl::json,std::string> static_params(const pagmo::nsga2& algo) {
     return std::make_pair( j, extra_info );
 }
 
-inline nl::json dynamic_params(const pagmo::nsga2& algo) = delete;
+inline json_o dynamic_params(const pagmo::nsga2& algo) = delete;
 	
 } // namespace detail
 } // namespace json
