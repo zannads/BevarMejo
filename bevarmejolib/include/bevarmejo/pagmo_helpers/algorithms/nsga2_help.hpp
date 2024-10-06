@@ -80,18 +80,22 @@ inline std::pair<json_o,std::string> static_params(const pagmo::nsga2& algo) {
 
         // If the key is in my list of convertible parameters I add it to the json object
         // otherwise repush all the tokens to the extra info string stream
-        if (key == nsga2::io::key::cr[0] || 
-            key == nsga2::io::key::eta_c[0] || 
-            key == nsga2::io::key::m[0] || 
-            key == nsga2::io::key::eta_m[0]) {
-                assert(tokens.size() == 2); // quite sure I have a key and a value
-                j[to_kebab_case(key)] = std::stod(tokens[1]);
+        if (key == nsga2::io::key::cr[0]) 
+            j[nsga2::io::key::cr()] = std::stod(tokens[1]); // quite sure I have a key and a value
 
-        } else if (key == nsga2::io::key::seed[0]) {
-            assert(tokens.size() == 2);
-            j[to_kebab_case(key)] = std::stoull(tokens[1]);
+        else if (key == nsga2::io::key::eta_c[0]) 
+            j[nsga2::io::key::eta_c()] = std::stod(tokens[1]);
 
-        } else {
+        else if (key == nsga2::io::key::m[0])
+            j[nsga2::io::key::m()] = std::stod(tokens[1]);
+
+        else if (key == nsga2::io::key::eta_m[0])
+            j[nsga2::io::key::eta_m()] = std::stod(tokens[1]);
+
+        else if (key == nsga2::io::key::seed[0])
+            j[nsga2::io::key::seed()] = std::stoull(tokens[1]); 
+
+        else {
             for (const auto& token : tokens) {
                 extra_info += token;
                 extra_info += ':';

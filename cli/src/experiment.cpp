@@ -25,6 +25,9 @@ using json_o = nlohmann::json;
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/io/keys/beme.hpp"
+#include "bevarmejo/io/keys/bemeexp.hpp"
+#include "bevarmejo/io/keys/bemeopt.hpp"
 
 #include "bevarmejo/factories.hpp"
 #include "bevarmejo/library_metadata.hpp"
@@ -46,16 +49,33 @@ void Experiment::build(const ExperimentSettings &settings) {
     m_name = settings.name;
     m_folder = settings.folder;
 
-    //TODO: compose based on the settings
-    json_o jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
-    pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
+    const json_o &jconfig = io::json::extract(io::key::typconfig).from(settings.jinput);
+
+    assert(io::key::algorithm.exists_in(jconfig));
+    const json_o &jalgo = io::json::extract(io::key::algorithm).from(jconfig);
+
+    const json_o &jpop = io::json::extract(io::key::population).from(jconfig);
+    
+    std::string sname = io::json::extract(io::key::name).from(jalgo).get<std::string>();
+    assert(sname == "nsga2");
+
+    json_o jparams{};
+    if( !io::key::params.exists_in(jalgo) )
+        jparams[io::key::repgen[0]] = io::json::extract(io::key::repgen).from(jpop);
+    
+    pagmo::algorithm algo{ bevarmejo::Nsga2(jparams) };
 
     // Construct a pagmo::problem
-    const json_o &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
-    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__params] , settings.lookup_paths) };
+    const json_o &jprob = io::json::extract(io::key::problem).from(jconfig);
+    sname = io::json::extract(io::key::name).from(jprob).get<std::string>();
+    jparams = json_o{};
+    if (io::key::params.exists_in(jprob))
+        jparams = io::json::extract(io::key::params).from(jprob);
+    
+    pagmo::problem p{ bevarmejo::build_problem(sname, jparams , settings.lookup_paths) };
         
     // and instantiate population
-    pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
+    pagmo::population pop{ std::move(p), io::json::extract(io::key::size).from(jpop).get<unsigned int>() };
 
     m_archipelago.push_back(algo, pop);
     _seed_ = pop.get_seed();
@@ -111,7 +131,7 @@ void Experiment::save_outcome()
     json_o jsys;
     // example machine, OS etc ... 
     json_o jsoft;
-    jsoft[to_kebab_case(label::__beme_version)] = VersionManager::library().version().str();
+    jsoft[io::key::beme_version()] = VersionManager::library().version().str();
 
     json_o jarchipelago; 
     {
@@ -124,18 +144,18 @@ void Experiment::save_outcome()
     //    generations) and save the file.
     auto [saved_islands, errors] = save_final_results();
 
-    jarchipelago[to_kebab_case(label::__islands)] = json::array();
+    jarchipelago[io::key::islands()] = json_o::array();
     for (auto& s_island : saved_islands){
-        jarchipelago[to_kebab_case(label::__islands)].push_back(s_island);
+        jarchipelago[io::key::islands()].push_back(s_island);
     }
     if (!errors.empty())
-        jarchipelago[to_kebab_case(label::__errors)] = errors;
+        jarchipelago[io::key::errors()] = errors;
 
     // 3. Save the file
     json_o jout = {
-        {to_kebab_case(label::__system), jsys},
-        {to_kebab_case(label::__archi), jarchipelago},
-        {to_kebab_case(label::__software), jsoft}
+        {io::key::system(), jsys},
+        {io::key::archi(), jarchipelago},
+        {io::key::software(), jsoft}
     };
     ofs << jout.dump(4);
     ofs.close();
@@ -244,7 +264,7 @@ fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::p
     
     // 2.3. Save the file
     json_o& jout = jstat;
-    jout[to_kebab_case(label::__generations)] = jdyn[to_kebab_case(label::__generations)];
+    jout[io::key::generations()] = jdyn[io::key::generations()];
 
     std::ofstream ofs(filename);
     if (!ofs.is_open()) {
@@ -282,47 +302,47 @@ bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path 
         ifs.close();
     }
 
-    json_o jpop;
-    pagmo::population pop = isl.get_population();
-
     // 2. Add the info of each population
+    pagmo::population pop = isl.get_population();
     // 2.1 Mandatory info: time, fitness evaulations 
-    jpop_o = {
-        {to_kebab_case(label::__fevals), pop.get_problem().get_fevals()},
-        {to_kebab_case(label::__currtime), currtime_str}
+    json_o jcgen = {
+        {io::key::fevals(), pop.get_problem().get_fevals()},
+        {io::key::ctime(), currtime_str},
+        {io::key::individuals(), json_o::array()}
     };
     
     // 2.2 Mandatory info, the population's individuals
+    json_o &jinds = jcgen[io::key::individuals()];
     auto population_ids = pop.get_ID();
     auto pop_dvs        = pop.get_x();
     auto pop_fitnesses  = pop.get_f();
     for (auto individual = 0u; individual<pop.size(); ++individual){
-        jpop[to_kebab_case(label::__individuals)].push_back({
-            {to_kebab_case(label::__id), population_ids[individual]},
-            {to_kebab_case(label::__dv), pop_dvs[individual]},
-            {to_kebab_case(label::__fv), pop_fitnesses[individual]}
+        jinds.push_back({
+            {io::key::id(), population_ids[individual]},
+            {io::key::dv(), pop_dvs[individual]},
+            {io::key::fv(), pop_fitnesses[individual]}
         });
     }
 
     // 2.3 Optional info: Gradient evals, Hessian evals, dynamic info of the Algotithm, Problem, UDRP, UDSP
     // TODO: for now it is empty, but I will add it in the future, e.g. see below 
     if (pop.get_problem().get_gevals() > 0)
-        jpop[to_kebab_case(label::__gevals)] = pop.get_problem().get_gevals();
+        jcgen[io::key::gevals()] = pop.get_problem().get_gevals();
     if (pop.get_problem().get_hevals() > 0)
-        jpop[to_kebab_case(label::__hevals)] = pop.get_problem().get_hevals();
+        jcgen[io::key::hevals()] = pop.get_problem().get_hevals();
 
     {  // see pattern above 2.2.1. in save_final_result
         auto jalgo_dyn = io::json::dynamic_descr(isl.get_algorithm());
-        if (!jalgo_dyn.empty()) jpop.update(jalgo_dyn);
+        if (!jalgo_dyn.empty()) jcgen.update(jalgo_dyn);
     }
 
     {   // see pattern above 2.2.1. in save_final_result
         auto jprob_dyn = io::json::dynamic_descr(pop.get_problem());
-        if (!jprob_dyn.empty()) jpop.update(jprob_dyn);
+        if (!jprob_dyn.empty()) jcgen.update(jprob_dyn);
     }
     
 
-    j[to_kebab_case(label::__generations)].push_back(jpop);
+    j[io::key::generations()].push_back(jcgen);
 
     // Save the file
     std::ofstream ofs(filename);
