@@ -8,7 +8,8 @@ static const Key islands{"Islands"}; // "Islands"
 static const Key errors{"Errors"}; // "Errors"
 static const Key system{"System"}; // "System"
 static const Key software{"Software"}; // "Software"
-
+static const Key t0{"Time start"}; // "Time start"
+static const Key tend{"Time end"}; // "Time end"
 
 static const Key extras{"Extra info"}; // "Extra info"
 

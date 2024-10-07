@@ -36,6 +36,8 @@ using json_o = nlohmann::json;
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
+#include "bevarmejo/utils/string_manip.hpp"
+
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
@@ -377,6 +379,8 @@ void Experiment::prepare_isl_files() const
 
 void Experiment::prepare_exp_file() const {
 
+    std::string currtime = bevarmejo::now_as_str();
+
     std::ofstream ofs(exp_filename());
     if (!ofs.is_open())
         __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "prepare_exp_file",
@@ -405,7 +409,9 @@ void Experiment::prepare_exp_file() const {
     json_o jout = {
         {io::key::system(), jsys},
         {io::key::archi(), jarchipelago},
-        {io::key::software(), jsoft}
+        {io::key::software(), jsoft},
+        {io::key::t0(), currtime},
+        {io::key::tend(), nullptr}
     };
     ofs << jout.dump(4) << std::endl;
     ofs.close();
@@ -413,17 +419,14 @@ void Experiment::prepare_exp_file() const {
 
 void Experiment::freeze_isl_runtime_data(std::size_t island_idx, json_o &jout) const
 {
-    auto currtime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&currtime), "%c"); // Convert to string without the final newline
-    std::string currtime_str = ss.str();
+    std::string currtime = bevarmejo::now_as_str();
 
     auto isl = *(m__archipelago.begin() + island_idx);
     pagmo::population pop = isl.get_population();
     // 2.1 Mandatory info: time, fitness evaulations 
     json_o jcgen = {
         {io::key::fevals(), pop.get_problem().get_fevals()},
-        {io::key::ctime(), currtime_str},
+        {io::key::ctime(), currtime},
         {io::key::individuals(), json_o::array()}
     };
 
@@ -544,8 +547,83 @@ void Experiment::finalise_isl_files() const
 
 void Experiment::finalise_exp_file() const
 {
-    // Maybe load the time or check that all the islands have been saved correctly.
-    return;
+    // Load the experiment file, check that all the islands have been saved correctly and only
+    // save those that did
+    // append the final time.
+
+    std::fstream exp_file(exp_filename());
+    if (!exp_file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "Could not open the experiment file.",
+            "File : "+exp_filename().string());
+
+    if (exp_file.peek() == std::fstream::traits_type::eof())
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The experiment file is empty.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o jdata = json_o::parse(exp_file);
+    exp_file.close();
+
+    if (!io::key::archi.exists_in(jdata))
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The experiment file does not contain the archipelago key.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o &jarchi = io::json::extract(io::key::archi).from(jdata);
+
+    if (!io::key::islands.exists_in(jarchi))
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The archipelago key does not contain the islands key.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o &jislands = io::json::extract(io::key::islands).from(jarchi);
+    json_o jislands_old = jislands;
+    jislands = json_o::array();
+
+    for (auto i = 0; i < m__archipelago.size(); ++i)
+    {
+        auto file = isl_filename(i, /*runtime=*/ true);
+        if (!fsys::exists(file) || !fsys::is_regular_file(file))
+            continue; // The file has not been saved correctly, so I remove the name from the list.
+
+        // Open and check it is not empty
+        std::ifstream isl_file(file);
+        if (!isl_file.is_open())
+            continue;
+
+        if (isl_file.peek() == std::ifstream::traits_type::eof())
+        {
+            isl_file.close();
+            continue;
+        }
+
+        // Ok, it is fine. Close and append the final name
+        isl_file.close();
+        jislands.push_back(isl_filename(i).filename().string());
+    }
+
+    // Append the final time
+    jdata[io::key::tend()] = bevarmejo::now_as_str();
+
+    // Save the final file
+    exp_file.open(exp_filename(), std::ios::out);
+    if (!exp_file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "Could not create the final experiment file.",
+            "File : "+exp_filename().string());
+
+    exp_file << jdata.dump(4) << std::endl;
+    exp_file.close();
 }
 
 
