@@ -26,14 +26,19 @@ using json_o = nlohmann::json;
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"
 
+#include "bevarmejo/cli_settings.hpp"
+#include "bevarmejo/simulation.hpp"
+
 #include "parsers.hpp"
 
 namespace bevarmejo {
 
+using Paths = std::vector<fsys::path>;
+
 namespace io {
 namespace log {
 namespace nname {
-static const std::string exp = "experiment::"; // "experiment::"
+static const std::string opt = "optimisation::"; // "optimisation::"
 static const std::string sim = "simulation::"; // "simulation::"
 }
 namespace fname {
@@ -53,152 +58,34 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 }
 } // namespace io
 
+namespace opt {
 
-
-
-ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
+ExperimentSettings  parse(int argc, char* argv[]) {
     if (argc < 2) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
             io::log::mex::parse_error,
             io::log::mex::nearg,
             io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
-    
-    fsys::path settings_file(argv[1]);
-    if (!fsys::exists(settings_file))
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Settings file does not exist.",
-            io::other::settings_file+settings_file.string());
 
-    if (!fsys::is_regular_file(settings_file)) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Settings file is not a regular file.",
-            io::other::settings_file+settings_file.string());
+    ExperimentSettings exp_settings{};
 
-    ExperimentSettings settings;
-    // Settings file is fine, save its full path and the folder
-    settings.settings_file = settings_file;
-    settings.folder = settings_file.parent_path();
-    // settings folder is also the first lookup path
-    settings.lookup_paths.push_back(settings.folder);
+    // Add the cwd to the lookup path for the settings file as it may be a rel path
+    Paths lookup_paths{fsys::current_path()};
 
-    // 2. Now actually parse the settings file
-    std::ifstream file(settings_file);
-    if (!file.is_open())
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Failed to open settings file.",
-            io::other::settings_file+settings_file.string());
+    exp_settings.settings_file = bevarmejo::io::locate_file(fsys::path{argv[1]}, lookup_paths);
 
-    if (file.peek() == std::ifstream::traits_type::eof()) {
-        file.close();
+    // TODO: parse all the flags and set the values in the exp_settings
 
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Settings file is empty.",
-            io::other::settings_file+settings_file.string());
-    }
+    // TODO: parse all the key value pairs that are passed as experiment flags
 
-    std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    file.close();
-
-    try {
-        settings.jinput = json_o::parse(file_contents);
-    } catch (const std::exception& e) {
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Failed to parse settings file as JSON.",
-            io::other::settings_file+settings_file.string()+"\n"+e.what());
-    }
-
-    // 3. Check the settings file has the required fields
-    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
-        if (key.exists_in(j)) {
-            return;
-        }
-
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
-            io::log::mex::parse_error,
-            "Settings file does not contain a mandatory field.",
-            "Missing field : "+key[0]
-        );
-    };
-
-    // as of now name is a mandatory field
-    check_mandatory_field(io::key::name, settings.jinput);
-    settings.name = io::json::extract(io::key::name).from(settings.jinput).get<std::string>();
-
-    // as of now typconfig is a mandatory field
-    check_mandatory_field(io::key::typconfig, settings.jinput);
-    auto& typconfig = io::json::extract(io::key::typconfig).from(settings.jinput);
-    // TODO: ALGO
-    // TODO: PROBLEM
-
-    // population, its size and the generations are mandatory. 
-    // Seed, report gen are optional. 
-    check_mandatory_field(io::key::population, typconfig);
-    auto& pop = io::json::extract(io::key::population).from(typconfig);
-
-    check_mandatory_field(io::key::size, pop);
-    check_mandatory_field(io::key::generations, pop);
-    const auto& genz = io::json::extract(io::key::generations).from(pop);
-
-    // the algorithms need to know how many generations to report because the island calls the evolve method n times
-    // until n*__report_gen > __generations, default = __generations
-    if (!io::key::repgen.exists_in(pop)) 
-        pop[io::key::repgen()] = pop[io::key::generations()];
-    const auto &repgenz = io::json::extract(io::key::repgen).from(pop);
-    
-    // ceil(__generations/__report_gen) = n_evolve
-    settings.n_evolve = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
-
-    // 4. Check the settings file has the optional fields
-    if (io::key::lookup_paths.exists_in(settings.jinput)) {
-        json_o paths = io::json::extract(io::key::lookup_paths).from(settings.jinput);
-
-        if (paths != nullptr) {
-            // Paths could be a string or an array of strings. In both case we need to check if they are directories 
-
-            if (paths.is_string()) {
-                json_o jpath = json_o::array();
-                jpath.push_back(paths.get<std::string>());
-                paths = jpath;
-            }
-
-            for (const auto& path : paths) {
-                fsys::path p{path};
-
-                if (fsys::exists(p) && fsys::is_directory(p)) {
-                    settings.lookup_paths.push_back(p);
-                } else {
-                    std::cerr << "Path in the settings file is not a valid directory: " << p.string() << std::endl;
-                }
-            }
-        }
-    }
-    // Last look up path is the current directory
-    settings.lookup_paths.push_back(fsys::current_path());
-
-    if (io::key::settings.exists_in(settings.jinput)) {
-        const json_o &jsettings = io::json::extract(io::key::settings).from(settings.jinput);
-
-        if (io::key::out_file_format.exists_in(jsettings)) {
-            // TODO: set the output file format
-        }
-
-        if (io::key::out_key_style.exists_in(jsettings))
-            io::key::Key::set_out_style(io::json::extract(io::key::out_key_style).from(jsettings).get<std::string>());
-    }
-
-    
-
-    return settings;
+    return exp_settings;
 }
+
+} // namespace opt
 
 namespace sim {
 
-Simulation parse(int argc, char *argv[]) {
+bevarmejo::Simulation parse(int argc, char *argv[]) {
 
     if (argc < 2) 
         __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::sim+io::log::fname::parse,
@@ -268,7 +155,7 @@ Simulation parse(int argc, char *argv[]) {
                 return;
             }
 
-            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::exp+io::log::fname::parse,
+            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
                 io::log::mex::parse_error,
                 "Settings file does not contain a mandatory field.",
                 "Missing field : "+key[0]

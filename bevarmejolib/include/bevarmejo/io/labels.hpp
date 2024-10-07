@@ -13,6 +13,7 @@ static const std::string beme_filenames_separator = "__"; // "__"
 static const std::string bemeexp_prefix = "bemeexp"; // "bemeexp"
 static const std::string bemeexp_exp_suffix = ".exp"; // ".exp"
 static const std::string bemeexp_isl_suffix = ".isl"; // ".isl"
+static const std::string bemeexp_rnt_suffix = ".rnt"; // ".rnt"
 static const std::string bemeexp_log_suffix = ".log"; // ".log"
 static const std::string bemeexp_out_folder = "output"; // "output"
 

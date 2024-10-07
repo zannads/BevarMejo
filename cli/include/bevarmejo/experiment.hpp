@@ -12,90 +12,68 @@
 #include <filesystem>
 namespace fsys = std::filesystem;
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <pagmo/archipelago.hpp>
-#include <pagmo/island.hpp>
-#include <pagmo/algorithm.hpp>
-#include <pagmo/population.hpp>
-#include <pagmo/problem.hpp>
 
-#include "parsers.hpp"
-
+#include <nlohmann/json.hpp>
+using json_o = nlohmann::json;
 
 namespace bevarmejo {
 
-namespace fsys = std::filesystem;
+class Experiment final {
 
-class Experiment{
-protected:
-    fsys::path _root_experiment_folder_;
-    fsys::path _settings_filename_;
-
-    // For now I will modify only the seed, but in the future I will add more options
-    unsigned int _seed_{0};
-    // Ideally, here I change all the settings of the algorithm and the model
+private:
+    // The folder where the experiment is stored or going to be saved.
+    fsys::path m__root_folder;
+    // The full path to the settings file.
+    fsys::path m__settings_file;
+    // Name of the experiment.
+    std::string m__name;
+    // Additional lookup paths for the internal files.
+    std::vector<fsys::path> m__lookup_paths;
     
-
-private: 
-    // Name of the experiment
-    std::string m_name;
-    // Path to the experiment folder 
-    fsys::path m_folder;
-    // Archipelago to run the experiment
-    pagmo::archipelago m_archipelago;
-    // Filenames for runtime and final results saving for each island
-    std::vector<fsys::path> m_islands_filenames;
-    // TODO: add the settings for each independent island
-
-
-    // Flag for resuming the experiment.
-    bool m_resume{false};
-    // Flag to perform a deep copy of the experiment folder.
-    bool m_deep_copy{false};
+    // Archipelago to run the experiment, container for all the objects.
+    pagmo::archipelago m__archipelago;
+    // Names for runtime and final results files save for each island.
+    std::vector<std::string> m__islands_names;
+    
+    struct Settings {
+        unsigned int n_evolves{1}; // Number of generations to evolve. At least 1.
+    } m__settings;
 
 public:
     /* Constructors and co all defaulted */
-    // TODO: fix the constructors 
-    
-    /* Setters and getters */
-    const std::string& name() const;
-    const fsys::path& folder() const;
-    const fsys::path output_folder() const;
+    Experiment() = default;
+    Experiment(const Experiment& other) = default;
+    Experiment(Experiment&& other) = default;
+    Experiment& operator=(const Experiment& other) = default;
+    Experiment& operator=(Experiment&& other) = default;
+    ~Experiment() = default;
 
-    fsys::path runtime_file();
+    Experiment(const fsys::path &settings_file);
+private:
+    void build(const json_o &jinput);
 
 /*--- Methods ---*/
-
-    // Construct the experiment from the settings 
-    void build(const ExperimentSettings &settings);
-    // TEMP: algo and pop, in the future some struct with the settings
-    void build(pagmo::algorithm &algo, pagmo::population &pop);
-
-    // Run the experiment
-    // TEMP: the inputs are not necessary, everything will be loaded from the
-    // archipelago inside the class but for now let's use the objects constructed
-    // in the main
-    void run(unsigned int n_generations);
-
-    // void finalize_with_error ?
-
-    // Save the outcome of the experiment
-    void save_outcome();
-
-    // Helper to standardize the output filename
-    fsys::path main_filename() const;
+public:
+    void run();
 
 private:
-    // Save the final results of all the islands in the archipelago independently
-    std::pair<std::vector<std::string>, std::string> save_final_results() const;
 
-    // Save the final result of a single island (called by save_final_results())
-    fsys::path save_final_result(const pagmo::island &isl, const fsys::path& filename) const;
+    // Helpers for tracking data and the output files.
+    fsys::path output_folder() const; // The folder where the output files are stored.
+    fsys::path exp_filename() const; // The main file of the experiment, tracking info about all the islands.
+    fsys::path isl_filename(std::size_t island_idx=0, bool runtime=false) const; // The file for the island, tracking the runtime data.
 
-    // Save the runtime result of a single island (called by run())
-    bool save_runtime_result(const pagmo::island &isl, const fsys::path& filename) const;
+    void prepare_isl_files() const; // Prepare the runtime files for the islands.
+    void prepare_exp_file() const; // Prepare the main experiment file.
+
+    void freeze_isl_runtime_data(std::size_t island_idx, json_o &jdyn) const; // Freeze the runtime data of the island to the main experiment file.
+    void append_isl_runtime_data(std::size_t island_idx) const; // Append the runtime data of the island to the main experiment file.
+
+    void finalise_isl_files() const; // Move and format the runtime files to the final files.
+    void finalise_exp_file() const; // Finalise the experiment file and delete the runtime files.
     
 }; // class Experiment
 
