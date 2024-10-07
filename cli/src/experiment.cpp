@@ -401,7 +401,7 @@ void Experiment::prepare_exp_file() const {
     for (auto i = 0; i < m__archipelago.size(); ++i)
         jarchipelago[io::key::islands()].push_back(isl_filename(i, /*runtime=*/ true).filename().string());
 
-    // 3. Save the file
+    // Save the file
     json_o jout = {
         {io::key::system(), jsys},
         {io::key::archi(), jarchipelago},

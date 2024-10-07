@@ -64,6 +64,10 @@ set(PAGMO_H
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/default_objects_serializers.cpp"
 )
 
+set(UTILS
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utils/string_manip.cpp"
+)
+
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
@@ -78,6 +82,7 @@ add_library(bemelib
         ${IO_FILES}
         ${HELPERS}
         ${PAGMO_H}
+        ${UTILS}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
