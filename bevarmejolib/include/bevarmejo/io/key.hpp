@@ -11,14 +11,15 @@ using json_o = nlohmann::json;
 
 namespace bevarmejo::io::key {
 
-namespace style {
-struct Original {};
-struct Camel {};
-struct Kebab {};
-struct Snake {};
-
+enum class style {
+Original,
+Camel,
+Kebab,
+Snake,
+};
 constexpr std::size_t n_styles = 4ul;
-} // namespace key::style
+
+style Style(const std::string &s);
 
 class Key final{
 private:
@@ -42,22 +43,22 @@ public:
     // While with the get method I can access the values in the various formats
     // using the template parameter.
 
-    // Main value of the key in original style.
-    const std::string& operator()() const;
+    // Main value of the key in the output style.
+    std::string operator()() const;
 
     // Alternative value of the key in original style.
     const std::string& operator[](std::size_t alt) const;
 
     // Get any alternative value of the key in the desired style.
-    template <typename S= style::Original>
+    template <style S= style::Original>
     std::string get(std::size_t alt = 0ul) const {
-        if constexpr (std::is_same_v<S, style::Camel>)
+        if constexpr ( S == style::Camel )
             return bevarmejo::to_camel_case(get<style::Original>(alt));
         
-        if constexpr (std::is_same_v<S, style::Kebab>)
+        if constexpr ( S == style::Kebab )
             return bevarmejo::to_kebab_case(get<style::Original>(alt));
         
-        if constexpr (std::is_same_v<S, style::Snake>)
+        if constexpr ( S == style::Snake )
             return bevarmejo::to_snake_case(get<style::Original>(alt));
     
          // ======== Actual Implementation (hyp: S == style::Original) ========
@@ -112,8 +113,8 @@ private:
             value_type operator*() const {
                 assert(m__index < m__key.n_alternatives());
 
-                std::size_t alt = m__index / style::n_styles;
-                std::size_t style = m__index % style::n_styles;
+                std::size_t alt = m__index / n_styles;
+                std::size_t style = m__index % n_styles;
 
                 if (style == 0)
                     return m__key.template get<style::Original>(alt);
@@ -140,11 +141,24 @@ private:
 public:
     using const_iterator = Iterator<const Key>;
 
-    const_iterator begin() const { return const_iterator(*this, 0); }
-    const_iterator end() const { return const_iterator(*this, n_alternatives()); }
+    const_iterator begin() const;
+    const_iterator end() const;
+
+private:
+    // Static global methods to set the output style of the keys.// Default is Kebab. 
+    // Before version 23.10.1, there was no global output style.
+    static style m__out_style;
+
+public:
+    // Read what is the current output style of the keys.
+    static const style& get_out_style();
+
+    // Set the output style of the keys. 
+    static void set_out_style(style s);
+
+    static void set_out_style(const std::string &s);
+
 };
-
-
 
 }  // namespace bevarmejo::io::key
 

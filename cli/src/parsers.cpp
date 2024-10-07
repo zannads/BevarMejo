@@ -177,11 +177,21 @@ ExperimentSettings parse_optimization_settings(int argc, char* argv[]) {
             }
         }
     }
-
-    // TODO: other flags
-
     // Last look up path is the current directory
     settings.lookup_paths.push_back(fsys::current_path());
+
+    if (io::key::settings.exists_in(settings.jinput)) {
+        const json_o &jsettings = io::json::extract(io::key::settings).from(settings.jinput);
+
+        if (io::key::out_file_format.exists_in(jsettings)) {
+            // TODO: set the output file format
+        }
+
+        if (io::key::out_key_style.exists_in(jsettings))
+            io::key::Key::set_out_style(io::json::extract(io::key::out_key_style).from(jsettings).get<std::string>());
+    }
+
+    
 
     return settings;
 }

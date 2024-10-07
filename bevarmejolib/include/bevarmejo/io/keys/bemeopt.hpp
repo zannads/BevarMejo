@@ -25,4 +25,8 @@ static const Key seed{"Population seed", "Seed"}; // "Population seed", "Seed"
 static const Key specs{"Specializations", "Specs"}; // "Specializations", "Specs"
 static const Key rand_starts{"Random starts"}; // "Random starts"
 
+static const Key settings{"Settings"}; // "Settings"
+static const Key out_file_format{"Output file format", "Out file format"}; // "Output file format", "Out file format"
+static const Key out_key_style{"Output key style", "Out key style"}; // "Output key style", "Out key style"
+
 }   // namespace bevarmejo::io::key
