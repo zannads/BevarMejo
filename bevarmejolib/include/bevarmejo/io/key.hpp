@@ -164,15 +164,33 @@ public:
 
 namespace bevarmejo::io::json {
 namespace detail {
-struct __hjm__ {
+class hjm;
+} // namespace detail
+
+detail::hjm extract(const key::Key &k);
+
+namespace detail {
+class hjm final {
+private:
     const io::key::Key &m__key;
 
+    friend hjm bevarmejo::io::json::extract(const key::Key &k);
+
+    hjm() = delete;
+    hjm(const io::key::Key &k) : m__key{k} {}
+    hjm(const hjm&) = delete;
+    hjm(hjm&&) = delete;
+    hjm& operator=(const hjm&) = delete;
+    hjm& operator=(hjm&&) = delete;
+public:
+    ~hjm() = default;
+
     json_o& from(json_o &j) const;
+
     const json_o& from(const json_o &j) const;
 }; // Hidden Json Methods
 } // namespace detail
 
-detail::__hjm__ extract(const key::Key &k);
 }
 
 // Overload nlohmann::json methods to use the Key class as a key in the json object.

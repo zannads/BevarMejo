@@ -108,36 +108,35 @@ style Style(const std::string &s) {
 
 namespace bevarmejo::io::json::detail {
 
-json_o& __hjm__::from(json_o &j) const {
+json_o& hjm::from(json_o &j) const {
 
     for (const auto &key : m__key) 
         if (j.contains(key))
             return j[key];
 
-    __format_and_throw<std::out_of_range, FunctionError>("<extract><from>", 
+    __format_and_throw<std::out_of_range, bevarmejo::FunctionError>("<extract><from>", 
         "Impossible to extract the requested key from the json object.",
         "No version of the key has been found.",
         "\tKey : ", m__key()
     );
 }
 
-const json_o& __hjm__::from(const json_o &j) const {
+const json_o& hjm::from(const json_o &j) const {
     
     for (const auto &key : m__key) 
         if (j.contains(key))
             return j[key];
 
-    __format_and_throw<std::out_of_range, FunctionError>("<extract><from>", 
+    __format_and_throw<std::out_of_range, bevarmejo::FunctionError>("<extract><from>", 
         "Impossible to extract the requested key from the json object.",
         "No version of the key has been found.",
         "\tKey : ", m__key()
     );
 }
 
-}  // namespace bevarmejo::io::json::detail
+} // namespace bevarmejo::io::json::detail
 
-namespace bevarmejo::io::json {
-
-detail::__hjm__ extract(const key::Key &k) { return detail::__hjm__{k}; }
-
-}  // namespace bevarmejo::io::json
+bevarmejo::io::json::detail::hjm bevarmejo::io::json::extract(const key::Key &k)
+{
+    return bevarmejo::io::json::detail::hjm(k);
+}
