@@ -41,6 +41,8 @@ private:
     
     struct Settings {
         unsigned int n_evolves{1}; // Number of generations to evolve. At least 1.
+        bool outf_indent{true}; // Enable indentation in the output files.
+        unsigned int outf_indent_val{4}; // Indentation value for the output files. (Valid for JSON)
     } m__settings;
 
 public:

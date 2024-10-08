@@ -99,7 +99,7 @@ Experiment::Experiment(const fsys::path &settings_file) :
 
     // For now, I only implement the JSON file format.
     json_o jinput;
-    if (settings_file.extension() == ".json") 
+    if (settings_file.extension() == io::other::ext__json) 
     {   
         try
         {
@@ -134,20 +134,44 @@ void Experiment::build(const json_o &jinput)
     if (io::key::settings.exists_in(jinput)) {
         const json_o &jsettings = io::json::extract(io::key::settings).from(jinput);
 
-        if (io::key::out_file_format.exists_in(jsettings))
+        if (io::key::outf_format.exists_in(jsettings))
         {
             // TODO: set the output file format
         }
 
-        if (io::key::out_key_style.exists_in(jsettings))
+        if (io::key::outf_key_style.exists_in(jsettings))
         {
             try
             {
-                io::key::Key::set_out_style(io::json::extract(io::key::out_key_style).from(jsettings).get<std::string>());
+                io::key::Key::set_out_style(io::json::extract(io::key::outf_key_style).from(jsettings).get<std::string>());
             }
             catch (const std::exception &e)
             {
                // TODO: log the error
+            }
+        }
+
+        if (io::key::outf_pretty.exists_in(jsettings))
+        {
+            if (io::json::extract(io::key::outf_pretty).from(jsettings).is_boolean())
+            {
+                m__settings.outf_indent = io::json::extract(io::key::outf_pretty).from(jsettings).get<bool>();
+            }
+            else
+            {
+                // TODO: log the error
+            }
+        }
+
+        if ( m__settings.outf_indent && io::key::outf_pretty_json_indent.exists_in(jsettings))
+        {
+            if (io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).is_number())
+            {
+                m__settings.outf_indent_val = io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).get<unsigned int>();
+            }
+            else
+            {
+                // TODO: log the error
             }
         }
     }
@@ -304,29 +328,29 @@ void Experiment::run() {
 }
 
 fsys::path Experiment::output_folder() const {
-    return m__root_folder/io::other::bemeexp_out_folder;
+    return m__root_folder/io::other::dir__beme_out;
 }
 
 fsys::path Experiment::exp_filename() const {
     std::string temp = (
-        io::other::bemeexp_prefix+
-        io::other::beme_filenames_separator+
+        io::other::pre__beme_exp+
+        io::other::sep__beme_filenames+
         m__name+
-        io::other::bemeexp_exp_suffix+".json"
+        io::other::ext__beme_exp+io::other::ext__json
     );
     
     return output_folder()/temp;
 }
 
 fsys::path Experiment::isl_filename(std::size_t island_idx, bool runtime) const {
-    std::string suffix = runtime ? io::other::bemeexp_rnt_suffix : io::other::bemeexp_isl_suffix;
+    std::string suffix = runtime ? io::other::ext__beme_rnt_isl+io::other::ext__jsonl : io::other::ext__beme_isl+io::other::ext__json;
     std::string temp = (
-        io::other::bemeexp_prefix+
-        io::other::beme_filenames_separator+
+        io::other::pre__beme_exp+
+        io::other::sep__beme_filenames+
         m__name+
-        io::other::beme_filenames_separator+
+        io::other::sep__beme_filenames+
         m__islands_names.at(island_idx)+
-        suffix+".json"
+        suffix
     );
         
     return output_folder()/temp;
@@ -413,7 +437,11 @@ void Experiment::prepare_exp_file() const {
         {io::key::t0(), currtime},
         {io::key::tend(), nullptr}
     };
-    ofs << jout.dump(4) << std::endl;
+
+    if (m__settings.outf_indent)
+        ofs << jout.dump(m__settings.outf_indent_val) << std::endl;
+    else
+        ofs << jout.dump() << std::endl;
     ofs.close();
 }
 
@@ -537,7 +565,10 @@ void Experiment::finalise_isl_files() const
                 "Could not create the final file for the island.",
                 "File : "+isl_filename(i, /*runtime=*/ false).string());
 
-        ofs << jdata.dump(4) << std::endl;
+        if (m__settings.outf_indent)
+            ofs << jdata.dump(m__settings.outf_indent_val) << std::endl;
+        else
+            ofs << jdata.dump() << std::endl;
         ofs.close();
     }
 
@@ -621,10 +652,11 @@ void Experiment::finalise_exp_file() const
             "Could not create the final experiment file.",
             "File : "+exp_filename().string());
 
-    exp_file << jdata.dump(4) << std::endl;
+    if (m__settings.outf_indent)
+        exp_file << jdata.dump(m__settings.outf_indent_val) << std::endl;
+    else
+        exp_file << jdata.dump() << std::endl;
     exp_file.close();
 }
-
-
 
 } // namespace bevarmejo
