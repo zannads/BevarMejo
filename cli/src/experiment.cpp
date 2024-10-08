@@ -224,18 +224,56 @@ void Experiment::build(const json_o &jinput)
     check_mandatory_field(io::key::name, jinput);
     m__name = io::json::extract(io::key::name).from(jinput).get<std::string>();
 
-    // as of now typconfig is a mandatory field
-    check_mandatory_field(io::key::typconfig, jinput);
-    const auto& typconfig = io::json::extract(io::key::typconfig).from(jinput);
+    json_o typconfig{};
+    json_o specs{};
+    std::size_t rand_starts = 1;
 
-    // I should construct multiple islands combining typconfig and specializations
-    // I will build an island using an algorithm and a population.
+    if (io::key::typconfig.exists_in(jinput))
+        typconfig = io::json::extract(io::key::typconfig).from(jinput);
     
+    if (io::key::specs.exists_in(jinput))
+        specs = io::json::extract(io::key::specs).from(jinput);
+
+    if (io::key::rand_starts.exists_in(jinput))
+    {
+        if (io::json::extract(io::key::rand_starts).from(jinput).is_number())
+            rand_starts = io::json::extract(io::key::rand_starts).from(jinput).get<std::size_t>();
+        else
+        {
+            // TODO: log the error
+        }
+    }
+
+    build_islands(typconfig, specs, rand_starts);
+
+    if (!fsys::exists(output_folder()))
+        fsys::create_directory(output_folder());
+
+    prepare_isl_files();
+
+    prepare_exp_file();
+
+}
+
+void Experiment::build_island(const json_o &config)
+{
     // Construct a pagmo::population
     // Population, its size and the generations are mandatory. 
     // Seed, report gen are optional. 
-    check_mandatory_field(io::key::population, typconfig);
-    const auto& jpop = io::json::extract(io::key::population).from(typconfig);
+    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+        if (key.exists_in(j)) {
+            return;
+        }
+
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file does not contain a mandatory field.",
+            "Missing field : "+key[0]
+        );
+    };
+
+    check_mandatory_field(io::key::population, config);
+    const auto& jpop = io::json::extract(io::key::population).from(config);
 
     check_mandatory_field(io::key::size, jpop);
     check_mandatory_field(io::key::generations, jpop);
@@ -251,8 +289,8 @@ void Experiment::build(const json_o &jinput)
     }
 
     // Constuct the pagmo::algorithm
-    check_mandatory_field(io::key::algorithm, typconfig);
-    const json_o &jalgo = io::json::extract(io::key::algorithm).from(typconfig);
+    check_mandatory_field(io::key::algorithm, config);
+    const json_o &jalgo = io::json::extract(io::key::algorithm).from(config);
 
     std::string sname = io::json::extract(io::key::name).from(jalgo).get<std::string>();
 
@@ -269,7 +307,7 @@ void Experiment::build(const json_o &jinput)
     pagmo::algorithm algo{ bevarmejo::Nsga2(jparams) };
 
     // Construct a pagmo::problem
-    const json_o &jprob = io::json::extract(io::key::problem).from(typconfig);
+    const json_o &jprob = io::json::extract(io::key::problem).from(config);
 
     sname = io::json::extract(io::key::name).from(jprob).get<std::string>();
 
@@ -282,19 +320,55 @@ void Experiment::build(const json_o &jinput)
     // Now that I have everything I can build the population and then the island
     pagmo::population pop{ std::move(p), io::json::extract(io::key::size).from(jpop).get<unsigned int>() };
 
-    m__archipelago.push_back(algo, pop); // Create the island
+    // Create and track the island
+    m__archipelago.push_back(algo, pop); 
 
-    // Track the info of the island.
-    // This should build the name based on the name in typconfig and the parameters of the island.
+    // The name should be built from the string and extracting the placeholders (e.g., ${seed})
     m__islands_names.push_back(std::to_string(pop.get_seed()));
+}
 
-    if (!fsys::exists(output_folder()))
-        fsys::create_directory(output_folder());
+void Experiment::build_islands(const json_o &typconfig, const json_o &specs, const std::size_t rand_starts)
+{
+    // At least one between typconfig and specs should be present
+    // Random starts must be at least 1
+    // For each spec, merge the typconfig with the spec.
+        // For each random start, build the island
 
-    prepare_isl_files();
+    if (typconfig.empty() && specs.empty())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "No configuration for the islands.",
+            "At least one between the typical configuration and the specializations must be present.");
 
-    prepare_exp_file();
+    if (rand_starts < 1)
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "Invalid number of random starts.",
+            "The number of random starts must be at least 1.",
+            "\tNumber of random starts : "+std::to_string(rand_starts));
 
+    // Spec is valid if it is empty, an object, or an array of objects
+    if (!specs.empty() && !specs.is_object() && !specs.is_array())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "Invalid specializations.",
+            "The specializations must be an object (also 'null') or an array of objects.");
+    
+    // If it is null or an object, I only have one specialisation (default typeconfig)
+    std::size_t n_specs = (specs.empty() || specs.is_object()) ? 1 : specs.size();
+
+    for (std::size_t i = 0; i < n_specs; ++i)
+    {
+        json_o config = typconfig;
+
+        if (!specs.empty())
+        {
+            if (specs.is_object())
+                config.update(specs);
+            else
+                config.update(specs[i]);
+        }
+        
+        for (std::size_t j = 0; j < rand_starts; ++j)
+            build_island(config);
+    }
 }
 
 void Experiment::run() {
@@ -308,11 +382,15 @@ void Experiment::run() {
 
     // This should be a loop over the islands or a simple archipelago.evolve(n_generations)
     for (auto n = 0; n < m__settings.n_evolves; ++n) {
-        for (auto i = 0; i < m__archipelago.size(); ++i) {
-
+        for (auto i = 0; i < m__archipelago.size(); ++i) 
+        {
             auto& island = *(m__archipelago.begin() + i);
             island.evolve(1);
-            
+        }
+
+        for (auto i = 0; i < m__archipelago.size(); ++i) 
+        {
+            auto& island = *(m__archipelago.begin() + i);
             island.wait();
             append_isl_runtime_data(island, isl_filename(i, /*runtime=*/ true));
             // TODO: deal when the population has not been saved correctly

@@ -58,6 +58,10 @@ public:
 private:
     void build(const json_o &jinput);
 
+    void build_island(const json_o &config);
+
+    void build_islands(const json_o &typconfig, const json_o &specs=json_o{}, const std::size_t rand_starts=1);
+
 /*--- Methods ---*/
 public:
     void run();
