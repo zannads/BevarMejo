@@ -718,6 +718,9 @@ void Experiment::finalise_exp_file() const
         // Ok, it is fine. Close and append the final name
         isl_file.close();
         jislands.push_back(isl_filename(i).filename().string());
+
+        // Delete the runtime file
+        fsys::remove(file);
     }
 
     // Append the final time
