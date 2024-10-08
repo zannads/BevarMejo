@@ -284,12 +284,13 @@ void Experiment::run() {
 
     // This should be a loop over the islands or a simple archipelago.evolve(n_generations)
     for (auto n = 0; n < m__settings.n_evolves; ++n) {
-        for (auto island : m__archipelago) {
-            
+        for (auto i = 0; i < m__archipelago.size(); ++i) {
+
+            auto& island = *(m__archipelago.begin() + i);
             island.evolve(1);
             
             island.wait();
-            append_isl_runtime_data(0);
+            append_isl_runtime_data(island, isl_filename(i, /*runtime=*/ true));
             // TODO: deal when the population has not been saved correctly
         }
     }
@@ -335,7 +336,7 @@ void Experiment::prepare_isl_files() const
 {
     for (std::size_t i = 0; i < m__archipelago.size(); ++i)
     {
-        auto isl = *(m__archipelago.begin() + i);
+        auto& isl = *(m__archipelago.begin() + i);
 
         // Add the static information about the island. The dynamic ones will be appended.
         json_o jstat;
@@ -361,7 +362,7 @@ void Experiment::prepare_isl_files() const
         jout[io::key::generations()] = json_o::array();
 
         json_o jcurr_isl_status;
-        freeze_isl_runtime_data(i, jcurr_isl_status);
+        freeze_isl_runtime_data(jcurr_isl_status, isl);
 
         jout[io::key::generations()].push_back(jcurr_isl_status);
 
@@ -416,11 +417,10 @@ void Experiment::prepare_exp_file() const {
     ofs.close();
 }
 
-void Experiment::freeze_isl_runtime_data(std::size_t island_idx, json_o &jout) const
+void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl) const
 {
     std::string currtime = bevarmejo::now_as_str();
-    auto isl_it = m__archipelago.begin() + island_idx;
-    const pagmo::island isl = *isl_it;
+
     const pagmo::population pop = isl.get_population();
     // 2.1 Mandatory info: time, fitness evaulations 
     json_o jcgen = {
@@ -460,17 +460,17 @@ void Experiment::freeze_isl_runtime_data(std::size_t island_idx, json_o &jout) c
     jout = std::move(jcgen);
 }
 
-void Experiment::append_isl_runtime_data(std::size_t island_idx) const
+void Experiment::append_isl_runtime_data(const pagmo::island &isl, const fsys::path &isl_filen) const
 {
     // Open the file, append the new data, close the file.
     json_o jcurr_isl_status;
-    freeze_isl_runtime_data(island_idx, jcurr_isl_status);
+    freeze_isl_runtime_data(jcurr_isl_status, isl);
     
-    std::ofstream ofs(isl_filename(island_idx, /*runtime=*/ true), std::ios::app);
+    std::ofstream ofs(isl_filen, std::ios::app);
     if (!ofs.is_open())
         __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "prepare_isl_files",
             "Could not create the runtime file for the island.",
-            "File : "+isl_filename(island_idx, /*runtime=*/ true).string());
+            "File : "+isl_filen.string());
         
     ofs << jcurr_isl_status.dump() << std::endl; // No value in dump so that it is a single line (JSONL)
     ofs.close();

@@ -15,6 +15,7 @@ namespace fsys = std::filesystem;
 #include <vector>
 
 #include <pagmo/archipelago.hpp>
+#include <pagmo/island.hpp>
 
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
@@ -64,13 +65,13 @@ private:
     // Helpers for tracking data and the output files.
     fsys::path output_folder() const; // The folder where the output files are stored.
     fsys::path exp_filename() const; // The main file of the experiment, tracking info about all the islands.
-    fsys::path isl_filename(std::size_t island_idx=0, bool runtime=false) const; // The file for the island, tracking the runtime data.
+    fsys::path isl_filename(const std::size_t island_idx=0, bool runtime=false) const; // The file for the island, tracking the runtime data.
 
     void prepare_isl_files() const; // Prepare the runtime files for the islands.
     void prepare_exp_file() const; // Prepare the main experiment file.
 
-    void freeze_isl_runtime_data(std::size_t island_idx, json_o &jdyn) const; // Freeze the runtime data of the island to the main experiment file.
-    void append_isl_runtime_data(std::size_t island_idx) const; // Append the runtime data of the island to the main experiment file.
+    void freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl) const; // Freeze the runtime data of the island to the main experiment file.
+    void append_isl_runtime_data(const pagmo::island &isl, const fsys::path &isl_filen) const; // Append the runtime data of the island to the main experiment file.
 
     void finalise_isl_files() const; // Move and format the runtime files to the final files.
     void finalise_exp_file() const; // Finalise the experiment file and delete the runtime files.
