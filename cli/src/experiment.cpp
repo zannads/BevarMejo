@@ -273,7 +273,6 @@ void Experiment::build(const json_o &jinput)
 
 }
 
-
 void Experiment::run() {
 
     // This is where the magic happens, for now I deal with only one island, but
@@ -420,9 +419,9 @@ void Experiment::prepare_exp_file() const {
 void Experiment::freeze_isl_runtime_data(std::size_t island_idx, json_o &jout) const
 {
     std::string currtime = bevarmejo::now_as_str();
-
-    auto isl = *(m__archipelago.begin() + island_idx);
-    pagmo::population pop = isl.get_population();
+    auto isl_it = m__archipelago.begin() + island_idx;
+    const pagmo::island isl = *isl_it;
+    const pagmo::population pop = isl.get_population();
     // 2.1 Mandatory info: time, fitness evaulations 
     json_o jcgen = {
         {io::key::fevals(), pop.get_problem().get_fevals()},

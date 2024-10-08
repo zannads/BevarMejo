@@ -18,42 +18,48 @@ descr: A quick definition of functions to upload the data in the right way.
 using json_o = nlohmann::json;
 
 #include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/utils/string_manip.hpp"
 
-namespace bevarmejo::nsga2 {
-
-namespace defaults {
-constexpr unsigned int gen = 1u;
-constexpr double cr = 0.9;
-constexpr double eta_c = 15.;
-constexpr double m = 1./34.;
-constexpr double eta_m = 7.;
-// default for seed is random_device::next()
-} // namespace defaults
-
-namespace io::key {
+namespace bevarmejo::nsga2::io::key {
 static const bevarmejo::io::key::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
 static const bevarmejo::io::key::Key eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
 static const bevarmejo::io::key::Key m{"Mutation probability", "m"}; // "Mutation probability", "m"
 static const bevarmejo::io::key::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
 static const bevarmejo::io::key::Key seed{"Seed"}; // "Seed"
-} // namespace io::key
-} // namespace bevarmejo::nsga2
+} // namespace bevarmejo::nsga2::io::key
 
 namespace bevarmejo {
 
-inline pagmo::nsga2 Nsga2(json_o settings) {
-	unsigned int gen = settings.contains("Report gen") ? settings["Report gen"].get<unsigned int>() : nsga2::defaults::gen;
-	double cr = settings.contains("cr") ? settings["cr"].get<double>() : nsga2::defaults::cr;
-	double eta_c = settings.contains("eta_c") ? settings["eta_c"].get<double>() : nsga2::defaults::eta_c;
-	double m = settings.contains("m") ? settings["m"].get<double>() : nsga2::defaults::m;
-	double eta_m = settings.contains("eta_m") ? settings["eta_m"].get<double>() : nsga2::defaults::eta_m;
+inline pagmo::nsga2 Nsga2(const json_o &settings) {
 
-	if (settings.contains("Seed")) 
-		return pagmo::nsga2(gen, cr, eta_c, m, eta_m, settings["Seed"].get<unsigned int>());
+    // Default values
+    unsigned int gen = 1u;
+    double cr = 0.9;
+    double eta_c = 15.;
+    double m = 1./34.;
+    double eta_m = 7.;
+    unsigned int seed = pagmo::random_device::next();
 
-	// else leave the random deault seed
-	return pagmo::nsga2(gen, cr, eta_c, m, eta_m);
+    if (io::key::repgen.exists_in(settings))
+        gen = io::json::extract(io::key::repgen).from(settings).get<unsigned int>();
+
+    if (nsga2::io::key::cr.exists_in(settings))
+        cr = io::json::extract(nsga2::io::key::cr).from(settings).get<double>();
+
+    if (nsga2::io::key::eta_c.exists_in(settings))
+        eta_c = io::json::extract(nsga2::io::key::eta_c).from(settings).get<double>();
+
+    if (nsga2::io::key::m.exists_in(settings))
+        m = io::json::extract(nsga2::io::key::m).from(settings).get<double>();
+
+    if (nsga2::io::key::eta_m.exists_in(settings))
+        eta_m = io::json::extract(nsga2::io::key::eta_m).from(settings).get<double>();
+
+    if (nsga2::io::key::seed.exists_in(settings))
+        seed = io::json::extract(nsga2::io::key::seed).from(settings).get<unsigned int>();
+
+	return pagmo::nsga2(gen, cr, eta_c, m, eta_m, seed);
 }
 
 namespace io::json::detail {
