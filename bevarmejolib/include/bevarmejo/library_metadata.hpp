@@ -13,7 +13,7 @@ namespace detail {
 
 constexpr unsigned int version_year = 2024;
 constexpr unsigned int version_month = 10;
-constexpr unsigned int version_release = 0;
+constexpr unsigned int version_release = 1;
 
 class Version {
 
