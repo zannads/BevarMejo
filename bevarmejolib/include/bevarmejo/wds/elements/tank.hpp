@@ -1,16 +1,13 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__TANK_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__TANK_HPP
 
+#include <memory>
 #include <string>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
 #include "bevarmejo/wds/auxiliary/curves.hpp"
@@ -45,32 +42,27 @@ public:
 protected:
     /*--- Properties ---*/
     //MIXMODEL
-    vars::var_real* _diameter_;
-    vars::var_real* _min_volume_;
-    std::shared_ptr<VolumeCurve> _volume_curve_;
-    vars::var_real* _min_level_;
-    vars::var_real* _max_level_;
+    aux::QuantitySeries<double> m__diameter; // Constant
+    std::shared_ptr<VolumeCurve> m__volume_curve;
+    aux::QuantitySeries<double> m__min_volume; // Constant
+    aux::QuantitySeries<double> m__min_level; // Constant
+    aux::QuantitySeries<double> m__max_level; // Constant
     //MIXFRACTION
     //TANK_KBULK
-    vars::var_int* _can_overflow_;
-    vars::var_real* _initial_level_;
-
-    /*---  Results   ---*/
-    vars::var_tseries_real* _level_;
-    vars::var_real* _initial_volume_;
+    aux::QuantitySeries<int> m__can_overflow; // Constant
+    aux::QuantitySeries<double> m__initial_level; // Constant
+    /*---  Read-only Props ---*/ //Will become a method one day
+    aux::QuantitySeries<double> m__initial_volume; // Constant
+    aux::QuantitySeries<double> m__max_volume; // Constant
     //MIXZONEVOL
-    vars::var_tseries_real* _volume_;
-    vars::var_real* _max_volume_;
-
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
+    /*---  Results   ---*/
+    aux::QuantitySeries<double> m__level;
+    aux::QuantitySeries<double> m__volume;
 
 /*--- Constructors ---*/
 public:
     Tank() = delete;
-    Tank(const std::string& id);
+    Tank(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Tank(const Tank& other);
@@ -84,30 +76,46 @@ public:
     // Move assignment operator
     Tank& operator=(Tank&& rhs) noexcept;
 
-    // Destructor
-    ~Tank() override;
+    virtual ~Tank() = default;
 
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    vars::var_real& diameter() const { return *_diameter_; }
-    void diameter(const double a_diameter) { *_diameter_ = a_diameter; }
-    vars::var_real& min_volume() const { return *_min_volume_; }
-    void min_volume(const double a_min_volume) { *_min_volume_ = a_min_volume; }
-    std::shared_ptr<VolumeCurve> volume_curve() const { return _volume_curve_; }
-    void volume_curve(const std::shared_ptr<VolumeCurve> a_volume_curve) { _volume_curve_ = a_volume_curve; }
-    vars::var_real& min_level() const { return *_min_level_; }
-    void min_level(const double a_min_level) { *_min_level_ = a_min_level; }
-    vars::var_real& max_level() const { return *_max_level_; }
-    void max_level(const double a_max_level) { *_max_level_ = a_max_level; }
-    vars::var_real& initial_level() const { return *_initial_level_; }
-    void initial_level(const double a_initial_level) { *_initial_level_ = a_initial_level; }
+    aux::QuantitySeries<double>& diameter() { return m__diameter; }
+    const aux::QuantitySeries<double>& diameter() const { return m__diameter; }
+    void diameter(const double a_diameter) { m__diameter.value(a_diameter); }
+
+    std::shared_ptr<VolumeCurve> volume_curve() { return m__volume_curve; }
+    std::shared_ptr<VolumeCurve> volume_curve() const { return m__volume_curve; }
+    void volume_curve(const std::shared_ptr<VolumeCurve> a_volume_curve) { m__volume_curve = a_volume_curve; }
+
+    aux::QuantitySeries<double>& min_volume() { return m__min_volume; }
+    const aux::QuantitySeries<double>& min_volume() const { return m__min_volume; }
+    void min_volume(const double a_min_volume) { m__min_volume.value(a_min_volume); }
+
+    aux::QuantitySeries<double>& min_level() { return m__min_level; }
+    const aux::QuantitySeries<double>& min_level() const { return m__min_level; }
+    void min_level(const double a_min_level) { m__min_level.value(a_min_level); }
+
+    aux::QuantitySeries<double>& max_level() { return m__max_level; }
+    const aux::QuantitySeries<double>& max_level() const { return m__max_level; }
+    void max_level(const double a_max_level) { m__max_level.value(a_max_level); }
+
+    aux::QuantitySeries<int>& can_overflow() { return m__can_overflow; }
+    const aux::QuantitySeries<int>& can_overflow() const { return m__can_overflow; }
+    void can_overflow(const int a_can_overflow) { m__can_overflow.value(a_can_overflow); }
+
+    aux::QuantitySeries<double>& initial_level() { return m__initial_level; }
+    const aux::QuantitySeries<double>& initial_level() const { return m__initial_level; }
+    void initial_level(const double a_initial_level) { m__initial_level.value(a_initial_level); }
+
+    /*---  Read-only Props ---*/ //Will become a method one day
+    const aux::QuantitySeries<double>& initial_volume() const { return m__initial_volume; }
+    const aux::QuantitySeries<double>& max_volume() const { return m__max_volume; }
 
     /*---  Results   ---*/
-    const vars::var_tseries_real& level() const { return *_level_; }
-    const vars::var_real& initial_volume() const { return *_initial_volume_; }
-    const vars::var_tseries_real& volume() const { return *_volume_; }
-    const vars::var_real& max_volume() const { return *_max_volume_; }
+    const aux::QuantitySeries<double>& level() const { return m__level; }
+    const aux::QuantitySeries<double>& volume() const { return m__volume; }
 
 /*--- Pure virtual methods override---*/
 public:
@@ -116,12 +124,14 @@ public:
     const unsigned int element_type() const override { return ELEMENT_TANK; }
 
     /*--- Results ---*/
+    virtual void clear_results() override;
 
 /*--- EPANET-dependent PVMs override ---*/
 public:
     /*--- Properties ---*/
-    void retrieve_properties(EN_Project ph) override;
-
+private:
+    void __retrieve_EN_properties(EN_Project ph) override;
+public:
     /*--- Results ---*/
     void retrieve_results(EN_Project ph, long t) override;
 

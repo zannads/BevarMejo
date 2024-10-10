@@ -1,52 +1,49 @@
 #include <cassert>
+#include <memory>
+#include <stdexcept>
 #include <string>
-#include <unordered_map>
-#include <variant>
+#include <utility>
 
 #include "epanet2_2.h"
+#include "types.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "pipe.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-Pipe::Pipe(const std::string& id) : 
-    inherited(id),
-    _length_(nullptr)
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+Pipe::Pipe(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
+    m__length(wds.time_series(label::__CONSTANT_TS)) { }
 
 // Copy constructor
 Pipe::Pipe(const Pipe& other) : 
     inherited(other),
-    _length_(nullptr)
-    {
-        _update_pointers();
-    }
+    m__length(other.m__length) { }
 
 // Move constructor
 Pipe::Pipe(Pipe&& rhs) noexcept : 
     inherited(std::move(rhs)),
-    _length_(nullptr)
-    {
-        _update_pointers();
-    }
+    m__length(std::move(rhs.m__length)) { }
 
 // Copy assignment operator
 Pipe& Pipe::operator=(const Pipe& rhs) {
     if (this != &rhs) {
         inherited::operator=(rhs);
-        _update_pointers();
+        m__length = rhs.m__length;
     }
     return *this;
 }
@@ -55,14 +52,9 @@ Pipe& Pipe::operator=(const Pipe& rhs) {
 Pipe& Pipe::operator=(Pipe&& rhs) noexcept {
     if (this != &rhs) {
         inherited::operator=(std::move(rhs));
-        _update_pointers();
+        m__length = std::move(rhs.m__length);
     }
     return *this;
-}
-
-// Destructor
-Pipe::~Pipe() {
-    // delete _length_;
 }
 
 std::unique_ptr<Pipe> Pipe::clone() const {
@@ -121,33 +113,18 @@ std::unique_ptr<Pipe> Pipe::duplicate(const std::string& id) const {
 // Use the clone constructor when you need to copy the object to a NEW network.
 // Use the duplicate method when you need to copy the object to the SAME network.
 
-void Pipe::retrieve_properties(EN_Project ph)
-{
-    inherited::retrieve_properties(ph);
+void Pipe::__retrieve_EN_properties(EN_Project ph) {
+    inherited::__retrieve_EN_properties(ph);
     assert(index()!= 0);
 
-    int errorode = 0;
     double val = 0.0;
-
-    errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &val);
-    if (errorode != 0)
+    int errorode = EN_getlinkvalue(ph, index(), EN_LENGTH, &val);
+    if (errorode > 100)
         throw std::runtime_error("Error retrieving pipe length");
 
     if(ph->parser.Unitsflag == US)
         val *= MperFT; // from ft to m
-    _length_->value(val);
-}
-
-void Pipe::_add_properties() {
-    inherited::_add_properties();
-
-    properties().emplace(L_LENGTH, vars::var_real(vars::l__m, 0.0));
-}
-
-void Pipe::_update_pointers() {
-    inherited::_update_pointers();
-
-    _length_= &std::get<vars::var_real>(properties().at(L_LENGTH));
+    m__length= val;
 }
 
 } // namespace wds

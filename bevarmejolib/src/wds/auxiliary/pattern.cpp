@@ -20,7 +20,7 @@ void Pattern::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Pattern::retrieve_properties(EN_Project ph) {
+void Pattern::__retrieve_EN_properties(EN_Project ph) {
     assert(index()!= 0);
 
     int en_index = 0;

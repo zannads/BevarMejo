@@ -1,19 +1,12 @@
-//
-// element.hpp
-// 
-// Created by Dennis Zanutto on 20/10/23.
-
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__ELEMENT_HPP
 
 #include <string>
-#include <unordered_map>
-#include <variant>
+#include <utility>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/variable.hpp"
-#include "bevarmejo/wds/data_structures/temporal.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -57,31 +50,16 @@ class Element {
      * The bevarmejo::wds::Element class is the ancestor of all the elements
      * of the WDS. It is a pure virtual class, so it cannot be instantiated.
     */
+public:
+    using PropertiesMap= aux::QuantitiesMap;
 
    /*--- Attributes ---*/
     private:
         /*--- Properties ---*/
         std::string _id_; // Human readable id (EPANET ID too)
         int _index_; // Index in the EPANET project for cache purposes
-
-        //using PropertiesTypes = std::variant<std::string, vars::var_int, vars::var_real, vars::var_tseries_int, vars::var_tseries_real>;
-        // don't use strings for now
-        using PropertiesTypes = std::variant<
-            vars::var_int, 
-            vars::var_real, 
-            vars::var_tseries_int, 
-            vars::var_tseries_real>;
-        using PropertiesMap = std::unordered_map<std::string, PropertiesTypes>;
         
-        PropertiesMap _properties_; // Properties of the element
-        
-    protected:
-        virtual void _add_properties();
-
-        /* should be called every time you add a variable to the results, so that, if you have a property
-         * in the derived class that is a pointer to a variable in the results, you can update it. 
-         */   
-        virtual void _update_pointers(); 
+        PropertiesMap m__ud_properties; // User-defined Properties of the element.
         
     /*--- Constructors ---*/
     public:
@@ -103,7 +81,7 @@ class Element {
         Element& operator=(Element&& rhs) noexcept;
 
         /// @brief Destructor
-        virtual ~Element();
+        virtual ~Element() = default;
 
     /*--- Operators ---*/
     public:
@@ -117,7 +95,8 @@ class Element {
         int index() const {return _index_;}
         void index(const int index) {_index_ = index;}
 
-        PropertiesMap& properties() {return _properties_;}
+        PropertiesMap& properties() {return m__ud_properties;}
+        const PropertiesMap& properties() const {return m__ud_properties;}
 
     /*--- Pure virtual methods ---*/
     public:
@@ -129,8 +108,13 @@ class Element {
     public:
         /*--- Properties ---*/
         virtual void retrieve_index(EN_Project ph) = 0;
-        virtual void retrieve_properties(EN_Project ph) = 0;
-   
+
+        template <typename... Args>
+        void retrieve_EN_properties(EN_Project ph, Args&&... args) {
+            this->__retrieve_EN_properties(ph, std::forward<Args>(args)...);
+        }
+    protected:
+        virtual void __retrieve_EN_properties(EN_Project ph)= 0;
 };
 
 } // namespace wds

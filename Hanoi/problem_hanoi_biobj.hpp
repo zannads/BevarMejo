@@ -4,12 +4,13 @@
 #include <cmath>
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -27,6 +28,8 @@ constexpr double a = 1.1;
 constexpr double b = 1.5;
 
 namespace fbiobj {
+class Problem;
+
 const std::string name = "bevarmejo::hanoi::fbiobj";
 const std::string extra_info = "\tFormulation of the Hanoi problem using cost and reliablity.\n";
 
@@ -45,12 +48,17 @@ namespace label {
 const std::string __changeable_pipes = "cp";
 } // namespace label
 
+namespace io::json::detail {
+std::pair<json_o,std::string> static_params(const bevarmejo::hanoi::fbiobj::Problem &prob);
+json_o dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
+} // namespace io::json::detail
+
 class Problem {
 
 public:
     Problem() = default;
 
-    Problem(const json& settings, const std::vector<std::filesystem::path>& lookup_paths);
+    Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths);
 
     // Copy constructor
     Problem(const Problem& other) = default;
@@ -104,6 +112,9 @@ private:
     void apply_dv(wds::WaterDistributionSystem& a_wds, const std::vector<double>& dv) const;
 
     // No need to use reset as at every run the same design variables are for sure overwritten.
+
+private:
+    friend std::pair<json_o,std::string> io::json::detail::static_params(const Problem &prob);
 };
 
 } // namespace fbiobj

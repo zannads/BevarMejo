@@ -1,9 +1,10 @@
-
-
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP
 
+#include <cstddef>
+#include <initializer_list>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "epanet2_2.h"
@@ -150,7 +151,8 @@ public:
 public:
     /*--- Properties ---*/
     void retrieve_index(EN_Project ph) override;
-    void retrieve_properties(EN_Project ph) override;
+private:
+    void __retrieve_EN_properties(EN_Project ph) override;
 
 }; // class Pattern
 

@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -17,22 +18,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "bevarmejo/io.hpp"
-
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/reservoir.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements/pump.hpp"
-//#include "bevarmejo/wds/elements/valve.hpp"
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 namespace wds {
@@ -218,21 +204,6 @@ public:
 	void reserve(std::size_t n) { _elements_.reserve(n); }
 
 }; // class ElementsGroup
-
-using Nodes = ElementsGroup<Node>;
-using Links = ElementsGroup<Link>;
-using Junctions = ElementsGroup<Junction>;
-using Sources = ElementsGroup<Source>;
-using Tanks = ElementsGroup<Tank>;
-using Reservoirs = ElementsGroup<Reservoir>;
-using DimensionedLinks = ElementsGroup<DimensionedLink>;
-using Pipes = ElementsGroup<Pipe>;
-using Pumps = ElementsGroup<Pump>;
-// using Valves = ElementsGroup<Valve>;
-using Patterns = ElementsGroup<Pattern>;
-using Curves = ElementsGroup<Curve>;
-// using Controls = ElementsGroup<Control>;
-// using Rules = ElementsGroup<Rule>;
 
 } // namespace wds
 } // namespace bevarmejo

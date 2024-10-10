@@ -9,6 +9,7 @@
 #define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -19,31 +20,78 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
+
+#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/bemexcept.hpp"
+
+#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/reservoir.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements/pump.hpp"
-#include "bevarmejo/wds/auxiliary/curve.hpp"
-#include "bevarmejo/wds/auxiliary/curves.hpp"
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/epanet_helpers/en_time_options.hpp"
 
 #include "bevarmejo/wds/elements_group.hpp"
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
 
+#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
+
+#include "bevarmejo/wds/elements/network_element.hpp"
+
+#include "bevarmejo/wds/elements/node.hpp"
+#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/source.hpp"
+#include "bevarmejo/wds/elements/reservoir.hpp"
+#include "bevarmejo/wds/elements/tank.hpp"
+
+#include "bevarmejo/wds/elements/link.hpp"
+#include "bevarmejo/wds/elements/dimensioned_link.hpp"
+#include "bevarmejo/wds/elements/pipe.hpp"
+#include "bevarmejo/wds/elements/pump.hpp"
+// #include "bevarmejo/wds/elements/valve.hpp"
+
+
+
 namespace bevarmejo {
+
+namespace label {
+static const std::string __EN_PATTERN_TS = "ENPatt";
+} // namespace label
+
 namespace wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
+
+class NetworkElement;
+
+template <typename T>
+class UserDefinedElementsGroup;
+using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
+
+class Reservoir;
+using Reservoirs = ElementsGroup<Reservoir>;
+class Tank;
+using Tanks = ElementsGroup<Tank>;
+class Node;
+using Nodes = ElementsGroup<Node>;
+class Junction;
+using Junctions = ElementsGroup<Junction>;
+class Source;
+using Sources = ElementsGroup<Source>;
+class Link;
+using Links = ElementsGroup<Link>;
+class Pipe;
+using Pipes = ElementsGroup<Pipe>;
+class Pump;
+using Pumps = ElementsGroup<Pump>;
+
+class Pattern;
+using Patterns = ElementsGroup<Pattern>;
+
+class Curve;
+using Curves = ElementsGroup<Curve>;
 
 class WaterDistributionSystem {
 
@@ -55,11 +103,11 @@ public:
     mutable EN_Project ph_;
     using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
     using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
+    using TimeSeriesMap= std::unordered_map<std::string, std::shared_ptr<aux::TimeSeries>>; 
 
-    
 protected:
     // Path to the inp file from which the project will be uploaded.
-    std::filesystem::path _inp_file_;
+    fsys::path _inp_file_;
     // Collectionf of elements of the network
     std::vector<std::shared_ptr<Element>> _elements_;
     
@@ -89,13 +137,12 @@ protected:
     // while groups can be defined for any type of element.
     std::unordered_map<std::string, Subnetwork> _subnetworks_;
     std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
+
+    // User defined and default TimeSeries for the simulation
+    aux::GlobalTimes m__times;
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
-        struct TimeOptions {
-            epanet::GlobalTimeOptions global;
-            epanet::PatternTimeOptions pattern;
-        } times;
     } m__config_options;
 
 /*--- Constructors ---*/ 
@@ -103,7 +150,7 @@ public:
     // Default constructor
     WaterDistributionSystem();
     
-    WaterDistributionSystem(const std::filesystem::path& inp_file);
+    WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
 
     // Copy constructor
     WaterDistributionSystem(const WaterDistributionSystem& other);
@@ -122,12 +169,9 @@ public:
 
     std::unique_ptr<WaterDistributionSystem> clone() const;
     
-    // Equivalent to constuctor from .inp file
-    void load_from_inp_file(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-    
 /*--- Getters and setters ---*/
 public:
-    const std::filesystem::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
+    const fsys::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
     // you can't modify the inpfile, but you will be able to reset passing a new file
     
     /*--- Object-specific Subnetworks ---*/
@@ -147,12 +191,14 @@ public:
     const SubnetworksMap& subnetworks() const {return _subnetworks_;};
     void add_subnetwork(const std::string& name, const Subnetwork& subnetwork);
     void add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork);
-    void add_subnetwork(const std::filesystem::path& filename);
+    void add_subnetwork(const fsys::path& filename);
     Subnetwork& subnetwork(const std::string& name);
     const Subnetwork& subnetwork(const std::string& name) const;
     void remove_subnetwork(const std::string& name);
 
     /*--- User-defined Elements Groups ---*/
+
+    const aux::TimeSeries& time_series(const std::string& name) const;
     
     
 /*--- Methods ---*/
@@ -160,14 +206,20 @@ public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
     void cache_indices() const;
-    void assign_patterns_EN();
-    void assign_demands_EN();
-    void assign_curves_EN();
-    void connect_network_EN();
-
+private:
+    // Equivalent to constuctor from .inp file
+    void load_EN_time_settings(EN_Project ph);
+    void load_EN_analysis_options(EN_Project ph);
+    void load_EN_patterns(EN_Project ph);
+    void load_EN_curves(EN_Project ph);
+    void load_EN_nodes(EN_Project ph);
+    void load_EN_links(EN_Project ph);
+    void load_EN_controls(EN_Project ph);
+    void load_EN_rules(EN_Project ph);
+public:
     void clear_results() const;
     
-    void run_hydraulics() const;
+    void run_hydraulics();
 
     /*--- ?? ---*/
     template <typename T>
@@ -178,7 +230,7 @@ public:
 
 private:
     template <typename T>
-    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
+    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const fsys::path& file_path);
 
 }; // class WaterDistributionSystem
 
@@ -292,7 +344,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const std::filesystem::path& file_path) {
+std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const fsys::path& file_path) {
 	
 	// A group of elements is completely defined by the following attributes:
 	// 0. The name (the name of the file)
@@ -307,7 +359,7 @@ std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::w
 	std::string name;
 
 	// checks if file exists
-	if (!std::filesystem::exists(file_path)) {
+	if (!fsys::exists(file_path)) {
 		std::ostringstream oss;
 		io::stream_out(oss, "File ", file_path, " does not exist.\n");
 		throw std::runtime_error(oss.str());

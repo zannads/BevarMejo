@@ -1,5 +1,6 @@
 #include <memory>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -7,9 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/.legacy/io.hpp"
 
-#include "bevarmejo/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -10,22 +11,8 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
-#include "bevarmejo/wds/elements/junction.hpp"
-#include "bevarmejo/wds/elements/source.hpp"
-#include "bevarmejo/wds/elements/tank.hpp"
-#include "bevarmejo/wds/elements/reservoir.hpp"
-#include "bevarmejo/wds/elements/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/pipe.hpp"
-#include "bevarmejo/wds/elements/pump.hpp"
-//#include "bevarmejo/wds/elements/valve.hpp"
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
 namespace bevarmejo {
@@ -235,9 +222,6 @@ public:
 }; // class UserDefinedElementsGroup
 
 std::tuple<int, std::vector<std::string>, std::string> __load_egroup_data_from_stream(std::istream& is);
-
-using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
-
 
 } // namespace wds
 } // namespace bevarmejo

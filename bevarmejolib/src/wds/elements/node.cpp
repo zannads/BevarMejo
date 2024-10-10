@@ -3,64 +3,56 @@
 //
 // Created by Dennis Zanutto on 20/10/23.
 #include <cassert>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <variant>
 
 #include "epanet2_2.h"
-
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "types.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/link.hpp"
+
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "node.hpp"
 
 namespace bevarmejo {
 namespace wds {
 
-Node::Node(const std::string& id) : 
-    inherited(id),
+Node::Node(const std::string& id, const WaterDistributionSystem& wds) : 
+    inherited(id, wds),
     _x_coord_(0.0),
     _y_coord_(0.0),
-    _links_(),
+    m__links(),
     _elevation_(0.0),
-    _head_(nullptr),
-    _pressure_(nullptr)
-    {
-        _add_properties();
-        _add_results();
-        _update_pointers();
-    }
+    m__head(wds.time_series(label::__RESULTS_TS)),
+    m__pressure(wds.time_series(label::__RESULTS_TS)) { }
 
 // Copy constructor
 Node::Node(const Node& other) : 
     inherited(other),
     _x_coord_(other._x_coord_),
     _y_coord_(other._y_coord_),
-    _links_(other._links_), 
+    m__links(other.m__links), 
     _elevation_(other._elevation_),
-    _head_(nullptr),
-    _pressure_(nullptr)
-    {
-        _update_pointers();
-    }
+    m__head(other.m__head),
+    m__pressure(other.m__pressure) { }
 
 // Move constructor
 Node::Node(Node&& rhs) noexcept : 
     inherited(std::move(rhs)),
     _x_coord_(rhs._x_coord_),
     _y_coord_(rhs._y_coord_),
-    _links_(std::move(rhs._links_)),
+    m__links(std::move(rhs.m__links)),
     _elevation_(rhs._elevation_),
-    _head_(nullptr),
-    _pressure_(nullptr)
-    {
-        _update_pointers();
-    }
+    m__head(std::move(rhs.m__head)),
+    m__pressure(std::move(rhs.m__pressure)) { }
 
 // Copy assignment operator
 Node& Node::operator=(const Node& rhs) {
@@ -68,9 +60,10 @@ Node& Node::operator=(const Node& rhs) {
         inherited::operator=(rhs);
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
-        _links_ = rhs._links_;
+        m__links = rhs.m__links;
         _elevation_ = rhs._elevation_;
-        _update_pointers();
+        m__head = rhs.m__head;
+        m__pressure = rhs.m__pressure;
     }
     return *this;
 }
@@ -81,26 +74,22 @@ Node& Node::operator=(Node&& rhs) noexcept {
         inherited::operator=(std::move(rhs));
         _x_coord_ = rhs._x_coord_;
         _y_coord_ = rhs._y_coord_;
-        _links_ = std::move(rhs._links_);
+        m__links = std::move(rhs.m__links);
         _elevation_ = rhs._elevation_;
-        _update_pointers();
+        m__head = std::move(rhs.m__head);
+        m__pressure = std::move(rhs.m__pressure); { }
     }
     return *this;
 }
 
-Node::~Node() {
-    // Both properties and results are cleared when the inherited destructor 
-    // is called.
-}
-
 void Node::add_link(Link *a_link) {
     if (a_link != nullptr)
-        _links_.insert(a_link);
+        m__links.insert(a_link);
 }
 
 void Node::remove_link(Link *a_link) {
     if (a_link != nullptr)
-        _links_.erase(a_link);
+        m__links.erase(a_link);
 }
 
 void Node::retrieve_index(EN_Project ph) {
@@ -113,7 +102,7 @@ void Node::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Node::retrieve_properties(EN_Project ph) {
+void Node::__retrieve_EN_properties(EN_Project ph) {
     assert(index() != 0);
     int errorcode = 0;    
     double x=0,
@@ -151,7 +140,7 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
     
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
-    this->_head_->value().insert(std::make_pair(t, val));
+    m__head.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, index(), EN_PRESSURE, &val);
     if (errorcode > 100) 
@@ -159,26 +148,14 @@ void Node::retrieve_results(EN_Project ph, long t=0) {
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;
-    this->_pressure_->value().insert(std::make_pair(t, val));
+    m__pressure.commit(t, val);
 }
 
-void Node::_add_properties() {
-    inherited::_add_properties();
-    // no properties to add
-}
+void Node::clear_results() {
+    inherited::clear_results();
 
-void Node::_add_results() {
-    inherited::_add_results();
-
-    results().emplace(LABEL_PRESSURE, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
-    results().emplace(LABEL_HEAD, vars::var_tseries_real(LABEL_PRESSURE_UNITS));
-}
-
-void Node::_update_pointers() {
-    inherited::_update_pointers();
-
-    _head_ = &std::get<vars::var_tseries_real>(results().at(LABEL_HEAD));
-    _pressure_ = &std::get<vars::var_tseries_real>(results().at(LABEL_PRESSURE));
+    m__head.clear();
+    m__pressure.clear();
 }
 
 } // namespace wds

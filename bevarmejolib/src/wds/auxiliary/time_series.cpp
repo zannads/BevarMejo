@@ -1,16 +1,34 @@
 #include <cassert>
+#include <cstddef>
+#include <initializer_list>
+#include <iterator>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include "bevarmejo/wds/auxiliary/global_times.hpp"
+
 #include "time_series.hpp"
 
 namespace bevarmejo {
+
+namespace log {
+namespace fname {
+static const std::string check_valid = "check_valid";
+} // namespace fname
+} // namespace log
+
 namespace wds {
 namespace aux {
 
-bool is_monotonic(const TimeSteps& time_steps) {
+// Empty TimeSteps are always monotonic, starting after zero, and ending before t.
+
+bool is_monotonic(const time::TimeSteps& time_steps) {
+    if (time_steps.empty())
+        return true;
+
     for (std::size_t i = 0; i < time_steps.size() - 1; ++i) {
         if (time_steps[i] >= time_steps[i + 1])
             return false;
@@ -18,79 +36,85 @@ bool is_monotonic(const TimeSteps& time_steps) {
     return true;
 }
 
-void TimeSeries::check_valid() const {
-    if (m__time_steps.empty())
-        throw std::invalid_argument("TimeSeries::check_valid: Time steps are empty.");
-
-    if (m__time_steps.front() != 0)
-        throw std::invalid_argument("TimeSeries::check_valid: Time steps do not start at 0.");
-
-    if (!is_monotonic(m__time_steps))
-        throw std::invalid_argument("TimeSeries::check_valid: Time steps are not monotonic.");
-
-    if (m__time_steps.back() > m__gto.duration__s())
-        throw std::invalid_argument("TimeSeries::check_valid: Time steps are not within the duration.");
+bool starts_after_zero(const time::TimeSteps& time_steps) {
+    return time_steps.empty() || time_steps.front() > 0;
 }
 
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto) : m__gto(a_gto), m__time_steps({0l}) {
-    check_valid();
+bool ends_before_t(const time::TimeSteps& time_steps, time::Instant t) {
+    return time_steps.empty() || time_steps.back() < t;
 }
 
-template <typename... Args>
-TimeSeries::TimeSeries(const epanet::GlobalTimeOptions& a_gto, Args&&... args) : m__gto(a_gto), m__time_steps(std::forward<Args>(args)...) {
-    check_valid();
+
+
+/*----------------------------------------------------------------------------*/
+
+                            /*--- Constructors ---*/
+
+/*----------------------------------------------------------------------------*/
+
+TimeSeries::TimeSeries(const GlobalTimes& a_gto) : 
+    TimeSeries(a_gto, time::TimeSteps()) 
+{ }
+
+TimeSeries::TimeSeries(const GlobalTimes& a_gto, const TimeSeries& other) : 
+    m__gto(a_gto), m__time_steps(other.m__time_steps)
+{ }
+
+TimeSeries::TimeSeries(const GlobalTimes& a_gto, TimeSeries&& other) noexcept: 
+    m__gto(a_gto), m__time_steps(std::move(other.m__time_steps))
+{ }
+
+TimeSeries& TimeSeries::operator=(const TimeSeries& other) {
+    if (this == &other)
+        return *this;
+
+    // Can't copy the GTO because it's const reference.
+
+    m__time_steps = other.m__time_steps;
+
+    // No need to check for valid, I assume it is already.
+
+    return *this;
 }
 
-TimeSeries::size_type TimeSeries::not_found() const noexcept { return this->m__time_steps.size() + 1; }
+TimeSeries& TimeSeries::operator=(TimeSeries&& other) noexcept{
+    if (this == &other)
+        return *this;
 
-TimeSeries::value_type TimeSeries::at(size_type pos)
-{
-    if (pos < m__time_steps.size())
-        return m__time_steps[pos];
+    // Can't move the GTO because it's const reference.
 
-    if (pos == m__time_steps.size())
-        return m__gto.duration__s();
+    m__time_steps = std::move(other.m__time_steps);
 
-    throw std::out_of_range("TimeSeries::at: index out of range");
+    // No need to check for valid, I assume it is already.
+
+    return *this;
 }
 
-const TimeSeries::value_type TimeSeries::at(size_type pos) const {
-    if (pos < m__time_steps.size())
-        return m__time_steps[pos];
+/*----------------------------------------------------------------------------*/
 
-    if (pos == m__time_steps.size())
-        return m__gto.duration__s();
+                            /*--- Element access ---*/
 
-    throw std::out_of_range("TimeSeries::at: index out of range");
-}
+/*----------------------------------------------------------------------------*/
 
-TimeSeries::value_type TimeSeries::front() { return m__time_steps.front(); }
-const TimeSeries::value_type TimeSeries::front() const { return m__time_steps.front(); }
 
-TimeSeries::value_type TimeSeries::back() { return m__gto.duration__s(); }
-const TimeSeries::value_type TimeSeries::back() const { return m__gto.duration__s(); }
 
-TimeSeries::iterator TimeSeries::begin() noexcept { return iterator(this, 0); }
-TimeSeries::const_iterator TimeSeries::begin() const noexcept { return const_iterator(this, 0); }
-TimeSeries::const_iterator TimeSeries::cbegin() const noexcept { return const_iterator(this, 0); }
+/*----------------------------------------------------------------------------*/
 
-TimeSeries::iterator TimeSeries::end() noexcept { return iterator(this, m__time_steps.size() + 1); }
-TimeSeries::const_iterator TimeSeries::end() const noexcept { return const_iterator(this, m__time_steps.size() + 1); }
-TimeSeries::const_iterator TimeSeries::cend() const noexcept { return const_iterator(this, m__time_steps.size() + 1); }
+                            /*--- Iterators ---*/
 
-TimeSeries::reverse_iterator TimeSeries::rbegin() noexcept { return reverse_iterator(this, m__time_steps.size() + 1); }
-TimeSeries::const_reverse_iterator TimeSeries::rbegin() const noexcept { return const_reverse_iterator(this, m__time_steps.size() + 1); }
-TimeSeries::const_reverse_iterator TimeSeries::crbegin() const noexcept { return const_reverse_iterator(this, m__time_steps.size() + 1); }
+/*----------------------------------------------------------------------------*/
 
-TimeSeries::reverse_iterator TimeSeries::rend() noexcept { return reverse_iterator(this, 0); }
-TimeSeries::const_reverse_iterator TimeSeries::rend() const noexcept { return const_reverse_iterator(this, 0); }
-TimeSeries::const_reverse_iterator TimeSeries::crend() const noexcept { return const_reverse_iterator(this, 0); }
 
-constexpr bool TimeSeries::empty() const noexcept { return false; }
 
-TimeSeries::size_type TimeSeries::inner_size() const noexcept { return m__time_steps.size(); }
+/*----------------------------------------------------------------------------*/
 
-TimeSeries::size_type TimeSeries::length() const noexcept { return m__time_steps.size() + 1; }
+                            /*--- Capacity ---*/
+
+/*----------------------------------------------------------------------------*/
+
+bool TimeSeries::empty() const noexcept { return false; }
+
+TimeSeries::size_type TimeSeries::size() const noexcept { return m__time_steps.size() + 1; } // 0 is always present. 
 
 TimeSeries::size_type TimeSeries::max_size() const noexcept { return m__time_steps.max_size(); }
 
@@ -104,100 +128,48 @@ TimeSeries::size_type TimeSeries::capacity() const noexcept { return m__time_ste
 
 /*----------------------------------------------------------------------------*/
 
-void TimeSeries::reset() { m__time_steps.assign({0l}); }
-
-void TimeSeries::commit(time_t time__s) {
-    if (time__s > m__gto.duration__s())
-        throw std::invalid_argument("TimeSeries::commit: Can not add time steps greater than the duration.");
-
-    if (time__s <= m__time_steps.back())
-        throw std::invalid_argument("TimeSeries::commit: Time steps must be monotonic.");
-
-    m__time_steps.push_back(time__s);
-}
-
-void TimeSeries::rollback() {
-    if (m__time_steps.size() > 1)
-        m__time_steps.pop_back();
-    else
-        m__time_steps.assign({0l});
-}
-
-void TimeSeries::shrink_to_duration() {
-    auto pos = this->lower_bound_pos(m__gto.duration__s());
-
-    if (pos == 0) { // This should happen when the duration is 0 or less than the first time step.
-        m__time_steps.assign({0l}); 
-        return;
-    }
-    
-    // If there is a time step equal to the duration, I need to keep it too.
-    if (m__time_steps[pos] == m__gto.duration__s())
-        ++pos;
-
-    if (pos < m__time_steps.size())
-        m__time_steps.resize(pos);
-
-    // If pos == m__time_steps.size(), it means that the duration is bigger than the last time step.
-    // In this case, I do nothing.
-}
-
-void TimeSeries::swap_time_steps(TimeSeries& other) noexcept { m__time_steps.swap(other.m__time_steps); }
+void TimeSeries::reset() noexcept { m__time_steps.clear(); }
 
 /*----------------------------------------------------------------------------*/
 
                             /*--- Lookup ---*/
 
 /*----------------------------------------------------------------------------*/
-TimeSeries::size_type TimeSeries::count(time_t time__s) const { return find_pos(time__s) != not_found() ? 1 : 0; }
 
-TimeSeries::iterator TimeSeries::find(time_t time__s) {
-    size_type pos = find_pos(time__s);
-    return iterator(this, pos);
+
+
+/*----------------------------------------------------------------------------*/
+
+                        /*--- Other methods ---*/
+
+/*----------------------------------------------------------------------------*/
+
+void TimeSeries::remove_leading_zero() {
+    // Since with commit I can add 0 when m__time_steps is empty and when I
+    // use the method time_steps also 0 is added, I need to remove eventual starting 0.
+    // However, I only remove one because this is meant to be called only on construction
+    // and if you put more than one leading 0, you are doing something wrong.
+    if (!m__time_steps.empty() && m__time_steps.front() == 0)
+        m__time_steps.erase(m__time_steps.begin());
 }
 
-TimeSeries::const_iterator TimeSeries::find(time_t time__s) const {
-    size_type pos = find_pos(time__s);
-    return const_iterator(this, pos);
-}
+// A time series is a monotonically increasing sequence of times, starting from 
+// values greater than 0 (0 is treated as default value). The time steps can go 
+// over the duration but I will print 
+void TimeSeries::check_valid() const {
 
-TimeSeries::size_type TimeSeries::find_pos(time_t time__s) const {
+    if (!is_monotonic(m__time_steps))
+        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
+                                                  "Time steps are not valid.", 
+            "Time steps are not monotonically increasing.");
 
-    size_type pos = 0;
-    while (pos < m__time_steps.size() ) {
-        if (m__time_steps[pos] == time__s)
-            return pos;
-        ++pos;
-    }
-    // It was not in the time steps, last chance is that it is the end time.
-    if (time__s == gto().duration__s())
-        return m__time_steps.size();
-
-    return not_found(); // Not found
-}
-
-TimeSeries::size_type TimeSeries::lower_bound_pos(time_t time__s) const {
-    if (time__s < m__time_steps.front())
-        return not_found();
-
-    size_type pos = 0;
-    while (pos < m__time_steps.size() - 1) {
-        if (m__time_steps[pos+1] >= time__s)
-            return pos;
-        ++pos;
-    }
-
-    if (gto().duration__s() >= time__s)
-        return m__time_steps.size();
-
-    return pos;
-}
-
-TimeSeries::size_type TimeSeries::upper_bound_pos(time_t time__s) const {
-    if (time__s < m__time_steps.front())
-        return 0;
-
-    return lower_bound_pos(time__s) + 1;
+     if (!starts_after_zero(m__time_steps))
+        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
+                                                "Time steps are not valid.", 
+            "Time steps do not start after zero.",
+            "First time step: ", m__time_steps.front());
+        
+        
 }
 
 } // namespace aux

@@ -5,17 +5,12 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
 namespace bevarmejo {
 namespace wds {
-
 
 /// WDS Reservoir
 /*******************************************************************************
@@ -34,20 +29,15 @@ protected:
 
     /*---  Results   ---*/
 
-protected:
-    void _add_properties() override;
-    void _add_results() override;
-    void _update_pointers() override;
-
  /*--- Constructors ---*/
 public:
     Reservoir() = delete;
-    Reservoir(const std::string& id);
+    Reservoir(const std::string& id, const WaterDistributionSystem& wds);
     Reservoir(const Reservoir& other);
     Reservoir(Reservoir&& rhs) noexcept;
     Reservoir& operator=(const Reservoir& other);
     Reservoir& operator=(Reservoir&& rhs) noexcept;
-    ~Reservoir() override;
+    virtual ~Reservoir() = default;
 
 /*--- Getters and setters ---*/
 public:
@@ -67,10 +57,11 @@ public:
 /*--- EPANET-dependent PVMs ---*/
 public:
     /*--- Properties ---*/
-    void retrieve_properties(EN_Project ph) override;
-
+private:
+    
+public:
     /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
+    
 
 }; // class Reservoir
 

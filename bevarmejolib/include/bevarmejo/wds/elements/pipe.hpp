@@ -1,16 +1,13 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP
 
+#include <memory>
 #include <string>
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/wds/data_structures/temporal.hpp"
-#include "bevarmejo/wds/data_structures/variable.hpp"
+#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/link.hpp"
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 
 namespace bevarmejo {
@@ -30,21 +27,17 @@ public:
     using inherited= DimensionedLink;
 
  /*--- Attributes ---*/
-    protected:
+protected:
     /*--- Properties ---*/
-    vars::var_real* _length_;
+    aux::QuantitySeries<double> m__length; // Constant
 
     /*---  Results   ---*/
-
-protected:
-    void _add_properties() override;
-    void _update_pointers() override;
 
 /*--- Constructors ---*/
 public:
     Pipe() = delete;
 
-    Pipe(const std::string& id);
+    Pipe(const std::string& id, const WaterDistributionSystem& wds);
 
     // Copy constructor
     Pipe(const Pipe& other);
@@ -59,15 +52,16 @@ public:
     Pipe& operator=(Pipe&& rhs) noexcept;
 
     // Destructor
-    virtual ~Pipe();
+    virtual ~Pipe() = default;
 
     std::unique_ptr<Pipe> clone() const;
 
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    vars::var_real& length() const { return *_length_; }
-    void length(const double a_length) { _length_->value(a_length);}
+    aux::QuantitySeries<double>& length() {return m__length;}
+    const aux::QuantitySeries<double>& length() const {return m__length;}
+    void length(double a_length) {m__length.value(a_length);}
 
     /*---  Results   ---*/
 
@@ -90,7 +84,8 @@ public:
 /*-- EPANET-dependent PVMs --*/
 public:
     /*--- Properties ---*/
-    void retrieve_properties(EN_Project ph) override;
+private:
+    void __retrieve_EN_properties(EN_Project ph) override;
 
 };
 
