@@ -147,7 +147,7 @@ bevarmejo::Simulation parse(int argc, char *argv[]) {
         }
 
         if(io::key::beme_version.exists_in(j)) 
-            VersionManager::user().set(io::json::extract(io::key::beme_version).from(j));
+            VersionManager::user().set(io::json::extract(io::key::beme_version).from(j).get<std::string>());
 
         // 1.3.2 mandatory keys first: dv, udp
          auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {

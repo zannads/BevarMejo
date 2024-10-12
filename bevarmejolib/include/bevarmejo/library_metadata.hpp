@@ -78,24 +78,6 @@ private:
 } // namespace detail
 
 class VersionManager {
-public:
-
-    static VersionManager& user();
-
-    static const VersionManager& library();
-
-    void set( const std::string &version );
-
-    const detail::Version& version() const;
-    const detail::Version& operator()() const;
-
-// You should not be able to create a version object actually. // I will leave it for testing purposes.
-    static detail::Version v();
-
-    template <typename... Args>
-    static detail::Version v(Args... args) {
-        return detail::Version(std::forward<Args>(args)...);
-    }
 
 private:
     detail::Version version_; // Just hold the version, either for the static library or the static user requested version
@@ -109,6 +91,39 @@ private:
     VersionManager& operator=(VersionManager&&) = delete;
 public:
     ~VersionManager() = default;
+
+public:
+
+    static VersionManager& user();
+
+    static const VersionManager& library();
+
+    template <typename... Args>
+    void set(Args... args) {
+        auto v = detail::Version(std::forward<Args>(args)...);
+
+        if (v < first_v()) {
+            version_ = first_v();
+            // TODO: LOG the error
+        }
+        else {
+            version_ = v;
+        }
+    }
+
+    const detail::Version& version() const;
+    const detail::Version& operator()() const;
+
+// You should not be able to create a version object actually. // I will leave it for testing purposes.
+    static detail::Version v();
+
+    template <typename... Args>
+    static detail::Version v(Args... args) {
+        return detail::Version(std::forward<Args>(args)...);
+    }
+
+private:
+    static detail::Version first_v();
 
 }; // class VersionManager
 

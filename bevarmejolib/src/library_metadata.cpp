@@ -187,6 +187,10 @@ std::string Version::str( const unsigned int year, const unsigned int month, con
 
 namespace bevarmejo {
 
+VersionManager::VersionManager() : 
+    version_{detail::version_year, detail::version_month, detail::version_release} 
+{ }
+
 VersionManager& VersionManager::user() {
     static VersionManager user_requested_version;
     return user_requested_version;
@@ -197,18 +201,12 @@ const VersionManager& VersionManager::library() {
     return library_version;
 }
 
-void VersionManager::set( const std::string &version ) {
-    version_ = detail::Version(version);
-}
-
 const detail::Version& VersionManager::version() const { return version_; }
 
 const detail::Version& VersionManager::operator()() const { return version_; }
 
 detail::Version VersionManager::v() { return detail::Version(); }
 
-VersionManager::VersionManager() : 
-    version_{detail::version_year, detail::version_month, detail::version_release} 
-{ }
+detail::Version VersionManager::first_v() { return detail::Version(2023, 6, 0); }
 
 } // namespace bevarmejo
