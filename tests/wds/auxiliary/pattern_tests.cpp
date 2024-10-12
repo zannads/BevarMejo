@@ -5,7 +5,7 @@
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 namespace wds {

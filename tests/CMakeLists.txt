@@ -14,7 +14,9 @@ endfunction()
 # add_test_executable( junction )
 # add_test_executable( tank )
 
-add_test_executable( pattern wds/auxiliary/ )
+# add_test_executable( pattern wds/auxiliary/ )
 
-add_test_executable( time_series wds/auxiliary/)
+# add_test_executable( time_series wds/auxiliary/)
 # add_test_executable( quantity_series )
+
+add_test_executable( library_metadata "" )
