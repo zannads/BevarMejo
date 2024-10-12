@@ -34,21 +34,22 @@ TEST_F(VersionManagerTest, DefaultConstructors)
     EXPECT_EQ(VM::v(), VM::user().version());
 }
 
-class VersionManagerConstructorParametrizedTest : 
-    public VersionManagerTest, public ::testing::WithParamInterface<std::tuple<bool, std::initializer_list<unsigned int>, unsigned int, std::string>>
+class VMCtrParamTest : 
+    public VersionManagerTest, public ::testing::WithParamInterface<std::tuple<bool, std::vector<unsigned int>, unsigned int, std::string>>
 { 
     void SetUp() override 
     {
         VersionManagerTest::SetUp();
     }
-}; // class VersionManagerConstructorParametrizedTest
+}; // class VMCtrParamTest
 
-TEST_P(VersionManagerConstructorParametrizedTest, VersionParametrizedConstructors)
+TEST_P(VMCtrParamTest, VersionParametrizedConstructors)
 {
     // Try to create contrusctors with invalid values. 
     // Let's test initializer list, string and numeric.
     const auto& [should_succeed, il, n, s] = GetParam();
     
+    std::cout << "il = " << il.begin()[0] << ", " << il.begin()[1] << ", " << il.begin()[2] << std::endl;
     if (should_succeed)
     {
         ASSERT_NO_THROW(VM::v(il));
@@ -81,36 +82,41 @@ TEST_P(VersionManagerConstructorParametrizedTest, VersionParametrizedConstructor
 // When parsed from string, they must be in the format "vYY.m.r", 
 // where YY is the year, m is the month and r is the release.
 INSTANTIATE_TEST_SUITE_P(
-    VersionManagerConstructorParametrizedTestCases,
-    VersionManagerConstructorParametrizedTest,
+    VMCtrParamCases,
+    VMCtrParamTest,
     ::testing::Values(
-        // Valid versions.
-        std::make_tuple(true, {2023, 6, 0}, 230600, std::string("v23.06.0")),
-        std::make_tuple(true, {2023, 6, 30}, 230630, std::string("v23.06.30")),
-        std::make_tuple(true, {2023, 10, 4}, 231004, std::string("v23.10.04")),
-        std::make_tuple(true, {2024, 1, 12}, 240112, std::string("v24.01.12")),
+        // Valid versions (with one or two digits in the month and release).
+        std::make_tuple(true, std::initializer_list<unsigned int>{2023, 6, 0}, 230600, std::string("v23.06.0")),
+        std::make_tuple(true, std::initializer_list<unsigned int>{2023, 6, 30}, 230630, std::string("v23.06.30")),
+        std::make_tuple(true, std::initializer_list<unsigned int>{2023, 10, 4}, 231004, std::string("v23.10.04")),
+        std::make_tuple(true, std::initializer_list<unsigned int>{2024, 1, 12}, 240112, std::string("v24.01.12")),
 
         // Invalid year.
-        std::make_tuple(false, {1999, 6, 0}, 990600, std::string("v99.06.0")),
-        std::make_tuple(false, {v_year+1, v_month, v_release}, VM::library().version().numeric()+10000, 
-                    std::string("v")+std::to_string(v_year+1)+"."+std::to_string(v_month)+"."+std::to_string(v_release)),
+        std::make_tuple(false, std::initializer_list<unsigned int>{1999, 6, 0}, 990600, std::string("v99.06.0")),
 
         // Invalid month.
-        std::make_tuple(false, {2023, 0, 0}, 230000, std::string("v23.00.0")),
-        std::make_tuple(false, {2023, 13, 0}, 231300, std::string("v23.13.0")),
-        std::make_tuple(false, {v_year, v_month+1, v_release}, VM::library().version().numeric()+100, 
-                    std::string("v")+std::to_string(v_year)+"."+std::to_string(v_month+1)+"."+std::to_string(v_release)),
+        std::make_tuple(false, std::initializer_list<unsigned int>{2023, 0, 0}, 230000, std::string("v23.00.0")),
+        std::make_tuple(false, std::initializer_list<unsigned int>{2023, 13, 0}, 231300, std::string("v23.13.0")),
 
         // Invalid release.
-        std::make_tuple(false, {2023, 6, 100}, 231600, std::string("v23.06.100")),
-        std::make_tuple(false, {v_year, v_month, v_release+1}, VM::library().version().numeric()+1, 
-                    std::string("v")+std::to_string(v_year)+"."+std::to_string(v_month)+"."+std::to_string(v_release+1))
+        std::make_tuple(false, std::initializer_list<unsigned int>{2023, 6, 100}, 231600, std::string("v23.06.100"))
     )
 );
 
+TEST_F(VersionManagerTest, VMConstrParamVersionOver)
+{
+    // Try to create the current version.
+    EXPECT_NO_THROW(VM::v(std::initializer_list<unsigned int>{v_year, v_month, v_release}));
+
+    // Try to create a version greater than the current version.
+    EXPECT_THROW(VM::v(std::initializer_list<unsigned int>{v_year, v_month, v_release+1}), std::invalid_argument);
+    EXPECT_THROW(VM::v(std::initializer_list<unsigned int>{v_year, v_month+1, 0}), std::invalid_argument);
+    EXPECT_THROW(VM::v(std::initializer_list<unsigned int>{v_year+1, 0, 0}), std::invalid_argument);
+}
+
 // Test the conversion to numeric and string.
 class VMAccessParTest : 
-    public VersionManagerTest, public ::testing::WithParamInterface<std::tuple<std::initializer_list<unsigned int>, unsigned int, std::string>>
+    public VersionManagerTest, public ::testing::WithParamInterface<std::tuple<std::vector<unsigned int>, unsigned int, std::string>>
 { 
     void SetUp() override 
     {
@@ -120,6 +126,7 @@ class VMAccessParTest :
 TEST_P(VMAccessParTest, VersionAccess)
 {
     const auto& [il, n, s] = GetParam();
+    std::cout << "il = " << il.begin()[0] << ", " << il.begin()[1] << ", " << il.begin()[2] << std::endl;
     const auto v = VM::v(il);
 
     EXPECT_EQ(v.numeric(), n);
@@ -131,9 +138,9 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
         std::make_tuple(std::initializer_list<unsigned int>{2023, 6, 0}, 230600, std::string("v23.06.0")),
         std::make_tuple(std::initializer_list<unsigned int>{2023, 6, 30}, 230630, std::string("v23.06.30")),
-        std::make_tuple(std::initializer_list<unsigned int>{2023, 10, 4}, 231004, std::string("v23.10.04")),
+        std::make_tuple(std::initializer_list<unsigned int>{2023, 10, 4}, 231004, std::string("v23.10.4")),
         std::make_tuple(std::initializer_list<unsigned int>{2024, 1, 12}, 240112, std::string("v24.01.12")),
-        std::make_tuple(std::initializer_list<unsigned int>{2023, 10, 45}, 231045, std::string("v23.10.45")), 
+        std::make_tuple(std::initializer_list<unsigned int>{2023, 10, 45}, 231045, std::string("v23.10.45"))
     )
 );
 
@@ -142,7 +149,7 @@ INSTANTIATE_TEST_SUITE_P(
 // test by version, numeric and string.
 TEST_F(VersionManagerTest, VersionComparison)
 {
-    const auto v = VM::v({2023, 6, 50});
+    const auto v = VM::v(std::initializer_list<unsigned int>{2023, 6, 50});
 }
 
 // Test parse of the numeric 
