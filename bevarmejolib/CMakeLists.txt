@@ -73,6 +73,7 @@ add_library(bemelib
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem_detail.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/library_metadata.cpp"
         ${WDS_FILES}
         ${WDS_BASE_ELEMENTS}
         ${WDS_NODES}
