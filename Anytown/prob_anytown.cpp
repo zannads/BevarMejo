@@ -7,6 +7,7 @@
 #include <iostream>
 #include <filesystem>
 namespace fsys = std::filesystem;
+namespace fsys = std::filesystem;
 #include <memory>
 #include <string>
 #include <utility>
@@ -19,12 +20,14 @@ namespace fsys = std::filesystem;
 #include <pagmo/island.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/io/key.hpp"
+#include "bevarmejo/.legacy/io.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
@@ -46,13 +49,16 @@ static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-static const std::string opers = "Operations"; // "Operations"
-static const std::string avail_diam = "Available diameters"; // "Available diameters"
-static const std::string tank_costs = "Tank costs"; // "Tank costs"
-static const std::string __wds__ = "WDS"; // "WDS"
-static const std::string __udegs__ = "UDEGs"; // "UDEGs"
-static const std::string __inp__ = "inp"; // "inp"
+static const bemeio::key::Key opers {"Operations"}; // "Operations"
+static const bemeio::key::Key avail_diam {"Available diameters"}; // "Available diameters"
+static const bemeio::key::Key tank_costs {"Tank costs"}; // "Tank costs"
+static const bemeio::key::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
+static const bemeio::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
+static const bemeio::key::Key __inp__ {"inp"}; // "inp"
 } // namespace key
+namespace io::value {
+
+} // namespace value
 
 // Extra information for the formulations.
 namespace io::other {
@@ -104,7 +110,7 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 	return patterns;
 }
 
-Problem::Problem(Formulation a_formulation, json settings, const std::vector<std::filesystem::path>& lookup_paths) :
+Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths) :
 	m__formulation{a_formulation}
 {
 	std::string full_name{"bevarmejo::"};
@@ -166,8 +172,8 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 
 	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
 		// Need to se the operations for the rehabilitation problems
-		assert(settings.contains(io::key::opers));
-		std::vector<double> operations = settings[io::key::opers].get<std::vector<double>>();
+		assert(io::key::opers.exists_in(settings));
+		std::vector<double> operations = bemeio::json::extract(io::key::opers).from(settings).get<std::vector<double>>();
 		assert(operations.size() == 24);
 
 		// Fix pumps' patterns
@@ -203,7 +209,7 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 		// this is nasty but as of now it will work // I am not passing any info for now 
 		assert(udpop.contains(label::__report_gen_sh));
 		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
-		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
+		m_algo = pagmo::algorithm( bevarmejo::Nsga2( json_o{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
 
 		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
 		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
@@ -216,16 +222,26 @@ Problem::Problem(Formulation a_formulation, json settings, const std::vector<std
 	}
 }
 
-void Problem::load_network(json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
-	assert(settings != nullptr);
-	assert(settings.contains(io::key::__wds__) && settings[io::key::__wds__].contains(io::key::__inp__));
+void Problem::load_network(json_o settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
+	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
+	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
+	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
+	const auto inp_filename = bemeio::json::extract(io::key::__inp__).from(wds_settings).get<fsys::path>();
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	m__anytown = std::make_shared<WDS>(bemeio::locate_file(fsys::path{settings[io::key::__wds__][io::key::__inp__]}, lookup_paths, true), preprocessf);
+	m__anytown = std::make_shared<WDS>(
+		bemeio::locate_file(inp_filename, lookup_paths, /*log= */ true), 
+		preprocessf
+	);
 }
 
-void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) {
-	for (const auto& udeg : settings[io::key::__wds__][io::key::__udegs__]) {
+void Problem::load_subnets(json_o settings, std::vector<fsys::path> lookup_paths) {
+	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
+	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
+	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
+	const auto& udegs = bemeio::json::extract(io::key::__udegs__).from(wds_settings);
+
+	for (const auto& udeg : udegs) {
 		
 		try
 		{
@@ -240,12 +256,19 @@ void Problem::load_subnets(json settings, std::vector<fsys::path> lookup_paths) 
 	// TODO: assert that all the required subnetworks are present
 }
 
-void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_paths) {
-	assert(settings.contains(io::key::avail_diam) && settings.contains(io::key::tank_costs));
-	// Load Pipe rehabilitation alternative costs 
-	auto prac_filename = bemeio::locate_file(fsys::path{settings[io::key::avail_diam]}, lookup_paths);
+void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_paths) {
+	assert(
+		settings != nullptr && 
+		io::key::avail_diam.exists_in(settings) && 
+		io::key::tank_costs.exists_in(settings)
+	);
 
-	// TODO: move also this to json?
+	// Load Pipe rehabilitation alternative costs 
+	auto prac_filename = bemeio::locate_file(
+		bemeio::json::extract(io::key::avail_diam).from(settings).get<fsys::path>(),
+		lookup_paths);
+
+	// TODO: move also this to json_o?
 	std::ifstream prac_file{prac_filename};
 	if (!prac_file.is_open()) {
 		throw std::runtime_error("Could not open file " + prac_filename.string());
@@ -256,7 +279,10 @@ void Problem::load_other_data(json settings, std::vector<fsys::path> lookup_path
 	bemeio::stream_in(prac_file, m__pipes_alt_costs);
 	
 	// Load Tank costs 
-	auto tanks_filename = bemeio::locate_file(fsys::path{settings[io::key::tank_costs]}, lookup_paths);
+	auto tanks_filename = bemeio::locate_file(
+		bemeio::json::extract(io::key::tank_costs).from(settings).get<fsys::path>(), 
+		lookup_paths);
+
 	std::ifstream tanks_file{tanks_filename};
 	if (!tanks_file.is_open()) {
 		throw std::runtime_error("Could not open file " + tanks_filename.string());
@@ -1545,11 +1571,11 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 }
 
 // Json serializers 
-std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
-	nl::json j;
+std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob) {
+	json_o j;
 	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
-	j[io::key::avail_diam] = "available_diams.txt";
-	j[io::key::tank_costs] = "tanks_costs.txt";
+	j[io::key::avail_diam()] = "available_diams.txt";
+	j[io::key::tank_costs()] = "tanks_costs.txt";
 	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
@@ -1561,12 +1587,12 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 				pumpgroup_pattern[i-1] += val;
 			}
 		}
-		j[io::key::opers] = pumpgroup_pattern;
+		j[io::key::opers()] = pumpgroup_pattern;
 	}
 		
-	j[io::key::__wds__] = nl::json{};
-	j[io::key::__wds__][io::key::__inp__] = "anytown.inp";
-	j[io::key::__wds__][io::key::__udegs__] = nl::json{
+	j[io::key::__wds__()] = json_o{};
+	j[io::key::__wds__()][io::key::__inp__()] = "anytown.inp";
+	j[io::key::__wds__()][io::key::__udegs__()] = json_o{
                         "city_pipes.snt",
                         "existing_pipes.snt",
                         "new_pipes.snt",
@@ -1578,8 +1604,8 @@ std::pair<nl::json,std::string> io::json::detail::static_params(const bevarmejo:
 	return {j, std::string{} };
 }
 
-nl::json io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
-	return nl::json(); 
+json_o io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {
+	return json_o(); 
 }
 
 } // namespace anytown

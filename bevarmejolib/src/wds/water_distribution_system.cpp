@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <exception>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <iostream>
 #include <stdio.h>
 #include <stdexcept>
@@ -18,7 +19,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 #include "bevarmejo/wds/user_defined_elements_group.hpp"
 
@@ -200,7 +201,7 @@ void WaterDistributionSystem::add_subnetwork(const std::pair<std::string, Subnet
     _subnetworks_.insert(subnetwork);
 }
 
-void WaterDistributionSystem::add_subnetwork(const std::filesystem::path &filename) {
+void WaterDistributionSystem::add_subnetwork(const fsys::path &filename) {
     add_subnetwork( load_egroup_from_file<NetworkElement>(filename) );
 }
 

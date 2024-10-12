@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -17,7 +18,7 @@
 #include <unordered_set>
 #include <utility>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 namespace wds {

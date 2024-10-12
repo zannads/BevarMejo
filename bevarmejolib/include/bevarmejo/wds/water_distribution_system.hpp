@@ -9,6 +9,7 @@
 #define BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP
 
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -22,7 +23,7 @@
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
@@ -106,7 +107,7 @@ public:
 
 protected:
     // Path to the inp file from which the project will be uploaded.
-    std::filesystem::path _inp_file_;
+    fsys::path _inp_file_;
     // Collectionf of elements of the network
     std::vector<std::shared_ptr<Element>> _elements_;
     
@@ -149,7 +150,7 @@ public:
     // Default constructor
     WaterDistributionSystem();
     
-    WaterDistributionSystem(const std::filesystem::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
+    WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
 
     // Copy constructor
     WaterDistributionSystem(const WaterDistributionSystem& other);
@@ -170,7 +171,7 @@ public:
     
 /*--- Getters and setters ---*/
 public:
-    const std::filesystem::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
+    const fsys::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
     // you can't modify the inpfile, but you will be able to reset passing a new file
     
     /*--- Object-specific Subnetworks ---*/
@@ -190,7 +191,7 @@ public:
     const SubnetworksMap& subnetworks() const {return _subnetworks_;};
     void add_subnetwork(const std::string& name, const Subnetwork& subnetwork);
     void add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork);
-    void add_subnetwork(const std::filesystem::path& filename);
+    void add_subnetwork(const fsys::path& filename);
     Subnetwork& subnetwork(const std::string& name);
     const Subnetwork& subnetwork(const std::string& name) const;
     void remove_subnetwork(const std::string& name);
@@ -229,7 +230,7 @@ public:
 
 private:
     template <typename T>
-    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const std::filesystem::path& file_path);
+    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const fsys::path& file_path);
 
 }; // class WaterDistributionSystem
 
@@ -343,7 +344,7 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const std::filesystem::path& file_path) {
+std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const fsys::path& file_path) {
 	
 	// A group of elements is completely defined by the following attributes:
 	// 0. The name (the name of the file)
@@ -358,7 +359,7 @@ std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::w
 	std::string name;
 
 	// checks if file exists
-	if (!std::filesystem::exists(file_path)) {
+	if (!fsys::exists(file_path)) {
 		std::ostringstream oss;
 		io::stream_out(oss, "File ", file_path, " does not exist.\n");
 		throw std::runtime_error(oss.str());

@@ -2,12 +2,13 @@
 #define BEVARMEJOLIB__EPANET_HELPERS__WRAPPER_HPP
 
 #include <cassert>
+#include <sstream>
 #include <string>
 
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 namespace epanet {

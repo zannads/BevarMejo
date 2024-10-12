@@ -1,10 +1,12 @@
 #pragma once 
 
+#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {
 

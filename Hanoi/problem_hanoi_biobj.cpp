@@ -1,5 +1,6 @@
 #include <cassert>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -9,7 +10,7 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
@@ -26,7 +27,7 @@ using json = nlohmann::json;
 #include "bevarmejo/wds/elements/pipe.hpp"
 #include "bevarmejo/wds/elements_group.hpp"
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
@@ -37,7 +38,7 @@ namespace bevarmejo {
 namespace hanoi {
 namespace fbiobj {
 
-Problem::Problem(const json& settings, const std::vector<std::filesystem::path>& lookup_paths) {
+Problem::Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths) {
     assert(settings != nullptr);
 
     // Add here load of problem specific settings.
