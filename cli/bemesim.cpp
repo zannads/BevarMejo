@@ -1,12 +1,14 @@
 #include <chrono>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 
-#include "bevarmejo/io.hpp"
+#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/parsers.hpp"
+#include "bevarmejo/simulation.hpp"
 
 // temp until I fix 
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
@@ -17,7 +19,7 @@ int main(int argc, char* argv[]) {
     // argv[1] the problem settings file (it also implicitly defines the experiment folder unless copy flag is active)
     // argv[2] the decision variables file
 
-    bevarmejo::sim::Simulation simu;
+    bevarmejo::Simulation simu;
     try {
         simu = bevarmejo::sim::parse(argc, argv);
 

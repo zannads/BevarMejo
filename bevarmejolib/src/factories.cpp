@@ -1,5 +1,6 @@
 
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -8,10 +9,9 @@
 #include <pagmo/problem.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/labels.hpp"
 
 // now include all the specific Bevarmejo problems
 #include "Anytown/prob_anytown.hpp"
@@ -52,7 +52,7 @@ static const std::string __problem_formulation = "Problem formulation : ";
 } // namespace log
 } // namespace io
 
-pagmo::problem build_problem(const std::string &problem_name_str, const json &pparams, const std::vector<std::filesystem::path> &lookup_paths) {
+pagmo::problem build_problem(const std::string &problem_name_str, const json_o &pparams, const std::vector<fsys::path> &lookup_paths) {
 
     bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(problem_name_str);
 

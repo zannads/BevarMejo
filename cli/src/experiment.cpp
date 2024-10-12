@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
+namespace fsys = std::filesystem;
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -19,16 +20,23 @@
 #include <pagmo/population.hpp>
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using json_o = nlohmann::json;
 
-#include "bevarmejo/io.hpp"
-#include "bevarmejo/factories.hpp"
-#include "bevarmejo/labels.hpp"
-#include "bevarmejo/library_metadata.hpp"
-#include "bevarmejo/io/json_serializers.hpp"
+#include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/labels.hpp"
+#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/io/keys/beme.hpp"
+#include "bevarmejo/io/keys/bemeexp.hpp"
+#include "bevarmejo/io/keys/bemeopt.hpp"
+
+#include "bevarmejo/factories.hpp"
+#include "bevarmejo/library_metadata.hpp"
+
+#include "bevarmejo/pagmo_helpers/containers_serializers.hpp"
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
+
+#include "bevarmejo/utils/string_manip.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
@@ -36,39 +44,334 @@ using json = nlohmann::json;
 #include "experiment.hpp"
 
 namespace bevarmejo {
+
+namespace io {
+namespace log {
+namespace nname {
+static const std::string opt = "optimisation::"; // "optimisation::"
+}
+namespace cname {
+static const std::string Experiment = "Experiment"; // "Experiment"
+}
+namespace fname {
+static const std::string parse = "build"; // "parse"
+}
+namespace mex {
+static const std::string parse_error = "Error parsing the settings file."; // "Error parsing the settings file."
+
+static const std::string unsupported_format = "The file format of the settings file is not supported."; // "The file format of the settings file is not supported."
+}
+} // namespace log
+
+namespace other {
+static const std::string settings_file = "Settings file : "; // "Settings file : "
+}
+} // namespace io
     
-namespace fsys = std::filesystem;
+Experiment::Experiment(const fsys::path &settings_file) : 
+    m__settings_file(settings_file),
+    m__root_folder(settings_file.parent_path()),
+    m__lookup_paths({settings_file.parent_path()})
+{
+    // Check the extension, and based on that open the file, parse it based on
+    // the file structure (JSON, YAML, XML, etc). 
+    // Apply the key value pairs passed from command line
+    // Once you have the final object call the build function.
 
-void Experiment::build(const ExperimentSettings &settings) {
-    m_name = settings.name;
-    m_folder = settings.folder;
+    std::ifstream file(settings_file);
+    if (!file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, io::log::cname::Experiment,
+            io::log::mex::parse_error,
+            "Failed to open settings file.",
+            io::other::settings_file+settings_file.string());
 
-    //TODO: compose based on the settings
-    json jnsga2{ {label::__report_gen_sh, settings.jinput[label::__typconfig][label::__population][label::__report_gen_sh].get<unsigned int>() } };
-    pagmo::algorithm algo{ bevarmejo::Nsga2(jnsga2) };
+    if (file.peek() == std::ifstream::traits_type::eof()) {
+        file.close();
+
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, io::log::cname::Experiment,
+            io::log::mex::parse_error,
+            "Settings file is empty.",
+            io::other::settings_file+settings_file.string());
+    }
+
+    std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+
+    // For now, I only implement the JSON file format.
+    json_o jinput;
+    if (settings_file.extension() == io::other::ext__json) 
+    {   
+        try
+        {
+            jinput = json_o::parse(file_contents);
+        }
+        catch (const std::exception& e)
+        {
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, io::log::cname::Experiment,
+                io::log::mex::parse_error,
+                "Failed to parse settings file as JSON.",
+                io::other::settings_file+settings_file.string()+"\n"+e.what());
+        }
+    }
+    else
+    {
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, io::log::cname::Experiment,
+            io::log::mex::unsupported_format,
+            "The file format of the settings file is not supported.",
+            io::other::settings_file+settings_file.string());
+    }
+    // TODO: if format is different, convert to JSON
+
+    // TODO: Apply the key value pairs passed from command line
+
+    // Once you have the final object call the build function.
+    build(jinput);
+}
+
+void Experiment::build(const json_o &jinput)
+{
+    // Upload the settings or the fields that can change the behavior of the construction of the experiment (e..g, lookup paths)
+    if (io::key::settings.exists_in(jinput)) {
+        const json_o &jsettings = io::json::extract(io::key::settings).from(jinput);
+
+        if (io::key::outf_format.exists_in(jsettings))
+        {
+            // TODO: set the output file format
+        }
+
+        if (io::key::outf_key_style.exists_in(jsettings))
+        {
+            try
+            {
+                io::key::Key::set_out_style(io::json::extract(io::key::outf_key_style).from(jsettings).get<std::string>());
+            }
+            catch (const std::exception &e)
+            {
+               // TODO: log the error
+            }
+        }
+
+        if (io::key::outf_pretty.exists_in(jsettings))
+        {
+            if (io::json::extract(io::key::outf_pretty).from(jsettings).is_boolean())
+            {
+                m__settings.outf_indent = io::json::extract(io::key::outf_pretty).from(jsettings).get<bool>();
+            }
+            else
+            {
+                // TODO: log the error
+            }
+        }
+
+        if ( m__settings.outf_indent && io::key::outf_pretty_json_indent.exists_in(jsettings))
+        {
+            if (io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).is_number())
+            {
+                m__settings.outf_indent_val = io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).get<unsigned int>();
+            }
+            else
+            {
+                // TODO: log the error
+            }
+        }
+    }
+
+    if (io::key::lookup_paths.exists_in(jinput))
+    {
+        const json_o &jpaths = io::json::extract(io::key::lookup_paths).from(jinput);
+
+        auto add_if_valid_path = [](const fsys::path &p, std::vector<fsys::path> &lookup_paths) {
+            if (fsys::exists(p) && fsys::is_directory(p))
+                lookup_paths.push_back(p);
+            else
+            {
+                // TODO: log the error
+            }
+                
+        };
+
+        if (jpaths.is_string())
+        {
+            add_if_valid_path(jpaths.get<fsys::path>(), m__lookup_paths);
+        }
+        else if (jpaths.is_array()) 
+        {
+            for (const auto& path : jpaths) 
+                add_if_valid_path(path.get<fsys::path>(), m__lookup_paths);
+        }
+        else
+        {
+            //TODO: log the error 
+        }
+    }
+    // Final lookup path is always the current directory.
+    m__lookup_paths.push_back(fsys::current_path());
+
+    // Check that the settings file has the required fields
+    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+        if (key.exists_in(j)) {
+            return;
+        }
+
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file does not contain a mandatory field.",
+            "Missing field : "+key[0]
+        );
+    };
+
+    // as of now name is a mandatory field
+    check_mandatory_field(io::key::name, jinput);
+    m__name = io::json::extract(io::key::name).from(jinput).get<std::string>();
+
+    json_o typconfig{};
+    json_o specs{};
+    std::size_t rand_starts = 1;
+
+    if (io::key::typconfig.exists_in(jinput))
+        typconfig = io::json::extract(io::key::typconfig).from(jinput);
+    
+    if (io::key::specs.exists_in(jinput))
+        specs = io::json::extract(io::key::specs).from(jinput);
+
+    if (io::key::rand_starts.exists_in(jinput))
+    {
+        if (io::json::extract(io::key::rand_starts).from(jinput).is_number())
+            rand_starts = io::json::extract(io::key::rand_starts).from(jinput).get<std::size_t>();
+        else
+        {
+            // TODO: log the error
+        }
+    }
+
+    build_islands(typconfig, specs, rand_starts);
+
+    if (!fsys::exists(output_folder()))
+        fsys::create_directory(output_folder());
+
+    prepare_isl_files();
+
+    prepare_exp_file();
+
+}
+
+void Experiment::build_island(const json_o &config)
+{
+    // Construct a pagmo::population
+    // Population, its size and the generations are mandatory. 
+    // Seed, report gen are optional. 
+    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+        if (key.exists_in(j)) {
+            return;
+        }
+
+        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
+            io::log::mex::parse_error,
+            "Settings file does not contain a mandatory field.",
+            "Missing field : "+key[0]
+        );
+    };
+
+    check_mandatory_field(io::key::population, config);
+    const auto& jpop = io::json::extract(io::key::population).from(config);
+
+    check_mandatory_field(io::key::size, jpop);
+    check_mandatory_field(io::key::generations, jpop);
+    const auto& genz = io::json::extract(io::key::generations).from(jpop);
+
+    // the algorithms need to know how many generations to report because the island calls the evolve method n times
+    // until n*__report_gen > __generations, default = __generations
+    //  m__settings.n_evolves = 1 unless the user specifies it
+    if (io::key::repgen.exists_in(jpop)) {
+        const auto &repgenz = io::json::extract(io::key::repgen).from(jpop);
+
+        m__settings.n_evolves = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
+    }
+
+    // Constuct the pagmo::algorithm
+    check_mandatory_field(io::key::algorithm, config);
+    const json_o &jalgo = io::json::extract(io::key::algorithm).from(config);
+
+    std::string sname = io::json::extract(io::key::name).from(jalgo).get<std::string>();
+
+    json_o jparams{};
+    if( io::key::params.exists_in(jalgo) )
+        jparams = io::json::extract(io::key::params).from(jalgo);
+    // add the report gen to the algorithm params
+    if (io::key::repgen.exists_in(jpop))
+        jparams[io::key::repgen[0]] = io::json::extract(io::key::repgen).from(jpop);
+    else 
+        jparams[io::key::repgen[0]] = genz;
+    
+    assert(sname == "nsga2");
+    pagmo::algorithm algo{ bevarmejo::Nsga2(jparams) };
 
     // Construct a pagmo::problem
-    const nl::json &problem_settings = settings.jinput[label::__typconfig][label::__problem_sh];
-    pagmo::problem p{ bevarmejo::build_problem(problem_settings[label::__name].get<std::string>(), problem_settings[label::__params] , settings.lookup_paths) };
+    const json_o &jprob = io::json::extract(io::key::problem).from(config);
+
+    sname = io::json::extract(io::key::name).from(jprob).get<std::string>();
+
+    jparams = json_o{};
+    if (io::key::params.exists_in(jprob))
+        jparams = io::json::extract(io::key::params).from(jprob);
+    
+    pagmo::problem p{ bevarmejo::build_problem(sname, jparams , m__lookup_paths) };
         
-    // and instantiate population
-    pagmo::population pop{ std::move(p), settings.jinput[label::__typconfig][label::__population][label::__size].get<unsigned int>() };
+    // Now that I have everything I can build the population and then the island
+    pagmo::population pop{ std::move(p), io::json::extract(io::key::size).from(jpop).get<unsigned int>() };
 
-    m_archipelago.push_back(algo, pop);
-    _seed_ = pop.get_seed();
-    m_islands_filenames.push_back(runtime_file());
-    // TODO: the name is based on the input files when multiple islands are used
+    // Create and track the island
+    m__archipelago.push_back(algo, pop); 
 
-    // Are we resuming or not? if not, clear or create the runtime file
-    if (!m_resume) {
-        std::ofstream ofs(runtime_file());
-        if (!ofs.is_open())
-            throw std::runtime_error("Could not create the runtime file " + runtime_file().string() + "\n");
-        ofs.close();
+    // The name should be built from the string and extracting the placeholders (e.g., ${seed})
+    m__islands_names.push_back(std::to_string(pop.get_seed()));
+}
+
+void Experiment::build_islands(const json_o &typconfig, const json_o &specs, const std::size_t rand_starts)
+{
+    // At least one between typconfig and specs should be present
+    // Random starts must be at least 1
+    // For each spec, merge the typconfig with the spec.
+        // For each random start, build the island
+
+    if (typconfig.empty() && specs.empty())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "No configuration for the islands.",
+            "At least one between the typical configuration and the specializations must be present.");
+
+    if (rand_starts < 1)
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "Invalid number of random starts.",
+            "The number of random starts must be at least 1.",
+            "\tNumber of random starts : "+std::to_string(rand_starts));
+
+    // Spec is valid if it is empty, an object, or an array of objects
+    if (!specs.empty() && !specs.is_object() && !specs.is_array())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "build_islands",
+            "Invalid specializations.",
+            "The specializations must be an object (also 'null') or an array of objects.");
+    
+    // If it is null or an object, I only have one specialisation (default typeconfig)
+    std::size_t n_specs = (specs.empty() || specs.is_object()) ? 1 : specs.size();
+
+    for (std::size_t i = 0; i < n_specs; ++i)
+    {
+        json_o config = typconfig;
+
+        if (!specs.empty())
+        {
+            if (specs.is_object())
+                config.update(specs);
+            else
+                config.update(specs[i]);
+        }
+        
+        for (std::size_t j = 0; j < rand_starts; ++j)
+            build_island(config);
     }
 }
 
-void Experiment::run(unsigned int n_generations) {
+void Experiment::run() {
 
     // This is where the magic happens, for now I deal with only one island, but
     // in the future I will have to deal with multiple islands and the archipelago
@@ -78,294 +381,363 @@ void Experiment::run(unsigned int n_generations) {
     // population.
 
     // This should be a loop over the islands or a simple archipelago.evolve(n_generations)
-   {
-        auto island = *m_archipelago.begin();
-        auto island_filename = *m_islands_filenames.begin();
-    
-        // 1. Save the initial population
-        save_runtime_result( island, island_filename );
-
-        // 2. Evolve n times
-        for (unsigned int i = 0; i < n_generations; ++i) {
-            // 2.1. Evolve
+    for (auto n = 0; n < m__settings.n_evolves; ++n) {
+        for (auto i = 0; i < m__archipelago.size(); ++i) 
+        {
+            auto& island = *(m__archipelago.begin() + i);
             island.evolve(1);
-            // 2.2. Save the population
-            // TODO: deal when the population has not been saved correctly
+        }
+
+        for (auto i = 0; i < m__archipelago.size(); ++i) 
+        {
+            auto& island = *(m__archipelago.begin() + i);
             island.wait();
-            save_runtime_result( island, island_filename );
+            append_isl_runtime_data(island, isl_filename(i, /*runtime=*/ true));
+            // TODO: deal when the population has not been saved correctly
         }
     }
+
+    // First, make sure that all the islands data have been moved from the runtime
+    // files to the final files.
+    finalise_isl_files();
+
+    // Then, finalise the experiment file and delete the runtime files.
+    finalise_exp_file();
 }
 
-void Experiment::save_outcome()
+fsys::path Experiment::output_folder() const {
+    return m__root_folder/io::other::dir__beme_out;
+}
+
+fsys::path Experiment::exp_filename() const {
+    std::string temp = (
+        io::other::pre__beme_exp+
+        io::other::sep__beme_filenames+
+        m__name+
+        io::other::ext__beme_exp+io::other::ext__json
+    );
+    
+    return output_folder()/temp;
+}
+
+fsys::path Experiment::isl_filename(std::size_t island_idx, bool runtime) const {
+    std::string suffix = runtime ? io::other::ext__beme_rnt_isl+io::other::ext__jsonl : io::other::ext__beme_isl+io::other::ext__json;
+    std::string temp = (
+        io::other::pre__beme_exp+
+        io::other::sep__beme_filenames+
+        m__name+
+        io::other::sep__beme_filenames+
+        m__islands_names.at(island_idx)+
+        suffix
+    );
+        
+    return output_folder()/temp;
+}
+
+void Experiment::prepare_isl_files() const 
 {
-
-    // 1. Create the main file which then references the other files.
-    std::ofstream ofs(main_filename());
-    if (!ofs.is_open())
-        return; // TODO: critical error! I will loose the data on the archipelago
-
-    json jsys;
-    // example machine, OS etc ... 
-    json jsoft;
-    jsoft[to_kebab_case(label::__beme_version)] = VersionManager::library().version().str();
-
-    json jarchipelago; 
+    for (std::size_t i = 0; i < m__archipelago.size(); ++i)
     {
-        auto jtopology = io::json::static_descr(m_archipelago.get_topology());
-        if ( !jtopology.empty() ) jarchipelago.update(jtopology);
-    }
+        auto& isl = *(m__archipelago.begin() + i);
 
-    // 2. Load the runtime data of each island (final population already in) and
-    //    add the static part of the island (i.e., common parameters between the
-    //    generations) and save the file.
-    auto [saved_islands, errors] = save_final_results();
-
-    jarchipelago[to_kebab_case(label::__islands)] = json::array();
-    for (auto& s_island : saved_islands){
-        jarchipelago[to_kebab_case(label::__islands)].push_back(s_island);
-    }
-    if (!errors.empty())
-        jarchipelago[to_kebab_case(label::__errors)] = errors;
-
-    // 3. Save the file
-    json jout = {
-        {to_kebab_case(label::__system), jsys},
-        {to_kebab_case(label::__archi), jarchipelago},
-        {to_kebab_case(label::__software), jsoft}
-    };
-    ofs << jout.dump(4);
-    ofs.close();
-}
-
-
-
-std::pair<std::vector<std::string>, std::string> Experiment::save_final_results() const {
-    
-    // possibilities to use multiple threads as the files are independent (?)
-
-    // 0. Allocate the space for the vector of filenames strings and for the errors
-
-    // Vector of strings to store the filenames of the saved islands
-    std::vector<std::string> saved_islands;
-    saved_islands.reserve(m_archipelago.size());
-
-    // To store the errors
-    std::ostringstream oss;
-
-    // 1. For each island, save. If it fails log the error
-    assert(m_archipelago.size() == m_islands_filenames.size());
-    auto isl_it = m_archipelago.begin();
-    auto isl_fn_it = m_islands_filenames.begin();
-    while (isl_it != m_archipelago.end() && isl_fn_it != m_islands_filenames.end())
-    {
-        try
-        {
-            save_final_result(*isl_it, *isl_fn_it);
-            
-            saved_islands.push_back(fsys::relative(*isl_fn_it, output_folder()));
-        }
-        catch (std::runtime_error& e)
-        {
-            io::stream_out(oss, e.what());
-        }
-
-        ++isl_it;
-        ++isl_fn_it;
-    }
-
-    return std::make_pair(saved_islands, oss.str());
-}
-
-fsys::path Experiment::save_final_result(const pagmo::island& isl, const fsys::path& filename) const {
-    // 2. Load the runtime data of each island (final population already in) and
-    //    add the static part of the island (i.e., common parameters between the
-    //    generations) and save the file.
-    
-    // The final population has already been added to the file the last time 
-    // the evolve method was called. Here we only add the static part of the 
-    // island and save the file.
-
-    // 2.1. Load the runtime data of this island
-    std::ifstream ifs(filename);
-    json jdyn;
-    if (!ifs.is_open()) {
-        // Critical error, I could not find the data of the island, no point on
-        // continuing
-        throw std::runtime_error("Could not find the runtime data of the island, i.e. file "+filename.string()+"\n");
-    }
-    ifs >> jdyn;
-    ifs.close();
-
-    // Loading was successfully, the dynamic part of the results is now in jdyn
-
-    // 2.2. Add the static part of the island
-    json jstat;
-    // 2.2.1. The User Defined Island infos 
-    {   // reporting::static_part_to_json calls the correct transformation to 
+        // Add the static information about the island. The dynamic ones will be appended.
+        json_o jstat;
+        // reporting::static_part_to_json calls the correct transformation to 
         // json for the static part of the object (here the island). The same 
         // exist for the dynamic part, but it may be deleted for some type of
         // objects, e.g. the island. 
         // Internally, static_part_to_json calls the correct method based on the 
         // UD class hold by the pagmo container. It uses is() and extract().
-        // TODO: when the container is defaulted return empty json, for now print everything
-        auto jisland = io::json::static_descr(isl);
-        if ( !jisland.empty() ) jstat.update(jisland);
+        auto append_static_info = [](json_o &jstat, auto pagmo_container) {
+            auto jinfo = io::json::static_descr(pagmo_container);
+            if ( !jinfo.empty() ) jstat.update(jinfo);
+        }; 
+
+        append_static_info(jstat, isl);
+        append_static_info(jstat, isl.get_algorithm());
+        append_static_info(jstat, isl.get_population().get_problem());
+        append_static_info(jstat, isl.get_r_policy());
+        append_static_info(jstat, isl.get_s_policy());
+
+        // Add the intial population and the initial dynamic parameters of the objects. 
+        json_o& jout = jstat;
+        jout[io::key::generations()] = json_o::array();
+
+        json_o jcurr_isl_status;
+        freeze_isl_runtime_data(jcurr_isl_status, isl);
+
+        jout[io::key::generations()].push_back(jcurr_isl_status);
+
+        std::ofstream ofs(isl_filename(i, /*runtime=*/ true), std::ios::out);
+        if (!ofs.is_open())
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "prepare_isl_files",
+                "Could not create the runtime file for the island.",
+                "File : "+isl_filename(i, /*runtime=*/ true).string());
+            
+        ofs << jout.dump() << std::endl; // No value in dump so that it is a single line (JSONL)
+        ofs.close();
     }
-
-
-    // 2.2.2. The User Defined Algorithm infos
-    {   // see pattern above 2.2.1.
-        auto jalgo = io::json::static_descr(isl.get_algorithm());
-        if ( !jalgo.empty() ) jstat.update(jalgo);
-    }
-
-    // 2.2.3. The User Defined Problem infos
-    {   // see pattern above 2.2.1.
-        auto jprob = io::json::static_descr(isl.get_population().get_problem());
-        if ( !jprob.empty() ) jstat.update(jprob);
-    }
-    
-    
-    // 2.2.4. The User Defined Replacement Policy infos
-    {   // see pattern above 2.2.1.
-        auto jrpolicy = io::json::static_descr(isl.get_r_policy());
-        if ( !jrpolicy.empty() ) jstat.update(jrpolicy);
-    }    
-
-    // 2.2.5. The User Defined Selection Policy infos
-    {   // see pattern above 2.2.1.
-        auto jspolicy = io::json::static_descr(isl.get_s_policy());
-        if ( !jspolicy.empty() ) jstat.update(jspolicy);
-    }
-    
-    // 2.3. Save the file
-    json& jout = jstat;
-    jout[to_kebab_case(label::__generations)] = jdyn[to_kebab_case(label::__generations)];
-
-    std::ofstream ofs(filename);
-    if (!ofs.is_open()) {
-        // Critical error, I could not save the data of the island, no point on
-        // continuing
-        throw std::runtime_error("Could not save the final results of the island, i.e. file " + filename.string() + "\n");
-    }
-    ofs << jout.dump(4);
-    ofs.close();
-
-    // Everything went well, I can return the filename assuming it was saved.
-    return filename;
 }
 
-bool Experiment::save_runtime_result(const pagmo::island &isl, const fsys::path &filename) const {
-    
-    // Assumption file exist already and it is well formatted
-   
-    // 0. Get the current time first to not be influenced by the time it takes to load/save the file
-    auto currtime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&currtime), "%c"); // Convert to string without the final newline
-    std::string currtime_str = ss.str();
+void Experiment::prepare_exp_file() const {
 
-    // 1. Load the file to see what was there before
-    std::ifstream ifs(filename);
-    json j;
-    if (ifs.is_open()  ) {
-        if (!ifs.eof() && json::accept(ifs)) {
-            // I most likely consumed the stream already with accept so I have 
-            // to go back to the beginning
-            ifs.seekg(0, std::ios::beg);
-            ifs >> j;
-        }
-        ifs.close();
+    std::string currtime = bevarmejo::now_as_str();
+
+    std::ofstream ofs(exp_filename());
+    if (!ofs.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "prepare_exp_file",
+            "Could not create the experiment file.",
+            "File : "+exp_filename().string());
+    
+    // Add the information about the experiment.
+    
+    json_o jsys;
+    // example machine, OS etc ... 
+    json_o jsoft;
+    jsoft[io::key::beme_version()] = VersionManager::library().version().str();
+
+    json_o jarchipelago; 
+    {
+        auto jtopology = io::json::static_descr(m__archipelago.get_topology());
+        if ( !jtopology.empty() ) jarchipelago.update(jtopology);
     }
 
-    json jpop;
-    pagmo::population pop = isl.get_population();
+    // Save the relative name of the islands.
+    jarchipelago[io::key::islands()] = json_o::array();
+    for (auto i = 0; i < m__archipelago.size(); ++i)
+        jarchipelago[io::key::islands()].push_back(isl_filename(i, /*runtime=*/ true).filename().string());
 
-    // 2. Add the info of each population
-    // 2.1 Mandatory info: time, fitness evaulations 
-    jpop = {
-        {to_kebab_case(label::__fevals), pop.get_problem().get_fevals()},
-        {to_kebab_case(label::__currtime), currtime_str}
+    // Save the file
+    json_o jout = {
+        {io::key::system(), jsys},
+        {io::key::archi(), jarchipelago},
+        {io::key::software(), jsoft},
+        {io::key::t0(), currtime},
+        {io::key::tend(), nullptr}
     };
-    
+
+    if (m__settings.outf_indent)
+        ofs << jout.dump(m__settings.outf_indent_val) << std::endl;
+    else
+        ofs << jout.dump() << std::endl;
+    ofs.close();
+}
+
+void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl) const
+{
+    std::string currtime = bevarmejo::now_as_str();
+
+    const pagmo::population pop = isl.get_population();
+    // 2.1 Mandatory info: time, fitness evaulations 
+    json_o jcgen = {
+        {io::key::fevals(), pop.get_problem().get_fevals()},
+        {io::key::ctime(), currtime},
+        {io::key::individuals(), json_o::array()}
+    };
+
     // 2.2 Mandatory info, the population's individuals
+    json_o &jinds = jcgen[io::key::individuals()];
     auto population_ids = pop.get_ID();
     auto pop_dvs        = pop.get_x();
     auto pop_fitnesses  = pop.get_f();
     for (auto individual = 0u; individual<pop.size(); ++individual){
-        jpop[to_kebab_case(label::__individuals)].push_back({
-            {to_kebab_case(label::__id), population_ids[individual]},
-            {to_kebab_case(label::__dv), pop_dvs[individual]},
-            {to_kebab_case(label::__fv), pop_fitnesses[individual]}
+        jinds.push_back({
+            {io::key::id(), population_ids[individual]},
+            {io::key::dv(), pop_dvs[individual]},
+            {io::key::fv(), pop_fitnesses[individual]}
         });
     }
 
     // 2.3 Optional info: Gradient evals, Hessian evals, dynamic info of the Algotithm, Problem, UDRP, UDSP
-    // TODO: for now it is empty, but I will add it in the future, e.g. see below 
     if (pop.get_problem().get_gevals() > 0)
-        jpop[to_kebab_case(label::__gevals)] = pop.get_problem().get_gevals();
+        jcgen[io::key::gevals()] = pop.get_problem().get_gevals();
     if (pop.get_problem().get_hevals() > 0)
-        jpop[to_kebab_case(label::__hevals)] = pop.get_problem().get_hevals();
+        jcgen[io::key::hevals()] = pop.get_problem().get_hevals();
 
-    {  // see pattern above 2.2.1. in save_final_result
-        auto jalgo_dyn = io::json::dynamic_descr(isl.get_algorithm());
-        if (!jalgo_dyn.empty()) jpop.update(jalgo_dyn);
-    }
+    // Same as for append_static_info, but for the dynamic part
+    auto append_dynamic_info = [](json_o &jdyn, auto pagmo_container) {
+        auto jinfo = io::json::dynamic_descr(pagmo_container);
+        if ( !jinfo.empty() ) jdyn.update(jinfo);
+    };
 
-    {   // see pattern above 2.2.1. in save_final_result
-        auto jprob_dyn = io::json::dynamic_descr(pop.get_problem());
-        if (!jprob_dyn.empty()) jpop.update(jprob_dyn);
-    }
+    append_dynamic_info(jcgen, isl.get_algorithm());
+    append_dynamic_info(jcgen, pop.get_problem());
+
+    jout = std::move(jcgen);
+}
+
+void Experiment::append_isl_runtime_data(const pagmo::island &isl, const fsys::path &isl_filen) const
+{
+    // Open the file, append the new data, close the file.
+    json_o jcurr_isl_status;
+    freeze_isl_runtime_data(jcurr_isl_status, isl);
     
-
-    j[to_kebab_case(label::__generations)].push_back(jpop);
-
-    // Save the file
-    std::ofstream ofs(filename);
+    std::ofstream ofs(isl_filen, std::ios::app);
     if (!ofs.is_open())
-        return false;
-    ofs << j.dump(4);
-    ofs.close();
-
-    return true;
-}
-
-
-const std::string& Experiment::name() const {
-    return m_name;
-}
-
-const fsys::path& Experiment::folder() const {
-    return m_folder;
-}
-
-const fsys::path Experiment::output_folder() const {
-    return m_folder/io::other::bemeexp_out_folder;
-}
-
-fsys::path Experiment::main_filename() const {
-    std::string temp = (
-        io::other::bemeexp_prefix+
-        io::other::beme_filenames_separator+
-        m_name+
-        io::other::bemeexp_exp_suffix+".json"
-    );
-    
-    return output_folder()/temp;
-}
-
-fsys::path Experiment::runtime_file() {
-    std::string temp = (
-        io::other::bemeexp_prefix+
-        io::other::beme_filenames_separator+
-        m_name+
-        io::other::beme_filenames_separator+
-        std::to_string(_seed_)+
-        io::other::bemeexp_isl_suffix+".json"
-    );
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "prepare_isl_files",
+            "Could not create the runtime file for the island.",
+            "File : "+isl_filen.string());
         
-    return output_folder()/temp;
+    ofs << jcurr_isl_status.dump() << std::endl; // No value in dump so that it is a single line (JSONL)
+    ofs.close();
+}
+
+void Experiment::finalise_isl_files() const
+{
+    // For each island, upload the file and move it to the final file, but well formatted.
+    for (std::size_t i = 0; i < m__archipelago.size(); ++i)
+    {
+        auto isl = *(m__archipelago.begin() + i);
+
+        std::ifstream rnt_file(isl_filename(i, /*runtime=*/ true));
+
+        if (!rnt_file.is_open())
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_isl_files",
+                "Could not open the runtime file for the island.",
+                "File : "+isl_filename(i, /*runtime=*/ true).string());
+        
+        if (rnt_file.peek() == std::ifstream::traits_type::eof())
+        {
+            rnt_file.close();
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_isl_files",
+                "The runtime file for the island is empty.",
+                "File : "+isl_filename(i, /*runtime=*/ true).string());
+        }
+
+        // Prepare the json to combine all the data.
+        // The data was saved in JSONL format, so I have to read it line by line.
+        // The first one is the static data, all the others are the dynamic data
+        // and we just need to append them to the array of the "generations" key.
+        json_o jdata;
+        std::string line;
+        while (line.empty() && !rnt_file.eof())
+            std::getline(rnt_file, line);
+        
+        // Just check that the "generations" key is present (we trust that the file is well formatted).
+        jdata = json_o::parse(line);
+        if (!io::key::generations.exists_in(jdata))
+        {
+            rnt_file.close();
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_isl_files",
+                "The runtime file for the island does not contain the generations key.",
+                "File : "+isl_filename(i, /*runtime=*/ true).string());
+        }
+
+        // Now, append the dynamic data to the generations key.
+        while (!rnt_file.eof())
+        {
+            // Read the file line by line and append it to the final file.
+            std::getline(rnt_file, line);
+            if (line.empty()) continue;
+
+            // We trust that the file is well formatted, so we just append the line to the generations key.
+            jdata[io::key::generations()].push_back(json_o::parse(line));    
+        }
+
+        rnt_file.close();
+        
+        // Save the final file.
+        std::ofstream ofs(isl_filename(i, /*runtime=*/ false));
+        if (!ofs.is_open())
+            __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_isl_files",
+                "Could not create the final file for the island.",
+                "File : "+isl_filename(i, /*runtime=*/ false).string());
+
+        if (m__settings.outf_indent)
+            ofs << jdata.dump(m__settings.outf_indent_val) << std::endl;
+        else
+            ofs << jdata.dump() << std::endl;
+        ofs.close();
+    }
+
+    return;
+}
+
+void Experiment::finalise_exp_file() const
+{
+    // Load the experiment file, check that all the islands have been saved correctly and only
+    // save those that did
+    // append the final time.
+
+    std::fstream exp_file(exp_filename());
+    if (!exp_file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "Could not open the experiment file.",
+            "File : "+exp_filename().string());
+
+    if (exp_file.peek() == std::fstream::traits_type::eof())
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The experiment file is empty.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o jdata = json_o::parse(exp_file);
+    exp_file.close();
+
+    if (!io::key::archi.exists_in(jdata))
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The experiment file does not contain the archipelago key.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o &jarchi = io::json::extract(io::key::archi).from(jdata);
+
+    if (!io::key::islands.exists_in(jarchi))
+    {
+        exp_file.close();
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "The archipelago key does not contain the islands key.",
+            "File : "+exp_filename().string());
+    }
+
+    json_o &jislands = io::json::extract(io::key::islands).from(jarchi);
+    json_o jislands_old = jislands;
+    jislands = json_o::array();
+
+    for (auto i = 0; i < m__archipelago.size(); ++i)
+    {
+        auto file = isl_filename(i, /*runtime=*/ true);
+        if (!fsys::exists(file) || !fsys::is_regular_file(file))
+            continue; // The file has not been saved correctly, so I remove the name from the list.
+
+        // Open and check it is not empty
+        std::ifstream isl_file(file);
+        if (!isl_file.is_open())
+            continue;
+
+        if (isl_file.peek() == std::ifstream::traits_type::eof())
+        {
+            isl_file.close();
+            continue;
+        }
+
+        // Ok, it is fine. Close and append the final name
+        isl_file.close();
+        jislands.push_back(isl_filename(i).filename().string());
+
+        // Delete the runtime file
+        fsys::remove(file);
+    }
+
+    // Append the final time
+    jdata[io::key::tend()] = bevarmejo::now_as_str();
+
+    // Save the final file
+    exp_file.open(exp_filename(), std::ios::out);
+    if (!exp_file.is_open())
+        __format_and_throw<std::runtime_error, bevarmejo::ClassError>(io::log::nname::opt+io::log::cname::Experiment, "finalise_exp_file",
+            "Could not create the final experiment file.",
+            "File : "+exp_filename().string());
+
+    if (m__settings.outf_indent)
+        exp_file << jdata.dump(m__settings.outf_indent_val) << std::endl;
+    else
+        exp_file << jdata.dump() << std::endl;
+    exp_file.close();
 }
 
 } // namespace bevarmejo
