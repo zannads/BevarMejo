@@ -48,8 +48,6 @@ TEST_P(VMCtrParamTest, VersionParametrizedConstructors)
     // Try to create contrusctors with invalid values. 
     // Let's test initializer list, string and numeric.
     const auto& [should_succeed, il, n, s] = GetParam();
-    
-    std::cout << "il = " << il.begin()[0] << ", " << il.begin()[1] << ", " << il.begin()[2] << std::endl;
     if (should_succeed)
     {
         ASSERT_NO_THROW(VM::v(il));
@@ -126,7 +124,6 @@ class VMAccessParTest :
 TEST_P(VMAccessParTest, VersionAccess)
 {
     const auto& [il, n, s] = GetParam();
-    std::cout << "il = " << il.begin()[0] << ", " << il.begin()[1] << ", " << il.begin()[2] << std::endl;
     const auto v = VM::v(il);
 
     EXPECT_EQ(v.numeric(), n);
@@ -152,10 +149,72 @@ TEST_F(VersionManagerTest, VersionComparison)
     const auto v = VM::v(std::initializer_list<unsigned int>{2023, 6, 50});
 }
 
-// Test parse of the numeric 
+// Test parse of the numeric already done in the previous tests.
 
-// Test parse of the string
+// Test parse of the string.
+// Missing v at the beginning.
+// Bad values such as out of range are already tested.
+// If there is stuff after the release, we don't care.
+class VMStrParseParTest : 
+    public VersionManagerTest, public ::testing::WithParamInterface<std::string>
+{
+    void SetUp() override 
+    {
+        VersionManagerTest::SetUp();
+    }
+}; // class VMStrParseParTest
+TEST_P(VMStrParseParTest, VersionParseString)
+{
+    const auto& s = GetParam();
+    EXPECT_THROW(VM::v(s), std::invalid_argument);
+}
+INSTANTIATE_TEST_SUITE_P(
+    VMStrParseParTestCases,
+    VMStrParseParTest,
+    ::testing::Values(
+        "", // empty string
+        // starts with anything other than 'v'
+        "V23.06.0",
+        "23.06.30",
+        ".10.4",
+        // make sure parse is robust to anything.
+        "v", // empty version
+        "v23,06.9", // anything instead of dot in first separator
+        "v23.06-9", // anything instead of dot in second separator
+        "v..", // empty year
+        "v23..", // empty month
+        "v23.06.", // empty release
+        "ve2.06.02", // invalid year
+        "v23.a3.02", // invalid month
+        "v23.06.a0", // invalid release
+        "v2e.06.0", // invalid year
+        "v23.0a.0", // invalid month
+        "v23.06.0a", // invalid release
+        "v23.06.0.0" // extra stuff
+    )
+);
 
 // Test the set of the user version.
+TEST_F(VersionManagerTest, VersionSet)
+{
+    // Set the user version to the current version.
+    VM::set_user_v(v_year, v_month, v_release);
+    EXPECT_EQ(VM::user()(), VM::library().version());
+
+    // Impossible to set the user version to a version greater than the current version.
+    EXPECT_THROW(VM::set_user_v(v_year, v_month, v_release+1), std::invalid_argument);
+    EXPECT_THROW(VM::set_user_v(v_year, v_month+1, 0), std::invalid_argument);
+    EXPECT_THROW(VM::set_user_v(v_year+1, 1, 0), std::invalid_argument);
+
+    // Set the user version before the current version.
+    VM::set_user_v(2024, 1, 12);
+    EXPECT_NE(VM::user()(), VM::library().version());
+    EXPECT_EQ(VM::user()().year(), 2024);
+    EXPECT_EQ(VM::user()().month(), 1);
+    EXPECT_EQ(VM::user()().release(), 12);
+
+    // Set the user version before the first version.
+    EXPECT_THROW(VM::set_user_v(2023,5,0), std::invalid_argument);
+}
 
 } // namespace __bevarmejo::detail
