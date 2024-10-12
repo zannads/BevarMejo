@@ -1,11 +1,10 @@
 #pragma once 
 
-#include <iostream>
-#include <iomanip>
-#include <stdexcept>
 #include <string>
-#include <sstream>
-#include <tuple>
+#include <utility>
+#include <vector>
+
+#include "bevarmejo/bemexcept.hpp"
 
 namespace bevarmejo {
 
@@ -99,16 +98,8 @@ public:
     static const VersionManager& library();
 
     template <typename... Args>
-    void set(Args... args) {
-        auto v = detail::Version(std::forward<Args>(args)...);
-
-        if (v < first_v()) {
-            version_ = first_v();
-            // TODO: LOG the error
-        }
-        else {
-            version_ = v;
-        }
+    static void set_user_v(Args... args) {
+        user().set(std::forward<Args>(args)...);
     }
 
     const detail::Version& version() const;
@@ -124,6 +115,22 @@ public:
 
 private:
     static detail::Version first_v();
+
+    template <typename... Args>
+    void set(Args... args) {
+        auto v = detail::Version(std::forward<Args>(args)...);
+
+        if (v < first_v())
+            __format_and_throw<std::invalid_argument, bevarmejo::ClassError>(
+                "VersionManager", "set", "Impossible to set the requested version.",
+                "The requested version is before the first version."
+                "Version = " + v.str()
+            );
+    
+        else
+            version_ = v;
+
+    }
 
 }; // class VersionManager
 
