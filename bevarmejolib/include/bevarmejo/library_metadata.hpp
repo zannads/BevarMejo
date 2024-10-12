@@ -9,11 +9,9 @@
 
 namespace bevarmejo {
 
-namespace detail {
+class VersionManager;
 
-constexpr unsigned int version_year = 2024;
-constexpr unsigned int version_month = 10;
-constexpr unsigned int version_release = 1;
+namespace detail {
 
 class Version {
 
@@ -22,149 +20,95 @@ private:
     unsigned int m_month;
     unsigned int m_release;
 
+    friend class bevarmejo::VersionManager; // Allow only the VersionManager to access the private constructor.
+
+private:
+    Version();
+    Version(unsigned int year, unsigned int month, unsigned int release);
+    Version(std::vector<unsigned int> il);
+
+    Version(unsigned int numeric);
+    Version(const std::string &version_str);
+
 public:
-    Version() : m_year{version_year}, m_month{version_month}, m_release{version_release} {}
-    Version(unsigned int year, unsigned int month, unsigned int release) :
-        m_year{year}, m_month{month}, m_release{release}
-    {
-        if (year < 2023 || year > version_year)
-            throw std::invalid_argument("Year must be between 2023 and " + std::to_string(version_year));
-        
-        if (month < 1 || month > 12 || (year == version_year && month > version_month) || (year == 2023 && month < 6))
-            throw std::invalid_argument("Month must be between 1 and 12");
+    Version(const Version&) = default;
+    Version& operator=(const Version&) = default;
+    Version(Version&&) = default;
+    Version& operator=(Version&&) = default;
 
-        if (release < 0 || release > 99 || (year == version_year && month == version_month && release > version_release))
-            throw std::invalid_argument("Release must be between 0 and 99");
-    }
+    ~Version() = default;
 
-    bool operator<(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) < std::tie(other.m_year, other.m_month, other.m_release);
-    }
+    unsigned int year() const;
+    unsigned int month() const;
+    unsigned int release() const;
 
-    bool operator==(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) == std::tie(other.m_year, other.m_month, other.m_release);
-    }
+    unsigned int numeric() const;
+    std::string str() const;
 
-    bool operator>(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) > std::tie(other.m_year, other.m_month, other.m_release);
-    }
+    bool operator<(const Version& other) const;
+    bool operator==(const Version& other) const;
+    bool operator>(const Version& other) const;
+    bool operator<=(const Version& other) const;
+    bool operator>=(const Version& other) const;
+    bool operator!=(const Version& other) const;
 
-    bool operator<=(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) <= std::tie(other.m_year, other.m_month, other.m_release);
-    }
+    bool operator<(const std::string& other) const;
+    bool operator==(const std::string& other) const;
+    bool operator>(const std::string& other) const;
+    bool operator<=(const std::string& other) const;
+    bool operator>=(const std::string& other) const;
+    bool operator!=(const std::string& other) const;
 
-    bool operator>=(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) >= std::tie(other.m_year, other.m_month, other.m_release);
-    }
+    bool operator<(const unsigned int other) const;
+    bool operator==(const unsigned int other) const;
+    bool operator>(const unsigned int other) const;
+    bool operator<=(const unsigned int other) const;
+    bool operator>=(const unsigned int other) const;
+    bool operator!=(const unsigned int other) const;
 
-    bool operator!=(const Version& other) const {
-        return std::tie(m_year, m_month, m_release) != std::tie(other.m_year, other.m_month, other.m_release);
-    }
+private:
+    static std::vector<unsigned int> parse( const unsigned int numeric );
+    static std::vector<unsigned int> parse( const std::string &version_str );
 
-    bool operator<(const std::string& other) const {
-        return *this < parse(other);
-    }
+    static constexpr unsigned int numeric( const unsigned int year, const unsigned int month, const unsigned int release );
+    static std::string str( const unsigned int year, const unsigned int month, const unsigned int release );
 
-    bool operator==(const std::string& other) const {
-        return *this == parse(other);
-    }
-
-    bool operator>(const std::string& other) const {
-        return *this > parse(other);
-    }
-
-    bool operator<=(const std::string& other) const {
-        return *this <= parse(other);
-    }
-
-    bool operator>=(const std::string& other) const {
-        return *this >= parse(other);
-    }
-
-    bool operator!=(const std::string& other) const {
-        return *this != parse(other);
-    }
-
-    static Version parse( const std::string &version_str ) {
-        std::stringstream ss(version_str);
-        std::string token;
-
-        // Skip the 'v' at the beginning
-        std::getline(ss, token, 'v');
-
-        std::getline(ss, token, '.');
-        auto year = std::stoi(token) +2000;
-        std::getline(ss, token, '.');
-        auto month = std::stoi(token);
-        std::getline(ss, token, '.');
-        auto release = std::stoi(token);
-
-        return Version(year, month, release);
-    }
-
-    static constexpr unsigned int numeric( const unsigned int year, const unsigned int month, const unsigned int release ) {
-        return (year-2000) * 10000 + month * 100 + release;
-    }
-
-    static std::string str( const unsigned int year, const unsigned int month, const unsigned int release ) {
-        std::stringstream ss;
-        ss << "v" << year-2000 << '.' 
-            << std::setw(2) <<std::setfill('0') << month << '.' 
-            << release;
-        return ss.str();
-    }
-
-    std::string str() const {
-        return str(m_year, m_month, m_release);
-    }
-
-}; // struct Version
-
-constexpr unsigned int version = Version::numeric(version_year, version_month, version_release);
-// constexpr const char* version_str = "v24.09.0";
-static const std::string version_str = Version::str(version_year, version_month, version_release);
+}; // class Version
 
 } // namespace detail
 
 class VersionManager {
 public:
 
-    static VersionManager& user() {
-        static VersionManager user_requested_version;
-        return user_requested_version;
-    }
+    static VersionManager& user();
 
-    static const VersionManager& library() {
-        static const VersionManager library_version;
-        return library_version;
-    }
+    static const VersionManager& library();
 
-    void set( const std::string &version ) {
-        version_ = detail::Version::parse(version);
-    }
+    void set( const std::string &version );
 
-    detail::Version version() const {
-        return version_;
-    }
+    const detail::Version& version() const;
+    const detail::Version& operator()() const;
 
-    static detail::Version v(const unsigned int year, const unsigned int month, const unsigned int release) {
-        return detail::Version{year, month, release};
-    }
+// You should not be able to create a version object actually. // I will leave it for testing purposes.
+    static detail::Version v();
 
-    static detail::Version v(const std::string &version_str) {
-        return detail::Version::parse(version_str);
+    template <typename... Args>
+    static detail::Version v(Args... args) {
+        return detail::Version(std::forward<Args>(args)...);
     }
 
 private:
     detail::Version version_; // Just hold the version, either for the static library or the static user requested version
 
-    VersionManager() : version_{detail::version_year, detail::version_month, detail::version_release} {}
+    VersionManager();
 
     // Disable copy and move constructor and assignment operator
     VersionManager(const VersionManager&) = delete;
     VersionManager& operator=(const VersionManager&) = delete;
     VersionManager(VersionManager&&) = delete;
     VersionManager& operator=(VersionManager&&) = delete;
+public:
+    ~VersionManager() = default;
 
 }; // class VersionManager
 
