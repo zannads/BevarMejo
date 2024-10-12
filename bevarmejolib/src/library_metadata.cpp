@@ -1,11 +1,12 @@
-#include <iostream>
 #include <iomanip>
-#include <stdexcept>
-#include <string>
+#include <iostream>
 #include <sstream>
+#include <string>
 #include <tuple>
+#include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 #include "library_metadata.hpp"
 
@@ -30,7 +31,7 @@ Version::Version(std::vector<unsigned int> il) :
     m_year(version_year), m_month(version_month), m_release(version_release)
 {
     if (il.size() != 3)
-        bevarmejo::__format_and_throw<std::invalid_argument, FunctionError>(
+        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
             io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
             "The initializer list must have 3 elements: year, month, release.",
             "The initializer list has " + std::to_string(il.size()) + " elements."
@@ -41,21 +42,21 @@ Version::Version(std::vector<unsigned int> il) :
     const unsigned int release = *(il.begin()+2);
 
     if (year < 2000 || year > version_year)
-        bevarmejo::__format_and_throw<std::invalid_argument, FunctionError>(
+        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
             io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
             "Year must be between 2000 and " + std::to_string(version_year),
             "Year = " + std::to_string(year)
             );
 
     if (month < 1 || month > 12)
-        bevarmejo::__format_and_throw<std::invalid_argument, FunctionError>(
+        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
             io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
             "Invalid month number (must be between 1 and 12).",
             "Month = " + std::to_string(month)
             );
     
     if (release > 99)
-        bevarmejo::__format_and_throw<std::invalid_argument, FunctionError>(
+        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
             io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
             "Invalid release number (must be between 0 and 99).",
             "Release = " + std::to_string(release)
@@ -63,7 +64,7 @@ Version::Version(std::vector<unsigned int> il) :
 
     if (year == version_year && month > version_month ||
         year == version_year && month == version_month && release > version_release)
-        bevarmejo::__format_and_throw<std::invalid_argument, FunctionError>(
+        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
             io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
             "The version is greater than the current version.",
             "Current version = ", Version().str(),
@@ -153,20 +154,43 @@ std::vector<unsigned int> Version::parse( const unsigned int numeric ) {
 }
 
 std::vector<unsigned int> Version::parse( const std::string &version_str ) {
-    std::stringstream ss(version_str);
-    std::string token;
+    
+    if (version_str.empty() || *version_str.begin() != 'v')
+        __format_and_throw<std::invalid_argument, ClassError>(
+            io::log::cname::version, "parse",
+            "Could not parse the version string.",
+            "The version string is empty or does not start with 'v'.",
+            "Version string = " + version_str
+        );
 
-    // Skip the 'v' at the beginning
-    std::getline(ss, token, 'v');
+    std::istringstream iss(std::string(version_str.begin()+1, version_str.end()));
 
-    std::getline(ss, token, '.');
-    unsigned int year = std::stoi(token) +2000u;
-    std::getline(ss, token, '.');
-    unsigned int month = std::stoi(token);
-    std::getline(ss, token, '.');
-    unsigned int release = std::stoi(token);
-
-    return std::vector<unsigned int>{year, month, release};
+    std::vector<unsigned int> version_numbers(3, 0);
+    auto get_next = [&iss, &version_numbers](std::size_t i) {
+        std::string token;
+        std::getline(iss, token, '.');
+        
+        try
+        {
+            version_numbers[i] = std::stoi(token);
+        }
+        catch (const std::invalid_argument& e)
+        {
+            __format_and_throw<std::invalid_argument, ClassError>(
+                io::log::cname::version, "parse",
+                "Could not parse the version string.",
+                "The version string has an invalid element.",
+                "Element = " + token
+            );
+        }
+    };
+    
+    get_next(0);
+    version_numbers[0] += 2000;
+    get_next(1);
+    get_next(2);
+    
+    return std::move(version_numbers);
 }
 
 // Conversions to other formats
@@ -176,10 +200,10 @@ constexpr unsigned int Version::numeric( const unsigned int year, const unsigned
 }
 
 std::string Version::str( const unsigned int year, const unsigned int month, const unsigned int release ) {
-    std::stringstream ss;
-    ss << "v" << year-2000 << '.' 
-        << std::setw(2) <<std::setfill('0') << month << '.' 
-        << release;
+    std::ostringstream ss;
+    bevarmejo::io::stream_out(ss, "v", year-2000, '.');
+    ss << std::setw(2) <<std::setfill('0');
+    bevarmejo::io::stream_out(ss, month, '.', release);
     return ss.str();
 }
     
