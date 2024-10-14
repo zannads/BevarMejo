@@ -110,41 +110,45 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 	return patterns;
 }
 
-Problem::Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths) :
-	m__formulation{a_formulation}
+Problem::Problem(std::string_view a_formulation_str, const json_o& settings, const std::vector<fsys::path> &lookup_paths)
 {
-	std::string full_name{"bevarmejo::"};
-	full_name += nname;
-	switch (m__formulation)
+	if (a_formulation_str == io::value::rehab_f1)
 	{
-	case Formulation::rehab_f1:
-		m__name = full_name+io::value::rehab_f1;
+		m__formulation = Formulation::rehab_f1;
 		m__extra_info = io::other::rehab_f1_exinfo;
-		break;
-	case Formulation::mixed_f1:
-		m__name = full_name+io::value::mixed_f1;
+	}
+	else if (a_formulation_str == io::value::mixed_f1)
+	{
+		m__formulation = Formulation::mixed_f1;
 		m__extra_info = io::other::mixed_f1_exinfo;
-		break;
-	case Formulation::opertns_f1:
-		m__name = full_name+io::value::opertns_f1;
+	}
+	else if (a_formulation_str == io::value::opertns_f1)
+	{
+		m__formulation = Formulation::opertns_f1;
 		m__extra_info = io::other::opertns_f1_exinfo;
-		break;
-	case Formulation::twoph_f1:
+	}
+	else if (a_formulation_str == io::value::twoph_f1)
+	{
 		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"Impossible to construct the anytown Problem.",
 			"Formulation 1 of twophase problem is not supported anymore.");
-	case Formulation::rehab_f2:
-		m__name = full_name+io::value::rehab_f2;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f2)
+	{
+		m__formulation = Formulation::rehab_f2;
 		m__extra_info = io::other::rehab_f2_exinfo;
-		break;
-	case Formulation::mixed_f2:
-		m__name = full_name+io::value::mixed_f2;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f2)
+	{
+		m__formulation = Formulation::mixed_f2;
 		m__extra_info = io::other::mixed_f2_exinfo;
-		break;
-	default:
-		__format_and_throw<std::invalid_argument, ClassError>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+	}
+	else
+	{
+		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
+			"Impossible to construct the anytown Problem.",
 			"The provided Anytown formulation is not yet implemented.");
 	}
-
 
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {

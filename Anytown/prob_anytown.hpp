@@ -14,6 +14,7 @@ namespace fsys = std::filesystem;
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -179,7 +180,7 @@ private:
 
 public:
     Problem() = default;
-    Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths);
+    Problem(std::string_view a_formulation, const json_o& settings, const std::vector<fsys::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;
