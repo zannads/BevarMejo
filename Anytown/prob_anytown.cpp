@@ -22,11 +22,12 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/io/streams.hpp"
-namespace bemeio = bevarmejo::io;
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/labels.hpp"
+#include "bevarmejo/io/streams.hpp"
+namespace bemeio = bevarmejo::io;
 #include "bevarmejo/.legacy/io.hpp"
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
@@ -41,9 +42,6 @@ namespace bemeio = bevarmejo::io;
 namespace bevarmejo {
 namespace anytown {
 
-// For the io functions
-static const std::string nname = "anytown::"; // "anytown::"
-
 namespace io::log::cname {
 static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
@@ -56,9 +54,15 @@ static const bemeio::key::Key __wds__ {"WDS", "Water Distribution System"}; // "
 static const bemeio::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
 static const bemeio::key::Key __inp__ {"inp"}; // "inp"
 } // namespace key
+// Values for the allowed formulations in the json file.
 namespace io::value {
-
-} // namespace value
+static const std::string rehab_f1 = "rehab::f1";
+static const std::string mixed_f1 = "mixed::f1";
+static const std::string opertns_f1 = "operations::f1";
+static const std::string twoph_f1 = "twophases::f1";
+static const std::string rehab_f2 = "rehab::f2";
+static const std::string mixed_f2 = "mixed::f2";
+} // namespace io::value
 
 // Extra information for the formulations.
 namespace io::other {
@@ -149,6 +153,7 @@ Problem::Problem(std::string_view a_formulation_str, const json_o& settings, con
 			"Impossible to construct the anytown Problem.",
 			"The provided Anytown formulation is not yet implemented.");
 	}
+	m__name = bemeio::log::nname::beme_l+nname+std::string(a_formulation_str);
 
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
@@ -1605,7 +1610,7 @@ std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::a
                         "residential_pipes.snt"
 	};
 
-	return {j, std::string{} };
+	return {j, prob.get_extra_info() };
 }
 
 json_o io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob) {

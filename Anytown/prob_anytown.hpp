@@ -41,6 +41,8 @@ static const std::string __temp_elems = "TEs";
 // If you need to change them, but still harcoded, "override" them in a new namespace for that type of problem.
 namespace anytown {
 
+static const std::string nname = "anytown::"; // "anytown::"
+
 constexpr double treatment_plant_head_ft = 10.0;
 constexpr double min_w_level_tank_ft = 225.0;
 constexpr double max_w_level_tank_ft = 250.0;
@@ -101,16 +103,6 @@ enum class Formulation {
     rehab_f2,
     mixed_f2
 }; // enum class Formulation
-
-// Values for the allowed formulations in the json file. (Must be visible outside this translation unit)
-namespace io::value {
-static const std::string rehab_f1 = "rehab::f1";
-static const std::string mixed_f1 = "mixed::f1";
-static const std::string opertns_f1 = "operations::f1";
-static const std::string twoph_f1 = "twophases::f1";
-static const std::string rehab_f2 = "rehab::f2";
-static const std::string mixed_f2 = "mixed::f2";
-} // namespace io::value
 
 // For the json serializer
 namespace io::json::detail {
