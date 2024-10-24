@@ -31,9 +31,6 @@ namespace fsys = std::filesystem;
 
 #include "bevarmejo/wds/elements/element.hpp"
 
-#include "bevarmejo/wds/elements_group.hpp"
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
-
 #include "bevarmejo/wds/auxiliary/curve.hpp"
 #include "bevarmejo/wds/auxiliary/curves.hpp"
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
@@ -52,46 +49,29 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/wds/elements/pump.hpp"
 // #include "bevarmejo/wds/elements/valve.hpp"
 
+#include "bevarmejo/wds/collections/registry.hpp"
+namespace bevarmejo::wds {
+    using Curves = Registry<Curve>;
+    using Patterns = Registry<Pattern>;
 
+    using Nodes = Registry<Node>;
+    using Junctions = Registry<Junction>;
+    using Reservoirs = Registry<Reservoir>;
+    using Tanks = Registry<Tank>;
 
-namespace bevarmejo {
+    using Links = Registry<Link>;
+    using Pipes = Registry<Pipe>;
+    using Pumps = Registry<Pump>;
+    // using Valves = Registry<Valve>;
+} // namespace bevarmejo::wds
 
-namespace label {
+namespace bevarmejo::label {
 static const std::string __EN_PATTERN_TS = "ENPatt";
-} // namespace label
+} // namespace bevarmejo::label
 
-namespace wds {
+namespace bevarmejo::wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
-
-class NetworkElement;
-
-template <typename T>
-class UserDefinedElementsGroup;
-using Subnetwork = UserDefinedElementsGroup<NetworkElement>;
-
-class Reservoir;
-using Reservoirs = ElementsGroup<Reservoir>;
-class Tank;
-using Tanks = ElementsGroup<Tank>;
-class Node;
-using Nodes = ElementsGroup<Node>;
-class Junction;
-using Junctions = ElementsGroup<Junction>;
-class Source;
-using Sources = ElementsGroup<Source>;
-class Link;
-using Links = ElementsGroup<Link>;
-class Pipe;
-using Pipes = ElementsGroup<Pipe>;
-class Pump;
-using Pumps = ElementsGroup<Pump>;
-
-class Pattern;
-using Patterns = ElementsGroup<Pattern>;
-
-class Curve;
-using Curves = ElementsGroup<Curve>;
 
 class WaterDistributionSystem {
 
