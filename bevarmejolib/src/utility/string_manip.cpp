@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 std::string bevarmejo::now_as_str()
 {

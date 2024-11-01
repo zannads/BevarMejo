@@ -36,7 +36,7 @@ using json_o = nlohmann::json;
 #include "bevarmejo/pagmo_helpers/containers_help.hpp"
 #include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
 
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"

@@ -19,7 +19,7 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 namespace bevarmejo::nsga2::io::key {
 static const bevarmejo::io::key::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"

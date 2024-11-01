@@ -6,7 +6,7 @@
 using json_o = nlohmann::json;
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 #include "key.hpp" 
 

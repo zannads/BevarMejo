@@ -49,7 +49,7 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/wds/elements/pump.hpp"
 // #include "bevarmejo/wds/elements/valve.hpp"
 
-#include "bevarmejo/wds/collections/registry.hpp"
+#include "bevarmejo/utility/registry.hpp"
 namespace bevarmejo::wds {
     using Curves = Registry<Curve>;
     using Patterns = Registry<Pattern>;

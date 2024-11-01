@@ -21,7 +21,7 @@ using json_o = nlohmann::json;
 #include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/io/keys/bemesim.hpp"
 
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 #include "bevarmejo/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"

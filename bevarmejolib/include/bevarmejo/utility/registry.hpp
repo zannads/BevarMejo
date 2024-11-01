@@ -7,14 +7,26 @@
 
 #include "bevarmejo/bemexcept.hpp"
 
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 
-// Forward declaration because it is a friend class (only one that can and knows how to add elements).
+// Forward declaration of friend classes.
+// Only these classes are allowed to create them, insert and remove elements.
+// The only thing you can do when you get a refernece to these objects is iterate them,
+// and access and modify (if non-const) the elements. 
+// you are always getting a complete set of the elements inside the registry when iterating
+// and you can't add or remove elements, if you want to see less, you have to use a registry_view.
+
+// WDS uses the registry to store the elements.
 class WaterDistributionSystem;
 
 template <typename T>
-class Registry final
+class Registry final 
+
+#ifdef ENABLE_SAFETY_CHECKS
+    : public SafeMember
+#endif
+
 {
 
 /*--- Member types ---*/
@@ -22,24 +34,31 @@ public:
     using key_type = std::string;
     using mapped_type = T; // We hide the fact that is a shared_ptr
 private:
-    struct instance
+    struct __instance__
     {
         const key_type id;
-        std::shared_ptr<T> p_entry;
+        std::shared_ptr<mapped_type> p_entry;
     };
-    struct return_type 
+    struct instance 
     {
         const key_type id;
         mapped_type entry;
     };
+    struct instance_ref
+    {
+        const key_type& id;
+        mapped_type& entry;
+    };
 public:
-    using value_type = return_type;
+    using value_type = instance;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
-    using reference = value_type&;
-    using const_reference = const value_type&;
-    using pointer = value_type*;
-    using const_pointer = const value_type*;
+    using key_compare = std::less<key_type>;
+    using allocator_type = std::allocator<__instance__>;
+    using reference = instance_ref;
+    using const_reference = const instance_ref;
+    using pointer = instance_ref*;
+    using const_pointer = const instance_ref*;
 private:
     // Forward declaration of the iterator.
     template <class C>
@@ -49,7 +68,10 @@ public:
     using const_iterator = Iterator<const Registry<T>>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
+private:
+    friend iterator;
+    friend const_iterator;
+public:
     struct insert_return_type
     {
         iterator iterator;
@@ -62,15 +84,31 @@ public:
         size_type total;
     };
 
+///////////////////////////////////////////////////////////////////////////
+// What the user can see from or do to a registry.
+///////////////////////////////////////////////////////////////////////////
+public:
+/*------- Member objects -------*/
+
+/*------- Member functions -------*/
+
+/*--- (destructor) ---*/
+public:
+    ~Registry() = default;
+
+///////////////////////////////////////////////////////////////////////////
+// What the friend classes can see from or do to a registry.
+// Everuthing will be private, because this is final class and there is no point to 
+// have protected stuff.
+///////////////////////////////////////////////////////////////////////////
 private:
-    using Container = std::vector<instance>;
-    using DuplicatePtrChecker = std::unordered_set<T*>;
+    using Container = std::vector<__instance__, allocator_type>;
+    using DuplicatePtrChecker = std::unordered_set<mapped_type*>;
     using DuplicateIdChecker = std::unordered_set<key_type>;
 
 private:
+    // Here make friend the classes that will use the registry.
     friend class WaterDistributionSystem;
-    friend iterator;
-    friend const_iterator;
 
 /*------- Member objects -------*/
 private:
@@ -93,9 +131,6 @@ private:
 
     Registry(Registry &&other) noexcept = default;
 
-/*--- (destructor) ---*/
-public:
-    virtual ~Registry() = default;
 
 /*--- operator= ---*/
 private: 
@@ -269,7 +304,7 @@ private:
         duplicate_id_checker.clear();
     }
 
-    insert_return_type insert(const instance &value)
+    insert_return_type insert(const __instance__ &value)
     {
         if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
             return {end(), false};
@@ -284,7 +319,7 @@ private:
         return {iterator(this, m__elements.size() - 1), true};
     }
 
-    insert_return_type insert(instance &&value)
+    insert_return_type insert(__instance__ &&value)
     {
         if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
             return {end(), false};
@@ -299,7 +334,7 @@ private:
         return {iterator(this, m__elements.size() - 1), true};
     }
 
-    insert_return_type insert(const_iterator hint, const instance &value)
+    insert_return_type insert(const_iterator hint, const __instance__ &value)
     {
         if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
             return {end(), false};
@@ -315,7 +350,7 @@ private:
         return {iterator(this, idx), true};
     }
 
-    insert_return_type insert(const_iterator hint, instance &&value)
+    insert_return_type insert(const_iterator hint, __instance__ &&value)
     {
         if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
             return {end(), false};
@@ -378,13 +413,13 @@ private:
 public:
     iterator find(const key_type &id)
     {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const instance &inst) { return inst.id == id; });
+        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
         return it != m__elements.end() ? iterator(this, it - m__elements.begin()) : end();
     }
 
     const_iterator find(const key_type &id) const
     {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const instance &inst) { return inst.id == id; });
+        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
         return it != m__elements.end() ? const_iterator(this, it - m__elements.begin()) : cend();
     }
 
@@ -417,4 +452,4 @@ public:
 
 }; // class Registry
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo
