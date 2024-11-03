@@ -4,6 +4,9 @@
 template <typename T>
 using SafeMemberPtr = T*;
 /*
+// It is basically like a weak_ptr (so it register and unregister itself in the constructor and destructor)
+// We don't have the lock method, because we can't own it. However, the user should use check_validity
+//  to check if the object is still valid before using it.
 // From claude::
 // Smart pointer class for safe tracking of member objects
 template<typename T>
