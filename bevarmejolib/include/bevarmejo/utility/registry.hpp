@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/safe_member.hpp"
+#include "bevarmejo/utility/safe_member_ptr.hpp"
 
 namespace bevarmejo
 {
@@ -525,8 +527,11 @@ public:
 
 /*--- Member objects ---*/
 private:
-// TODO: pointer to safe member if safety checks are enabled.
+#ifdef ENABLE_SAFETY_CHECKS
+    SafeMemberPtr<R> reg;
+#else
     R* reg;
+#endif
     size_type idx;
     mutable reference temp_ref;
 

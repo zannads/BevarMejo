@@ -1,6 +1,8 @@
 #pragma once 
 
 #ifdef ENABLE_SAFETY_CHECKS
+class SafeMember { };   // Empty class to be used as a base class
+/*
 #include <memory>
 #include <unordered_set>
 #include <atomic>
@@ -47,5 +49,5 @@ public:
         invalidate_members();
     }
 };
-
+*/
 #endif // ENABLE_SAFETY_CHECKS

@@ -141,6 +141,19 @@ IF(LINUX)
   target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
 ENDIF(LINUX)
 
+# Allow the user to define ENABLE_SAFETY_CHECKS manually
+option(ENABLE_SAFETY_CHECKS "Enable safety checks" OFF)
+
+# Define ENABLE_SAFETY_CHECKS in Debug mode if not defined manually
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_SAFETY_CHECKS)
+  set(ENABLE_SAFETY_CHECKS ON)
+endif()
+
+# Add the definition to the compiler flags
+if (ENABLE_SAFETY_CHECKS)
+  add_definitions(-DENABLE_SAFETY_CHECKS)
+endif()
+
 # Include my library
 add_subdirectory("bevarmejolib")
 

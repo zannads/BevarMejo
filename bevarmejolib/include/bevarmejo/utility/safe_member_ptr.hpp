@@ -1,6 +1,9 @@
 #pragma once
 
 #ifdef ENABLE_SAFETY_CHECKS
+template <typename T>
+using SafeMemberPtr = T*;
+/*
 // From claude::
 // Smart pointer class for safe tracking of member objects
 template<typename T>
@@ -33,5 +36,5 @@ public:
     // Rest of the implementation remains the same as in the previous artifact
     // ... (copy/move constructors, assignment operators, etc.)
 };
-
+*/
 #endif // ENABLE_SAFETY_CHECKS
