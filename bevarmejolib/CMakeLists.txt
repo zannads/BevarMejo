@@ -66,6 +66,7 @@ set(PAGMO_H
 
 set(UTILS
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
 )
 
 add_library(bemelib 
