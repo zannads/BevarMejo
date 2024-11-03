@@ -91,10 +91,151 @@ public:
 /*------- Member objects -------*/
 
 /*------- Member functions -------*/
-
-/*--- (destructor) ---*/
+// Constructors and assignement operators will be private because the user is not allowed to create a registry, only
+// the friend classes can do it.
+// The user can only get a reference to registry from the friend classes.
 public:
     ~Registry() = default;
+
+/*------- Element access -------*/
+// at (by key and index) const and non const versions always checking for bounds.
+// operator [] will be private because it is not safe to use it, it can create a new element.
+// front and back const and non const versions checking for bound if enabled.
+// data will be private because it is not safe to give the user the pointer to the data.
+public:
+    mapped_type& at(const key_type& id) 
+    {
+        auto it = find(id);
+        if (it == end())
+            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
+                "The element with the given id does not exist.",
+                "Id: ", id);
+        return it->entry;
+    }
+    const mapped_type& at(const key_type& id) const
+    {
+        auto it = find(id);
+        if (it == cend())
+            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
+                "The element with the given id does not exist.",
+                "Id: ", id);
+        return it->entry;
+    }
+    reference at( size_type pos )
+    {
+        if (pos >= size())
+            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
+                "The index is out of range.",
+                "Index: ", pos, "Size: ", size());
+        return {m__elements[pos].id, *m__elements[pos].p_entry};
+    }
+    const_reference at( size_type pos ) const
+    {
+        if (pos >= size())
+            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
+                "The index is out of range.",
+                "Index: ", pos, "Size: ", size());
+        return {m__elements[pos].id, *m__elements[pos].p_entry};
+    }
+
+    reference front()
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        return this->at(0);
+#else
+        return {m__elements[0].id, *m__elements[0].p_entry};
+#endif
+    }
+    const_reference front() const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        return this->at(0);
+#else
+        return {m__elements[0].id, *m__elements[0].p_entry};
+#endif
+    }
+
+    reference back()
+    {
+        auto last = m__elements.size() - 1;
+#ifdef ENABLE_SAFETY_CHECKS
+        return this->at(last);
+#else
+        return {m__elements[last].id, *m__elements[last].p_entry};
+#endif
+    }
+    const_reference back() const
+    {
+        auto last = m__elements.size() - 1;
+#ifdef ENABLE_SAFETY_CHECKS
+        return this->at(last);
+#else
+        return {m__elements[last].id, *m__elements[last].p_entry};
+#endif
+    }
+
+/*------- Iterators -------*/
+public:
+    iterator begin() noexcept { return iterator(this, 0); }
+	const_iterator begin() const noexcept { return const_iterator(this, 0); }
+	const_iterator cbegin() const noexcept { return const_iterator(this, 0); }
+
+	iterator end() noexcept { return iterator(this, size()); }
+	const_iterator end() const noexcept { return const_iterator(this, size()); }
+	const_iterator cend() const noexcept { return const_iterator(this, size()); }
+
+    reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+    const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(cend()); }
+
+    reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+    const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+    const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
+
+/*------- Capacity -------*/
+public:
+    bool empty() const noexcept { return m__elements.empty(); }
+
+    size_type size() const noexcept { return m__elements.size(); }
+
+    size_type max_size() const noexcept { return m__elements.max_size(); }
+
+    void reserve(size_type new_cap)
+    {
+        m__elements.reserve(new_cap);
+        duplicate_ptr_checker.reserve(new_cap);
+        duplicate_id_checker.reserve(new_cap);
+    }
+
+    size_type capacity() const noexcept { return m__elements.capacity(); }
+
+    // No shrink_to_fit()
+
+/*------- Modifiers -------*/
+// The user is not allowed to insert or remove elements.
+
+/*------- Lookup -------*/
+public:
+    size_type count(const key_type &id) const
+    {
+        return find(id) != cend() ? 1 : 0;
+    }
+
+    iterator find(const key_type &id)
+    {
+        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
+        return it != m__elements.end() ? iterator(this, it - m__elements.begin()) : end();
+    }
+    const_iterator find(const key_type &id) const
+    {
+        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
+        return it != m__elements.end() ? const_iterator(this, it - m__elements.begin()) : cend();
+    }
+
+    bool contains(const key_type &id) const
+    {
+        return find(id) != cend();
+    }
 
 ///////////////////////////////////////////////////////////////////////////
 // What the friend classes can see from or do to a registry.
@@ -117,185 +258,76 @@ private:
     DuplicateIdChecker duplicate_id_checker;
 
 /*------- Member functions -------*/
-/*--- (constructor) ---*/
+// (constructor)
 private:
     Registry() = default;
-
-    explicit Registry(size_type n) : 
-        m__elements(n), 
-        duplicate_ptr_checker(n),
-        duplicate_id_checker(n)
-    { }
 
     Registry(const Registry &other) = default;
 
     Registry(Registry &&other) noexcept = default;
 
+    template <class InputIt>
+    Registry(InputIt first, InputIt last) : 
+        Registry()
+    {
+        auto n_elements = std::distance(first, last);
+        
+        m__elements.reserve(n_elements);
+        duplicate_ptr_checker.reserve(n_elements);
+        duplicate_id_checker.reserve(n_elements);
 
-/*--- operator= ---*/
+        for (; first != last; ++first)
+        {
+            insert(first->id, first->p_entry);
+        }
+    }
+
+    template <class InputContainer>
+    Registry( const InputContainer& container ) :
+        Registry(container.begin(), container.end())
+    { }
+
+// operator=
 private: 
     Registry &operator=(const Registry &rhs) = default;
 
     Registry &operator=(Registry &&rhs) noexcept = default;
 
-/*--- Iterators ---*/
-private:
-    template <typename R>
-    class Iterator
+    Registry& operator=( std::initializer_list<__instance__> ilist )
     {
-    /*--- Member types ---*/
-    public:
-        using iterator_type = Iterator<R>;
-        // Determine if C is a const type and choose the appropriate base type
-        using base_iter = typename std::conditional<
-            std::is_const<R>::entry,
-            typename R::Container::const_iterator,
-            typename R::Container::iterator
-        >::type;
-        using iterator_category = std::bidirectional_iterator_tag;
-        using value_type = typename R::value_type;
-        using difference_type = typename R::difference_type;
-        using pointer = typename R::pointer;
-        using reference = typename R::reference;
+        clear();
 
-    /*--- Member objects ---*/
-    private:
-        R* reg;
-        size_type idx;
-    
-    /*--- Member functions ---*/
-    /*--- (constructor) ---*/
-    public:
-        Iterator() = delete;
-        Iterator(R* container, size_type index) : 
-            reg(container), 
-            idx(index)
-        { 
-            if (index > reg->size())
-                __format_and_throw<std::out_of_range>("Registry::Iterator::Iterator()", "Impossible to construct the iterator.",
-                "The index is out of range.",
-                "Index: ", index, "Size: ", reg->size());
-        }
-        Iterator(const Iterator &other) = default;
-        Iterator(Iterator &&other) noexcept = default;
+        auto n_elements = ilist.size();
+        
+        m__elements.reserve(n_elements);
+        duplicate_ptr_checker.reserve(n_elements);
+        duplicate_id_checker.reserve(n_elements);
 
-    /*--- (destructor) ---*/
-    public:
-        ~Iterator() = default;
-    
-    /*--- operator= ---*/
-    public:
-        Iterator &operator=(const Iterator &rhs) = default;
-        Iterator &operator=(Iterator &&rhs) noexcept = default;
-
-    /*--- base ---*/
-    // Access the underlying iterator
-    protected:
-        base_iter base() const
+        for (const auto& inst : ilist)
         {
-            return reg->m__elements.begin() + idx;
-        }
-    /*--- access operators ---*/
-    // Access the pointed-to element
-    public:
-        reference operator*() const
-        {
-            return {reg->m__elements[idx].id, *reg->m__elements[idx].p_entry};
-        }
-        // TODO: operator->() const
-
-        reference operator[](difference_type n) const
-        {
-            return *(*this + n);
+            insert(inst.id, inst.p_entry);
         }
 
-    /*--- increment/decrement operators ---*/
-    public:
-        iterator_type &operator++()
-        {
-            if (idx >= reg->size())
-                __format_and_throw<std::out_of_range>("Registry::Iterator::operator++()", "Impossible to increment the iterator.",
-                "The index is out of range.",
-                "Index: ", idx, "Size: ", reg->size());
-
-            ++idx;
-            return *this;
-        }
-        iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
-
-        iterator_type &operator--()
-        {
-            if (idx == 0)
-                __format_and_throw<std::out_of_range>("Registry::Iterator::operator--()", "Impossible to decrement the iterator.",
-                "The index is out of range.",
-                "Index: ", idx, "Size: ", reg->size());
-
-            --idx;
-            return *this; 
-        }
-        iterator_type operator--(int) {auto tmp= *this; --(*this); return tmp;}
-
-        iterator_type &operator+=(difference_type n)
-        {
-            if (n < 0)
-                return (*this += (-n));
-
-            if (n == 0)
-                return *this;
-
-            // ======== Actual Implementation (hyp: n>0) ========
-
-            if (idx + n <= reg->size())
-                idx += n;
-            else
-                idx = reg->size();
-
-            return *this;
-        }
-        iterator_type operator+(difference_type n) const {auto tmp= *this; return tmp += n;}
-        iterator_type &operator-=(difference_type n) {return (*this += (-n));}
-        iterator_type operator-(difference_type n) const {return (*this + (-n));}
-        difference_type operator-(const iterator_type &other) const {return other.idx - idx;}
-
-    /*--- comparison operators ---*/
-    public:
-        bool operator==(const iterator_type &other) const {return idx == other.idx;}
-        bool operator!=(const iterator_type &other) const {return idx != other.idx;}
-        bool operator<(const iterator_type &other) const {return idx < other.idx;}
-        bool operator>(const iterator_type &other) const {return idx > other.idx;}
-        bool operator<=(const iterator_type &other) const {return idx <= other.idx;}
-        bool operator>=(const iterator_type &other) const {return idx >= other.idx;}
-    };
-
-public:
-    iterator begin() noexcept { return iterator(this, 0); }
-	const_iterator begin() const noexcept { return const_iterator(this, 0); }
-	const_iterator cbegin() const noexcept { return const_iterator(this, 0); }
-
-	iterator end() noexcept { return iterator(this, size()); }
-	const_iterator end() const noexcept { return const_iterator(this, size()); }
-	const_iterator cend() const noexcept { return const_iterator(this, size()); }
-
-/*--- Capacity ---*/
-public:
-    bool empty() const noexcept { return m__elements.empty(); }
-
-    size_type size() const noexcept { return m__elements.size(); }
-
-    size_type max_size() const noexcept { return m__elements.max_size(); }
-
-    void reserve(size_type new_cap)
-    {
-        m__elements.reserve(new_cap);
-        duplicate_ptr_checker.reserve(new_cap);
-        duplicate_id_checker.reserve(new_cap);
+        return *this;
     }
 
-    // No capacity()
+/*------- Element access -------*/
+// only operator[] (only by idx as it is not exposed).
+private:
+    reference operator[](size_type pos)
+    {
+        return {m__elements[pos].id, *m__elements[pos].p_entry};
+    }
+    const_reference operator[](size_type pos) const
+    {
+        return {m__elements[pos].id, *m__elements[pos].p_entry};
+    }
 
-    // No shrink_to_fit()    
+    // To access the data from friend classes simply acccess the member.
 
-/*--- Modifiers ---*/
+/*------- Modifiers -------*/
+// We need to clear, insert, emplace, erase, extract, merge, and swap (push_back, pop_back as special cases).
+// No need to have resize.
 private:
     void clear() noexcept
     {
@@ -304,68 +336,62 @@ private:
         duplicate_id_checker.clear();
     }
 
-    insert_return_type insert(const __instance__ &value)
+    insert_return_type insert(const __instance__& value)
     {
-        if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
-            return {end(), false};
-
-        if (duplicate_id_checker.find(value.id) != duplicate_id_checker.end())
-            return {end(), false};
-
-        m__elements.push_back(value);
-        duplicate_ptr_checker.insert(value.entry.get());
-        duplicate_id_checker.insert(value.id);
-
-        return {iterator(this, m__elements.size() - 1), true};
+        return insert(this->end(), value);
     }
-
     insert_return_type insert(__instance__ &&value)
     {
-        if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
-            return {end(), false};
-
-        if (duplicate_id_checker.find(value.id) != duplicate_id_checker.end())
-            return {end(), false};
-
-        m__elements.push_back(std::move(value));
-        duplicate_ptr_checker.insert(value.entry.get());
-        duplicate_id_checker.insert(value.id);
-
-        return {iterator(this, m__elements.size() - 1), true};
+        return insert(this->end(), std::move(value));
     }
-
-    insert_return_type insert(const_iterator hint, const __instance__ &value)
+    insert_return_type insert(const_iterator pos, const __instance__ &value)
     {
-        if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
-            return {end(), false};
-
-        if (duplicate_id_checker.find(value.id) != duplicate_id_checker.end())
-            return {end(), false};
-
-        size_type idx = hint - cbegin();
-        m__elements.insert(m__elements.begin() + idx, value);
-        duplicate_ptr_checker.insert(value.entry.get());
-        duplicate_id_checker.insert(value.id);
-
-        return {iterator(this, idx), true};
+        return insert(pos, __instance__{value.id, value.p_entry});
     }
-
-    insert_return_type insert(const_iterator hint, __instance__ &&value)
+    insert_return_type insert(const_iterator pos, __instance__ &&value)
     {
-        if (duplicate_ptr_checker.find(value.entry.get()) != duplicate_ptr_checker.end())
-            return {end(), false};
+        // If the element is already in the registry and you try to insert it twice it is a failure.
+        // While if you simply try to insert a new element with the same id, it's a soft error and 
+        // you get back the pointer to the already existing element and the bool to false.
 
-        if (duplicate_id_checker.find(value.id) != duplicate_id_checker.end())
-            return {end(), false};
+        // Instead of checking if the element is already in the checking sets, 
+        // we can simply try to insert it and check the result of the insertion.
+        if (value.p_entry == nullptr)
+        {
+            __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
+                "The element with name "+value.id+" is a pointer to null.");
+        }
 
-        size_type idx = hint - cbegin();
+        auto ins_res_dup_ptr = duplicate_ptr_checker.insert(value.p_entry.get());
+
+        if (ins_res_dup_ptr.second == false)
+        {
+            __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
+                "The element is already in the registry with a different id.",
+                "Id (new) : ", value.id,
+                "Id (old) : ", 
+                    std::find_if(
+                        m__elements.begin(), m__elements.end(), 
+                        [&value](const __instance__ &inst) { return inst.p_entry.get() == value.p_entry.get(); }
+                    )->id,
+                "Address: ", value.p_entry.get());
+        }
+        
+        auto ins_res_dup_id = duplicate_id_checker.insert(value.id);
+
+        if (ins_res_dup_id.second == false)
+        {
+            // Remove the pointer from the duplicate_ptr_checker
+            duplicate_ptr_checker.erase(value.p_entry.get());
+            return {find(value.id), false};
+        }
+
+        // Finally include the element in the registry.
+        size_type idx = pos - cbegin();
         m__elements.insert(m__elements.begin() + idx, std::move(value));
-        duplicate_ptr_checker.insert(value.entry.get());
-        duplicate_id_checker.insert(value.id);
 
         return {iterator(this, idx), true};
     }
-
     template <class InputIt>
     insert_iter_return_type insert(InputIt first, InputIt last)
     {
@@ -382,74 +408,301 @@ private:
         }
         return res;
     }
+    insert_iter_return_type insert(std::initializer_list<__instance__> ilist)
+    {
+        return insert(ilist.begin(), ilist.end());
+    }
+
+    template <class... Args>
+    insert_return_type emplace(Args&&... args)
+    {
+        return insert(this->cend() ,__instance__{std::forward<Args>(args)...});
+    }
+    template <class... Args>
+    insert_return_type emplace(const_iterator pos, Args&&... args)
+    {
+        return insert(pos, __instance__{std::forward<Args>(args)...});
+    }
 
     iterator erase(const_iterator pos)
     {
-        if (pos == cend())
+        if(pos == cend())
             return end();
-        
-        size_type idx = pos - cbegin();
 
-        duplicate_ptr_checker.erase(m__elements[idx].p_entry.get());
-        duplicate_id_checker.erase(m__elements[idx].id);
-        m__elements.erase(m__elements.begin() + idx);
+        duplicate_ptr_checker.erase(pos->p_entry.get());
+        duplicate_id_checker.erase(pos->id);
+
+        auto idx = pos - cbegin();
+        auto it = m__elements.erase(m__elements.begin() + idx);
         
-        return iterator(this, idx < size() ? idx : size());
+        return iterator(this, it - m__elements.begin());
     }
-
     iterator erase(const_iterator first, const_iterator last)
     {
-        auto ret_iter = end();
+        auto idx_first = first - cbegin();
+        auto idx_last = last - cbegin();
 
-        for (auto it = first; it != last; ++it)
+        for (auto it=first; it!=last; ++it)
         {
-            ret_iter = erase(it);
+            duplicate_ptr_checker.erase(it->p_entry.get());
+            duplicate_id_checker.erase(it->id);
         }
 
-        return ret_iter;
-    }
+        auto it = m__elements.erase(m__elements.begin() + idx_first, m__elements.begin() + idx_last);
 
-/*--- Lookup/Element access ---*/
-public:
-    iterator find(const key_type &id)
-    {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
-        return it != m__elements.end() ? iterator(this, it - m__elements.begin()) : end();
+        return iterator(this, it - m__elements.begin());
     }
-
-    const_iterator find(const key_type &id) const
-    {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
-        return it != m__elements.end() ? const_iterator(this, it - m__elements.begin()) : cend();
-    }
-
-    mapped_type &at(const key_type &id)
+    size_type erase(const key_type &id)
     {
         auto it = find(id);
         if (it == end())
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-            "The element with the specified id does not exist.",
-            "Id: ", id);
-        return *it->entry;
+            return 0;
+
+        erase(it);
+        return 1;
     }
 
-    const mapped_type &at(const key_type &id) const
+    __instance__ extract(const_iterator pos)
     {
-        auto it = find(id);
-        if (it == cend())
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-            "The element with the specified id does not exist.",
-            "Id: ", id);
-        return *it->entry;
+        if(pos == cend())
+            return __instance__{"", nullptr};
+
+        duplicate_ptr_checker.erase(pos->p_entry.get());
+        duplicate_id_checker.erase(pos->id);
+
+        auto idx = pos - cbegin();
+        auto inst = std::move(m__elements[idx]);
+        m__elements.erase(m__elements.begin() + idx);
+
+        return inst;
+    }
+    __instance__ extract(const key_type &id)
+    {
+        return extract(find(id));
     }
 
-    // No operator[]
+    // TODO: merge (allowing to merge with another registry of derived types)
+    size_type merge(Registry &source);
+    size_type merge(Registry &&source);
 
-    size_type count(const key_type &id) const
+    void swap(Registry &other) noexcept
     {
-        return find(id) != cend() ? 1 : 0;
+        m__elements.swap(other.m__elements);
+        duplicate_ptr_checker.swap(other.duplicate_ptr_checker);
+        duplicate_id_checker.swap(other.duplicate_id_checker);
     }
 
 }; // class Registry
+
+/*--- Iterators ---*/
+
+template <typename T>
+template <typename R>
+class Registry<T>::Iterator
+{
+/*--- Member types ---*/
+public:
+    using iterator_type = Iterator<R>;
+    // Determine if C is a const type and choose the appropriate base type
+    using base_iter = typename std::conditional<
+        std::is_const<R>::value,
+        typename R::Container::const_iterator,
+        typename R::Container::iterator
+    >::type;
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = typename R::value_type;
+    using difference_type = typename R::difference_type;
+    using pointer = typename std::conditional<
+        std::is_const<R>::value,
+        typename R::const_pointer,
+        typename R::pointer
+    >::type;
+    using reference = typename std::conditional<
+        std::is_const<R>::value,
+        typename R::const_reference,
+        typename R::reference
+    >::type;
+
+/*--- Member objects ---*/
+private:
+// TODO: pointer to safe member if safety checks are enabled.
+    R* reg;
+    size_type idx;
+    mutable reference temp_ref;
+
+/*--- Member functions ---*/
+/*--- (constructor) ---*/
+public:
+    Iterator() = delete;
+    Iterator(R* container, size_type index) : 
+        reg(container), 
+        idx(index)
+    { 
+#ifdef ENABLE_SAFETY_CHECKS
+        if (index > reg->size())
+            __format_and_throw<std::out_of_range>("Registry::Iterator::Iterator()", "Impossible to construct the iterator.",
+            "The index is out of range.",
+            "Index: ", index, "Size: ", reg->size());
+#endif
+    }
+    Iterator(const Iterator &other) = default;
+    Iterator(Iterator &&other) noexcept = default;
+
+/*--- (destructor) ---*/
+public:
+    ~Iterator() = default;
+
+/*--- operator= ---*/
+public:
+    Iterator &operator=(const Iterator &rhs) = default;
+    Iterator &operator=(Iterator &&rhs) noexcept = default;
+
+/*--- base ---*/
+// Access the underlying iterator
+protected:
+    base_iter base() const
+    {
+        return reg->m__elements.begin() + idx;
+    }
+/*--- access operators ---*/
+// Access the pointed-to element
+public:
+    reference operator*() const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        return reg->at(idx);
+#else
+        reg->operator[](idx);
+#endif
+    }
+    
+    pointer operator->() const
+    {
+        temp_ref = operator*();
+        return &temp_ref;
+    }
+
+    reference operator[](difference_type n) const
+    {
+        return *(*this + n);
+    }
+
+/*--- increment/decrement operators ---*/
+public:
+    iterator_type &operator++()
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        if (idx >= reg->size())
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator++()", "Impossible to increment the iterator.",
+            "The index is out of range.",
+            "Index: ", idx, "Size: ", reg->size());
+#endif
+
+        ++idx;
+        return *this;
+    }
+    iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+
+    iterator_type &operator--()
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        if (idx == 0)
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator--()", "Impossible to decrement the iterator.",
+            "The index is out of range.",
+            "Index: ", idx, "Size: ", reg->size());
+#endif
+
+        --idx;
+        return *this; 
+    }
+    iterator_type operator--(int) {auto tmp= *this; --(*this); return tmp;}
+
+    iterator_type &operator+=(difference_type n)
+    {
+        if (n < 0)
+            return (*this += (-n));
+
+        if (n == 0)
+            return *this;
+
+        // ======== Actual Implementation (hyp: n>0) ========
+#ifdef ENABLE_SAFETY_CHECKS
+        if (idx + n <= reg->size())
+            idx += n;
+        else
+            idx = reg->size();
+#else
+        idx += n;
+#endif
+
+        return *this;
+    }
+    iterator_type operator+(difference_type n) const {auto tmp= *this; return tmp += n;}
+    iterator_type &operator-=(difference_type n) {return (*this += (-n));}
+    iterator_type operator-(difference_type n) const {return (*this + (-n));}
+    difference_type operator-(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return other.idx - idx;
+    }
+
+/*--- comparison operators ---*/
+public:
+    bool operator==(const iterator_type &other) const 
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx == other.idx;
+    }
+    bool operator!=(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx != other.idx;
+    }
+    bool operator<(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx < other.idx;
+    }
+    bool operator>(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx > other.idx;
+    }
+    bool operator<=(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx <= other.idx;
+    }
+    bool operator>=(const iterator_type &other) const
+    {
+#ifdef ENABLE_SAFETY_CHECKS
+        check_same_registry(other);
+#endif
+        return idx >= other.idx;
+    }
+
+// Helper for check if the iterator is valid.
+#ifdef ENABLE_SAFETY_CHECKS
+private:
+    void check_same_registry(const iterator_type &other) const
+    {
+        if (reg != other.reg)
+            __format_and_throw<std::invalid_argument>("Registry::Iterator::check_same_registry()", "Impossible to compare the iterators.",
+                "The iterators are from different registries.");
+    }
+#endif
+};
 
 } // namespace bevarmejo
