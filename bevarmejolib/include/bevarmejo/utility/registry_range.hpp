@@ -66,9 +66,9 @@ private:
 /*------- Member objects -------*/
 private:
 #ifdef ENABLE_SAFETY_CHECKS
-    SafeMemberPtr<const_Reg> m__registry;
+    SafeMemberPtr<Reg> m__registry;
 #else
-    const_Reg* m__registry;
+    Reg* m__registry;
 #endif
 
 /*------- Member functions -------*/
