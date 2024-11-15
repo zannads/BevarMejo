@@ -140,41 +140,11 @@ public:
         return {m__elements[pos].id, *m__elements[pos].p_entry};
     }
 
-    reference front()
-    {
-#ifdef ENABLE_SAFETY_CHECKS
-        return this->at(0);
-#else
-        return {m__elements[0].id, *m__elements[0].p_entry};
-#endif
-    }
-    const_reference front() const
-    {
-#ifdef ENABLE_SAFETY_CHECKS
-        return this->at(0);
-#else
-        return {m__elements[0].id, *m__elements[0].p_entry};
-#endif
-    }
+    reference front() { return *begin(); }
+    const_reference front() const { return *begin(); }
 
-    reference back()
-    {
-        auto last = m__elements.size() - 1;
-#ifdef ENABLE_SAFETY_CHECKS
-        return this->at(last);
-#else
-        return {m__elements[last].id, *m__elements[last].p_entry};
-#endif
-    }
-    const_reference back() const
-    {
-        auto last = m__elements.size() - 1;
-#ifdef ENABLE_SAFETY_CHECKS
-        return this->at(last);
-#else
-        return {m__elements[last].id, *m__elements[last].p_entry};
-#endif
-    }
+    reference back() { return *(end() - 1); }
+    const_reference back() const { return *(end() - 1); }
 
 /*------- Iterators -------*/
 public:
@@ -202,12 +172,7 @@ public:
 
     size_type max_size() const noexcept { return m__elements.max_size(); }
 
-    void reserve(size_type new_cap)
-    {
-        m__elements.reserve(new_cap);
-        duplicate_ptr_checker.reserve(new_cap);
-        duplicate_id_checker.reserve(new_cap);
-    }
+    // Reserve is private because the user is not allowed to change the capacity.
 
     size_type capacity() const noexcept { return m__elements.capacity(); }
 
@@ -326,6 +291,16 @@ private:
     }
 
     // To access the data from friend classes simply acccess the member.
+
+/*------- Capacity ---------*/
+// The onlye capacity method that is not const because it can modify the elemnts.
+private:
+    void reserve(size_type new_cap)
+    {
+        m__elements.reserve(new_cap);
+        duplicate_ptr_checker.reserve(new_cap);
+        duplicate_id_checker.reserve(new_cap);
+    }
 
 /*------- Modifiers -------*/
 // We need to clear, insert, emplace, erase, extract, merge, and swap (push_back, pop_back as special cases).
@@ -539,18 +514,11 @@ private:
 /*--- (constructor) ---*/
 public:
     Iterator() = delete;
-    Iterator(R* container, size_type index) : 
+    Iterator(R* container, size_type index) noexcept : 
         reg(container), 
         idx(index)
-    { 
-#ifdef ENABLE_SAFETY_CHECKS
-        if (index > reg->size())
-            __format_and_throw<std::out_of_range>("Registry::Iterator::Iterator()", "Impossible to construct the iterator.",
-            "The index is out of range.",
-            "Index: ", index, "Size: ", reg->size());
-#endif
-    }
-    Iterator(const Iterator &other) = default;
+    { }
+    Iterator(const Iterator &other) noexcept = default;
     Iterator(Iterator &&other) noexcept = default;
 
 /*--- (destructor) ---*/
@@ -559,7 +527,7 @@ public:
 
 /*--- operator= ---*/
 public:
-    Iterator &operator=(const Iterator &rhs) = default;
+    Iterator &operator=(const Iterator &rhs) noexcept = default;
     Iterator &operator=(Iterator &&rhs) noexcept = default;
 
 /*--- base ---*/
