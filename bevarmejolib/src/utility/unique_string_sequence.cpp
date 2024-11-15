@@ -162,4 +162,24 @@ UniqueStringSequence::UniqueStringSequence(const Container &elements) :
 
     void UniqueStringSequence::swap(UniqueStringSequence &other) noexcept { m__elements.swap(other.m__elements); }
 
+/*--- Lookup ---*/
+    auto UniqueStringSequence::count(const value_type &id) const -> size_type
+    {
+        return find(id) != cend() ? 1 : 0;
+    }
+
+    auto UniqueStringSequence::find(const value_type &id) -> iterator
+    {
+        return std::find_if(m__elements.begin(), m__elements.end(), [&id](const value_type &inst) { return inst == id; });
+    }
+    auto UniqueStringSequence::find(const value_type &id) const -> const_iterator
+    {
+        return std::find_if(m__elements.begin(), m__elements.end(), [&id](const value_type &inst) { return inst == id; });
+    }
+
+    bool UniqueStringSequence::contains(const value_type &id) const
+    {
+        return find(id) != cend();
+    }
+
 }; // class UniqueStringSequence

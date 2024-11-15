@@ -138,6 +138,15 @@ public:
 
     void swap(UniqueStringSequence &other) noexcept;
 
+/*--- Lookup ---*/
+public:
+    size_type count(const value_type &id) const;
+
+    iterator find(const value_type &id);
+    const_iterator find(const value_type &id) const;
+
+    bool contains(const value_type &id) const;
+
 }; // class UniqueStringSequence
 
 } // namespace bevarmejo::wds
