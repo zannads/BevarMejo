@@ -183,3 +183,5 @@ UniqueStringSequence::UniqueStringSequence(const Container &elements) :
     }
 
 }; // class UniqueStringSequence
+
+} // namespace bevarmejo::wds
