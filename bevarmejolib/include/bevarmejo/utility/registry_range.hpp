@@ -25,7 +25,10 @@ struct Exclude { };
 struct Include { };
 struct OrderedInclude { };
 
-template <typename R, typename T>
+template <typename R, typename Style,
+            typename = std::enable_if_t<
+                std::is_same_v<Style, Exclude> || std::is_same_v<Style, Include> || std::is_same_v<Style, OrderedInclude>
+            >>
 class RegistryRange final : public UniqueStringSequence
 {
 /*------- Member types -------*/
@@ -33,7 +36,7 @@ private:
     using inherited = UniqueStringSequence;
     using Reg = Registry<R>;
     using const_Reg = const Registry<R>;
-    using style_type = T;
+    using style_type = Style;
 public:
     using key_type = typename Reg::key_type;
     using mapped_type = typename Reg::mapped_type;
@@ -51,10 +54,10 @@ private:
     template <class RV>
     class ReverseIterator;
 public:
-    using iterator = Iterator<RegistryRange<R, T>>;
-    using const_iterator = Iterator<const RegistryRange<R, T>>;
-    using reverse_iterator = ReverseIterator<RegistryRange<R, T>>;
-    using const_reverse_iterator = ReverseIterator<const RegistryRange<R, T>>;
+    using iterator = Iterator<RegistryRange<R, Style>>;
+    using const_iterator = Iterator<const RegistryRange<R, Style>>;
+    using reverse_iterator = ReverseIterator<RegistryRange<R, Style>>;
+    using const_reverse_iterator = ReverseIterator<const RegistryRange<R, Style>>;
 
 private:
     friend iterator;
