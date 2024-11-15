@@ -17,7 +17,7 @@ namespace bevarmejo
 // The only thing you can do when you get a refernece to these objects is iterate them,
 // and access and modify (if non-const) the elements. 
 // you are always getting a complete set of the elements inside the registry when iterating
-// and you can't add or remove elements, if you want to see less, you have to use a registry_view.
+// and you can't add or remove elements, if you want to see less, you have to use a registry_range.
 
 // WDS uses the registry to store the elements.
 class WaterDistributionSystem;
