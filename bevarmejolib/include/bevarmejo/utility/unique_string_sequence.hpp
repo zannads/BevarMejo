@@ -10,8 +10,9 @@ namespace bevarmejo::wds
 // I define a class that is a ordered (in the order of insertion) sequence of unique strings.
 // This is why I redefine it, instead of using a std::set<std::string> (would not be ordered).
 // or instead of using a std::vector<std::string> (would not be unique).
-// Everything is like using a simple std::vector<std::string> but there is the extra guarantee that
-// the strings are unique.
+// Conceptually, it is like a simple std::vector<std::string>, but there are extra guarantees that
+// the strings are unique. As it should also behave like a set (so no free access to the elements),
+// I will provide only const access to the elements.
 class UniqueStringSequence
 {
 /*------- Member types -------*/
@@ -70,21 +71,21 @@ public:
 
 /*--- Iterators ---*/
 public:
-    iterator begin();
-    const_iterator begin() const;
-    const_iterator cbegin() const;
+    iterator begin() noexcept;
+    const_iterator begin() const noexcept;
+    const_iterator cbegin() const noexcept;
 
-    iterator end();
-    const_iterator end() const;
-    const_iterator cend() const;
+    iterator end() noexcept;
+    const_iterator end() const noexcept;
+    const_iterator cend() const noexcept;
 
-    reverse_iterator rbegin();
-    const_reverse_iterator rbegin() const;
-    const_reverse_iterator crbegin() const;
+    reverse_iterator rbegin() noexcept;
+    const_reverse_iterator rbegin() const noexcept;
+    const_reverse_iterator crbegin() const noexcept;
 
-    reverse_iterator rend();
-    const_reverse_iterator rend() const;
-    const_reverse_iterator crend() const;
+    reverse_iterator rend() noexcept;
+    const_reverse_iterator rend() const noexcept;
+    const_reverse_iterator crend() const noexcept;
 
 /*--- Capacity ---*/
 public:

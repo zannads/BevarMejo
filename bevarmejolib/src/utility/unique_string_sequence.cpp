@@ -36,21 +36,21 @@ UniqueStringSequence::UniqueStringSequence(const Container &elements) :
     void UniqueStringSequence::assign(const UniqueStringSequence::Container &elements) { this->operator=(elements); }
 
 /*--- Iterators ---*/
-    auto UniqueStringSequence::begin() -> iterator { return m__elements.begin(); }
-    auto UniqueStringSequence::begin() const -> iterator { return m__elements.begin(); }
-    auto UniqueStringSequence::cbegin() const -> const_iterator { return m__elements.cbegin(); }
+    auto UniqueStringSequence::begin() noexcept -> iterator { return m__elements.begin(); }
+    auto UniqueStringSequence::begin() const noexcept -> iterator { return m__elements.begin(); }
+    auto UniqueStringSequence::cbegin() const noexcept -> const_iterator { return m__elements.cbegin(); }
 
-    auto UniqueStringSequence::end() -> iterator { return m__elements.end(); }
-    auto UniqueStringSequence::end() const -> iterator { return m__elements.end(); }
-    auto UniqueStringSequence::cend() const -> const_iterator { return m__elements.cend(); }
+    auto UniqueStringSequence::end() noexcept -> iterator { return m__elements.end(); }
+    auto UniqueStringSequence::end() const noexcept -> iterator { return m__elements.end(); }
+    auto UniqueStringSequence::cend() const noexcept -> const_iterator { return m__elements.cend(); }
 
-    auto UniqueStringSequence::rbegin() -> reverse_iterator { return m__elements.rbegin(); }
-    auto UniqueStringSequence::rbegin() const -> reverse_iterator { return m__elements.rbegin(); }
-    auto UniqueStringSequence::crbegin() const -> const_reverse_iterator { return m__elements.crbegin(); }
+    auto UniqueStringSequence::rbegin() noexcept -> reverse_iterator { return m__elements.rbegin(); }
+    auto UniqueStringSequence::rbegin() const noexcept -> reverse_iterator { return m__elements.rbegin(); }
+    auto UniqueStringSequence::crbegin() const noexcept -> const_reverse_iterator { return m__elements.crbegin(); }
 
-    auto UniqueStringSequence::rend() -> reverse_iterator { return m__elements.rend(); }
-    auto UniqueStringSequence::rend() const -> reverse_iterator { return m__elements.rend(); }
-    auto UniqueStringSequence::crend() const -> const_reverse_iterator { return m__elements.crend(); }
+    auto UniqueStringSequence::rend() noexcept -> reverse_iterator { return m__elements.rend(); }
+    auto UniqueStringSequence::rend() const noexcept -> reverse_iterator { return m__elements.rend(); }
+    auto UniqueStringSequence::crend() const noexcept -> const_reverse_iterator { return m__elements.crend(); }
 
 /*--- Capacity ---*/
     auto UniqueStringSequence::empty() const noexcept -> bool { return m__elements.empty(); }
