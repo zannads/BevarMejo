@@ -310,25 +310,22 @@ private:
         }
         Iterator operator--(int) { auto tmp= *this; --(*this); return tmp; }
 
-        Iterator& operator+=(difference_type n) {
-            if (n<0)
-                return (*this += (-n));
+        Iterator& operator+=(difference_type n)
+        {
+            while (n)
+            {
+                if (n > 0)
+                {
+                    ++(*this);
+                    --n;
+                }
+                else
+                {
+                    --(*this);
+                    ++n;
+                }
+            }
 
-            if (n==0)
-                return *this;
-
-            // ======== Actual Implementation (hyp: n>0) ========
-            
-            if (m__index+n <= m__end_index) {
-                m__index += n;
-            }
-            else if (m__index+n == m__end_index+1) {
-                m__index = duration_index();
-            }
-            else {
-                m__index = m__time_series->size();
-            }
-            
             return *this;
         }
         Iterator operator+(difference_type n) const { auto tmp= *this; return tmp += n; }
@@ -407,25 +404,21 @@ private:
         }
         ReverseIterator operator--(int) { auto tmp= *this; --(*this); return tmp; }
 
-        ReverseIterator& operator+=(difference_type n) {
+        ReverseIterator& operator+=(difference_type n)
+        {
             
-            if (n<0)
-                return (*this += (-n));
-
-            if (n==0)
-                return *this;
-
-            // ======== Actual Implementation (hyp: n>0) ========
-
-            if (m__index == duration_index() ) {
-                // It behaves like duration_index is one step after the end index.
-                m__index = m__end_index+1;
-            }
-            else if (m__index-n >= 0) {
-                m__index -= n;
-            }
-            else {
-                m__index = 0;
+            while (n)
+            {
+                if (n > 0)
+                {
+                    ++(*this);
+                    --n;
+                }
+                else
+                {
+                    --(*this);
+                    ++n;
+                }
             }
 
             return *this;

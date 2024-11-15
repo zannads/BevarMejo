@@ -592,21 +592,19 @@ public:
 
     iterator_type &operator+=(difference_type n)
     {
-        if (n < 0)
-            return (*this += (-n));
-
-        if (n == 0)
-            return *this;
-
-        // ======== Actual Implementation (hyp: n>0) ========
-#ifdef ENABLE_SAFETY_CHECKS
-        if (idx + n <= reg->size())
-            idx += n;
-        else
-            idx = reg->size();
-#else
-        idx += n;
-#endif
+        while (n)
+        {
+            if (n > 0)
+            {
+                ++(*this);
+                --n;
+            }
+            else
+            {
+                --(*this);
+                ++n;
+            }
+        }
 
         return *this;
     }
@@ -618,7 +616,7 @@ public:
 #ifdef ENABLE_SAFETY_CHECKS
         check_same_registry(other);
 #endif
-        return other.idx - idx;
+        return idx - other.idx;
     }
 
 /*--- comparison operators ---*/
