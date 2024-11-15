@@ -207,6 +207,127 @@ public:
 public:
     // Modifiers are not needed for the RegistryRange. They are already implemented in the UniqueStringSequence.
     
+/*--- Iterators ---*/
+    template <class RV>
+    class Iterator
+    {
+    /*--- Member types ---*/
+    public:
+        using iterator_type = Iterator<RV>;
+        using base_iter = typename std::conditional<
+            std::is_const<RV>::value,
+            typename RV::Reg::const_iterator,
+            typename RV::Reg::iterator
+        >::type;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = typename base_iter::value_type;
+        using difference_type = typename base_iter::difference_type;
+        using pointer = typename base_iter::pointer;
+        using reference = typename base_iter::reference;
+
+    /*--- Member objects ---*/
+    private:
+#ifdef ENABLE_SAFETY_CHECKS
+        SafeMemberPtr<RV> m__range;
+#else
+        RV* m__range;
+#endif
+        base_iter m__iter;
+        UniqueStringSequence& m__ids;
+
+    /*--- Member functions ---*/
+    /*--- (constructor) ---*/
+    public:
+        Iterator() = delete;
+        Iterator(RV* range, size_type index) noexcept :
+            m__range(range), 
+            m__iter(range->m__registry->begin()),
+            m__ids(*range)
+        {
+            // Based on the Style, I need to find valid element in the Registry. 
+            // It could easily go all the way to the end iterator.
+            // Use try catch in case ENABLE_SAFETY_CHECKS is on.
+            try
+            {
+                m__iter += index;
+            }
+            catch (...)
+            {
+                m__iter = range->m__registry->end();
+            }
+        }
+        Iterator(const Iterator &other) noexcept = default;
+        Iterator(Iterator &&other) noexcept = default;
+
+    /*--- (destructor) ---*/
+    public:
+        ~Iterator() = default;
+        
+    /*--- operator= ---*/
+    public:
+        Iterator &operator=(const Iterator &rhs) noexcept = default;
+        Iterator &operator=(Iterator &&rhs) noexcept = default;
+
+    /*--- base ---*/
+    protected:
+        base_iter base() const { return m__iter; }
+
+    /*--- access operators ---*/
+    public:
+        reference operator*() const { return *m__iter; }
+
+        pointer operator->() const { return m__iter.operator->(); }
+
+    /*--- increment/decrement operators ---*/
+    public:
+        iterator_type &operator++()
+        {
+
+            return *this;
+        }
+        iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+
+        iterator_type &operator--()
+        {
+
+            return *this;
+        }
+        iterator_type operator--(int) {auto tmp= *this; --(*this); return tmp;}
+
+        iterator_type &operator+=(difference_type n)
+        {
+            while (n)
+            {
+                if (n > 0)
+                {
+                    ++(*this);
+                    --n;
+                }
+                else
+                {
+                    --(*this);
+                    ++n;
+                }
+            }
+
+            return *this;
+        }
+        iterator_type operator+(difference_type n) const {auto tmp= *this; return tmp += n;}
+        iterator_type &operator-=(difference_type n) {return (*this += (-n));}
+        iterator_type operator-(difference_type n) const {return (*this + (-n));}
+        difference_type operator-(const iterator_type &other) const { return m__iter - other.m__iter; }
+
+    /*--- comparison operators ---*/
+    public:
+        bool operator==(const iterator_type &other) const { return m__iter == other.m__iter; }
+        bool operator!=(const iterator_type &other) const { return m__iter != other.m__iter; }
+        bool operator<(const iterator_type &other) const { return m__iter < other.m__iter; }
+        bool operator>(const iterator_type &other) const { return m__iter > other.m__iter; }
+        bool operator<=(const iterator_type &other) const { return m__iter <= other.m__iter; }
+        bool operator>=(const iterator_type &other) const { return m__iter >= other.m__iter; }
+
+    }; // class RegistryRange::Iterator
+
 }; // class RegistryRange
 
 } // namespace bevarmejo::wds
