@@ -1,13 +1,12 @@
 #pragma once
 
 #include <algorithm>
-#include <memory>
 #include <initializer_list>
 #include <string>
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/utility/safe_member_ptr.hpp"
+#include "bevarmejo/utility/bemememory.hpp"
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/unique_string_sequence.hpp"
 
@@ -26,18 +25,18 @@ namespace ViewBehaviour {
     struct OrderedInclude {};
 };
 
-template <typename R, typename Style,
+template <typename RegistryElement, typename B,
             typename = std::enable_if_t<
-                std::is_same_v<Style, ViewBehaviour::Exclude> || std::is_same_v<Style, ViewBehaviour::Include> || std::is_same_v<Style, ViewBehaviour::OrderedInclude>
+                std::is_same_v<B, ViewBehaviour::Exclude> || std::is_same_v<B, ViewBehaviour::Include> || std::is_same_v<B, ViewBehaviour::OrderedInclude>
             >>
-class RegistryRange final : public UniqueStringSequence
+class RegistryView final 
 {
 /*------- Member types -------*/
 private:
-    using inherited = UniqueStringSequence;
-    using Reg = Registry<R>;
-    using const_Reg = const Registry<R>;
-    using style_type = Style;
+    using Reg = Registry<RegistryElement>;
+    using behaviour_type = B;
+    using self_type = RegistryView<RegistryElement, B>;
+    using USS = UniqueStringSequence;
 public:
     using key_type = typename Reg::key_type;
     using mapped_type = typename Reg::mapped_type;
@@ -55,10 +54,10 @@ private:
     template <class RV>
     class ReverseIterator;
 public:
-    using iterator = Iterator<RegistryRange<R, Style>>;
-    using const_iterator = Iterator<const RegistryRange<R, Style>>;
-    using reverse_iterator = ReverseIterator<RegistryRange<R, Style>>;
-    using const_reverse_iterator = ReverseIterator<const RegistryRange<R, Style>>;
+    using iterator = Iterator<self_type>;
+    using const_iterator = Iterator<const self_type>;
+    using reverse_iterator = ReverseIterator<self_type>;
+    using const_reverse_iterator = ReverseIterator<const self_type>;
 
 private:
     friend iterator;
@@ -67,39 +66,40 @@ private:
 /*------- Member objects -------*/
 private:
 #ifdef ENABLE_SAFETY_CHECKS
-    SafeMemberPtr<Reg> m__registry;
+    SafeMemberPtr<Reg> mp__registry;
+    std::weak_ptr<USS> mp__elements;
 #else
-    Reg* m__registry;
+    Reg* mp__registry;
+    USS* mp__elements;
 #endif
 
 /*------- Member functions -------*/
 /*--- (constructor) ---*/
 public:
-    RegistryRange() :
-        inherited(),
-        m__registry(nullptr)
+    RegistryView() noexcept = default;
+    RegistryView(SafeMemberPtr<Reg> registry) noexcept : 
+        mp__registry(registry), 
+        mp__elements(nullptr)
     { }
-    template <typename... Args>
-    RegistryRange(Args&&... args) :
-        inherited(std::forward<Args>(args)...),
-        m__registry(nullptr)
+    RegistryView(std::weak_ptr<USS> elements) noexcept : 
+        mp__registry(nullptr), 
+        mp__elements(elements)
     { }
-    template <typename... Args>
-    RegistryRange(const Registry* registry, Args&&... args) :
-        inherited(std::forward<Args>(args)...),
-        m__registry(registry)
+    RegistryView(SafeMemberPtr<Reg> registry, std::weak_ptr<USS> elements) noexcept : 
+        mp__registry(registry), 
+        mp__elements(elements)
     { }
-    RegistryRange(const RegistryRange &other) = default;
-    RegistryRange(RegistryRange &&other) noexcept = default;
+    RegistryView(const RegistryView &other) = default;
+    RegistryView(RegistryView &&other) noexcept = default;
 
 /*--- (destructor) ---*/
 public:
-    ~RegistryRange() = default;
+    ~RegistryView() = default;
 
 /*--- operator= ---*/
 public:
-    RegistryRange &operator=(const RegistryRange &rhs) = default;
-    RegistryRange &operator=(RegistryRange &&rhs) noexcept = default;
+    RegistryView &operator=(const RegistryView &rhs) = default;
+    RegistryView &operator=(RegistryView &&rhs) noexcept = default;
 
 /*--- assign ---*/
 public:
@@ -112,23 +112,26 @@ public:
     }
     const mapped_type& at(const key_type& id) const
     {
-        if (!m__registry)
-            __format_and_throw<std::runtime_error>("RegistryRange", "at", "The registry is not set.");
+        if (!mp__registry)
+            __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
+                "The registry is not available.");
 
         // If the style is Exclude, asking for an element that is in the list of excluded elements, it is like asking for a non-existing element.
         // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
-        if constexpr (std::is_same_v<style_type, ViewBehaviour::Exclude>)
+        if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Exclude>)
         {
-            if (inherited::contains(id))
-                __format_and_throw<std::out_of_range>("RegistryRange", "at", "The element is excluded.");
+            if (mp__elements!= nullptr && mp__elements->contains(id))
+                __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
+                    "The element is excluded.");
         }
-        else // if constexpr (std::is_same_v<style_type, ViewBehaviour::Include> || std::is_same_v<style_type, ViewBehaviour::OrderedInclude>)
+        else // if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Include> || std::is_same_v<behaviour_type, ViewBehaviour::OrderedInclude>)
         {
-            if (!inherited::contains(id))
-                __format_and_throw<std::out_of_range>("RegistryRange", "at", "The element is not included.");
+            if (mp__elements!= nullptr && !mp__elements->contains(id))
+                __format_and_throw<std::out_of_range>("RegistryView", "at", "The element is not included.",
+                    "The element is not in the list of included elements.");
         }
         
-        return m__registry->at(id);
+        return mp__registry->at(id);
     }
     reference at(size_type pos) { return *(begin()+pos); }
     const_reference at(size_type pos) const { return *(cbegin()+pos); }
@@ -145,13 +148,13 @@ public:
     const_iterator begin() const noexcept { return const_iterator(this, 0); }
     const_iterator cbegin() const noexcept { return const_iterator(this, 0); }
 
-    iterator end() noexcept { return iterator(this, m__registry->size()); }
-    const_iterator end() const noexcept { return const_iterator(this, m__registry->size()); }
-    const_iterator cend() const noexcept { return const_iterator(this, m__registry->size()); }
+    iterator end() noexcept { return iterator(this, mp__registry->size()); }
+    const_iterator end() const noexcept { return const_iterator(this, mp__registry->size()); }
+    const_iterator cend() const noexcept { return const_iterator(this, mp__registry->size()); }
 
-    reverse_iterator rbegin() noexcept { return reverse_iterator(this, m__registry->size()); }
-    const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(this ,m__registry->size()); }
-    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(this, m__registry->size()); }
+    reverse_iterator rbegin() noexcept { return reverse_iterator(this, mp__registry->size()); }
+    const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(this ,mp__registry->size()); }
+    const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(this, mp__registry->size()); }
 
     reverse_iterator rend() noexcept { return reverse_iterator(this, 0); }
     const_reverse_iterator rend() const noexcept { return const_reverse_iterator(this, 0); }
@@ -165,31 +168,31 @@ public:
 
     size_type size() const 
     {
-        if (m__registry == nullptr)
+        if (mp__registry == nullptr)
             return 0;
 
-        if constexpr (std::is_same_v<Style, ViewBehaviour::Exclude>)
+        if constexpr (std::is_same_v<B, ViewBehaviour::Exclude>)
         {
-            size_type count = m__registry->size();
+            size_type count = mp__registry->size();
 
             // Remove the elements to exclude but only if they actually exist
-            for (const auto& id : m__elements)
+            for (const auto& id : value_or_empty(mp__elements))
             {
-                if (m__registry->contains(id))
+                if (mp__registry->contains(id))
                     --count;
             }
 
             return count;
         }
 
-        if constrexpr (std::is_same_v<Style, ViewBehaviour::Include> || std::is_same_v<Style, ViewBehaviour::OrderedInclude>)
+        if constrexpr (std::is_same_v<B, ViewBehaviour::Include> || std::is_same_v<B, ViewBehaviour::OrderedInclude>)
         {
             size_type count = 0;
 
             // Count the elements to include but only if they actually exist
-            for (const auto& id : m__elements)
+            for (const auto& id : value_or_empty(mp__elements))
             {
-                if (m__registry->contains(id))
+                if (mp__registry->contains(id))
                     ++count;
             }
 
@@ -197,18 +200,13 @@ public:
         }
     }
 
-// These are not needed for the RegistryRange. They are already implemented in the UniqueStringSequence.
-    // size_type max_size() const noexcept;
-
-    // void reserve(size_type new_cap);
-
-    // size_type capacity() const;
-
-    // void shrink_to_fit();
-
 /*--- Modifiers ---*/
 public:
-    // Modifiers are not needed for the RegistryRange. They are already implemented in the UniqueStringSequence.
+    // Modifiers are not needed for the RegistryView.
+
+/*--- Lookup ---*/
+public:
+    // TODO: Implement the find, count and contains method.
     
 /*--- Iterators ---*/
     template <class RV>
@@ -244,10 +242,10 @@ public:
         Iterator() = delete;
         Iterator(RV* range, size_type index) noexcept :
             m__range(range), 
-            m__iter(range->m__registry->begin()),
+            m__iter(range->mp__registry->begin()),
             m__ids(*range)
         {
-            // Based on the Style, I need to find valid element in the Registry. 
+            // Based on the B, I need to find valid element in the Registry. 
             // It could easily go all the way to the end iterator.
             // Use try catch in case ENABLE_SAFETY_CHECKS is on.
             try
@@ -256,7 +254,7 @@ public:
             }
             catch (...)
             {
-                m__iter = range->m__registry->end();
+                m__iter = range->mp__registry->end();
             }
         }
         Iterator(const Iterator &other) noexcept = default;
@@ -329,8 +327,8 @@ public:
         bool operator<=(const iterator_type &other) const { return m__iter <= other.m__iter; }
         bool operator>=(const iterator_type &other) const { return m__iter >= other.m__iter; }
 
-    }; // class RegistryRange::Iterator
+    }; // class RegistryView::Iterator
 
-}; // class RegistryRange
+}; // class RegistryView
 
 } // namespace bevarmejo
