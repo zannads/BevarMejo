@@ -11,23 +11,24 @@
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/unique_string_sequence.hpp"
 
-
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 
-// Now that I have defined a class the keeps track of the IDs of the elements in the network
-// that I want to see (or not to see). I can define a class that is a range of the registry
-// and by inherting from the UniqueStringSequence I know I can already modify the 
-// sequence of IDs that I want to see.
-// There are 3 types of ranges: Exclude Ids, Include Only (Registry order), Include Only (View order).
-
-struct Exclude { };
-struct Include { };
-struct OrderedInclude { };
+// A View of a Registry is a sub-range of the registry with a specific behaviour.
+// The behaviour can be:
+// - Exclude: The elements in the list are excluded from the view.
+// - Include: The elements in the list are the only ones in the view.
+// - OrderedInclude: The elements in the list are the only ones in the view and 
+//      they are in the order of the list and not of the registry.
+namespace ViewBehaviour {
+    struct Exclude {};
+    struct Include {};
+    struct OrderedInclude {};
+};
 
 template <typename R, typename Style,
             typename = std::enable_if_t<
-                std::is_same_v<Style, Exclude> || std::is_same_v<Style, Include> || std::is_same_v<Style, OrderedInclude>
+                std::is_same_v<Style, ViewBehaviour::Exclude> || std::is_same_v<Style, ViewBehaviour::Include> || std::is_same_v<Style, ViewBehaviour::OrderedInclude>
             >>
 class RegistryRange final : public UniqueStringSequence
 {
@@ -116,12 +117,12 @@ public:
 
         // If the style is Exclude, asking for an element that is in the list of excluded elements, it is like asking for a non-existing element.
         // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
-        if constexpr (std::is_same_v<style_type, Exclude>)
+        if constexpr (std::is_same_v<style_type, ViewBehaviour::Exclude>)
         {
             if (inherited::contains(id))
                 __format_and_throw<std::out_of_range>("RegistryRange", "at", "The element is excluded.");
         }
-        else // if constexpr (std::is_same_v<style_type, Include> || std::is_same_v<style_type, OrderedInclude>)
+        else // if constexpr (std::is_same_v<style_type, ViewBehaviour::Include> || std::is_same_v<style_type, ViewBehaviour::OrderedInclude>)
         {
             if (!inherited::contains(id))
                 __format_and_throw<std::out_of_range>("RegistryRange", "at", "The element is not included.");
@@ -167,7 +168,7 @@ public:
         if (m__registry == nullptr)
             return 0;
 
-        if constexpr (std::is_same_v<Style, Exclude>)
+        if constexpr (std::is_same_v<Style, ViewBehaviour::Exclude>)
         {
             size_type count = m__registry->size();
 
@@ -181,17 +182,19 @@ public:
             return count;
         }
 
-        // if constrexpr (std::is_same_v<Style, Include> || std::is_same_v<Style, OrderedInclude>)
-        size_type count = 0;
-
-        // Count the elements to include but only if they actually exist
-        for (const auto& id : m__elements)
+        if constrexpr (std::is_same_v<Style, ViewBehaviour::Include> || std::is_same_v<Style, ViewBehaviour::OrderedInclude>)
         {
-            if (m__registry->contains(id))
-                ++count;
-        }
+            size_type count = 0;
 
-        return count;
+            // Count the elements to include but only if they actually exist
+            for (const auto& id : m__elements)
+            {
+                if (m__registry->contains(id))
+                    ++count;
+            }
+
+            return count;
+        }
     }
 
 // These are not needed for the RegistryRange. They are already implemented in the UniqueStringSequence.
@@ -330,4 +333,4 @@ public:
 
 }; // class RegistryRange
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo
