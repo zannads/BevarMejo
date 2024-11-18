@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 // I define a class that is a ordered (in the order of insertion) sequence of unique strings.
 // This is why I redefine it, instead of using a std::set<std::string> (would not be ordered).
@@ -149,4 +149,4 @@ public:
 
 }; // class UniqueStringSequence
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo

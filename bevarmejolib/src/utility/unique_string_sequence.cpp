@@ -7,7 +7,7 @@
 
 #include "unique_string_sequence.hpp"
 
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 // I define a class that is a ordered (in the order of insertion) sequence of unique strings.
 // This is why I redefine it, instead of using a std::set<std::string> (would not be ordered).
@@ -184,4 +184,4 @@ UniqueStringSequence::UniqueStringSequence(const Container &elements) :
 
 }; // class UniqueStringSequence
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo

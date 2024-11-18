@@ -196,6 +196,7 @@ public:
     // TODO: Implement the find, count and contains method.
     
 /*--- Iterators ---*/
+private:
     template <class RV>
     class Iterator
     {
