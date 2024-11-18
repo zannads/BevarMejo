@@ -74,10 +74,10 @@ public:
     RegistryView() noexcept = default;
     RegistryView(SafeMemberPtr<Reg> registry) noexcept : 
         mp__registry(registry), 
-        mp__u_ids(nullptr)
+        mp__u_ids()
     { }
     RegistryView(std::weak_ptr<USS> elements) noexcept : 
-        mp__registry(nullptr), 
+        mp__registry(), 
         mp__u_ids(elements)
     { }
     RegistryView(SafeMemberPtr<Reg> registry, std::weak_ptr<USS> elements) noexcept : 
@@ -115,13 +115,13 @@ public:
         // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
         if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Exclude>)
         {
-            if (valid(mp__u_ids) && mp__u_ids->contains(id))
+            if (valid(mp__u_ids) && mp__u_ids.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
                     "The element is excluded.");
         }
         else // if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Include> || std::is_same_v<behaviour_type, ViewBehaviour::OrderedInclude>)
         {
-            if (valid(mp__u_ids) && !mp__u_ids->contains(id))
+            if (valid(mp__u_ids) && !mp__u_ids.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "The element is not included.",
                     "The element is not in the list of included elements.");
         }
@@ -258,26 +258,26 @@ private:
                 if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Exclude>)
                 {
                     m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids->contains(m__iter->id))
+                    while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id))
                         ++m__iter;
                 }
 
                 if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Include>)
                 {
                     m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids->contains(m__iter->id))
+                    while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id))
                         ++m__iter;
                 }
 
                 if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::OrderedInclude>)
                 {
-                    auto curr_id = m__range->mp__u_ids->begin();
+                    auto curr_id = m__range->mp__u_ids.lock()->begin();
                     do
                     {
                         m__iter = m__range->mp__registry->find(*curr_id);
                         ++curr_id;
                     }
-                    while (m__iter == m__range->mp__registry->end() && curr_id != m__range->mp__u_ids->end());
+                    while (m__iter == m__range->mp__registry->end() && curr_id != m__range->mp__u_ids.lock()->end());
                 }
 
                 f__end = m__iter == m__range->mp__registry->end();
@@ -350,7 +350,7 @@ private:
                 do
                 {
                     ++m__iter;
-                } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids->contains(m__iter->id));
+                } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id));
             }
             
             if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Include>)
@@ -358,13 +358,13 @@ private:
                 do
                 {
                     ++m__iter;
-                } while (m__iter != mp__registry->end() && !m__range->mp__u_ids->contains(m__iter->id));
+                } while (m__iter != mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id));
             }
             
             if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::OrderedInclude>)
             {
                 // I am pointing at ID x, find it in the USS, get the next, find it in the registry, get the iterator.
-                auto curr_id = m__range->mp__u_ids->find(m__iter->id);
+                auto curr_id = m__range->mp__u_ids.lock()->find(m__iter->id);
                 auto next_id = std::next(curr_id);
 
                 // If I can't find it (should not happen at all) or I am at the end of the list, I am done.
