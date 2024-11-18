@@ -185,6 +185,8 @@ public:
 
             return count;
         }
+
+        return 0;
     }
 
 /*--- Modifiers ---*/
@@ -358,7 +360,7 @@ private:
                 do
                 {
                     ++m__iter;
-                } while (m__iter != mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id));
+                } while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id));
             }
             
             if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::OrderedInclude>)
@@ -368,7 +370,7 @@ private:
                 auto next_id = std::next(curr_id);
 
                 // If I can't find it (should not happen at all) or I am at the end of the list, I am done.
-                if (curr_id == m__ids.end() || next_id == m__ids.end())
+                if (curr_id == m__range->mp__u_ids.lock()->end() || next_id == m__range->mp__u_ids.lock().end())
                 {
                     m__iter = m__range->mp__registry->end();
                     f__end = true;

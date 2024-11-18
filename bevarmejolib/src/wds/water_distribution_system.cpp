@@ -21,12 +21,11 @@ namespace fsys = std::filesystem;
 
 #include "bevarmejo/io/streams.hpp"
 
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
+#include "bevarmejo/.legacy/io.hpp"
 
 #include "water_distribution_system.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds {
 
 WaterDistributionSystem::WaterDistributionSystem() :
     ph_(nullptr),
@@ -310,5 +309,34 @@ void WaterDistributionSystem::run_hydraulics() {
         throw std::runtime_error("Hydraulic solution failed.");
 }
 
-} // namespace wds
-} // namespace bevarmejo
+auto WaterDistributionSystem::insert_ids_from_file(const fsys::path &file_path) -> IDSequences::iterator
+{
+    if (!fsys::exists(file_path))
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
+            "File does not exist.", "File: ", file_path);
+
+    std::ifstream ifs(file_path);
+    if (!ifs.is_open())
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
+            "Error opening the file.", "File: ", file_path);
+
+    // Asssume it works form a JSON or my custom type, I will get a vector of strings.
+    try
+    {
+        const auto& [en_object_type, ids, comment] = get_egroup_data(ifs);
+    }
+    catch (const std::exception& e)
+    {
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
+            "Error while loading the file.", "File: ", file_path, "Error: ", e.what());
+    }
+    
+    auto name = file_path.stem().string();
+
+    // Because I know it's only for a list of sequence otherwise, there should be a swith(en_object_type)
+    auto ret_type = m__id_sequences.insert(name, std::make_shared<IDSequence>(ids));
+
+    return ret_type.iterator;
+}
+
+} // namespace bevarmejo::wds

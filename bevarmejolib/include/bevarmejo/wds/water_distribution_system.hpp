@@ -26,6 +26,10 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/bemexcept.hpp"
 
+#include "bevarmejo/utility/registry.hpp"
+#include "bevarmejo/utility/registry_view.hpp"
+#include "bevarmejo/utility/unique_string_sequence.hpp"
+
 #include "bevarmejo/wds/auxiliary/time_series.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -49,22 +53,6 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/wds/elements/pump.hpp"
 // #include "bevarmejo/wds/elements/valve.hpp"
 
-#include "bevarmejo/utility/registry.hpp"
-namespace bevarmejo::wds {
-    using Curves = Registry<Curve>;
-    using Patterns = Registry<Pattern>;
-
-    using Nodes = Registry<Node>;
-    using Junctions = Registry<Junction>;
-    using Reservoirs = Registry<Reservoir>;
-    using Tanks = Registry<Tank>;
-
-    using Links = Registry<Link>;
-    using Pipes = Registry<Pipe>;
-    using Pumps = Registry<Pump>;
-    // using Valves = Registry<Valve>;
-} // namespace bevarmejo::wds
-
 namespace bevarmejo::label {
 static const std::string __EN_PATTERN_TS = "ENPatt";
 } // namespace bevarmejo::label
@@ -81,14 +69,25 @@ public:
     // Public because I may want to modify it (e.g., apply a decision vector).
     // it is just faster than doing create an interface. I will be careful.
     mutable EN_Project ph_;
-    using SubnetworksMap = std::unordered_map<std::string, Subnetwork>;
-    using ElemGroupsMap = std::unordered_map<std::string, UserDefinedElementsGroup<Element>>;
-    using TimeSeriesMap= std::unordered_map<std::string, std::shared_ptr<aux::TimeSeries>>; 
+    using Curves = Registry<Curve>;
+    using Patterns = Registry<Pattern>;
+
+    using Nodes = Registry<Node>;
+    using Junctions = Registry<Junction>;
+    using Reservoirs = Registry<Reservoir>;
+    using Tanks = Registry<Tank>;
+
+    using Links = Registry<Link>;
+    using Pipes = Registry<Pipe>;
+    using Pumps = Registry<Pump>;
+    // using Valves = Registry<Valve>;
+
+    using IDSequences = Registry<UniqueStringSequence>;
 
 protected:
     // Path to the inp file from which the project will be uploaded.
     fsys::path _inp_file_;
-    // Collectionf of elements of the network
+    // Collection of elements of the network
     std::vector<std::shared_ptr<Element>> _elements_;
     
     // Class-specific collections of elements
@@ -109,14 +108,10 @@ protected:
         Curves curves;
         // Controls controls;
         // Rules rules;
-
-        
     } m__aux_elements_;
 
-    // User defined groups of elements (subnetworks is only for nodes and links)
-    // while groups can be defined for any type of element.
-    std::unordered_map<std::string, Subnetwork> _subnetworks_;
-    std::unordered_map<std::string, UserDefinedElementsGroup<Element>> _groups_;
+    // User defined sequences of IDs (for subnetworks or things of this type)
+    IDSequences m__id_sequences;
 
     // User defined and default TimeSeries for the simulation
     aux::GlobalTimes m__times;
@@ -165,19 +160,10 @@ public:
     const Pipes& pipes() const {return _pipes_;};
     const Pumps& pumps() const {return _pumps_;};
     const Curves& curves() const {return m__aux_elements_.curves;};
-
-    /*--- User-defined Subnetworks ---*/
-    SubnetworksMap& subnetworks() {return _subnetworks_;};
-    const SubnetworksMap& subnetworks() const {return _subnetworks_;};
-    void add_subnetwork(const std::string& name, const Subnetwork& subnetwork);
-    void add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork);
-    void add_subnetwork(const fsys::path& filename);
-    Subnetwork& subnetwork(const std::string& name);
-    const Subnetwork& subnetwork(const std::string& name) const;
-    void remove_subnetwork(const std::string& name);
-
-    /*--- User-defined Elements Groups ---*/
-
+    // const Valves& valves() const {return _valves_;};
+    
+    const IDSequences& id_sequences() const { return m__id_sequences; }
+    
     const aux::TimeSeries& time_series(const std::string& name) const;
     
     
@@ -205,18 +191,22 @@ public:
     template <typename T>
     std::vector<std::shared_ptr<Element>>::iterator insert(const std::shared_ptr<T>& a_element);
 
-    template <typename T>
-    std::vector<std::shared_ptr<Element>>::iterator remove(const std::shared_ptr<T>& a_element);
+    template <typename T, typename... Args>
+    auto insert(const std::string& id, Args&&... args);
 
-private:
+    auto insert(const fsys::path& file_path);
+
+    auto insert_ids_from_file(const fsys::path& file_path);
+    
     template <typename T>
-    std::pair<std::string, UserDefinedElementsGroup<T>> load_egroup_from_file(const fsys::path& file_path);
+    std::vector<std::shared_ptr<Element>>::iterator erase(const std::shared_ptr<T>& a_element);
+
 
 }; // class WaterDistributionSystem
 
 } // namespace wds
 
-using WDS = wds::WaterDistributionSystem; // short name for WaterDistributionSystem
+using WDS = bevarmejo::wds::WaterDistributionSystem; // short name for WaterDistributionSystem
 
 } // namespace bevarmejo
 
@@ -272,40 +262,40 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::remove(const std::shared_ptr<T>& a_element) {
+typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::erase(const std::shared_ptr<T>& a_element) {
     if (a_element == nullptr)
         return _elements_.end();
 
-    // first of all remove it from the specific containers
+    // first of all erase it from the specific containers
     if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
-        _nodes_.remove(a_element);
+        _nodes_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
-        _nodes_.remove(a_element);
-        _junctions_.remove(a_element);
+        _nodes_.erase(a_element->id());
+        _junctions_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Tank>) {
-        _nodes_.remove(a_element);
-        _tanks_.remove(a_element);
+        _nodes_.erase(a_element->id());
+        _tanks_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Reservoir>) {
-        _nodes_.remove(a_element);
-        _reservoirs_.remove(a_element);
+        _nodes_.erase(a_element->id());
+        _reservoirs_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Link>) {
-        _links_.remove(a_element);
+        _links_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pipe>) {
-        _links_.remove(a_element);
-        _pipes_.remove(a_element);
+        _links_.erase(a_element->id());
+        _pipes_.erase(a_element->id());
 
         // TODO: the same thing but for all types!
-        // FIX: when I will connect the network, I will have to remove the links from the nodes.
-        //a_element->from_node()->remove_link(a_element.get());
-        //a_element->to_node()->remove_link(a_element.get());
+        // FIX: when I will connect the network, I will have to erase the links from the nodes.
+        //a_element->from_node()->erase_link(a_element.get());
+        //a_element->to_node()->erase_link(a_element.get());
 
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pump>) {
-        _links_.remove(a_element);
-        _pumps_.remove(a_element);
+        _links_.erase(a_element->id());
+        _pumps_.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        m__aux_elements_.patterns.remove(a_element);
+        m__aux_elements_.patterns.erase(a_element->id());
     } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        m__aux_elements_.patterns.remove(a_element);
+        m__aux_elements_.patterns.erase(a_element->id());
     } else {
         // Handle other types
         // ...
@@ -313,110 +303,10 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         // but if I'm here I will be here at compile time so maybe warning??
     }
 
-    // now remove it from the general container
-    std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator next_it;
+    // now erase it from the general container
     auto it = std::find(_elements_.begin(), _elements_.end(), a_element);
     if (it != _elements_.end())
-        next_it = _elements_.erase(it);
-
-    
-    return next_it;
-}
-
-template <typename T>
-std::pair<std::string, bevarmejo::wds::UserDefinedElementsGroup<T>> bevarmejo::wds::WaterDistributionSystem::load_egroup_from_file(const fsys::path& file_path) {
-	
-	// A group of elements is completely defined by the following attributes:
-	// 0. The name (the name of the file)
-	// The element itself, whcih is defined by:
-	// 1. The type of the elements (find inside the file with the tag #TYPE)
-	// 2. The list of elements (find inside the file with the tag #DATA)
-	// 3. The comment (find inside the file with the tag #COMMENT)
-
-	int en_object_type = 0;
-	std::vector<std::string> ids_list;
-	std::string comment;
-	std::string name;
-
-	// checks if file exists
-	if (!fsys::exists(file_path)) {
-		std::ostringstream oss;
-		io::stream_out(oss, "File ", file_path, " does not exist.\n");
-		throw std::runtime_error(oss.str());
-	}
-
-	// open file
-	std::ifstream ifs(file_path);
-	if (!ifs.is_open()) {
-		std::ostringstream oss;
-		io::stream_out(oss, "File ", file_path, " not opened.\n");
-		throw std::runtime_error(oss.str());
-	}
-
-	name = file_path.stem().string();
-
-	try {
-		// call internal function to load the parameters
-		std::tie(en_object_type, ids_list, comment) = __load_egroup_data_from_stream(ifs);
-	}
-	catch (const std::exception& e) {
-		std::ostringstream oss;
-		io::stream_out(oss, "Error while loading subnetwork ", file_path, "\n");
-		io::stream_out(oss, e.what(), "\n");
-		throw std::runtime_error(oss.str());
-	}
-
-	// If we arrived here it means that the file has been loaded correctly
-	// and we can create the group.
-
-	UserDefinedElementsGroup<T> elements_group;
-
-    elements_group.reserve(ids_list.size());
-    elements_group.comment(comment);
-
-    for (const auto& id : ids_list ) {
-
-        //TODO: If I change all the containers _nodes_, _links_, etc. to the class ElementsGroup
-        // I can simply use the method element(const std::string&) to get the element and add it to the group.
-        if (en_object_type == EN_NODE) {
-            auto it = std::find_if(_nodes_.begin(), _nodes_.end(), 
-                [&id](const std::shared_ptr<Node>& node) { return node->id() == id; });
-            if (it != _nodes_.end()) 
-                elements_group.insert(*it);
-        }
-        else if (en_object_type == EN_LINK) {
-            auto it = std::find_if(_links_.begin(), _links_.end(), 
-                [&id](const std::shared_ptr<Link>& link) { return link->id() == id; });
-            if (it != _links_.end()) 
-                elements_group.insert(*it);
-        }/*
-        else if (en_object_type == EN_TIMEPAT) {
-            auto it = std::find_if(_patterns_.begin(), _patterns_.end(), 
-                [&id](const std::shared_ptr<Pattern>& pattern) { return pattern->id() == id; });
-            if (it != _patterns_.end()) 
-                elements_group.insert(*it);
-        }
-        else if (en_object_type == EN_CURVE) {
-            auto it = std::find_if(_curves_.begin(), _curves_.end(), 
-                [&id](const std::shared_ptr<Curve>& curve) { return curve->id() == id; });
-            if (it != _curves_.end()) 
-                elements_group.insert(*it);
-        }
-        else if (en_object_type == EN_CONTROL) {
-            auto it = std::find_if(_controls_.begin(), _controls_.end(), 
-                [&id](const std::shared_ptr<Control>& control) { return control->id() == id; });
-            if (it != _controls_.end()) 
-                elements_group.insert(*it);
-        }
-        else if (en_object_type == EN_RULE) {
-            auto it = std::find_if(_rules_.begin(), _rules_.end(), 
-                [&id](const std::shared_ptr<Rule>& rule) { return rule->id() == id; });
-            if (it != _rules_.end()) 
-                elements_group.insert(*it);
-        }*/
-    }
-    
-	return std::make_pair(name, elements_group);
+        return _elements_.erase(it);
 }
 
 #endif // BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP

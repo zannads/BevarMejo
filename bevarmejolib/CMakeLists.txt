@@ -22,7 +22,6 @@ set(WDS_SRC_ROOT
 set(WDS_FILES   
         "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
         "${WDS_SRC_ROOT}/epanet_helpers/water_distribution_system.cpp"
-        "${WDS_SRC_ROOT}/user_defined_elements_group.cpp"
 )
 
 set(WDS_BASE_ELEMENTS

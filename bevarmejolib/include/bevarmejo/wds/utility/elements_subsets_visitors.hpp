@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 
-#include "bevarmejo/wds/user_defined_elements_group.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo::wds {
