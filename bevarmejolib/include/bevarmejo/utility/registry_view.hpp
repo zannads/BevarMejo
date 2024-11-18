@@ -19,23 +19,13 @@ namespace bevarmejo
 // - Include: The elements in the list are the only ones in the view.
 // - OrderedInclude: The elements in the list are the only ones in the view and 
 //      they are in the order of the list and not of the registry.
-namespace ViewBehaviour {
-    struct Exclude {};
-    struct Include {};
-    struct OrderedInclude {};
-};
-
-template <typename RegistryElement, typename B,
-            typename = std::enable_if_t<
-                std::is_same_v<B, ViewBehaviour::Exclude> || std::is_same_v<B, ViewBehaviour::Include> || std::is_same_v<B, ViewBehaviour::OrderedInclude>
-            >>
+template <typename T>
 class RegistryView final 
 {
 /*------- Member types -------*/
 private:
-    using Reg = Registry<RegistryElement>;
-    using behaviour_type = B;
-    using self_type = RegistryView<RegistryElement, B>;
+    using Reg = Registry<T>;
+    using self_type = RegistryView<T>;
     using USS = UniqueStringSequence;
 public:
     using key_type = typename Reg::key_type;
@@ -54,6 +44,12 @@ private:
 public:
     using iterator = Iterator<self_type>;
     using const_iterator = Iterator<const self_type>;
+    // TODO: reverse_iterator and const_reverse_iterator
+    enum class Behaviour {
+        Exclude,
+        Include,
+        OrderedInclude
+    };
 
 private:
     friend iterator;
@@ -67,23 +63,35 @@ private:
     Reg* mp__registry; // My Pointer to Registry
     USS* mp__u_ids; // My Pointer to Unique ID Sequence
 #endif
+    Behaviour m__behaviour; // My Behaviour
 
 /*------- Member functions -------*/
 /*--- (constructor) ---*/
 public:
     RegistryView() noexcept = default;
-    RegistryView(SafeMemberPtr<Reg> registry) noexcept : 
+#ifdef ENABLE_SAFETY_CHECKS
+    RegistryView(SafeMemberPtr<Reg> registry, Behaviour behaviour = Behaviour::Exclude) noexcept : 
         mp__registry(registry), 
-        mp__u_ids()
+        mp__u_ids(),
+        m__behaviour(behaviour)
     { }
-    RegistryView(std::weak_ptr<USS> elements) noexcept : 
-        mp__registry(), 
-        mp__u_ids(elements)
-    { }
-    RegistryView(SafeMemberPtr<Reg> registry, std::weak_ptr<USS> elements) noexcept : 
+    RegistryView(SafeMemberPtr<Reg> registry, std::weak_ptr<USS> elements, Behaviour behaviour = Behaviour::Exclude) noexcept :
         mp__registry(registry), 
-        mp__u_ids(elements)
+        mp__u_ids(elements),
+        m__behaviour(behaviour)
     { }
+#else
+    RegistryView(Reg* registry, Behaviour behaviour = Behaviour::Exclude) noexcept : 
+        mp__registry(registry), 
+        mp__u_ids(),
+        m__behaviour(behaviour)
+    { }
+    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour = Behaviour::Exclude) noexcept :
+        mp__registry(registry), 
+        mp__u_ids(elements.lock().get()),
+        m__behaviour(behaviour)
+    { }
+#endif
     RegistryView(const RegistryView &other) = default;
     RegistryView(RegistryView &&other) noexcept = default;
 
@@ -113,13 +121,13 @@ public:
 
         // If the style is Exclude, asking for an element that is in the list of excluded elements, it is like asking for a non-existing element.
         // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
-        if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Exclude>)
+        if (m__behaviour == Behaviour::Exclude)
         {
             if (valid(mp__u_ids) && mp__u_ids.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
                     "The element is excluded.");
         }
-        else // if constexpr (std::is_same_v<behaviour_type, ViewBehaviour::Include> || std::is_same_v<behaviour_type, ViewBehaviour::OrderedInclude>)
+        else // Include or OrderedInclude
         {
             if (valid(mp__u_ids) && !mp__u_ids.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "The element is not included.",
@@ -158,7 +166,7 @@ public:
         if (!valid(mp__registry))
             return 0;
 
-        if constexpr (std::is_same_v<B, ViewBehaviour::Exclude>)
+        if (m__behaviour == Behaviour::Exclude)
         {
             size_type count = mp__registry->size();
 
@@ -171,8 +179,7 @@ public:
 
             return count;
         }
-
-        if constrexpr (std::is_same_v<B, ViewBehaviour::Include> || std::is_same_v<B, ViewBehaviour::OrderedInclude>)
+        else // Include or OrderedInclude
         {
             size_type count = 0;
 
@@ -185,8 +192,6 @@ public:
 
             return count;
         }
-
-        return 0;
     }
 
 /*--- Modifiers ---*/
@@ -257,21 +262,21 @@ private:
             // Use try catch to guarantee noexcept in case ENABLE_SAFETY_CHECKS is on.
             try
             {
-                if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Exclude>)
+                if (m__range->m__behaviour == Behaviour::Exclude)
                 {
                     m__iter = m__range->mp__registry->begin();
                     while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id))
                         ++m__iter;
                 }
 
-                if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Include>)
+                if (m__range->m__behaviour == Behaviour::Include)
                 {
                     m__iter = m__range->mp__registry->begin();
                     while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id))
                         ++m__iter;
                 }
 
-                if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::OrderedInclude>)
+                if (m__range->m__behaviour == Behaviour::OrderedInclude)
                 {
                     auto curr_id = m__range->mp__u_ids.lock()->begin();
                     do
@@ -347,7 +352,7 @@ private:
             // If it is include, I move forward more than once, if my next element is not in the list of included elements.
             // If it is ordered include, I simply find the next one
 
-            if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Exclude>)
+            if (m__range->m__behaviour == Behaviour::Exclude)
             {
                 do
                 {
@@ -355,7 +360,7 @@ private:
                 } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id));
             }
             
-            if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::Include>)
+            if (m__range->m__behaviour == Behaviour::Include)
             {
                 do
                 {
@@ -363,7 +368,7 @@ private:
                 } while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id));
             }
             
-            if constexpr (std::is_same_v<typename RV::behaviour_type, ViewBehaviour::OrderedInclude>)
+            if (m__range->m__behaviour == Behaviour::OrderedInclude)
             {
                 // I am pointing at ID x, find it in the USS, get the next, find it in the registry, get the iterator.
                 auto curr_id = m__range->mp__u_ids.lock()->find(m__iter->id);
