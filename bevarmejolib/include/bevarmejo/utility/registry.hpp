@@ -1,13 +1,11 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/utility/safe_member.hpp"
-#include "bevarmejo/utility/safe_member_ptr.hpp"
+#include "bevarmejo/utility/bemememory.hpp"
 
 namespace bevarmejo
 {
@@ -513,7 +511,10 @@ private:
 /*--- Member functions ---*/
 /*--- (constructor) ---*/
 public:
-    Iterator() = delete;
+    Iterator() noexcept : 
+        reg(nullptr), 
+        idx(0)
+    { }
     Iterator(R* container, size_type index) noexcept : 
         reg(container), 
         idx(index)
@@ -543,6 +544,10 @@ public:
     reference operator*() const
     {
 #ifdef ENABLE_SAFETY_CHECKS
+        if (!valid(reg))
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
+                "The registry is not available.");
+
         return reg->at(idx);
 #else
         reg->operator[](idx);
@@ -565,6 +570,9 @@ public:
     iterator_type &operator++()
     {
 #ifdef ENABLE_SAFETY_CHECKS
+        if (!valid(reg))
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
+                "The registry is not available.");
         if (idx >= reg->size())
             __format_and_throw<std::out_of_range>("Registry::Iterator::operator++()", "Impossible to increment the iterator.",
             "The index is out of range.",
@@ -579,6 +587,9 @@ public:
     iterator_type &operator--()
     {
 #ifdef ENABLE_SAFETY_CHECKS
+        if (!valid(reg))
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
+                "The registry is not available.");
         if (idx == 0)
             __format_and_throw<std::out_of_range>("Registry::Iterator::operator--()", "Impossible to decrement the iterator.",
             "The index is out of range.",
@@ -669,7 +680,10 @@ public:
 private:
     void check_same_registry(const iterator_type &other) const
     {
-        if (reg != other.reg)
+        if (!valid(reg))
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
+                "The registry is not available.");
+        if (reg != other.reg) // Implicity checking also that the other registry is valid.
             __format_and_throw<std::invalid_argument>("Registry::Iterator::check_same_registry()", "Impossible to compare the iterators.",
                 "The iterators are from different registries.");
     }
