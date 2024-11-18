@@ -8,6 +8,38 @@
 namespace bevarmejo
 {
 
+template <typename T>
+bool valid(T* ptr)
+{
+    return ptr != nullptr;
+}
+
+template <typename T>
+bool valid(const std::unique_ptr<T>& ptr)
+{
+    return ptr != nullptr;
+}
+
+template <typename T>
+bool valid(const std::shared_ptr<T>& ptr)
+{
+    return ptr != nullptr;
+}
+
+template <typename T>
+bool valid(const std::weak_ptr<T>& ptr)
+{
+    return !ptr.expired();
+}
+
+#ifdef ENABLE_SAFETY_CHECKS
+template <typename T>
+bool valid(const SafeMemberPtr<T>& ptr)
+{
+    return ptr != nullptr;
+}
+#endif
+
 // Thanks to https://www.fluentcpp.com/2021/05/14/a-default-value-to-dereference-null-pointers/
 template <typename T, typename U>
 decltype(auto) value_or(T* pointer, U&& default_value)
