@@ -217,7 +217,7 @@ public:
 
     auto insert(const fsys::path& file_path);
 
-    auto insert_ids_from_file(const fsys::path& file_path);
+    auto insert_ids_from_file(const fsys::path& file_path) -> IDSequences::iterator;
     
     template <typename T>
     std::vector<std::shared_ptr<Element>>::iterator erase(const std::shared_ptr<T>& a_element);

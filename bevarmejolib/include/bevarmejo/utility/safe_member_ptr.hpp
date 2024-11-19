@@ -1,8 +1,51 @@
 #pragma once
-
 #ifdef ENABLE_SAFETY_CHECKS
+#include <iostream>
+
 template <typename T>
-using SafeMemberPtr = T*;
+class SafeMemberPtr
+{
+private:
+    T* m_ptr;
+
+public:
+    // Constructors
+    SafeMemberPtr() noexcept : m_ptr(nullptr) {}
+    explicit SafeMemberPtr(T* ptr) noexcept : m_ptr(ptr) {}
+    SafeMemberPtr(const SafeMemberPtr&) noexcept = default;
+    SafeMemberPtr(SafeMemberPtr&&) noexcept = default;
+
+    // Accessors
+    T& operator*() const noexcept { return *m_ptr; }
+    T* operator->() const noexcept { return m_ptr; }
+    T* get() const noexcept { return m_ptr; }
+
+    // Extra method
+    bool expired() const noexcept { return m_ptr == nullptr; }
+
+    // Assignment operator for raw pointers
+    SafeMemberPtr& operator=(const SafeMemberPtr&) noexcept = default;
+    SafeMemberPtr& operator=(SafeMemberPtr&&) noexcept = default;
+    SafeMemberPtr& operator=(T* ptr) noexcept
+    {
+        m_ptr = ptr;
+        return *this;
+    }
+
+    // Conversion to bool for validity check
+    explicit operator bool() const noexcept { return m_ptr != nullptr; }
+
+    // Comparison operators
+    bool operator==(const SafeMemberPtr& other) const noexcept { return m_ptr == other.m_ptr; }
+    bool operator!=(const SafeMemberPtr& other) const noexcept { return m_ptr != other.m_ptr; }
+    bool operator==(std::nullptr_t) const noexcept { return m_ptr == nullptr; }
+    bool operator!=(std::nullptr_t) const noexcept { return m_ptr != nullptr; }
+    bool operator<(const SafeMemberPtr& other) const noexcept { return m_ptr < other.m_ptr; }
+    bool operator<=(const SafeMemberPtr& other) const noexcept { return m_ptr <= other.m_ptr; }
+    bool operator>(const SafeMemberPtr& other) const noexcept { return m_ptr > other.m_ptr; }
+    bool operator>=(const SafeMemberPtr& other) const noexcept { return m_ptr >= other.m_ptr; }
+};
+
 /*
 // It is basically like a weak_ptr (so it register and unregister itself in the constructor and destructor)
 // We don't have the lock method, because we can't own it. However, the user should use check_validity

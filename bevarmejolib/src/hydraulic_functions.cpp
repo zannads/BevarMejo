@@ -74,8 +74,8 @@ wds::aux::QuantitySeries<double> head_deficiency(const wds::WaterDistributionSys
     if (relative) weight = 1/ min_head/ a_wds.junctions().size();
 
     // cumulative deficiency of each junction
-    for (const auto& junction : a_wds.junctions() ) {
-        for (const auto& [t, head] : junction->head() ) {
+    for (const auto& [id, junction] : a_wds.junctions() ) {
+        for (const auto& [t, head] : junction.head() ) {
             if (head < min_head) 
                 deficiency.when_t(t) += (min_head - head)*weight;
         }
@@ -92,8 +92,8 @@ wds::aux::QuantitySeries<double> pressure_deficiency(const wds::WaterDistributio
     if (relative) weight = 1/ min_pressure/ a_wds.junctions().size();
 
     // cumulative deficiency of each junction
-    for (const auto& junction : a_wds.junctions() ) {
-        for (const auto& [t, pressure] : junction->pressure() ) {
+    for (const auto& [id, junction] : a_wds.junctions() ) {
+        for (const auto& [t, pressure] : junction.pressure() ) {
             if (pressure < min_pressure) 
                 deficiency.when_t(t) += (min_pressure - pressure)*weight;
         }
@@ -103,7 +103,8 @@ wds::aux::QuantitySeries<double> pressure_deficiency(const wds::WaterDistributio
     
 }
 
-double tanks_operational_levels_use(const WDS::TanksView &a_tanks) {
+double tanks_operational_levels_use(WDS::TanksView tanks)
+{
     // This function checks if the tanks have a complete cycle of emptying and filling in one simulation.
     // So the minimum level has to be minimized and the max level maximized, in other words, I need to minimize the 
     // difference between the simulation min level and the tank minimum level and between the simulation max level 
@@ -112,13 +113,15 @@ double tanks_operational_levels_use(const WDS::TanksView &a_tanks) {
     // I will return the sum of the normalized levels. (0 perfect use of the tank 1 no use of the tank at all constant value for the whole simulation)
 
     double sum_levels = 0.0;
-    for (const auto& tank : a_tanks) {
-        double max_tank_lev = tank->max_level().value();
-        double min_tank_lev = tank->min_level().value();
+    for (const auto& [id, tank] : tanks)
+    {
+        double max_tank_lev = tank.max_level().value();
+        double min_tank_lev = tank.min_level().value();
 
         double min_sim_lev = max_tank_lev;
         double max_sim_lev = min_tank_lev;
-        for (const auto& [t, level] : tank->level() ) {
+        for (const auto& [t, level] : tank.level() )
+        {
             if (level < min_sim_lev) min_sim_lev = level;
             if (level > max_sim_lev) max_sim_lev = level;
         }
@@ -127,13 +130,14 @@ double tanks_operational_levels_use(const WDS::TanksView &a_tanks) {
         // simplified with common part
         sum_levels += 1 - ( min_sim_lev - max_sim_lev )/( max_tank_lev - min_tank_lev );
     }
-    sum_levels /= a_tanks.size(); // average over the number of tanks
+    sum_levels /= tanks.size(); // average over the number of tanks
 
     return sum_levels;
 }
 
-    wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
-                                                const double min_press_dnodes_m) {
+wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
+                                                const double min_press_dnodes_m)
+{
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
     // Calculate the resilience index at each time step and return it as a timeseries
@@ -143,48 +147,50 @@ double tanks_operational_levels_use(const WDS::TanksView &a_tanks) {
     // add the elevation to the min pressure to get the required head.
     auto itj = a_wds.junctions().begin();
     auto ith = req_heads_dnodes_m.begin();
-    while (itj != a_wds.junctions().end()) {
-        
-        *ith += (*itj)->elevation();
+    while (itj != a_wds.junctions().end())
+    {    
+        *ith += itj->elevation();
 
         ++itj;
         ++ith;
     }
 
     wds::aux::QuantitySeries<double> res_index(a_wds.time_series(label::__RESULTS_TS));
-    for (const auto& [t, temp] : (*a_wds.junctions().begin())->demand_requested() ) {
- 
+    for (const auto& [t, temp] : a_wds.junctions().front().value.demand_requested() )
+    {
         std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.junctions().size());
         std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.junctions().size());
         std::vector<double> flows_sources;      flows_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
         std::vector<double> heads_sources;      heads_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
         std::vector<double> powers_pumps;       powers_pumps.reserve(a_wds.pumps().size());
 
-        for (const auto& junction : a_wds.junctions() ) {
-            req_flows_dnodes.push_back(junction->demand_requested().when_t(t));
-            heads_dnodes.push_back(junction->head().when_t(t));
+        for (const auto& [id, junction] : a_wds.junctions() )
+        {
+            req_flows_dnodes.push_back(junction.demand_requested().when_t(t));
+            heads_dnodes.push_back(junction.head().when_t(t));
         }
-        for (const auto& reservoir : a_wds.reservoirs() ) {
-            flows_sources.push_back(reservoir->inflow().when_t(t));
-            heads_sources.push_back(reservoir->head().when_t(t));
+        for (const auto& [id, reservoir] : a_wds.reservoirs() )
+        {
+            flows_sources.push_back(reservoir.inflow().when_t(t));
+            heads_sources.push_back(reservoir.head().when_t(t));
         }
-        for (const auto& tank : a_wds.tanks() ) {
-            flows_sources.push_back(tank->inflow().when_t(t));
-            heads_sources.push_back(tank->head().when_t(t));
+        for (const auto& [id, tank] : a_wds.tanks() )
+        {
+            flows_sources.push_back(tank.inflow().when_t(t));
+            heads_sources.push_back(tank.head().when_t(t));
         }
-        for (const auto& pump : a_wds.pumps() ) {
-            powers_pumps.push_back(pump->instant_energy().when_t(t));
+        for (const auto& [id, pump] : a_wds.pumps() )
+        {
+            powers_pumps.push_back(pump.instant_energy().when_t(t));
         }
 
-
-        res_index.commit(t, 
-            resilience_index(   req_flows_dnodes, 
-                                        heads_dnodes,
-                                        req_heads_dnodes_m,
-                                        flows_sources,
-                                        heads_sources,
-                                        powers_pumps
-                                    ));
+        res_index.commit(t, resilience_index(   
+                                req_flows_dnodes, 
+                                heads_dnodes,
+                                req_heads_dnodes_m,
+                                flows_sources,
+                                heads_sources,
+                                powers_pumps));
     }
 
     return res_index;

@@ -76,7 +76,8 @@ void Link::retrieve_index(EN_Project ph) {
     this->index(en_index);
 }
 
-void Link::__retrieve_EN_properties(EN_Project ph) {
+void Link::__retrieve_EN_properties(EN_Project ph)
+{
     assert(index() != 0);
 
     // get the initial status
@@ -87,22 +88,18 @@ void Link::__retrieve_EN_properties(EN_Project ph) {
 
     m__initial_status= d_initial_status;
 
-    { // Assign Nodes
-        int node1_idx= 0;
-        int node2_idx= 0;
-        int errorcode= EN_getlinknodes(ph, this->index(), &node1_idx, &node2_idx);
-        assert(errorcode <= 100);
+    // Assign Nodes
+    int node1_idx= 0;
+    int node2_idx= 0;
+    errorcode = EN_getlinknodes(ph, this->index(), &node1_idx, &node2_idx);
+    assert(errorcode <= 100);
 
-        std::string node1_id = epanet::get_node_id(ph, node1_idx);
-        std::string node2_id = epanet::get_node_id(ph, node2_idx);
+    std::string node1_id = epanet::get_node_id(ph, node1_idx);
+    std::string node2_id = epanet::get_node_id(ph, node2_idx);
 
-        // Assign the nodes to the links and viceversa
-        start_node(m__wds.nodes().get(node1_id).get());
-        end_node(m__wds.nodes().get(node2_id).get());
-
-        m__wds.nodes().at(node1_id).add_link(this);
-        m__wds.nodes().at(node2_id).add_link(this);
-    }
+    // Install the link between the nodes
+    start_node(m__wds.nodes().get(node1_id).get());
+    end_node(m__wds.nodes().get(node2_id).get());
 }
 
 void Link::retrieve_results(EN_Project ph, long t) {

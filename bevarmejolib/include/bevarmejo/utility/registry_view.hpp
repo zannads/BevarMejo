@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/utility/bemememory.hpp"
+#include "bevarmejo/utility/bememory.hpp"
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/unique_string_sequence.hpp"
 

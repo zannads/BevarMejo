@@ -9,6 +9,7 @@
 #include <exception>
 #include <filesystem>
 namespace fsys = std::filesystem;
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <stdexcept>
@@ -61,8 +62,6 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
-    for (const auto& [name, old_curve] : m__aux_elements_.curves)
-        wds_clone->insert(name, old_curve.clone());
 
     // The nodes can be complitely defined thanks to curves and patterns, so it's
     // their moment.
@@ -82,11 +81,13 @@ void WaterDistributionSystem::clear_results()
         link.clear_results();
 }
 
-const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const {
+const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const
+{
     return m__times.time_series(name);
 }
 
-void WaterDistributionSystem::run_hydraulics() {
+void WaterDistributionSystem::run_hydraulics()
+{
     this->clear_results();
     m__times.results().reset();
 
@@ -121,26 +122,29 @@ void WaterDistributionSystem::run_hydraulics() {
     long t{ 0 }; // current time
     long delta_t{ 0 }; // real hydraulic time step
     
-    do {
+    do
+    {
         errorcode = EN_runH(ph_, &t);
 
-        if (errorcode >= 100) {
+        if (errorcode >= 100)
+        {
             solution_has_failed = true;
             break;
             // I don'return because I need to close the hydraulics
         }
 
         // if the current time is a reporting time, I save all the results
+        // Use polymorphism to get the results from EPANET.
         scheduled = (t % r_step == 0);
-        if (m__config_options.save_all_hsteps || scheduled) {
+        if (m__config_options.save_all_hsteps || scheduled)
+        {
             m__times.results().commit(t);
-            // Use polymorphism to get the results from EPANET
-            for (auto node : _nodes_) {
-                node->retrieve_results(ph_, t);
-            }
-            for (auto link : _links_) {
-                link->retrieve_results(ph_, t);
-            }
+            
+            for (const auto& [id, node] : _nodes_)
+                node.retrieve_results(ph_, t);
+            
+            for (const auto& [id, link] : _links_)
+                link.retrieve_results(ph_, t);
         }
 
         errorcode = EN_nextH(ph_, &delta_t);
@@ -148,8 +152,8 @@ void WaterDistributionSystem::run_hydraulics() {
 
     } while (delta_t > 0);
 
-    int errorcode2 = EN_closeH(ph_);
-    assert(errorcode2 < 100);
+    errorcode = EN_closeH(ph_);
+    assert(errorcode < 100);
 
     if (solution_has_failed)
         throw std::runtime_error("Hydraulic solution failed.");
@@ -167,20 +171,13 @@ auto WaterDistributionSystem::insert_ids_from_file(const fsys::path &file_path) 
             "Error opening the file.", "File: ", file_path);
 
     // Asssume it works form a JSON or my custom type, I will get a vector of strings.
-    try
-    {
-        const auto& [en_object_type, ids, comment] = get_egroup_data(ifs);
-    }
-    catch (const std::exception& e)
-    {
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
-            "Error while loading the file.", "File: ", file_path, "Error: ", e.what());
-    }
-    
+
+    const auto [en_object_type, ids, comment] = io::get_egroup_data(ifs);
+
     auto name = file_path.stem().string();
 
     // Because I know it's only for a list of sequence otherwise, there should be a swith(en_object_type)
-    auto ret_type = m__id_sequences.insert(name, std::make_shared<IDSequence>(ids));
+    auto ret_type = m__id_sequences.emplace(std::move(name), std::move(ids));
 
     return ret_type.iterator;
 }

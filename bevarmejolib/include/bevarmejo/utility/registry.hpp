@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/utility/bemememory.hpp"
+#include "bevarmejo/utility/bememory.hpp"
 
 #include "bevarmejo/utility/registry_users.hpp"
 
@@ -39,9 +39,11 @@ private:
         const key_type name;
         std::shared_ptr<mapped_type> ptr;
 
-        // Constructor with perfect forwarding for both arguments.
+        __entry__() = default;
+        __entry__(const __entry__&) = default;
+        __entry__(__entry__&&) = default;
         template <typename NameT, typename PtrT>
-        __entry__(NameT&& a_name, PtrT&& a_ptr) :
+        __entry__(NameT&& a_name, PtrT&& a_ptr) :  // Constructor with perfect forwarding for both arguments.
             name(std::forward<NameT>(a_name)),
             ptr(std::forward<PtrT>(a_ptr))
         {
@@ -50,11 +52,9 @@ private:
                 "Raw pointers are not allowed. Use std::shared_ptr instead."
             );
         }
-    };
-    struct entry 
-    {
-        const key_type name;
-        mapped_type value;
+
+        __entry__& operator=(const __entry__&) = default;
+        __entry__& operator=(__entry__&&) = default;
     };
     struct entry_ref
     {
@@ -67,15 +67,15 @@ private:
         const mapped_type& value;
     };
 public:
-    using value_type = entry;
+    using value_type = __entry__;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
     using key_compare = std::less<key_type>;
     using allocator_type = std::allocator<__entry__>;
     using reference = entry_ref;
     using const_reference = const_entry_ref;
-    using pointer = entry_ref*;
-    using const_pointer = const_entry_ref*;
+    using pointer = mapped_type*;
+    using const_pointer = const mapped_type*;
 private:
     // Forward declaration of the iterator.
     template <class C>
@@ -567,13 +567,12 @@ private:
     R* reg;
 #endif
     size_type idx;
-    mutable reference temp_ref;
 
 /*--- Member functions ---*/
 /*--- (constructor) ---*/
 public:
     Iterator() noexcept : 
-        reg(nullptr), 
+        reg(), 
         idx(0)
     { }
     Iterator(R* container, size_type index) noexcept : 
@@ -609,16 +608,27 @@ public:
             __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
                 "The registry is not available.");
 
-        return reg->at(idx);
-#else
-        reg->operator[](idx);
+        if (idx >= reg->size())
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
+                "The index is out of range.",
+                "Index: ", idx, "Size: ", reg->size());
 #endif
+        return reg->operator[](idx);
     }
     
     pointer operator->() const
     {
-        temp_ref = operator*();
-        return &temp_ref;
+#ifdef ENABLE_SAFETY_CHECKS
+        if (!valid(reg))
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator->()", "Impossible to dereference the iterator.",
+                "The registry is not available.");
+
+        if (idx >= reg->size())
+            __format_and_throw<std::out_of_range>("Registry::Iterator::operator->()", "Impossible to dereference the iterator.",
+                "The index is out of range.",
+                "Index: ", idx, "Size: ", reg->size());
+#endif
+        return reg->m__elements[idx].ptr.get();
     }
 
     reference operator[](difference_type n) const

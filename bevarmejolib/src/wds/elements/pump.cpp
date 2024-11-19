@@ -100,76 +100,65 @@ Pump& Pump::operator=(Pump&& rhs) noexcept {
     return *this;
 }
 
-void Pump::__retrieve_EN_properties(EN_Project ph) {
+void Pump::__retrieve_EN_properties(EN_Project ph)
+{
     inherited::__retrieve_EN_properties(ph);
-    auto patterns= m__wds.patterns();
-    auto curves= m__wds.curves();
 
-    double value= 0.0;
-    int errorcode= EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
+    double value = 0.0;
+    int errorcode = EN_getlinkvalue(ph, index(), EN_INITSETTING, &value);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving initial setting for pump " + id());
-    m__init_setting= value;
+    m__init_setting = value;
 
-    errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_POWER, &value);
+    errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_POWER, &value);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving power rating for pump " + id());
-    m__power_rating= value;
+    m__power_rating = value;
 
-    errorcode= EN_getlinkvalue(ph, index(), EN_PUMP_ECOST, &value);
+    errorcode = EN_getlinkvalue(ph, index(), EN_PUMP_ECOST, &value);
     if (errorcode > 100) 
         throw std::runtime_error("Error retrieving energy cost for pump " + id());
-    m__energy_cost= value;
+    m__energy_cost = value;
 
-    { // Assign EN Pattern
-        errorcode= EN_getlinkvalue(ph, this->index(), EN_LINKPATTERN, &value);
+    // Assign EN Pattern
+    errorcode = EN_getlinkvalue(ph, this->index(), EN_LINKPATTERN, &value);
+    assert(errorcode < 100);
+    char pattern_id[EN_MAXID+1];
+    errorcode = EN_getpatternid(ph, static_cast<int>(value), pattern_id);
+    assert(errorcode < 100);
+    
+    speed_pattern(m__wds.patterns().get(pattern_id));
+    
+    // Assign EN Curves (Pump curve and Efficiency curve)
+    errorcode= EN_getlinkvalue(ph, this->index(), EN_PUMP_HCURVE, &value);
+    assert(errorcode < 100);
+    
+    if (value == 0.0)
+        pump_curve(nullptr);
+    else
+    {
+        char curve_id[EN_MAXID+1];
+        errorcode = EN_getcurveid(ph, static_cast<int>(value), curve_id);
         assert(errorcode < 100);
-        char pattern_id[EN_MAXID+1];
-        errorcode= EN_getpatternid(ph, static_cast<int>(value), pattern_id);
-        assert(errorcode < 100);
-        auto it= patterns.find(pattern_id);
-        assert(it != patterns.end());
 
-        speed_pattern(*it);
+        pump_curve(m__wds.curves().get<PumpCurve>(curve_id));
     }
-    { // Assign EN Curves (Pump curve and Efficiency curve)
-        errorcode= EN_getlinkvalue(ph, this->index(), EN_PUMP_HCURVE, &value);
+
+    errorcode = EN_getlinkvalue(ph, this->index(), EN_PUMP_ECURVE, &value);
+    assert(errorcode < 100);
+
+    if (value == 0.0)
+        efficiency_curve(nullptr);
+    else
+    {
+        char curve_id[EN_MAXID+1];
+        errorcode = EN_getcurveid(ph, static_cast<int>(value), curve_id);
         assert(errorcode < 100);
         
-        if (value != 0.0) {
-            char curve_id[EN_MAXID+1];
-            errorcode= EN_getcurveid(ph, static_cast<int>(value), curve_id);
-            assert(errorcode < 100);
-            auto it= curves.find(curve_id);
-            assert(it != curves.end());
-
-            std::shared_ptr<PumpCurve> pump_curve= std::dynamic_pointer_cast<PumpCurve>(*it);
-            assert(pump_curve != nullptr); 
-            // EPANET says that this curve with this ID should be a pump curve.
-            // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
-            this->pump_curve(pump_curve);
-        }
-        else this->pump_curve(nullptr);
-
-        errorcode= EN_getlinkvalue(ph, this->index(), EN_PUMP_ECURVE, &value);
-        assert(errorcode < 100);
-
-        if (value != 0.0) {
-            char curve_id[EN_MAXID+1];
-            errorcode= EN_getcurveid(ph, static_cast<int>(value), curve_id);
-            assert(errorcode < 100);
-            auto it= curves.find(curve_id);
-            assert(it != curves.end());
-
-            std::shared_ptr<EfficiencyCurve> efficiency_curve= std::dynamic_pointer_cast<EfficiencyCurve>(*it);
-            assert(efficiency_curve != nullptr); 
-            // EPANET says that this curve with this ID should be an efficiency curve.
-            // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
-            this->efficiency_curve(efficiency_curve);
-        }
-        else this->efficiency_curve(nullptr);
+        efficiency_curve(m__wds.curves().get<EfficiencyCurve>(curve_id));
     }
 }
+
 
 void Pump::retrieve_results(EN_Project ph, long t) {
     inherited::retrieve_results(ph, t);

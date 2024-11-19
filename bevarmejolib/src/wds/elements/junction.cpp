@@ -90,7 +90,6 @@ const bool Junction::has_demand() const {
 
 void Junction::__retrieve_EN_properties(EN_Project ph)  {
     inherited::__retrieve_EN_properties(ph);
-    auto patterns= m__wds.patterns();
 
     int n_demands= 0;
     int errorcode= EN_getnumdemands(ph, this->index(), &n_demands);
@@ -115,28 +114,27 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
         assert(errorcode < 100);
         std::string demand_category(__demand_category);
 
-        std::shared_ptr<Pattern> pattern= nullptr;
         // Pattern id can be "" if the demand is constant
-        if (pattern_id.empty()) {
-            // Means it's a constant demand
+        if (pattern_id.empty())
+        {   
             aux::QuantitySeries<double> cdemand(m__wds.time_series(label::__CONSTANT_TS));
             cdemand.commit(0l, base_demand);
 
             m__demands.insert(std::make_pair(demand_category, cdemand));
         }
-        else { // It's a pattern demand
+        else // It's a pattern demand
+        {   
             aux::QuantitySeries<double> pdemand(m__wds.time_series(label::__EN_PATTERN_TS));
 
-            auto it= patterns.find(pattern_id);
-            assert(it != patterns.end());
-            pattern= *it;
+            const auto& pattern = m__wds.patterns().at(pattern_id);
 
             // TODO: this is very much wrong because it doesn't consider the shift time step 
             // and that patterns may have a different length and I may need to wrap around.
             auto ilen= m__wds.time_series(label::__EN_PATTERN_TS).size();
-            for (auto i= 0l; i < ilen; ++i) {
+            for (auto i= 0l; i < ilen; ++i)
+            {
                 auto __time= m__wds.time_series(label::__EN_PATTERN_TS).at(i);
-                pdemand.commit(__time, base_demand * pattern->at(i % pattern->size()));
+                pdemand.commit(__time, base_demand * pattern.at(i % pattern.size()));
             }
 
             m__demands.insert(std::make_pair(demand_category, pdemand));

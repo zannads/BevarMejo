@@ -32,14 +32,6 @@ bool valid(const std::weak_ptr<T>& ptr)
     return !ptr.expired();
 }
 
-#ifdef ENABLE_SAFETY_CHECKS
-template <typename T>
-bool valid(const SafeMemberPtr<T>& ptr)
-{
-    return ptr != nullptr;
-}
-#endif
-
 // Thanks to https://www.fluentcpp.com/2021/05/14/a-default-value-to-dereference-null-pointers/
 template <typename T, typename U>
 decltype(auto) value_or(T* pointer, U&& default_value)
@@ -65,14 +57,6 @@ decltype(auto) value_or(const std::weak_ptr<T>& pointer, U&& default_value)
     return pointer.expired() ? std::forward<U>(default_value) : *pointer.lock();
 }
 
-#ifdef ENABLE_SAFETY_CHECKS
-template <typename T, typename U>
-decltype(auto) value_or(const SafeMemberPtr<T>& pointer, U&& default_value)
-{
-    return pointer ? *pointer : std::forward<U>(default_value);
-}
-#endif
-
 template <typename T>
 decltype(auto) value_or_empty(T* pointer)
 {
@@ -97,7 +81,20 @@ decltype(auto) value_or_empty(const std::weak_ptr<T>& pointer)
     return pointer.expired() ? T{} : *pointer.lock();
 }
 
+
 #ifdef ENABLE_SAFETY_CHECKS
+template <typename T>
+bool valid(const SafeMemberPtr<T>& ptr)
+{
+    return !ptr.expired();
+}
+
+template <typename T, typename U>
+decltype(auto) value_or(const SafeMemberPtr<T>& pointer, U&& default_value)
+{
+    return pointer ? *pointer : std::forward<U>(default_value);
+}
+
 template <typename T>
 decltype(auto) value_or_empty(const SafeMemberPtr<T>& pointer)
 {
