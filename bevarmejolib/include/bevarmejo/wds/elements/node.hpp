@@ -44,7 +44,7 @@ class Node : public NetworkElement {
         double _x_coord_;
         double _y_coord_;
 
-        std::unordered_set<Link*> m__links;
+        std::unordered_set<const Link*> m__links;
 
         // TODO: transform into variable of some type
         double _elevation_; // or z coordinate
@@ -89,8 +89,8 @@ class Node : public NetworkElement {
         void y_coord(const double y_coord) {_y_coord_ = y_coord;}
 
         // TODO: See Issue #32
-        std::unordered_set<Link*>& connected_links() {return m__links;}
-        const std::unordered_set<Link*>& connected_links() const {return m__links;}
+        std::unordered_set<const Link*>& connected_links() {return m__links;}
+        const std::unordered_set<const Link*>& connected_links() const {return m__links;}
         void add_link(Link* a_link);
         void remove_link(Link* a_link);
 

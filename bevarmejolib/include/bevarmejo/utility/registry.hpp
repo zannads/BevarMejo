@@ -150,7 +150,7 @@ public:
     const_reference back() const { return *(end() - 1); }
 
     template <class OutputT = mapped_type>
-    std::shared_ptr<OutputT> get(const key_type& name) const
+    std::shared_ptr<OutputT> get(const key_type& name)
     {
         static_assert(
             std::is_base_of_v<mapped_type, OutputT> || std::is_base_of_v<OutputT, mapped_type>,
@@ -164,6 +164,22 @@ public:
                 "Id: ", name);
 
         return std::dynamic_pointer_cast<OutputT>(m__elements[idx].ptr);
+    }
+    template <class OutputT = mapped_type>
+    std::shared_ptr<const OutputT> get(const key_type& name) const
+    {
+        static_assert(
+            std::is_base_of_v<mapped_type, OutputT> || std::is_base_of_v<OutputT, mapped_type>,
+            "The output type must inherit from or be a parent of the mapped type of the registry."
+        );
+
+        auto idx = find_index(name);
+        if (idx == -1)
+            __format_and_throw<std::out_of_range>("Registry::get()", "Impossible to access the element.",
+                "The element with the given name does not exist.",
+                "Id: ", name);
+
+        return std::dynamic_pointer_cast<const OutputT>(m__elements[idx].ptr);
     }
 
 /*------- Iterators -------*/

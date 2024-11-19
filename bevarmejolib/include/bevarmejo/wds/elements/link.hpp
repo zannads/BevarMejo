@@ -30,8 +30,8 @@ public:
 /*--- Attributes ---*/
 protected:
     /*--- Properties ---*/
-    Node* _node_start_;
-    Node* _node_end_;
+    const Node* _node_start_;
+    const Node* _node_end_;
 
     aux::QuantitySeries<int> m__initial_status; // Constant
 
@@ -63,9 +63,9 @@ public:
 /*--- Getters and setters ---*/
 public:
     /*--- Properties ---*/
-    Node* from_node() const { return _node_start_; }
+    const Node* from_node() const { return _node_start_; }
     void start_node(Node* a_node) { _node_start_ = a_node; }
-    Node* to_node() const { return _node_end_; }
+    const Node* to_node() const { return _node_end_; }
     void end_node(Node* a_node) { _node_end_ = a_node; }
 
     aux::QuantitySeries<int>& initial_status() { return m__initial_status; }

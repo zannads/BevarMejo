@@ -204,7 +204,7 @@ private:
     void load_EN_controls(EN_Project ph);
     void load_EN_rules(EN_Project ph);
 public:
-    void clear_results() const;
+    void clear_results();
     
     void run_hydraulics();
 

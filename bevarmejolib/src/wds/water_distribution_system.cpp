@@ -60,83 +60,27 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const 
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
-    for (auto& old_curve : m__aux_elements_.curves) {
-        std::shared_ptr<Curve> curve_clone = old_curve->clone();
-        wds_clone->insert(curve_clone);
+    for (auto& [name, old_curve] : m__aux_elements_.curves) {
+        std::shared_ptr<Curve> curve_clone = old_curve.clone();
+        wds_clone->insert(name, curve_clone);
     }
 
-    // The nodes can be complitely defined thanks to nodes and patterns, so it's
-    // their moment
+    // The nodes can be complitely defined thanks to curves and patterns, so it's
+    // their moment.
 
     // Finally once everything is in place I can copy the links and connect the
-    // the network
+    // the network.
 
-    for (auto& old_pipe : _pipes_) {
-        std::shared_ptr<Pipe> pipe_clone = old_pipe->clone();
-
-        // Get what re the IDS of the nodes to which it was connected.
-        std::string start_node_id = old_pipe->from_node()->id();
-        std::string end_node_id = old_pipe->to_node()->id();
-
-        // Find the nodes in the new network
-        auto it1 = wds_clone->nodes().find(start_node_id);
-        assert(it1 != wds_clone->nodes().end());
-        auto it2 = wds_clone->nodes().find(end_node_id);
-        assert(it2 != wds_clone->nodes().end());
-
-        // Assign the nodes to the pipe
-        pipe_clone->start_node((*it1).get());
-        pipe_clone->end_node((*it2).get());
-
-        wds_clone->insert(pipe_clone);
-
-        // let's assume it also added the link to the nodes
-    }
     return wds_clone;
 }
 
-void WaterDistributionSystem::add_subnetwork(const std::string& name, const Subnetwork& subnetwork){
-    _subnetworks_.insert(std::make_pair(name, subnetwork));
-}
-
-void WaterDistributionSystem::add_subnetwork(const std::pair<std::string, Subnetwork>& subnetwork){
-    _subnetworks_.insert(subnetwork);
-}
-
-void WaterDistributionSystem::add_subnetwork(const fsys::path &filename) {
-    add_subnetwork( load_egroup_from_file<NetworkElement>(filename) );
-}
-
-Subnetwork& WaterDistributionSystem::subnetwork(const std::string& name) {
-    auto it = _subnetworks_.find(name);
-    if (it != _subnetworks_.end())
-        return it->second;
-    else
-        throw std::runtime_error("Subnetwork with name " + name + " not found.");
-}
-
-const Subnetwork& WaterDistributionSystem::subnetwork(const std::string& name) const {
-    auto it = _subnetworks_.find(name);
-    if (it != _subnetworks_.end())
-        return it->second;
-    else
-        throw std::runtime_error("Subnetwork with name " + name + " not found.");
-}
-
-void WaterDistributionSystem::remove_subnetwork(const std::string& name){
-    auto it = _subnetworks_.find(name);
-    if (it != _subnetworks_.end())
-        _subnetworks_.erase(it);
-    // else no problem, it's not there
-}
-
-void WaterDistributionSystem::clear_results() const {
-    for (auto& node: nodes()) {
-        node->clear_results();
-    }
-    for (auto& link: links()) {
-        link->clear_results();
-    }
+void WaterDistributionSystem::clear_results()
+{
+    for (auto& [name, node] : _nodes_)
+        node.clear_results();
+    
+    for (auto& [name, link] : _links_)
+        link.clear_results();
 }
 
 const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const {

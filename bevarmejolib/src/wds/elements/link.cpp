@@ -96,17 +96,12 @@ void Link::__retrieve_EN_properties(EN_Project ph) {
         std::string node1_id = epanet::get_node_id(ph, node1_idx);
         std::string node2_id = epanet::get_node_id(ph, node2_idx);
 
-        auto it_node1 = m__wds.nodes().find(node1_id);
-        assert(it_node1 != m__wds.nodes().end());
-        auto it_node2 = m__wds.nodes().find(node2_id);
-        assert(it_node2 != m__wds.nodes().end());
-
         // Assign the nodes to the links and viceversa
-        this->start_node(it_node1->id);
-        this->end_node(it_node2->id);
+        start_node(m__wds.nodes().get(node1_id).get());
+        end_node(m__wds.nodes().get(node2_id).get());
 
-        it_node1->element.add_link(this);
-        it_node2->element.add_link(this);
+        m__wds.nodes().at(node1_id).add_link(this);
+        m__wds.nodes().at(node2_id).add_link(this);
     }
 }
 

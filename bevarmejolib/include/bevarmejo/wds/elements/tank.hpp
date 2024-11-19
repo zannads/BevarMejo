@@ -43,7 +43,7 @@ protected:
     /*--- Properties ---*/
     //MIXMODEL
     aux::QuantitySeries<double> m__diameter; // Constant
-    std::shared_ptr<VolumeCurve> m__volume_curve;
+    std::shared_ptr<const VolumeCurve> m__volume_curve;
     aux::QuantitySeries<double> m__min_volume; // Constant
     aux::QuantitySeries<double> m__min_level; // Constant
     aux::QuantitySeries<double> m__max_level; // Constant
@@ -85,9 +85,9 @@ public:
     const aux::QuantitySeries<double>& diameter() const { return m__diameter; }
     void diameter(const double a_diameter) { m__diameter.value(a_diameter); }
 
-    std::shared_ptr<VolumeCurve> volume_curve() { return m__volume_curve; }
-    std::shared_ptr<VolumeCurve> volume_curve() const { return m__volume_curve; }
-    void volume_curve(const std::shared_ptr<VolumeCurve> a_volume_curve) { m__volume_curve = a_volume_curve; }
+    std::shared_ptr<const VolumeCurve> volume_curve() { return m__volume_curve; }
+    std::shared_ptr<const VolumeCurve> volume_curve() const { return m__volume_curve; }
+    void volume_curve(std::shared_ptr<const VolumeCurve> a_volume_curve) { m__volume_curve = std::move(a_volume_curve); }
 
     aux::QuantitySeries<double>& min_volume() { return m__min_volume; }
     const aux::QuantitySeries<double>& min_volume() const { return m__min_volume; }
