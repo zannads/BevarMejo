@@ -90,16 +90,16 @@ public:
     void energy_cost(const double a_energy_cost) { m__energy_cost.value(a_energy_cost); }
 
     std::shared_ptr<const Pattern> speed_pattern() const { return _speed_pattern_; }
-    void speed_pattern(const std::shared_ptr<Pattern> a_speed_pattern) { _speed_pattern_ = a_speed_pattern; }
+    void speed_pattern(std::shared_ptr<const Pattern> a_speed_pattern) { _speed_pattern_ = std::move(a_speed_pattern); }
 
     std::shared_ptr<const Pattern> energy_cost_pattern() const { return _energy_cost_pattern_; }
-    void energy_cost_pattern(const std::shared_ptr<Pattern> a_energy_cost_pattern) { _energy_cost_pattern_ = a_energy_cost_pattern; }
+    void energy_cost_pattern(std::shared_ptr<const Pattern> a_energy_cost_pattern) { _energy_cost_pattern_ = std::move(a_energy_cost_pattern); }
 
     std::shared_ptr<const PumpCurve> pump_curve() const { return _pump_curve_; }
-    void pump_curve(const std::shared_ptr<PumpCurve> a_pump_curve) { _pump_curve_ = a_pump_curve; }
+    void pump_curve(std::shared_ptr<const PumpCurve> a_pump_curve) { _pump_curve_ = std::move(a_pump_curve); }
     
     std::shared_ptr<const EfficiencyCurve> efficiency_curve() const { return _efficiency_curve_; }
-    void efficiency_curve(const std::shared_ptr<EfficiencyCurve> a_efficiency_curve) { _efficiency_curve_ = a_efficiency_curve; }
+    void efficiency_curve(std::shared_ptr<const EfficiencyCurve> a_efficiency_curve) { _efficiency_curve_ = std::move(a_efficiency_curve); }
 
     /*---  Results   ---*/
     const aux::QuantitySeries<double>& instant_energy() const { return m__instant_energy; }

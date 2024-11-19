@@ -97,7 +97,7 @@ public:
 
     void reserve(size_type new_cap);
 
-    size_type capacity() const;
+    size_type capacity() const noexcept;
 
     void shrink_to_fit();
 
