@@ -98,6 +98,7 @@ target_include_directories(bemelib PUBLIC
 target_include_directories(bemelib PRIVATE
                         "include/bevarmejo"
                         "include/bevarmejo/io"
+                        "include/bevarmejo/utility"
                         "include/bevarmejo/epanet_helpers"
                         "include/bevarmejo/pagmo_helpers"
                         "include/bevarmejo/pagmo_helpers/algorithms"

@@ -78,7 +78,6 @@ void Link::retrieve_index(EN_Project ph) {
 
 void Link::__retrieve_EN_properties(EN_Project ph) {
     assert(index() != 0);
-    auto nodes= m__wds.nodes();
 
     // get the initial status
     double d_initial_status = 0;
@@ -97,17 +96,17 @@ void Link::__retrieve_EN_properties(EN_Project ph) {
         std::string node1_id = epanet::get_node_id(ph, node1_idx);
         std::string node2_id = epanet::get_node_id(ph, node2_idx);
 
-        auto it_node1 = nodes.find(node1_id);
-        assert(it_node1 != nodes.end());
-        auto it_node2 = nodes.find(node2_id);
-        assert(it_node2 != nodes.end());
+        auto it_node1 = m__wds.nodes().find(node1_id);
+        assert(it_node1 != m__wds.nodes().end());
+        auto it_node2 = m__wds.nodes().find(node2_id);
+        assert(it_node2 != m__wds.nodes().end());
 
         // Assign the nodes to the links and viceversa
-        this->start_node(it_node1->get());
-        this->end_node(it_node2->get());
+        this->start_node(it_node1->id);
+        this->end_node(it_node2->id);
 
-        (*it_node1)->add_link(this);
-        (*it_node2)->add_link(this);
+        it_node1->element.add_link(this);
+        it_node2->element.add_link(this);
     }
 }
 

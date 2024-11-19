@@ -112,15 +112,15 @@ json_o dynamic_params(const bevarmejo::anytown::Problem &prob);
 
 // For the bounds
 namespace fep1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 }
 namespace fep2 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 }  
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pumps &pumps);
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(WDS::PipesView new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const WDS::Pumps &pumps);
 namespace fnt1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(WDS::TanksView tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 }
 
 // For fitness function:

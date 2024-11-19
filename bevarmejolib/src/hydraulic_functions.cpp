@@ -103,7 +103,7 @@ wds::aux::QuantitySeries<double> pressure_deficiency(const wds::WaterDistributio
     
 }
 
-double tanks_operational_levels_use(const wds::Tanks &a_tanks) {
+double tanks_operational_levels_use(const WDS::TanksView &a_tanks) {
     // This function checks if the tanks have a complete cycle of emptying and filling in one simulation.
     // So the minimum level has to be minimized and the max level maximized, in other words, I need to minimize the 
     // difference between the simulation min level and the tank minimum level and between the simulation max level 

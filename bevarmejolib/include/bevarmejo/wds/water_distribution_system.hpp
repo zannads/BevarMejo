@@ -61,14 +61,11 @@ namespace bevarmejo::wds {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
 
-class WaterDistributionSystem {
-
-    /*--- Attributes ---*/
+class WaterDistributionSystem
+{
+private:
+    using Elements = std::vector<std::shared_ptr<Element>>;
 public:
-    // Handler for the project.
-    // Public because I may want to modify it (e.g., apply a decision vector).
-    // it is just faster than doing create an interface. I will be careful.
-    mutable EN_Project ph_;
     using Curves = Registry<Curve>;
     using Patterns = Registry<Pattern>;
 
@@ -84,11 +81,30 @@ public:
 
     using IDSequences = Registry<UniqueStringSequence>;
 
+    using CurvesView = RegistryView<Curve>;
+    using PatternsView = RegistryView<Pattern>;
+
+    using NodesView = RegistryView<Node>;
+    using JunctionsView = RegistryView<Junction>;
+    using ReservoirsView = RegistryView<Reservoir>;
+    using TanksView = RegistryView<Tank>;
+
+    using LinksView = RegistryView<Link>;
+    using PipesView = RegistryView<Pipe>;
+    using PumpsView = RegistryView<Pump>;
+    // using ValvesView = RegistryView<Valve>;
+
+public:
+    // Handler for the project.
+    // Public because I may want to modify it (e.g., apply a decision vector).
+    // it is just faster than doing create an interface. I will be careful.
+    mutable EN_Project ph_;
+
 protected:
     // Path to the inp file from which the project will be uploaded.
     fsys::path _inp_file_;
     // Collection of elements of the network
-    std::vector<std::shared_ptr<Element>> _elements_;
+    Elements _elements_;
     
     // Class-specific collections of elements
     Nodes _nodes_;
@@ -123,21 +139,21 @@ protected:
 /*--- Constructors ---*/ 
 public:
     // Default constructor
-    WaterDistributionSystem();
+    WaterDistributionSystem() = default;
     
     WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
 
     // Copy constructor
-    WaterDistributionSystem(const WaterDistributionSystem& other);
+    WaterDistributionSystem(const WaterDistributionSystem& other) = default;
 
     // Move constructor
-    WaterDistributionSystem(WaterDistributionSystem&& other) noexcept;
+    WaterDistributionSystem(WaterDistributionSystem&& other) noexcept = default;
 
     // Copy assignment operator
-    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs);
+    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs) = default;
 
     // Move assignment operator
-    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept;
+    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept = default;
 
     // Destructor
     ~WaterDistributionSystem();
@@ -165,8 +181,13 @@ public:
     const IDSequences& id_sequences() const { return m__id_sequences; }
     
     const aux::TimeSeries& time_series(const std::string& name) const;
-    
-    
+
+    template <typename T>
+    auto subnetwork(
+            const std::string& id, 
+            typename RegistryView<T>::Behaviour behaviour = RegistryView<T>::Behaviour::Exclude
+        ) const -> RegistryView<T>;
+
 /*--- Methods ---*/
 public:
     // Cache the indices of the elements in the network.
@@ -204,50 +225,44 @@ public:
 
 }; // class WaterDistributionSystem
 
-} // namespace wds
-
-using WDS = bevarmejo::wds::WaterDistributionSystem; // short name for WaterDistributionSystem
-
-} // namespace bevarmejo
-
-
 /*--- Implementation ---*/
 template <typename T>
-typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::insert(const std::shared_ptr<T>& a_element) {
+auto WaterDistributionSystem::insert(const std::shared_ptr<T>& a_element) -> Elements::iterator
+{
     if (a_element == nullptr)
         return _elements_.end();
 
     // TODO: I should in some way, check if the element is already in the network.
 
-    _elements_.push_back(std::static_pointer_cast<bevarmejo::wds::Element, T>(a_element));
+    _elements_.push_back(std::static_pointer_cast<Element, T>(a_element));
 
     // now, based on the type of T, I should add the element to the specific container.
     // if Element, nothing else to do.
     // If other types, add to the specific container.
     // TODO: links should also register themselves to the nodes.
-    if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
-        _nodes_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
-        _nodes_.insert(a_element);
-        _junctions_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Tank>) {
-        _nodes_.insert(a_element);
-        _tanks_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Reservoir>) {
-        _nodes_.insert(a_element);
-        _reservoirs_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Link>) {
-        _links_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pipe>) {
-        _links_.insert(a_element);
-        _pipes_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pump>) {
-        _links_.insert(a_element);
-        _pumps_.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
-        m__aux_elements_.patterns.insert(a_element);
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
-        m__aux_elements_.curves.insert(a_element);
+    if constexpr (std::is_same_v<T, Node>) {
+        _nodes_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Junction>) {
+        _nodes_.insert(a_element->id(), a_element);
+        _junctions_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Tank>) {
+        _nodes_.insert(a_element->id(), a_element);
+        _tanks_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Reservoir>) {
+        _nodes_.insert(a_element->id(), a_element);
+        _reservoirs_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Link>) {
+        _links_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Pipe>) {
+        _links_.insert(a_element->id(), a_element);
+        _pipes_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Pump>) {
+        _links_.insert(a_element->id(), a_element);
+        _pumps_.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Pattern>) {
+        m__aux_elements_.patterns.insert(a_element->id(), a_element);
+    } else if constexpr (std::is_same_v<T, Curve>) {
+        m__aux_elements_.curves.insert(a_element->id(), a_element);
     } else {
         // Handle other types
         // ...
@@ -262,25 +277,26 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
 }
 
 template <typename T>
-typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarmejo::wds::WaterDistributionSystem::erase(const std::shared_ptr<T>& a_element) {
+auto WaterDistributionSystem::erase(const std::shared_ptr<T>& a_element) -> Elements::iterator
+{
     if (a_element == nullptr)
         return _elements_.end();
 
     // first of all erase it from the specific containers
-    if constexpr (std::is_same_v<T, bevarmejo::wds::Node>) {
+    if constexpr (std::is_same_v<T, Node>) {
         _nodes_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Junction>) {
+    } else if constexpr (std::is_same_v<T, Junction>) {
         _nodes_.erase(a_element->id());
         _junctions_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Tank>) {
+    } else if constexpr (std::is_same_v<T, Tank>) {
         _nodes_.erase(a_element->id());
         _tanks_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Reservoir>) {
+    } else if constexpr (std::is_same_v<T, Reservoir>) {
         _nodes_.erase(a_element->id());
         _reservoirs_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Link>) {
+    } else if constexpr (std::is_same_v<T, Link>) {
         _links_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pipe>) {
+    } else if constexpr (std::is_same_v<T, Pipe>) {
         _links_.erase(a_element->id());
         _pipes_.erase(a_element->id());
 
@@ -289,12 +305,12 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
         //a_element->from_node()->erase_link(a_element.get());
         //a_element->to_node()->erase_link(a_element.get());
 
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pump>) {
+    } else if constexpr (std::is_same_v<T, Pump>) {
         _links_.erase(a_element->id());
         _pumps_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Pattern>) {
+    } else if constexpr (std::is_same_v<T, Pattern>) {
         m__aux_elements_.patterns.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, bevarmejo::wds::Curve>) {
+    } else if constexpr (std::is_same_v<T, Curve>) {
         m__aux_elements_.patterns.erase(a_element->id());
     } else {
         // Handle other types
@@ -308,5 +324,45 @@ typename std::vector<std::shared_ptr<bevarmejo::wds::Element>>::iterator bevarme
     if (it != _elements_.end())
         return _elements_.erase(it);
 }
+
+template <typename T>
+auto WaterDistributionSystem::subnetwork(
+        const std::string& name,
+        typename RegistryView<T>::Behaviour behaviour
+    ) const -> RegistryView<T>
+{
+    auto ids = m__id_sequences.get(name);
+
+    if constexpr (std::is_same_v<T, Node>) {
+        return NodesView(&_nodes_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Junction>) {
+        return JunctionsView(&_junctions_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Tank>) {
+        return TanksView(&_tanks_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Reservoir>) {
+        return ReservoirsView(&_reservoirs_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Link>) {
+        return LinksView(&_links_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Pipe>) {
+        return PipesView(&_pipes_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Pump>) {
+        return PumpsView(&_pumps_, ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Pattern>) {
+        return PatternsView(&m__aux_elements_.patterns, &ids, behaviour);
+    } else if constexpr (std::is_same_v<T, Curve>) {
+        return CurvesView(&m__aux_elements_.curves, ids, behaviour);
+    } else {
+        // Handle other types
+        // ...
+        // good question, for sure I don't add it to anything else, 
+        // but if I'm here I will be here at compile time so maybe warning??
+    }
+}
+
+} // namespace bevarmejo::wds
+
+namespace bevarmejo {
+using WDS = wds::WaterDistributionSystem; // short name for WaterDistributionSystem
+} // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP

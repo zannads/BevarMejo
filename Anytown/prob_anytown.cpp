@@ -1477,7 +1477,7 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const 
 }
 
 // ------------------- 2nd level ------------------- //
-std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 // Structure of the decision variables:
 // [35 pipes x [action, pra]
 // action: 3 options -> 0 - do nothing, 1 duplicate, 2 - clean 
@@ -1498,7 +1498,7 @@ std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(con
 
 	return std::make_pair(lb, ub);
 }
-std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 // Structure of the decision variables:
 // [35 pipes x action]
 // action: 2+pra options -> 0 - do nothing, 1 - clean, 2- pra
@@ -1513,7 +1513,7 @@ std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(con
 	return std::make_pair(std::vector<double>(n_dvs, 0), std::vector<double>(n_dvs, n_actions-1));
 }
 
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(WDS::PipesView new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
 // Structure of the decision variables:
 // 6 pipes x [pra]
 // pra: 10 alternative in pipe_rehab_cost -> 0 - 9 
@@ -1544,7 +1544,7 @@ std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pum
 	return std::make_pair(lb, ub);
 }
 
-std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs) {
+std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(WDS::TanksView tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs) {
 // Structure of the decision variables:
 // 2 tanks x [tpl, tvol]
 // tpl: tank possible location nodes (plus 0, do nothing) -> 0 - x
@@ -1588,8 +1588,8 @@ std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::a
 	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
-		for (auto& pump : prob.m__anytown->pumps()) {
-			auto pump_pattern_idx = pump->speed_pattern()->index();
+		for (auto& [id, pump] : prob.m__anytown->pumps()) {
+			auto pump_pattern_idx = pump.speed_pattern()->index();
 			for (std::size_t i = 1; i <= 24; ++i) {
 				double val = 0.0;
 				int errorcode = EN_getpatternvalue(prob.m__anytown->ph_, pump_pattern_idx, i, &val);

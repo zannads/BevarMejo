@@ -27,101 +27,6 @@ namespace fsys = std::filesystem;
 
 namespace bevarmejo::wds {
 
-WaterDistributionSystem::WaterDistributionSystem() :
-    ph_(nullptr),
-    _inp_file_(),
-    _elements_(),
-    _nodes_(),
-    _links_(),
-    m__aux_elements_(),
-    _junctions_(),
-    _tanks_(),
-    _reservoirs_(),
-    _pipes_(),
-    _pumps_(),
-    _subnetworks_(),
-    _groups_(),
-    m__config_options(),
-    m__times() { }
-    
-
-    WaterDistributionSystem::WaterDistributionSystem(const WaterDistributionSystem& other) :
-        ph_(other.ph_),
-        _inp_file_(other._inp_file_),
-        _elements_(other._elements_),
-        _nodes_(other._nodes_),
-        _links_(other._links_),
-        m__aux_elements_(other.m__aux_elements_),
-        _junctions_(other._junctions_),
-        _tanks_(other._tanks_),
-        _reservoirs_(other._reservoirs_),
-        _pipes_(other._pipes_),
-        _pumps_(other._pumps_),
-        _subnetworks_(other._subnetworks_),
-        _groups_(other._groups_),
-        m__config_options(other.m__config_options),
-        m__times(other.m__times)
-        { }
-
-    WaterDistributionSystem::WaterDistributionSystem(WaterDistributionSystem&& other) noexcept :
-        ph_(other.ph_),
-        _inp_file_(std::move(other._inp_file_)),
-        _elements_(std::move(other._elements_)),
-        _nodes_(std::move(other._nodes_)),
-        _links_(std::move(other._links_)),
-        m__aux_elements_(std::move(other.m__aux_elements_)),
-        _junctions_(std::move(other._junctions_)),
-        _tanks_(std::move(other._tanks_)),
-        _reservoirs_(std::move(other._reservoirs_)),
-        _pipes_(std::move(other._pipes_)),
-        _pumps_(std::move(other._pumps_)),
-        _subnetworks_(std::move(other._subnetworks_)),
-        _groups_(std::move(other._groups_)),
-        m__config_options(std::move(other.m__config_options)),
-        m__times(std::move(other.m__times))
-        { }
-
-    WaterDistributionSystem& WaterDistributionSystem::operator=(const WaterDistributionSystem& rhs) {
-        if (this != &rhs) {
-            ph_ = rhs.ph_;
-            _inp_file_ = rhs._inp_file_;
-            _elements_ = rhs._elements_;
-            _nodes_ = rhs._nodes_;
-            _links_ = rhs._links_;
-            m__aux_elements_ = rhs.m__aux_elements_;
-            _junctions_ = rhs._junctions_;
-            _tanks_ = rhs._tanks_;
-            _reservoirs_ = rhs._reservoirs_;
-            _pipes_ = rhs._pipes_;
-            _pumps_ = rhs._pumps_;
-            _subnetworks_ = rhs._subnetworks_;
-            _groups_ = rhs._groups_;
-            m__config_options = rhs.m__config_options;
-            m__times = rhs.m__times;
-        }
-        return *this;
-    }
-
-    WaterDistributionSystem& WaterDistributionSystem::operator=(WaterDistributionSystem&& rhs) noexcept {
-        if (this != &rhs) {
-            ph_ = rhs.ph_;
-            _inp_file_ = std::move(rhs._inp_file_);
-            _elements_ = std::move(rhs._elements_);
-            _nodes_ = std::move(rhs._nodes_);
-            _links_ = std::move(rhs._links_);
-            m__aux_elements_ = std::move(rhs.m__aux_elements_);
-            _junctions_ = std::move(rhs._junctions_);
-            _tanks_ = std::move(rhs._tanks_);
-            _reservoirs_ = std::move(rhs._reservoirs_);
-            _pipes_ = std::move(rhs._pipes_);
-            _pumps_ = std::move(rhs._pumps_);
-            _subnetworks_ = std::move(rhs._subnetworks_);
-            _groups_ = std::move(rhs._groups_);
-            m__config_options = std::move(rhs.m__config_options);
-            m__times = std::move(rhs.m__times);
-        }
-        return *this;
-    }
 
 WaterDistributionSystem::~WaterDistributionSystem(){
     if (ph_!=nullptr){
@@ -133,14 +38,12 @@ WaterDistributionSystem::~WaterDistributionSystem(){
     }
 
     // First clear all the elements, then the time series and finally the config options
-    _subnetworks_.clear();
-    _groups_.clear();
-
+    
     _nodes_.clear();
-    _links_.clear();
     _junctions_.clear();
     _tanks_.clear();
     _reservoirs_.clear();
+    
     _links_.clear();
     _pipes_.clear();
     _pumps_.clear();

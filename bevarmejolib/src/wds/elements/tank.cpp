@@ -155,7 +155,6 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
     m__initial_level= val;
 
     { // Assign EN curves 
-        auto curves= m__wds.curves();
         errorcode = EN_getnodevalue(ph, this->index(), EN_VOLCURVE, &val);
         assert(errorcode <= 100);
 
@@ -164,14 +163,9 @@ void Tank::__retrieve_EN_properties(EN_Project ph) {
             errorcode = EN_getcurveid(ph, static_cast<int>(val), curve_id);
             assert(errorcode <= 100);
 
-            auto it = curves.find(curve_id);
-            assert(it != curves.end());
-
-            std::shared_ptr<VolumeCurve> volume_curve = std::dynamic_pointer_cast<VolumeCurve>(*it);
-            assert(volume_curve != nullptr);
             // EPANET says that this curve with this ID should be a volume curve.
             // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
-            this->volume_curve(volume_curve);
+            this->volume_curve(m__wds.curves().get<VolumeCurve>(curve_id));
         }
         else this->volume_curve(nullptr);
     }

@@ -19,25 +19,24 @@ namespace fsys = std::filesystem;
 
 #include "water_distribution_system.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
 WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
     ph_(nullptr),
     _inp_file_(inp_file),
     _elements_(),
     _nodes_(),
-    _links_(),
-    m__aux_elements_(),
     _junctions_(),
     _tanks_(),
     _reservoirs_(),
-    _pipes_(),
+    _links_(),
     _pumps_(),
-    _subnetworks_(),
-    _groups_(),
-    m__config_options(),
-    m__times()
+    _pipes_(),
+    m__aux_elements_()
+    m__id_sequences(),
+    m__times(),
+    m__config_options()
     {
         assert(!inp_file.empty());
 
@@ -359,5 +358,4 @@ void WaterDistributionSystem::cache_indices() const {
     }
 }
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
