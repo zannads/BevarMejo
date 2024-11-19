@@ -34,31 +34,36 @@ public:
     using key_type = std::string;
     using mapped_type = T; // We hide the fact that is a shared_ptr
 private:
-    struct __instance__
+    struct __entry__
     {
-        const key_type id;
-        std::shared_ptr<mapped_type> p_entry;
+        const key_type name;
+        std::shared_ptr<mapped_type> ptr;
     };
-    struct instance 
+    struct entry 
     {
-        const key_type id;
-        mapped_type entry;
+        const key_type name;
+        mapped_type value;
     };
-    struct instance_ref
+    struct entry_ref
     {
-        const key_type& id;
-        mapped_type& entry;
+        const key_type& name;
+        mapped_type& value;
+    };
+    struct const_entry_ref
+    {
+        const key_type& name;
+        const mapped_type& value;
     };
 public:
-    using value_type = instance;
+    using value_type = entry;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
     using key_compare = std::less<key_type>;
-    using allocator_type = std::allocator<__instance__>;
-    using reference = instance_ref;
-    using const_reference = const instance_ref;
-    using pointer = instance_ref*;
-    using const_pointer = const instance_ref*;
+    using allocator_type = std::allocator<__entry__>;
+    using reference = entry_ref;
+    using const_reference = const_entry_ref;
+    using pointer = entry_ref*;
+    using const_pointer = const_entry_ref*;
 private:
     // Forward declaration of the iterator.
     template <class C>
@@ -103,23 +108,23 @@ public:
 // front and back const and non const versions checking for bound if enabled.
 // data will be private because it is not safe to give the user the pointer to the data.
 public:
-    mapped_type& at(const key_type& id) 
+    mapped_type& at(const key_type& name) 
     {
-        auto it = find(id);
+        auto it = find(name);
         if (it == end())
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The element with the given id does not exist.",
-                "Id: ", id);
-        return it->entry;
+                "The element with the given name does not exist.",
+                "Id: ", name);
+        return it->value;
     }
-    const mapped_type& at(const key_type& id) const
+    const mapped_type& at(const key_type& name) const
     {
-        auto it = find(id);
+        auto it = find(name);
         if (it == cend())
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The element with the given id does not exist.",
-                "Id: ", id);
-        return it->entry;
+                "The element with the given name does not exist.",
+                "Id: ", name);
+        return it->value;
     }
     reference at( size_type pos )
     {
@@ -127,7 +132,7 @@ public:
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
                 "The index is out of range.",
                 "Index: ", pos, "Size: ", size());
-        return {m__elements[pos].id, *m__elements[pos].p_entry};
+        return {m__elements[pos].name, *m__elements[pos].ptr};
     }
     const_reference at( size_type pos ) const
     {
@@ -135,7 +140,7 @@ public:
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
                 "The index is out of range.",
                 "Index: ", pos, "Size: ", size());
-        return {m__elements[pos].id, *m__elements[pos].p_entry};
+        return {m__elements[pos].name, *m__elements[pos].ptr};
     }
 
     reference front() { return *begin(); }
@@ -143,6 +148,23 @@ public:
 
     reference back() { return *(end() - 1); }
     const_reference back() const { return *(end() - 1); }
+
+    template <class OutputT = mapped_type>
+    std::shared_ptr<OutputT> get(const key_type& name) const
+    {
+        static_assert(
+            std::is_base_of_v<mapped_type, OutputT> || std::is_base_of_v<OutputT, mapped_type>,
+            "The output type must inherit from or be a parent of the mapped type of the registry."
+        );
+
+        auto idx = find_index(name);
+        if (idx == -1)
+            __format_and_throw<std::out_of_range>("Registry::get()", "Impossible to access the element.",
+                "The element with the given name does not exist.",
+                "Id: ", name);
+
+        return std::dynamic_pointer_cast<OutputT>(m__elements[idx].ptr);
+    }
 
 /*------- Iterators -------*/
 public:
@@ -181,25 +203,30 @@ public:
 
 /*------- Lookup -------*/
 public:
-    size_type count(const key_type &id) const
+    size_type count(const key_type &name) const
     {
-        return find(id) != cend() ? 1 : 0;
+        return find_index(name) != -1 ? 1 : 0;
     }
 
-    iterator find(const key_type &id)
+    difference_type find_index(const key_type &name) const
     {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
-        return it != m__elements.end() ? iterator(this, it - m__elements.begin()) : end();
+        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&name](const __entry__ &inst) { return inst.name == name; });
+        return it != m__elements.end() ? it - m__elements.begin() : -1;
     }
-    const_iterator find(const key_type &id) const
+    iterator find(const key_type &name)
     {
-        auto it = std::find_if(m__elements.begin(), m__elements.end(), [&id](const __instance__ &inst) { return inst.id == id; });
-        return it != m__elements.end() ? const_iterator(this, it - m__elements.begin()) : cend();
+        auto idx = find_index(name);
+        return idx != -1 ? iterator(this, idx) : end();
+    }
+    const_iterator find(const key_type &name) const
+    {
+        auto idx = find_index(name);
+        return idx != -1 ? const_iterator(this, idx) : cend();
     }
 
-    bool contains(const key_type &id) const
+    bool contains(const key_type &name) const
     {
-        return find(id) != cend();
+        return find_index(name) != -1;
     }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -208,7 +235,7 @@ public:
 // have protected stuff.
 ///////////////////////////////////////////////////////////////////////////
 private:
-    using Container = std::vector<__instance__, allocator_type>;
+    using Container = std::vector<__entry__, allocator_type>;
     using DuplicatePtrChecker = std::unordered_set<mapped_type*>;
     using DuplicateIdChecker = std::unordered_set<key_type>;
 
@@ -243,7 +270,7 @@ private:
 
         for (; first != last; ++first)
         {
-            insert(first->id, first->p_entry);
+            insert(first->name, first->ptr);
         }
     }
 
@@ -258,7 +285,7 @@ private:
 
     Registry &operator=(Registry &&rhs) noexcept = default;
 
-    Registry& operator=( std::initializer_list<__instance__> ilist )
+    Registry& operator=( std::initializer_list<__entry__> ilist )
     {
         clear();
 
@@ -270,7 +297,7 @@ private:
 
         for (const auto& inst : ilist)
         {
-            insert(inst.id, inst.p_entry);
+            insert(inst.name, inst.ptr);
         }
 
         return *this;
@@ -281,11 +308,11 @@ private:
 private:
     reference operator[](size_type pos)
     {
-        return {m__elements[pos].id, *m__elements[pos].p_entry};
+        return {m__elements[pos].name, *m__elements[pos].ptr};
     }
     const_reference operator[](size_type pos) const
     {
-        return {m__elements[pos].id, *m__elements[pos].p_entry};
+        return {m__elements[pos].name, *m__elements[pos].ptr};
     }
 
     // To access the data from friend classes simply acccess the member.
@@ -311,54 +338,54 @@ private:
         duplicate_id_checker.clear();
     }
 
-    insert_return_type insert(const __instance__& value)
+    insert_return_type insert(const __entry__& value)
     {
         return insert(this->end(), value);
     }
-    insert_return_type insert(__instance__ &&value)
+    insert_return_type insert(__entry__ &&value)
     {
         return insert(this->end(), std::move(value));
     }
-    insert_return_type insert(const_iterator pos, const __instance__ &value)
+    insert_return_type insert(const_iterator pos, const __entry__ &value)
     {
-        return insert(pos, __instance__{value.id, value.p_entry});
+        return insert(pos, __entry__{value.name, value.ptr});
     }
-    insert_return_type insert(const_iterator pos, __instance__ &&value)
+    insert_return_type insert(const_iterator pos, __entry__ &&value)
     {
         // If the element is already in the registry and you try to insert it twice it is a failure.
-        // While if you simply try to insert a new element with the same id, it's a soft error and 
+        // While if you simply try to insert a new element with the same name, it's a soft error and 
         // you get back the pointer to the already existing element and the bool to false.
 
         // Instead of checking if the element is already in the checking sets, 
         // we can simply try to insert it and check the result of the insertion.
-        if (value.p_entry == nullptr)
+        if (value.ptr == nullptr)
         {
             __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
-                "The element with name "+value.id+" is a pointer to null.");
+                "The element with name "+value.name+" is a pointer to null.");
         }
 
-        auto ins_res_dup_ptr = duplicate_ptr_checker.insert(value.p_entry.get());
+        auto ins_res_dup_ptr = duplicate_ptr_checker.insert(value.ptr.get());
 
         if (ins_res_dup_ptr.second == false)
         {
             __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
-                "The element is already in the registry with a different id.",
-                "Id (new) : ", value.id,
+                "The element is already in the registry with a different name.",
+                "Id (new) : ", value.name,
                 "Id (old) : ", 
                     std::find_if(
                         m__elements.begin(), m__elements.end(), 
-                        [&value](const __instance__ &inst) { return inst.p_entry.get() == value.p_entry.get(); }
-                    )->id,
-                "Address: ", value.p_entry.get());
+                        [&value](const __entry__ &inst) { return inst.ptr.get() == value.ptr.get(); }
+                    )->name,
+                "Address: ", value.ptr.get());
         }
         
-        auto ins_res_dup_id = duplicate_id_checker.insert(value.id);
+        auto ins_res_dup_id = duplicate_id_checker.insert(value.name);
 
         if (ins_res_dup_id.second == false)
         {
             // Remove the pointer from the duplicate_ptr_checker
-            duplicate_ptr_checker.erase(value.p_entry.get());
-            return {find(value.id), false};
+            duplicate_ptr_checker.erase(value.ptr.get());
+            return {find(value.name), false};
         }
 
         // Finally include the element in the registry.
@@ -383,7 +410,7 @@ private:
         }
         return res;
     }
-    insert_iter_return_type insert(std::initializer_list<__instance__> ilist)
+    insert_iter_return_type insert(std::initializer_list<__entry__> ilist)
     {
         return insert(ilist.begin(), ilist.end());
     }
@@ -391,12 +418,12 @@ private:
     template <class... Args>
     insert_return_type emplace(Args&&... args)
     {
-        return insert(this->cend() ,__instance__{std::forward<Args>(args)...});
+        return insert(this->cend() ,__entry__{std::forward<Args>(args)...});
     }
     template <class... Args>
     insert_return_type emplace(const_iterator pos, Args&&... args)
     {
-        return insert(pos, __instance__{std::forward<Args>(args)...});
+        return insert(pos, __entry__{std::forward<Args>(args)...});
     }
 
     iterator erase(const_iterator pos)
@@ -404,8 +431,8 @@ private:
         if(pos == cend())
             return end();
 
-        duplicate_ptr_checker.erase(pos->p_entry.get());
-        duplicate_id_checker.erase(pos->id);
+        duplicate_ptr_checker.erase(pos->ptr.get());
+        duplicate_id_checker.erase(pos->name);
 
         auto idx = pos - cbegin();
         auto it = m__elements.erase(m__elements.begin() + idx);
@@ -419,17 +446,17 @@ private:
 
         for (auto it=first; it!=last; ++it)
         {
-            duplicate_ptr_checker.erase(it->p_entry.get());
-            duplicate_id_checker.erase(it->id);
+            duplicate_ptr_checker.erase(it->ptr.get());
+            duplicate_id_checker.erase(it->name);
         }
 
         auto it = m__elements.erase(m__elements.begin() + idx_first, m__elements.begin() + idx_last);
 
         return iterator(this, it - m__elements.begin());
     }
-    size_type erase(const key_type &id)
+    size_type erase(const key_type &name)
     {
-        auto it = find(id);
+        auto it = find(name);
         if (it == end())
             return 0;
 
@@ -437,13 +464,13 @@ private:
         return 1;
     }
 
-    __instance__ extract(const_iterator pos)
+    __entry__ extract(const_iterator pos)
     {
         if(pos == cend())
-            return __instance__{"", nullptr};
+            return __entry__{"", nullptr};
 
-        duplicate_ptr_checker.erase(pos->p_entry.get());
-        duplicate_id_checker.erase(pos->id);
+        duplicate_ptr_checker.erase(pos->ptr.get());
+        duplicate_id_checker.erase(pos->name);
 
         auto idx = pos - cbegin();
         auto inst = std::move(m__elements[idx]);
@@ -451,9 +478,9 @@ private:
 
         return inst;
     }
-    __instance__ extract(const key_type &id)
+    __entry__ extract(const key_type &name)
     {
-        return extract(find(id));
+        return extract(find(name));
     }
 
     // TODO: merge (allowing to merge with another registry of derived types)
