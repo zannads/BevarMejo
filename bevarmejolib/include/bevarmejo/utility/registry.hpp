@@ -7,8 +7,7 @@
 #include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/utility/bemememory.hpp"
 
-namespace bevarmejo
-{
+#include "bevarmejo/utility/registry_users.hpp"
 
 // Forward declaration of friend classes.
 // Only these classes are allowed to create them, insert and remove elements.
@@ -16,10 +15,11 @@ namespace bevarmejo
 // and access and modify (if non-const) the elements. 
 // you are always getting a complete set of the elements inside the registry when iterating
 // and you can't add or remove elements, if you want to see less, you have to use a registry_range.
+// Define them in the file registry_users.hpp
+FORWARD_DEFINITIONS_REGISTRY_FRIEND_CLASSES
 
-// WDS uses the registry to store the elements.
-class WaterDistributionSystem;
-
+namespace bevarmejo
+{
 template <typename T>
 class Registry final 
 
@@ -38,6 +38,18 @@ private:
     {
         const key_type name;
         std::shared_ptr<mapped_type> ptr;
+
+        // Constructor with perfect forwarding for both arguments.
+        template <typename NameT, typename PtrT>
+        __entry__(NameT&& a_name, PtrT&& a_ptr) :
+            name(std::forward<NameT>(a_name)),
+            ptr(std::forward<PtrT>(a_ptr))
+        {
+            static_assert(
+                !std::is_pointer_v<std::decay_t<PtrT>>,
+                "Raw pointers are not allowed. Use std::shared_ptr instead."
+            );
+        }
     };
     struct entry 
     {
@@ -256,8 +268,7 @@ private:
     using DuplicateIdChecker = std::unordered_set<key_type>;
 
 private:
-    // Here make friend the classes that will use the registry.
-    friend class WaterDistributionSystem;
+    FRIEND_RELATIONSHIPS_FOR_REGISTRY
 
 /*------- Member objects -------*/
 private:
@@ -354,17 +365,15 @@ private:
         duplicate_id_checker.clear();
     }
 
-    insert_return_type insert(const __entry__& value)
+    template <typename E>
+    insert_return_type insert(E&& value)
     {
-        return insert(this->end(), value);
+        return insert(this->end(), std::forward<E>(value));
     }
-    insert_return_type insert(__entry__ &&value)
+    template <typename String, typename Ptr>
+    insert_return_type insert(String&& name, Ptr&& ptr)
     {
-        return insert(this->end(), std::move(value));
-    }
-    insert_return_type insert(const_iterator pos, const __entry__ &value)
-    {
-        return insert(pos, __entry__{value.name, value.ptr});
+        return insert(this->end(), __entry__{std::forward<String>(name), std::forward<Ptr>(ptr)});
     }
     insert_return_type insert(const_iterator pos, __entry__ &&value)
     {
@@ -410,6 +419,15 @@ private:
 
         return {iterator(this, idx), true};
     }
+    insert_return_type insert(const_iterator pos, const __entry__ &value)
+    {
+        return insert(pos, __entry__{value.name, value.ptr});
+    }
+    template <typename String, typename Ptr>
+    insert_return_type insert(const_iterator pos, String&& name, Ptr&& ptr)
+    {
+        return insert(pos, __entry__{std::forward<String>(name), std::forward<Ptr>(ptr)});
+    }
     template <class InputIt>
     insert_iter_return_type insert(InputIt first, InputIt last)
     {
@@ -431,15 +449,15 @@ private:
         return insert(ilist.begin(), ilist.end());
     }
 
-    template <class... Args>
-    insert_return_type emplace(Args&&... args)
+    template <class String, typename... Args>
+    insert_return_type emplace(String&& name, Args&&... args)
     {
-        return insert(this->cend() ,__entry__{std::forward<Args>(args)...});
+        return insert(this->cend() ,__entry__{std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)});
     }
-    template <class... Args>
-    insert_return_type emplace(const_iterator pos, Args&&... args)
+    template <class String, typename... Args>
+    insert_return_type emplace(const_iterator pos, String&& name, Args&&... args)
     {
-        return insert(pos, __entry__{std::forward<Args>(args)...});
+        return insert(pos, __entry__{std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)});
     }
 
     iterator erase(const_iterator pos)
