@@ -14,12 +14,17 @@ namespace fsys = std::filesystem;
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/library_metadata.hpp"
+
+#include "bevarmejo/io/streams.hpp"
+
+#include "bevarmejo/utility/registry.hpp"
+#include "bevarmejo/utility/registry_view.hpp"
 
 #include "water_distribution_system.hpp"
 
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 
 WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
@@ -379,4 +384,4 @@ void WaterDistributionSystem::cache_indices() const
         element->retrieve_index(ph_);
 }
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo

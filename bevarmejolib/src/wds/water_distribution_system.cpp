@@ -55,15 +55,14 @@ WaterDistributionSystem::~WaterDistributionSystem(){
 }
 
 
-std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const {
+std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
+{
     std::unique_ptr<WaterDistributionSystem> wds_clone = std::make_unique<WaterDistributionSystem>();
 
     // Clone the elements
     // I start from curves and patterns since the other depende on them
-    for (auto& [name, old_curve] : m__aux_elements_.curves) {
-        std::shared_ptr<Curve> curve_clone = old_curve.clone();
-        wds_clone->insert(name, curve_clone);
-    }
+    for (const auto& [name, old_curve] : m__aux_elements_.curves)
+        wds_clone->insert(name, old_curve.clone());
 
     // The nodes can be complitely defined thanks to curves and patterns, so it's
     // their moment.
@@ -76,10 +75,10 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const 
 
 void WaterDistributionSystem::clear_results()
 {
-    for (auto& [name, node] : _nodes_)
+    for (const auto& [name, node] : _nodes_)
         node.clear_results();
     
-    for (auto& [name, link] : _links_)
+    for (const auto& [name, link] : _links_)
         link.clear_results();
 }
 

@@ -64,9 +64,9 @@ public:
 public:
     /*--- Properties ---*/
     const Node* from_node() const { return _node_start_; }
-    void start_node(Node* a_node) { _node_start_ = a_node; }
+    void start_node(const Node* a_node) { _node_start_ = a_node; }
     const Node* to_node() const { return _node_end_; }
-    void end_node(Node* a_node) { _node_end_ = a_node; }
+    void end_node(const Node* a_node) { _node_end_ = a_node; }
 
     aux::QuantitySeries<int>& initial_status() { return m__initial_status; }
     const aux::QuantitySeries<int>& initial_status() const { return m__initial_status; }
