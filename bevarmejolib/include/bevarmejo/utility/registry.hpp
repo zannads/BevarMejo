@@ -33,11 +33,13 @@ class Registry final
 public:
     using key_type = std::string;
     using mapped_type = T; // We hide the fact that is a shared_ptr
+    using pointer = std::shared_ptr<mapped_type>;
+    using const_pointer = std::shared_ptr<const mapped_type>;
 private:
     struct __entry__
     {
-        const key_type name;
-        std::shared_ptr<mapped_type> ptr;
+        key_type name;
+        pointer ptr;
 
         __entry__() = default;
         __entry__(const __entry__&) = default;
@@ -74,8 +76,6 @@ public:
     using allocator_type = std::allocator<__entry__>;
     using reference = entry_ref;
     using const_reference = const_entry_ref;
-    using pointer = mapped_type*;
-    using const_pointer = const mapped_type*;
 private:
     // Forward declaration of the iterator.
     template <class C>
@@ -122,21 +122,21 @@ public:
 public:
     mapped_type& at(const key_type& name) 
     {
-        auto it = find(name);
-        if (it == end())
+        auto it = find_index(name);
+        if (it == -1)
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
                 "The element with the given name does not exist.",
                 "Id: ", name);
-        return it->value;
+        return *m__elements[it].ptr;
     }
     const mapped_type& at(const key_type& name) const
     {
-        auto it = find(name);
-        if (it == cend())
+        auto it = find_index(name);
+        if (it == -1)
             __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
                 "The element with the given name does not exist.",
                 "Id: ", name);
-        return it->value;
+        return *m__elements[it].ptr;
     }
     reference at( size_type pos )
     {
@@ -365,16 +365,6 @@ private:
         duplicate_id_checker.clear();
     }
 
-    template <typename E>
-    insert_return_type insert(E&& value)
-    {
-        return insert(this->end(), std::forward<E>(value));
-    }
-    template <typename String, typename Ptr>
-    insert_return_type insert(String&& name, Ptr&& ptr)
-    {
-        return insert(this->end(), __entry__{std::forward<String>(name), std::forward<Ptr>(ptr)});
-    }
     insert_return_type insert(const_iterator pos, __entry__ &&value)
     {
         // If the element is already in the registry and you try to insert it twice it is a failure.
@@ -421,12 +411,22 @@ private:
     }
     insert_return_type insert(const_iterator pos, const __entry__ &value)
     {
-        return insert(pos, __entry__{value.name, value.ptr});
+        return insert(pos, __entry__(value));
+    }
+    template <typename E>
+    insert_return_type insert(E&& value)
+    {
+        return insert(this->cend(), std::forward<E>(value));
+    }
+    template <typename String, typename Ptr>
+    insert_return_type insert(String&& name, Ptr&& ptr)
+    {
+        return insert(this->cend(), __entry__(std::forward<String>(name), std::forward<Ptr>(ptr)));
     }
     template <typename String, typename Ptr>
     insert_return_type insert(const_iterator pos, String&& name, Ptr&& ptr)
     {
-        return insert(pos, __entry__{std::forward<String>(name), std::forward<Ptr>(ptr)});
+        return insert(pos, __entry__(std::forward<String>(name), std::forward<Ptr>(ptr)));
     }
     template <class InputIt>
     insert_iter_return_type insert(InputIt first, InputIt last)
@@ -452,12 +452,12 @@ private:
     template <class String, typename... Args>
     insert_return_type emplace(String&& name, Args&&... args)
     {
-        return insert(this->cend() ,__entry__{std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)});
+        return insert(this->cend() ,__entry__(std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)));
     }
     template <class String, typename... Args>
     insert_return_type emplace(const_iterator pos, String&& name, Args&&... args)
     {
-        return insert(pos, __entry__{std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)});
+        return insert(pos, __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)));
     }
 
     iterator erase(const_iterator pos)
@@ -628,7 +628,7 @@ public:
                 "The index is out of range.",
                 "Index: ", idx, "Size: ", reg->size());
 #endif
-        return reg->m__elements[idx].ptr.get();
+        return reg->m__elements[idx].ptr; // It is casted to const pointer automatically if the iterator is const.
     }
 
     reference operator[](difference_type n) const

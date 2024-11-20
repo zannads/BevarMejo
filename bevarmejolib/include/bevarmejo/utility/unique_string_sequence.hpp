@@ -51,7 +51,7 @@ private:
 
 /*------- Member functions -------*/
 /*--- (constructor) ---*/
-protected:
+public:
     UniqueStringSequence() noexcept = default;
     UniqueStringSequence(const Container &elements);
     UniqueStringSequence(UniqueStringSequence &&elements) = default;

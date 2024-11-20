@@ -265,14 +265,14 @@ private:
                 if (m__range->m__behaviour == Behaviour::Exclude)
                 {
                     m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id))
+                    while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains((*m__iter).name))
                         ++m__iter;
                 }
 
                 if (m__range->m__behaviour == Behaviour::Include)
                 {
                     m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id))
+                    while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains((*m__iter).name))
                         ++m__iter;
                 }
 
@@ -357,7 +357,7 @@ private:
                 do
                 {
                     ++m__iter;
-                } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains(m__iter->id));
+                } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains((*m__iter).name));
             }
             
             if (m__range->m__behaviour == Behaviour::Include)
@@ -365,17 +365,17 @@ private:
                 do
                 {
                     ++m__iter;
-                } while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains(m__iter->id));
+                } while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains((*m__iter).name));
             }
             
             if (m__range->m__behaviour == Behaviour::OrderedInclude)
             {
                 // I am pointing at ID x, find it in the USS, get the next, find it in the registry, get the iterator.
-                auto curr_id = m__range->mp__u_ids.lock()->find(m__iter->id);
+                auto curr_id = m__range->mp__u_ids.lock()->find((*m__iter).name);
                 auto next_id = std::next(curr_id);
 
                 // If I can't find it (should not happen at all) or I am at the end of the list, I am done.
-                if (curr_id == m__range->mp__u_ids.lock()->end() || next_id == m__range->mp__u_ids.lock().end())
+                if (curr_id == m__range->mp__u_ids.lock()->end() || next_id == m__range->mp__u_ids.lock()->end())
                 {
                     m__iter = m__range->mp__registry->end();
                     f__end = true;
