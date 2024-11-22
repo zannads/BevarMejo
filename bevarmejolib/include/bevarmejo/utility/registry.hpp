@@ -450,58 +450,48 @@ private:
     }
 
     template <class String, typename... Args,
-                typename = std::enable_if_t<std::is_constructible_v<T, key_type, Args...>>>
+                typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
     insert_return_type emplace(String&& name, Args&&... args)
     {
-        // Temp: for now, hide the fact that the id is copied twice (once in the Registry and once in the Element).
-        // Later, when I will remove the id from inside the object, this operation will be not necessary or done by the insert method.
-        key_type name_copy = name;
         return insert(this->cend() ,
-            __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<key_type>(name_copy), std::forward<Args>(args)...)));
+            __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)));
     }
     template <typename U, class String, typename... Args,
-                typename = std::enable_if_t<!std::is_constructible_v<T, key_type, Args...>>>
+                typename = std::enable_if_t<!std::is_constructible_v<T, Args...>>>
     insert_return_type emplace(String&& name, Args&&... args)
     {
         static_assert(
-            std::is_constructible_v<U, key_type, Args...>,
+            std::is_constructible_v<U, Args...>,
             "The type of element to be emplaced must be constructible with the given arguments."
         );
         static_assert(
             std::is_base_of_v<T, U>,
             "The type of element to be emplaced must be a derived type of the registry mapped type."
         );
-        // Temp: for now, hide the fact that the id is copied twice (once in the Registry and once in the Element).
-        // Later, when I will remove the id from inside the object, this operation will be not necessary or done by the insert method.
-        key_type name_copy = name;
         return insert(this->cend() ,
-            __entry__(std::forward<String>(name), std::make_shared<U>(std::forward<key_type>(name_copy), std::forward<Args>(args)...)));
+            __entry__(std::forward<String>(name), std::make_shared<U>(std::forward<Args>(args)...)));
     }
     template <class String, typename... Args,
-                typename = std::enable_if_t<std::is_constructible_v<T, key_type, Args...>>>
+                typename = std::enable_if_t<std::is_constructible_v<T, Args...>>>
     insert_return_type emplace(const_iterator pos, String&& name, Args&&... args)
     {
-        // Temp: for now, hide the fact that the id is copied twice (once in the Registry and once in the Element).
-        // Later, when I will remove the id from inside the object, this operation will be not necessary or done by the insert method.
-        key_type name_copy = name;
-        return insert(pos, __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<key_type>(name_copy), std::forward<Args>(args)...)));
+        return insert(pos,
+            __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)));
     }
     template <typename U, class String, typename... Args,
-                typename = std::enable_if_t<!std::is_constructible_v<T, key_type, Args...>>>
+                typename = std::enable_if_t<!std::is_constructible_v<T, Args...>>>
     insert_return_type emplace(const_iterator pos, String&& name, Args&&... args)
     {
         static_assert(
-            std::is_constructible_v<U, key_type, Args...>,
+            std::is_constructible_v<U, Args...>,
             "The type of element to be emplaced must be constructible with the given arguments."
         );
         static_assert(
             std::is_base_of_v<T, U>,
             "The type of element to be emplaced must be a derived type of the registry mapped type."
         );
-        // Temp: for now, hide the fact that the id is copied twice (once in the Registry and once in the Element).
-        // Later, when I will remove the id from inside the object, this operation will be not necessary or done by the insert method.
-        key_type name_copy = name;
-        return insert(pos, __entry__(std::forward<String>(name), std::make_shared<U>(std::forward<key_type>(name_copy), std::forward<Args>(args)...)));
+        return insert(pos,
+            __entry__(std::forward<String>(name), std::make_shared<U>(std::forward<Args>(args)...)));
     }
 
     iterator erase(const_iterator pos)
