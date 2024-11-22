@@ -152,10 +152,9 @@ void WaterDistributionSystem::load_EN_curves(EN_Project ph)
     int n_curves= 0;
     int errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
     assert(errorcode < 100);
-    _elements_.reserve(n_curves);
     m__aux_elements_.curves.reserve(n_curves);
 
-    for (int i= 1; i <= n_curves; ++i)
+    for (int i = 1; i <= n_curves; ++i)
     {
         char curve_id[EN_MAXID+1];
         errorcode = EN_getcurveid(ph_, i, curve_id);
@@ -165,40 +164,59 @@ void WaterDistributionSystem::load_EN_curves(EN_Project ph)
         errorcode = EN_getcurvetype(ph_, i, &curve_type);
         assert(errorcode < 100);
 
-        std::shared_ptr<Curve> p_curve;
+        auto get_curve_ptr = [this, curve_id](auto irs) -> std::shared_ptr<Curve>
+        {
+            if (irs.inserted)
+                return irs.iterator.operator->();
 
+            if (irs.iterator != m__aux_elements_.curves.end())
+            { // Not inserted because already existing. 
+                io::stream_out(std::cout, 
+                    "Curve with ID \""+std::string(curve_id)+"\" already exists in the network.\n");
+
+                return nullptr;
+            }
+
+            // Insertion failed for other reasons an withouth throwing...
+            return nullptr;
+        };
+
+        std::shared_ptr<Curve> p_curve;
         switch (curve_type)
         {
             case EN_GENERIC_CURVE:
-                p_curve= std::make_shared<GenericCurve>(curve_id);
-                // TODO: warning std::cout << "Curve with ID \""+curve_id+"\" is a generic curve and will not link to anything.\n";
+                io::stream_out(std::cout, 
+                    "Curve with ID \""+std::string(curve_id)+"\" is a generic curve and will not link to anything.\n");
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<GenericCurve>(curve_id, curve_id));
                 break;
 
             case EN_VOLUME_CURVE:
-                p_curve= std::make_shared<VolumeCurve>(curve_id);
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<VolumeCurve>(curve_id, curve_id));
                 break;
 
             case EN_PUMP_CURVE:
-                p_curve= std::make_shared<PumpCurve>(curve_id);
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<PumpCurve>(curve_id, curve_id));
                 break;
 
             case EN_EFFIC_CURVE:
-                p_curve= std::make_shared<EfficiencyCurve>(curve_id);
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<EfficiencyCurve>(curve_id, curve_id));
                 break;
 
             case EN_HLOSS_CURVE:
-                p_curve= std::make_shared<HeadlossCurve>(curve_id);
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<HeadlossCurve>(curve_id, curve_id));
                 break;
 
             default:
                 throw std::runtime_error("Unknown curve type\n");
         }
-        // Add the data of the curve and save it in curves too
-        p_curve->retrieve_index(ph_);
-        p_curve->retrieve_EN_properties(ph_);
-
-        m__aux_elements_.curves.insert(p_curve->id(), p_curve);
-        _elements_.push_back(std::static_pointer_cast<Element>(p_curve));
+        if (valid(p_curve))
+        {
+            // Actually load the curve data
+            p_curve->retrieve_index(ph_);
+            p_curve->retrieve_EN_properties(ph_);
+        }
+        else // it was already in (and I printed the message in the lambda)
+            continue;
     }
 }
 
@@ -207,7 +225,6 @@ void WaterDistributionSystem::load_EN_patterns(EN_Project ph)
     int n_patterns= 0;
     int errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
     assert(errorcode < 100);
-    _elements_.reserve(n_patterns);
     m__aux_elements_.patterns.reserve(n_patterns);
 
     for (int i = 1; i <= n_patterns; ++i)
@@ -216,23 +233,24 @@ void WaterDistributionSystem::load_EN_patterns(EN_Project ph)
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        auto p_pattern= std::make_shared<Pattern>(pattern_id);
-
-        // Actually load the pattern data
-        p_pattern->retrieve_index(ph_);
-        p_pattern->retrieve_EN_properties(ph_);
-
-        m__aux_elements_.patterns.insert(p_pattern->id(), p_pattern);    
-        _elements_.push_back(std::static_pointer_cast<Element>(p_pattern));
+        auto irs = m__aux_elements_.patterns.emplace(pattern_id, pattern_id);
+        if (irs.inserted)
+        {
+            // Actually load the pattern data
+            irs.iterator->retrieve_index(ph_);
+            irs.iterator->retrieve_EN_properties(ph_);
+        }
+        else // it was already in (I need to print the message this time)
+            io::stream_out(std::cout, 
+                "Pattern with ID \""+std::string(pattern_id)+"\" already exists in the network.\n");
     }
 }
 
 void WaterDistributionSystem::load_EN_nodes(EN_Project ph)
 {
-    int n_nodes= 0;
+    int n_nodes = 0;
     int errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
     assert(errorcode < 100);
-    _elements_.reserve(n_nodes);
     _nodes_.reserve(n_nodes);
      
     for (int i = 1; i <= n_nodes; ++i)
@@ -245,56 +263,69 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph)
         errorcode = EN_getnodetype(ph_, i, &node_type);
         assert(errorcode < 100);
 
-        std::shared_ptr<Node> p_node;
+        auto insert_ele_in_cont = [this, node_id](auto& container) -> bool
+        {
+            // Insert in nodes with the mapped type of the container (e.g. Junction)
+            // then if it worked insert in the specific container.
+            // double node_id because my SystemElements still need the id...
+            using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
+            auto irtn = _nodes_.emplace<mapped_type>(node_id, node_id, *this);
+            if (!irtn.inserted)
+                return false;
 
+            auto irs = container.insert(node_id, std::static_pointer_cast<mapped_type>(irtn.iterator.operator->()));
+            if (irs.inserted)
+                return true;
+            
+            // If we are here it is a weird situation, because we could insert in nodes, 
+            // but not in the specific container. This could happen if there is no more memory
+            // or there containers are not in sync (the element still appears in the container
+            // but not in the nodes).
+            __format_and_throw<std::logic_error>("WaterDistributionSystem", "load_EN_nodes()", "Impossible to insert the element.",
+                "The element with ID \""+std::string(node_id)+"\" could not be inserted in the specific container.",
+                "Either therere is no more memory or the containers lost sync.");
+        };
+
+        bool f__inserted = false;
         switch (node_type)
         {
             case EN_JUNCTION:
-            {
-                auto junction = std::make_shared<Junction>(node_id, *this);
-
-                _junctions_.insert(junction->id(), junction);
-                p_node= junction;
+                f__inserted = insert_ele_in_cont(_junctions_);
                 break;
-            }
 
             case EN_RESERVOIR:
-            {
-                auto reservoir = std::make_shared<Reservoir>(node_id, *this);
-
-                _reservoirs_.insert(reservoir->id(), reservoir);
-                p_node= reservoir;
+                f__inserted = insert_ele_in_cont(_reservoirs_);
                 break;
-            }
-
+            
             case EN_TANK:
-            {
-                auto tank = std::make_shared<Tank>(node_id, *this);
-
-                _tanks_.insert(tank->id(), tank);
-                p_node= tank;
+                f__inserted = insert_ele_in_cont(_tanks_);
                 break;
-            }
 
             default:
                 throw std::runtime_error("Unknown node type\n");
         }
-
-        // Actually load the node data
-        p_node->retrieve_index(ph_);
-        p_node->retrieve_EN_properties(ph_);
-
-        _nodes_.insert(p_node->id(), p_node);
-        _elements_.push_back(p_node);
+        if (f__inserted)
+        {
+            // Actually load the node data
+            // I could use the iterator to get the pointer to the element (as done for patterns), but it complicates
+            // the code because of the return type of the insert method and the fact that it 
+            // returns an iterator which I have not made default constructible.
+            auto p_node = _nodes_.get(node_id);
+            p_node->retrieve_index(ph_);
+            p_node->retrieve_EN_properties(ph_);
+        }
+        else // it was already in
+            io::stream_out(std::cout, 
+                "WaterDistributionSystem::load_EN_nodes() : Impossible to insert the element with ID: \"",
+                 node_id, "\". The element is already in the nodes container.\n");
     }
 }
 
 void WaterDistributionSystem::load_EN_links(EN_Project ph)
 {
-    int n_links= 0;
+    int n_links = 0;
     int errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
     assert(errorcode < 100);
-    _elements_.reserve(n_links);
     _links_.reserve(n_links);
 
     for (int i = 1; i <= n_links; ++i)
@@ -307,38 +338,49 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph)
         errorcode = EN_getlinktype(ph_, i, &link_type);
         assert(errorcode < 100);
 
-        std::shared_ptr<Link> link;
+        
+        auto insert_ele_in_cont = [this, link_id](auto& container) -> bool
+        {
+            // See load_EN_nodes for the explanation of this function.
+            using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
+            auto irtn = _links_.emplace<mapped_type>(link_id, link_id, *this);
+            if (!irtn.inserted)
+                return false;
 
+            auto irs = container.insert(link_id, std::static_pointer_cast<mapped_type>(irtn.iterator.operator->()));
+            if (irs.inserted)
+                return true;
+
+            __format_and_throw<std::logic_error>("WaterDistributionSystem", "load_EN_links()", "Impossible to insert the element.",
+                "The element with ID \""+std::string(link_id)+"\" could not be inserted in the specific container.",
+                "Either therere is no more memory or the containers lost sync.");
+        };
+
+        bool f__inserted = false;
         switch (link_type)
         {
             case EN_PIPE:
-            {
-                auto pipe= std::make_shared<Pipe>(link_id, *this);
-
-                _pipes_.insert(pipe->id(), pipe);
-                link= pipe;
+                f__inserted = insert_ele_in_cont(_pipes_);
                 break;
-            }
 
             case EN_PUMP:
-            {
-                auto pump= std::make_shared<Pump>(link_id, *this);
-
-                _pumps_.insert(pump->id(), pump);
-                link= pump;
+                f__inserted = insert_ele_in_cont(_pumps_);
                 break;
-            }
 
             default:
                 throw std::runtime_error("Unknown link type\n");
         }
-        
-        // Actually load the link data
-        link->retrieve_index(ph_);
-        link->retrieve_EN_properties(ph_);
-
-        _links_.insert(link->id(), link);
-        _elements_.push_back(link);
+        if (f__inserted)
+        {
+            // Actually load the link data
+            auto p_link = _links_.get(link_id);
+            p_link->retrieve_index(ph_);
+            p_link->retrieve_EN_properties(ph_);
+        }
+        else // it was already in
+            io::stream_out(std::cout, 
+                "WaterDistributionSystem::load_EN_links() : Impossible to insert the element with ID: \"",
+                 link_id, "\". The element is already in the links container.\n");
     }
 }
 
