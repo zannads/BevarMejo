@@ -120,7 +120,7 @@ std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(WDS::Pipe
 std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(WDS::PipesView new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const WDS::Pumps &pumps);
 namespace fnt1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(WDS::TanksView tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(WDS::JunctionsView tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 }
 
 // For fitness function:

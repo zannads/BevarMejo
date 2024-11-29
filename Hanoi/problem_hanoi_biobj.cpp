@@ -41,7 +41,7 @@ Problem::Problem(const json_o& settings, const std::vector<fsys::path>& lookup_p
     m_hanoi= std::make_shared<WDS>(inp_filename);
 
     // Load from the constexpr array the IDs of the pipes that can be changed.
-    m_hanoi->submit_id_sequence(label::__changeable_pipes, changeable_pipe_ids);
+    m_hanoi->submit_id_sequence(label::__changeable_pipes, std::vector<std::string>(changeable_pipe_ids.begin(), changeable_pipe_ids.end()));
 
     // Compute the cost of the diameters of the pipes as it is constant and the most expensive operation as it requires the std::pow
     // I do it here to avoid doing it at every fitness evaluation

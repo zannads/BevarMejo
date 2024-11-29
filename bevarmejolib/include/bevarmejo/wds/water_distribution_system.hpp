@@ -357,7 +357,7 @@ public:
 // Special modifications
 // Duplicate a link (install a copy in parallel)
     template <typename L>
-    auto duplicate(const ID& new_link_id, const ID& existing_link_id) -> L&;
+    auto duplicate(const ID& existing_link_id, const ID& new_link_id) -> L&;
 
 public:
     void clear_results();

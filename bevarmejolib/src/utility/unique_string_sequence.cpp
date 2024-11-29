@@ -134,8 +134,18 @@ auto UniqueStringSequence::insert(const_iterator pos, std::initializer_list<std:
     return res;
 }
 
-auto UniqueStringSequence::erase(const_iterator pos) -> iterator { return m__elements.erase(pos); }
-auto UniqueStringSequence::erase(const_iterator first, const_iterator last) -> iterator { return m__elements.erase(first, last); }
+auto UniqueStringSequence::erase(const_iterator pos) -> iterator
+{
+    return m__elements.erase(pos);
+}
+auto UniqueStringSequence::erase(const_iterator first, const_iterator last) -> iterator
+{
+    return m__elements.erase(first, last);
+}
+auto UniqueStringSequence::erase(const value_type &id) -> iterator
+{
+    return erase(const_cast<const UniqueStringSequence *>(this)->find(id));
+}
 
 auto UniqueStringSequence::push_back(const value_type &id) -> iterator
 {

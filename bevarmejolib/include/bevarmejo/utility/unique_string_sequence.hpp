@@ -128,6 +128,7 @@ public:
 
     iterator erase(const_iterator pos);
     iterator erase(const_iterator first, const_iterator last);
+    iterator erase(const value_type &id);
 
     iterator push_back(const value_type &id);
     iterator push_back(value_type &&id);
