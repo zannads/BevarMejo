@@ -91,8 +91,8 @@ class Node : public NetworkElement {
         // TODO: See Issue #32
         std::unordered_set<const Link*>& connected_links() {return m__links;}
         const std::unordered_set<const Link*>& connected_links() const {return m__links;}
-        void add_link(Link* a_link);
-        void remove_link(Link* a_link);
+        void add_link(const Link* a_link);
+        void remove_link(const Link* a_link);
 
         const double z_coord() const {return _elevation_;}
         const double elevation() const {return _elevation_;}

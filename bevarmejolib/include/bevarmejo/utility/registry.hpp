@@ -29,7 +29,7 @@ class Registry final
 
 {
 
-/*--- Member types ---*/
+/*------- Member types -------*/
 public:
     using key_type = std::string;
     using mapped_type = T; // We hide the fact that is a shared_ptr

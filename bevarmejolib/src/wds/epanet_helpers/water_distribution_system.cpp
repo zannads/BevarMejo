@@ -30,7 +30,6 @@ namespace bevarmejo::wds
 WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
     ph_(nullptr),
     _inp_file_(inp_file),
-    _elements_(),
     _nodes_(),
     _junctions_(),
     _tanks_(),
@@ -389,14 +388,16 @@ void WaterDistributionSystem::load_EN_controls(EN_Project ph)
     int n_controls= 0;
     int errorcode = EN_getcount(ph_, EN_CONTROLCOUNT, &n_controls);
     assert(errorcode < 100);
+    // Reserve
+
     for (int i = 1; i <= n_controls; ++i)
     {
-        /*char* control_id = new char[EN_MAXID];
-        errorcode = EN_getcontrol(ph_, i, control_id);
+        /*
+        char control_id[EN_MAXID+1];
+        errorcode = EN_getlinkid(ph_, i, control_id);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<control>(control_id));
-        delete[] control_id;
+        ...
         */
         io::stream_out(std::cout, "Controls not implemented yet\n");
     }
@@ -409,12 +410,12 @@ void WaterDistributionSystem::load_EN_rules(EN_Project ph)
     assert(errorcode < 100);
     for (int i = 1; i <= n_rules; ++i)
     {
-        /*char* rule_id = new char[EN_MAXID];
-        errorcode = EN_getrule(ph_, i, rule_id);
+        /*
+        char rule_id[EN_MAXID+1];
+        errorcode = EN_getlinkid(ph_, i, rule_id);
         assert(errorcode < 100);
 
-        _elements_.push_back(std::make_shared<rule>(rule_id));
-        delete[] rule_id;
+        ...
         */
         io::stream_out(std::cout, "Rules not implemented yet\n");
     }
@@ -422,8 +423,16 @@ void WaterDistributionSystem::load_EN_rules(EN_Project ph)
 
 void WaterDistributionSystem::cache_indices() const
 {
-    for (auto& element : _elements_)
-        element->retrieve_index(ph_);
+    auto cache_index = [this](auto& container)
+    {
+        for (auto& [id, element] : container)
+            element.retrieve_index(ph_);
+    };
+
+    cache_index(m__aux_elements_.patterns);
+    cache_index(m__aux_elements_.curves);
+    cache_index(_nodes_);
+    cache_index(_links_);
 }
 
 } // namespace bevarmejo::wds

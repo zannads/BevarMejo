@@ -57,18 +57,40 @@ namespace bevarmejo::label {
 static const std::string __EN_PATTERN_TS = "ENPatt";
 } // namespace bevarmejo::label
 
-namespace bevarmejo::wds {
+namespace bevarmejo {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
 
 class WaterDistributionSystem
 {
-private:
-    using Elements = std::vector<std::shared_ptr<Element>>;
+/*--- Member types ---*/
 public:
-    using Curves = Registry<Curve>;
-    using Patterns = Registry<Pattern>;
+    using Component = wds::Element;
+    using NetworkElement = wds::NetworkElement;
+    
+    // System's Network Elements (thus Components):
+    // - Nodes (Junctions, Reservoirs, Tanks)
+    // - Links (Pipes, Pumps, Valves)
+    using Node = wds::Node;
+    using Junction = wds::Junction;
+    using Reservoir = wds::Reservoir;
+    using Tank = wds::Tank;
 
+    using Link = wds::Link;
+    using Pipe = wds::Pipe;
+    using Pump = wds::Pump;
+    // using Valve = wds::Valve;
+
+    // System's components: Curves and Patterns
+    using Curve = wds::Curve;
+    using Pattern = wds::Pattern;
+    // Non System's Components:
+    using IDSequence = UniqueStringSequence;
+    // wds::aux::GlobalTimes
+    using TimeSeries = wds::aux::TimeSeries;
+
+    // System's Network Elements Collections:
+    using ID = typename Registry<Component>::key_type;
     using Nodes = Registry<Node>;
     using Junctions = Registry<Junction>;
     using Reservoirs = Registry<Reservoir>;
@@ -79,11 +101,14 @@ public:
     using Pumps = Registry<Pump>;
     // using Valves = Registry<Valve>;
 
+    // System's Components Collections:
+    using Curves = Registry<Curve>;
+    using Patterns = Registry<Pattern>;
+
     using IDSequences = Registry<UniqueStringSequence>;
 
-    using CurvesView = RegistryView<Curve>;
-    using PatternsView = RegistryView<Pattern>;
-
+    // Collection Views (Subcollections):
+    // System's Network Elements Collections Views:
     using NodesView = RegistryView<Node>;
     using JunctionsView = RegistryView<Junction>;
     using ReservoirsView = RegistryView<Reservoir>;
@@ -94,17 +119,16 @@ public:
     using PumpsView = RegistryView<Pump>;
     // using ValvesView = RegistryView<Valve>;
 
+/*------- Member objects -------*/
 public:
     // Handler for the project.
     // Public because I may want to modify it (e.g., apply a decision vector).
-    // it is just faster than doing create an interface. I will be careful.
+    // it is just faster than doing insert an interface. I will be careful.
     mutable EN_Project ph_;
 
 protected:
     // Path to the inp file from which the project will be uploaded.
     fsys::path _inp_file_;
-    // Collection of elements of the network
-    Elements _elements_;
     
     // Class-specific collections of elements
     Nodes _nodes_;
@@ -130,65 +154,212 @@ protected:
     IDSequences m__id_sequences;
 
     // User defined and default TimeSeries for the simulation
-    aux::GlobalTimes m__times;
+    wds::aux::GlobalTimes m__times;
     
     struct ConfigOptions {
         bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
     } m__config_options;
 
-/*--- Constructors ---*/ 
+/*------- Member functions -------*/
+// (constructor)
 public:
-    // Default constructor
     WaterDistributionSystem() = default;
-    
     WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-
-    // Copy constructor
     WaterDistributionSystem(const WaterDistributionSystem& other) = default;
-
-    // Move constructor
     WaterDistributionSystem(WaterDistributionSystem&& other) noexcept = default;
 
-    // Copy assignment operator
-    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs) = default;
-
-    // Move assignment operator
-    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept = default;
-
-    // Destructor
+// (destructor)
+public:
     ~WaterDistributionSystem();
 
+// operator=
+public:
+    WaterDistributionSystem& operator=(const WaterDistributionSystem& rhs) = default;
+    WaterDistributionSystem& operator=(WaterDistributionSystem&& rhs) noexcept = default;
+
+// clone()
+public:
     std::unique_ptr<WaterDistributionSystem> clone() const;
     
-/*--- Getters and setters ---*/
+/*------- Element access -------*/
+// See the system's components and their collections.
+// The collections can only be accessed as const, meaning that you can only read them.
+// If you want to modify them (add or remove components), you should use the modifiers 
+// of the WDS class.
+// With the Views you can get read access to these subcollections and write access to the
+// components of the subcollections.
+// Similarly, you can modify the properties of the components by directly accessing them
+// with the WDS class methods.
 public:
-    const fsys::path& inp_file() const {return _inp_file_;}; // you can't change it from outside
-    // you can't modify the inpfile, but you will be able to reset passing a new file
+    /*--- EPANET support ---*/
+    // ph is public, so you can use it to modify the project.
+    const fsys::path& inp_file() const { return _inp_file_; };
     
-    /*--- Object-specific Subnetworks ---*/
+    /*--- System's Network Elements Collections ---*/
     const Nodes& nodes() const {return _nodes_;};
     const Links& links() const {return _links_;};
-    const Patterns& patterns() const {return m__aux_elements_.patterns;};
+
     const Junctions& junctions() const {return _junctions_;};
-    // const Sources& sources() const {return _sources_;};
     const Tanks& tanks() const {return _tanks_;};
     const Reservoirs& reservoirs() const {return _reservoirs_;};
+
     const Pipes& pipes() const {return _pipes_;};
     const Pumps& pumps() const {return _pumps_;};
-    const Curves& curves() const {return m__aux_elements_.curves;};
     // const Valves& valves() const {return _valves_;};
-    
-    const IDSequences& id_sequences() const { return m__id_sequences; }
-    
-    const aux::TimeSeries& time_series(const std::string& name) const;
 
+    /*--- System's Components Collections ---*/
+    const Patterns& patterns() const {return m__aux_elements_.patterns;};
+    const Curves& curves() const {return m__aux_elements_.curves;};
+
+    const IDSequences& id_sequences() const { return m__id_sequences; }
+
+    /*--- System's Network Elements Views (Subnetworks) ---*/
+    // Expose a subcollection of the system's network elements (subnetwork).
     template <typename T>
     auto subnetwork(
-            const std::string& id, 
+            const std::string& id_sequence_name, 
             typename RegistryView<T>::Behaviour behaviour = RegistryView<T>::Behaviour::Exclude
         ) const -> RegistryView<T>;
 
-/*--- Methods ---*/
+    /*--- System's Network Elements ---*/
+    template <typename NE>
+    auto network_element(const ID& id) -> NE&;
+
+    template <typename NE>
+    auto network_element(const ID& id) const -> const NE&;
+
+    // ...
+
+    /*--- System's Components ---*/
+    template <typename C>
+    auto component(const std::string& id) -> C&;
+    template <typename C>
+    auto component(const std::string& id) const -> const C&;
+
+    IDSequence& id_sequence(const std::string& name);
+    const IDSequence& id_sequence(const std::string& name) const;
+
+    TimeSeries& time_series(const std::string& name);
+    const TimeSeries& time_series(const std::string& name) const;
+
+/*------- Capacity -------*/
+public:
+    // Check if the system has any component.
+    bool empty() const;
+
+    // Check if the system has a network (contains nodes and links).
+    bool empty_network() const;
+
+    // Number of system's components.
+    size_t size() const;
+
+    // Number of network's elements (nodes and links).
+    size_t network_size() const;
+
+/*------- Modifiers -------*/
+// We can:
+// - insert a node, (or insert a copy of...)
+// - install a link, (or install a copy of...)
+// - register a time series, or a curve, or a pattern, (or register a copy of...)
+// - duplicate an already existing link,
+// - remove a node,
+// - uninstall a link,
+// - drop a time series, a curve, a pattern
+// More generally, we can:
+// - emplace and erase everyone of these components.
+// Moreover, we can destroy the network, clear the results, run the hydraulics, cache the indices.
+// I should also be able to insert a component from a file.
+// Can only emplace objects of final types (no abstract classes): 
+// - Junction, Reservoir, Tank, Pipe, Pump, Curve, Pattern, IDSequence, TimeSeries
+public:
+// Common interface for all types of elements:
+    template <typename T, typename... Args>
+    auto emplace(const ID& id, Args&&... args) -> T&;
+
+// Network elements
+// Nodes
+    template <typename N, typename... Args>
+    auto insert(const ID& id, Args&&... args) -> N&;
+
+    template <typename... Args>
+    auto insert_junction(const ID& id, Args&&... args) -> Junction&;
+
+    template <typename... Args>
+    auto insert_reservoir(const ID& id, Args&&... args) -> Reservoir&;
+
+    template <typename... Args>
+    auto insert_tank(const ID& id, Args&&... args) -> Tank&;
+
+// Links
+    template <typename L, typename... Args>
+    auto install(const ID& id, const ID& from_node_id, const ID& to_node_it, Args&&... args) -> L&;
+
+    template <typename... Args>
+    auto install_pipe(const ID& id, const ID& from_node_id, const ID& to_node_it, Args&&... args) -> Pipe&;
+
+    template <typename... Args>
+    auto install_pump(const ID& id, Args&&... args) -> Pump&;
+
+// Components
+    template <typename C, typename... Args>
+    auto submit(const ID& id, Args&&... args) -> C&;
+
+    template <typename... Args>
+    auto submit_curve(const ID& id, Args&&... args) -> Curve&;
+
+    template <typename... Args>
+    auto submit_pattern(const ID& id, Args&&... args) -> Pattern&;
+
+    template <typename... Args>
+    auto submit_id_sequence(const ID& id, Args&&... args) -> IDSequence&;
+
+    template <typename... Args>
+    auto submit_time_series(const ID& id, Args&&... args) -> TimeSeries&;
+
+
+    
+    auto insert_ids_from_file(const fsys::path& file_path) -> IDSequences::iterator;
+
+// removal
+public:
+// Common interface for all types of elements:
+    template <typename T>
+    auto erase(const ID& id) -> void;
+
+// Network elements
+// Nodes
+    auto remove(const ID& id) -> void;
+
+    auto remove_junction(const ID& id) -> void;
+
+    auto remove_reservoir(const ID& id) -> void;
+
+    auto remove_tank(const ID& id) -> void;
+
+// Links
+    auto uninstall(const ID& id) -> void;
+
+    auto uninstall_pipe(const ID& id) -> void;
+
+    auto uninstall_pump(const ID& id) -> void;
+
+// Components
+    template <typename C>
+    auto drop(const ID& id) -> void;
+
+    auto drop_curve(const ID& id) -> void;
+
+    auto drop_pattern(const ID& id) -> void;
+
+    auto drop_ids(const ID& id) -> void;
+
+    auto drop_time_series(const ID& id) -> void;
+
+// Special modifications
+// Duplicate a link (install a copy in parallel)
+    template <typename L>
+    auto duplicate(const ID& new_link_id, const ID& existing_link_id) -> L&;
+
 public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
@@ -208,122 +379,241 @@ public:
     
     void run_hydraulics();
 
-    /*--- ?? ---*/
-    template <typename T>
-    std::vector<std::shared_ptr<Element>>::iterator insert(const std::shared_ptr<T>& a_element);
-
-    template <typename T, typename... Args>
-    auto insert(const std::string& id, Args&&... args);
-
-    auto insert(const fsys::path& file_path);
-
-    auto insert_ids_from_file(const fsys::path& file_path) -> IDSequences::iterator;
-    
-    template <typename T>
-    std::vector<std::shared_ptr<Element>>::iterator erase(const std::shared_ptr<T>& a_element);
-
-
 }; // class WaterDistributionSystem
 
 /*--- Implementation ---*/
-template <typename T>
-auto WaterDistributionSystem::insert(const std::shared_ptr<T>& a_element) -> Elements::iterator
+/*------- Element access -------*/
+
+/*------- Modifiers -------*/
+// Emplace whatever you want in the system.
+
+// Nodes
+template <typename N, typename... Args>
+    auto WaterDistributionSystem::insert(const ID& id, Args&&... args) -> N&
 {
-    if (a_element == nullptr)
-        return _elements_.end();
+    static_assert(std::is_same_v<N, Junction> || std::is_same_v<N, Reservoir> || std::is_same_v<N, Tank>,
+        "You are trying to insert a non-node element in the nodes collection.");
 
-    // TODO: I should in some way, check if the element is already in the network.
+    // Have to pass the ID twice because the constructor of the element needs it.
+    auto irtn = _nodes_.emplace<N>(id, id, *this, std::forward<Args>(args)...);
 
-    _elements_.push_back(std::static_pointer_cast<Element, T>(a_element));
+    if (!irtn.inserted)
+        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::insert()", "Impossible to insert the element.",
+            "An element with the same ID already exists in the nodes collection.",
+            "ID: ", id, "\n");
 
-    // now, based on the type of T, I should add the element to the specific container.
-    // if Element, nothing else to do.
-    // If other types, add to the specific container.
-    // TODO: links should also register themselves to the nodes.
-    if constexpr (std::is_same_v<T, Node>) {
-        _nodes_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Junction>) {
-        _nodes_.insert(a_element->id(), a_element);
-        _junctions_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Tank>) {
-        _nodes_.insert(a_element->id(), a_element);
-        _tanks_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Reservoir>) {
-        _nodes_.insert(a_element->id(), a_element);
-        _reservoirs_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Link>) {
-        _links_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Pipe>) {
-        _links_.insert(a_element->id(), a_element);
-        _pipes_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Pump>) {
-        _links_.insert(a_element->id(), a_element);
-        _pumps_.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Pattern>) {
-        m__aux_elements_.patterns.insert(a_element->id(), a_element);
-    } else if constexpr (std::is_same_v<T, Curve>) {
-        m__aux_elements_.curves.insert(a_element->id(), a_element);
-    } else {
-        // Handle other types
-        // ...
-        // good question, for sure I don't add it to anything else, 
-        // but if I'm here I will be here at compile time so maybe warning??
-    }
+    auto insert_in_spec_collection = [this, &id](auto& container) -> decltype(auto)
+    {
+        auto irs = container.insert(id, std::static_pointer_cast<N>(irtn.iterator.operator->()));
+        if (!irs.inserted)
+        {
+            _nodes_.erase(id);
+            __format_and_throw<std::logic_error>("WaterDistributionSystem::insert()", "Impossible to insert the element.",
+                "The element with ID \""+id+"\" could not be inserted in the specific collection.",
+                "Either there is no more memory or the containers lost sync.");
+        }
 
-    // Since I modified the network, I should reset all the results as they were
-    // for a previous simulation.
+        return irs.iterator.operator->();
+    };
 
-    return _elements_.end() - 1;
+    if constexpr (std::is_same_v<N, Junction>)
+        return *insert_in_spec_collection(_junctions_);
+
+    if constexpr (std::is_same_v<N, Reservoir>)
+        return *insert_in_spec_collection(_reservoirs_);
+
+    if constexpr (std::is_same_v<N, Tank>)
+        return *insert_in_spec_collection(_tanks_);
 }
 
-template <typename T>
-auto WaterDistributionSystem::erase(const std::shared_ptr<T>& a_element) -> Elements::iterator
+template <typename... Args>
+auto WaterDistributionSystem::insert_junction(const ID& id, Args&&... args) -> Junction&
 {
-    if (a_element == nullptr)
-        return _elements_.end();
+    return insert<Junction>(id, std::forward<Args>(args)...);
+}
 
-    // first of all erase it from the specific containers
-    if constexpr (std::is_same_v<T, Node>) {
-        _nodes_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Junction>) {
-        _nodes_.erase(a_element->id());
-        _junctions_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Tank>) {
-        _nodes_.erase(a_element->id());
-        _tanks_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Reservoir>) {
-        _nodes_.erase(a_element->id());
-        _reservoirs_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Link>) {
-        _links_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Pipe>) {
-        _links_.erase(a_element->id());
-        _pipes_.erase(a_element->id());
+template <typename... Args>
+auto WaterDistributionSystem::insert_reservoir(const ID& id, Args&&... args) -> Reservoir&
+{
+    return insert<Reservoir>(id, std::forward<Args>(args)...);
+}
 
-        // TODO: the same thing but for all types!
-        // FIX: when I will connect the network, I will have to erase the links from the nodes.
-        //a_element->from_node()->erase_link(a_element.get());
-        //a_element->to_node()->erase_link(a_element.get());
+template <typename... Args>
+auto WaterDistributionSystem::insert_tank(const ID& id, Args&&... args) -> Tank&
+{
+    return insert<Tank>(id, std::forward<Args>(args)...);
+}
 
-    } else if constexpr (std::is_same_v<T, Pump>) {
-        _links_.erase(a_element->id());
-        _pumps_.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Pattern>) {
-        m__aux_elements_.patterns.erase(a_element->id());
-    } else if constexpr (std::is_same_v<T, Curve>) {
-        m__aux_elements_.patterns.erase(a_element->id());
-    } else {
-        // Handle other types
-        // ...
-        // good question, for sure I don't add it to anything else, 
-        // but if I'm here I will be here at compile time so maybe warning??
+// Links
+template <typename L, typename... Args>
+auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, const ID& to_node_it, Args&&... args) -> L&
+{
+    static_assert(std::is_same_v<L, Pipe> || std::is_same_v<L, Pump>,
+        "You are trying to install a non-link element in the links collection.");
+
+    // Check that the two nodes where you are installing the link exist.
+    auto check_node = [this](const ID& id) -> void
+    {
+        if (_nodes_.find_index(id) == -1)
+            __format_and_throw<std::invalid_argument>("WaterDistributionSystem::install()", "Impossible to install the element.",
+                "Can not find the node where the link should be installed.",
+                "ID: ", id, "\n");
+    };
+
+    check_node(from_node_id);
+    check_node(to_node_it);
+
+    // As for the nodes, you have to pass the ID twice because the constructor of the element needs it.
+    auto irtn = _links_.emplace<L>(id, id, *this, std::forward<Args>(args)...);
+
+    if (!irtn.inserted)
+        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::install()", "Impossible to insert the element.",
+            "An element with the same ID already exists in the links collection.",
+            "ID: ", id, "\n");
+
+    // We know the nodes id are correct and exist, so we can connect the link
+    // and later insert it in the specific collection.
+    irtn.iterator->start_node(_nodes_.get(from_node_id).get());
+    _nodes_.get(from_node_id)->add_link(irtn.iterator.operator->().get());
+
+    irtn.iterator->end_node(_nodes_.get(to_node_it).get());
+    _nodes_.get(to_node_it)->add_link(irtn.iterator.operator->().get());
+
+    auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it](auto& container) -> decltype(auto)
+    {
+        auto irs = container.insert(id, std::static_pointer_cast<L>(irtn.iterator.operator->()));
+        if (!irs.inserted)
+        {
+            // Reset all insertions and throw an error.
+            _nodes_.get(from_node_id)->remove_link(irtn.iterator.operator->().get());
+            _nodes_.get(to_node_it)->remove_link(irtn.iterator.operator->().get());
+            _links_.erase(id);
+
+            __format_and_throw<std::logic_error>("WaterDistributionSystem::install()", "Impossible to insert the element.",
+                "The element with ID \""+id+"\" could not be inserted in the specific collection.",
+                "Either there is no more memory or the containers lost sync.");
+        }
+
+        return irs.iterator.operator->();
+    };
+
+    if constexpr (std::is_same_v<L, Pipe>)
+        return *insert_in_spec_collection(_pipes_);
+
+    if constexpr (std::is_same_v<L, Pump>)
+        return *insert_in_spec_collection(_pumps_);
+}
+
+template <typename... Args>
+auto WaterDistributionSystem::install_pipe(const ID& id, const ID& from_node_id, const ID& to_node_id, Args&&... args) -> Pipe&
+{
+    return install<Pipe>(id, from_node_id, to_node_id, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+auto WaterDistributionSystem::install_pump(const ID& id, Args&&... args) -> Pump&
+{
+    return install<Pump>(id, std::forward<Args>(args)...);
+}
+
+// Components
+
+// TODO:
+
+// removal
+
+// Common interface for all types of elements:
+template <typename T>
+auto WaterDistributionSystem::erase(const ID& id) -> void
+{
+    static_assert(std::is_same_v<T, Junction> || std::is_same_v<T, Reservoir> || std::is_same_v<T, Tank> ||
+                  std::is_same_v<T, Pipe> || std::is_same_v<T, Pump> || std::is_same_v<T, Curve> || std::is_same_v<T, Pattern> ||
+                  std::is_same_v<T, IDSequence> || std::is_same_v<T, TimeSeries>,
+        "You are trying to erase a type of element that you don't really know.\nYou should know what you are doing.");
+
+    // Erase an element that is not in the collection is a no-op.
+
+    if constexpr(std::is_same_v<T, Junction> || std::is_same_v<T, Reservoir> || std::is_same_v<T, Tank>)
+    {
+        auto it = _nodes_.find(id);
+        if (it == _nodes_.end())
+            return;
+
+        // All the links connected to the node should be destroyed...
+        // I have to be careful, because if I call WDS::erase(link) it will change the node's links collection
+        // and the iterator will be invalidated.
+        // Also I can' use erase<L>(id) because I don't know the exact type of the link.
+        // Therefore I create a copy of it and use it to erase the links.
+        auto links_to_erase = it->connected_links();
+
+        for (auto& p_link : links_to_erase)
+        {
+            auto link_id = p_link->id();
+            
+            // As in WDS::erase<L>(id), remove from all collection as worst case is a double lookup of size n_links.
+            _links_.erase(link_id);
+            _pipes_.erase(link_id);
+            _pumps_.erase(link_id);
+
+            // The nodes should forget this link.
+            it->remove_link(p_link);
+        }
+
+        assert(it->connected_links().empty());
+
+        // Then simply erase it from all collections.
+        _nodes_.erase(id);
+        _junctions_.erase(id);
+        _reservoirs_.erase(id);
+        _tanks_.erase(id);
+
+        return;
     }
 
-    // now erase it from the general container
-    auto it = std::find(_elements_.begin(), _elements_.end(), a_element);
-    if (it != _elements_.end())
-        return _elements_.erase(it);
+    if constexpr(std::is_same_v<T, Pipe> || std::is_same_v<T, Pump>)
+    {
+        auto it = _links_.find(id);
+        if (it == _links_.end())
+            return;
+
+        // The nodes should forget this link. Then simply erase it from all collections.
+        auto start_node_id = it->from_node()->id();
+        auto end_node_id = it->to_node()->id();
+
+        _nodes_.at(start_node_id).remove_link(it.operator->().get());
+        _nodes_.at(end_node_id).remove_link(it.operator->().get());
+        
+        // Erase from all collections because erase a non existing element is a no-op (still you iterate over all the elements twice).
+        _links_.erase(id);
+        _pipes_.erase(id);
+        _pumps_.erase(id);
+
+        return;
+    }
+
+    if constexpr(std::is_same_v<T, Curve>)
+    {
+        static_assert(std::true_type::value, "Not implemented yet.");
+    }
+
+    if constexpr(std::is_same_v<T, Pattern>)
+    {
+        static_assert(std::true_type::value, "Not implemented yet.");
+    }
+
+    if constexpr(std::is_same_v<T, IDSequence>)
+    {
+        static_assert(std::true_type::value, "Not implemented yet.");
+    }
+
+    if constexpr(std::is_same_v<T, TimeSeries>)
+    {
+        static_assert(std::true_type::value, "Not implemented yet.");
+    }
+
+    static_assert(std::true_type::value, "Unreachable code.");
 }
+
 
 template <typename T>
 auto WaterDistributionSystem::subnetwork(
@@ -347,10 +637,6 @@ auto WaterDistributionSystem::subnetwork(
         return PipesView(&_pipes_, ids, behaviour);
     } else if constexpr (std::is_same_v<T, Pump>) {
         return PumpsView(&_pumps_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Pattern>) {
-        return PatternsView(&m__aux_elements_.patterns, &ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Curve>) {
-        return CurvesView(&m__aux_elements_.curves, ids, behaviour);
     } else {
         // Handle other types
         // ...
@@ -359,10 +645,8 @@ auto WaterDistributionSystem::subnetwork(
     }
 }
 
-} // namespace bevarmejo::wds
+using WDS = WaterDistributionSystem; // Short for WaterDistributionSystem
 
-namespace bevarmejo {
-using WDS = wds::WaterDistributionSystem; // short name for WaterDistributionSystem
 } // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__WDS__WATER_DISTRIBUTION_SYSTEM_HPP

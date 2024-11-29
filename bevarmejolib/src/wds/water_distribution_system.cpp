@@ -40,19 +40,19 @@ WaterDistributionSystem::~WaterDistributionSystem(){
 
     // First clear all the elements, then the time series and finally the config options
     
-    _nodes_.clear();
+    _pipes_.clear();
+    _pumps_.clear();
+    _links_.clear();
+    
     _junctions_.clear();
     _tanks_.clear();
     _reservoirs_.clear();
+    _nodes_.clear();
     
-    _links_.clear();
-    _pipes_.clear();
-    _pumps_.clear();
-
     m__aux_elements_.patterns.clear();
     m__aux_elements_.curves.clear();
 
-    _elements_.clear();
+    // Times and config options can die in peace now as noone is referencing them.
 }
 
 
