@@ -119,7 +119,7 @@ double Problem::cost(const std::vector<double>& dv) const {
     return cost;
 }
 
-void Problem::apply_dv(wds::WaterDistributionSystem& a_wds, const std::vector<double>& dv) const {
+void Problem::apply_dv(WaterDistributionSystem& a_wds, const std::vector<double>& dv) const {
     // Apply the decision variables to the network
     // I use the integer of the decision variable to choose the index of the diam 
     // from the available diameters. So between 0 and size of available diameters array.

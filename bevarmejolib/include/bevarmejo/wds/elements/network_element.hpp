@@ -13,9 +13,10 @@
 
 
 namespace bevarmejo {
-namespace wds {
 
 class WaterDistributionSystem;
+
+namespace wds {
 
 class NetworkElement : public Element {
     // WDS ancestor object

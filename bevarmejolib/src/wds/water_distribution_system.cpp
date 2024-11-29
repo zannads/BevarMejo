@@ -26,8 +26,7 @@ namespace fsys = std::filesystem;
 
 #include "water_distribution_system.hpp"
 
-namespace bevarmejo::wds {
-
+namespace bevarmejo {
 
 WaterDistributionSystem::~WaterDistributionSystem(){
     if (ph_!=nullptr){
@@ -72,6 +71,188 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
     return wds_clone;
 }
 
+/*------- Element access -------*/
+/*--- EPANET support ---*/
+auto WaterDistributionSystem::inp_file() const noexcept -> const fsys::path&
+{
+    return _inp_file_;
+}
+
+/*--- System's Network Elements Collections ---*/
+auto WaterDistributionSystem::nodes() const noexcept -> const Nodes&
+{
+    return _nodes_;
+}
+
+auto WaterDistributionSystem::links() const noexcept -> const Links&
+{
+    return _links_;
+}
+
+auto WaterDistributionSystem::junctions() const noexcept -> const Junctions&
+{
+    return _junctions_;
+}
+
+auto WaterDistributionSystem::tanks() const noexcept -> const Tanks&
+{
+    return _tanks_;
+}
+
+auto WaterDistributionSystem::reservoirs() const noexcept -> const Reservoirs&
+{
+    return _reservoirs_;
+}
+
+auto WaterDistributionSystem::pipes() const noexcept -> const Pipes&
+{
+    return _pipes_;
+}
+
+auto WaterDistributionSystem::pumps() const noexcept -> const Pumps&
+{
+    return _pumps_;
+}
+
+/*--- System's Components Collections ---*/
+
+auto WaterDistributionSystem::patterns() const noexcept -> const Patterns&
+{
+    return m__aux_elements_.patterns;
+}
+
+auto WaterDistributionSystem::curves() const noexcept -> const Curves&
+{
+    return m__aux_elements_.curves;
+}
+
+auto WaterDistributionSystem::id_sequences() const noexcept -> const IDSequences&
+{
+    return m__id_sequences;
+}
+
+/*--- System's Network Elements Views (Subnetworks) ---*/
+// Everything is templatized here. See hpp file.
+
+/*--- System's Network Elements ---*/
+auto WaterDistributionSystem::junction(const ID& id) -> Junction&
+{
+    return _junctions_.at(id);
+}
+auto WaterDistributionSystem::junction(const ID& id) const -> const Junction&
+{
+    return _junctions_.at(id);
+}
+
+auto WaterDistributionSystem::reservoir(const ID& id) -> Reservoir&
+{
+    return _reservoirs_.at(id);
+}
+auto WaterDistributionSystem::reservoir(const ID& id) const -> const Reservoir&
+{
+    return _reservoirs_.at(id);
+}
+
+auto WaterDistributionSystem::tank(const ID& id) -> Tank&
+{
+    return _tanks_.at(id);
+}
+auto WaterDistributionSystem::tank(const ID& id) const -> const Tank&
+{
+    return _tanks_.at(id);
+}
+
+auto WaterDistributionSystem::pipe(const ID& id) -> Pipe&
+{
+    return _pipes_.at(id);
+}
+auto WaterDistributionSystem::pipe(const ID& id) const -> const Pipe&
+{
+    return _pipes_.at(id);
+}
+
+auto WaterDistributionSystem::pump(const ID& id) -> Pump&
+{
+    return _pumps_.at(id);
+}
+auto WaterDistributionSystem::pump(const ID& id) const -> const Pump&
+{
+    return _pumps_.at(id);
+}
+
+/*--- System's Components ---*/
+auto WaterDistributionSystem::curve(const std::string& name) -> Curve&
+{
+    return m__aux_elements_.curves.at(name);
+}
+auto WaterDistributionSystem::curve(const std::string& name) const -> const Curve&
+{
+    return m__aux_elements_.curves.at(name);
+}
+
+auto WaterDistributionSystem::pattern(const std::string& name) -> Pattern&
+{
+    return m__aux_elements_.patterns.at(name);
+}
+auto WaterDistributionSystem::pattern(const std::string& name) const -> const Pattern&
+{
+    return m__aux_elements_.patterns.at(name);
+}
+
+auto WaterDistributionSystem::id_sequence(const std::string& name) -> IDSequence&
+{
+    return m__id_sequences.at(name);
+}
+auto WaterDistributionSystem::id_sequence(const std::string& name) const -> const IDSequence&
+{
+    return m__id_sequences.at(name);
+}
+
+auto WaterDistributionSystem::time_series(const std::string& name) -> TimeSeries&
+{
+    return m__times.time_series(name);
+}
+auto WaterDistributionSystem::time_series(const std::string& name) const -> const TimeSeries&
+{
+    return m__times.time_series(name);
+}
+
+/*------- Capacity -------*/
+auto WaterDistributionSystem::empty() const noexcept -> bool
+{
+    return (
+        _nodes_.empty() &&
+        _links_.empty() &&
+        m__aux_elements_.patterns.empty() &&
+        m__aux_elements_.curves.empty() &&
+        m__id_sequences.empty()
+    );
+}
+
+auto WaterDistributionSystem::empty_network() const noexcept -> bool
+{
+    return _nodes_.empty() && _links_.empty();
+}
+
+auto WaterDistributionSystem::size() const noexcept -> size_t
+{
+    return (
+        _nodes_.size() +
+        _links_.size() +
+        m__aux_elements_.patterns.size() +
+        m__aux_elements_.curves.size() +
+        m__id_sequences.size()
+    );
+}
+
+auto WaterDistributionSystem::network_size() const noexcept -> size_t
+{
+    return _nodes_.size() + _links_.size();
+}
+
+/*------- Modifiers -------*/
+// Most of them are templated, the others not implemented yet. See hpp file.
+
 void WaterDistributionSystem::clear_results()
 {
     for (const auto& [name, node] : _nodes_)
@@ -79,11 +260,6 @@ void WaterDistributionSystem::clear_results()
     
     for (const auto& [name, link] : _links_)
         link.clear_results();
-}
-
-const aux::TimeSeries& WaterDistributionSystem::time_series(const std::string& name) const
-{
-    return m__times.time_series(name);
 }
 
 void WaterDistributionSystem::run_hydraulics()
@@ -182,4 +358,4 @@ auto WaterDistributionSystem::insert_ids_from_file(const fsys::path &file_path) 
     return ret_type.iterator;
 }
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo

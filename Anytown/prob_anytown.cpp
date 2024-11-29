@@ -392,7 +392,7 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 }
 
 // ------------------- 2nd level ------------------- //
-void Problem::apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
+void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
 	anytown->cache_indices();
 
 	switch (m__formulation)
@@ -588,7 +588,7 @@ double of__reliability(const WDS &anytown) {
 	return value;
 }
 
-void Problem::reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
+void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
 	// Do the opposite operations of apply_dv 
 	anytown->cache_indices();
 

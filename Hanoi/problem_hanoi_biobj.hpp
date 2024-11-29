@@ -104,12 +104,12 @@ public:
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
 private:
-    std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> m_hanoi;
+    std::shared_ptr<bevarmejo::WaterDistributionSystem> m_hanoi;
     std::array<double, n_available_diams> m_diams_cost; // This is a * D_i^b so it can be computed offline once.
 
     double cost(const std::vector<double>& dv) const;
 
-    void apply_dv(wds::WaterDistributionSystem& a_wds, const std::vector<double>& dv) const;
+    void apply_dv(WaterDistributionSystem& a_wds, const std::vector<double>& dv) const;
 
     // No need to use reset as at every run the same design variables are for sure overwritten.
 

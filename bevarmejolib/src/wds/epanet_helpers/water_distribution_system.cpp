@@ -24,7 +24,7 @@ namespace fsys = std::filesystem;
 
 #include "water_distribution_system.hpp"
 
-namespace bevarmejo::wds
+namespace bevarmejo
 {
 
 WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
@@ -186,23 +186,23 @@ void WaterDistributionSystem::load_EN_curves(EN_Project ph)
             case EN_GENERIC_CURVE:
                 io::stream_out(std::cout, 
                     "Curve with ID \""+std::string(curve_id)+"\" is a generic curve and will not link to anything.\n");
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<GenericCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::GenericCurve>(curve_id, curve_id));
                 break;
 
             case EN_VOLUME_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<VolumeCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::VolumeCurve>(curve_id, curve_id));
                 break;
 
             case EN_PUMP_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<PumpCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::PumpCurve>(curve_id, curve_id));
                 break;
 
             case EN_EFFIC_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<EfficiencyCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::EfficiencyCurve>(curve_id, curve_id));
                 break;
 
             case EN_HLOSS_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<HeadlossCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::HeadlossCurve>(curve_id, curve_id));
                 break;
 
             default:
@@ -421,7 +421,7 @@ void WaterDistributionSystem::load_EN_rules(EN_Project ph)
     }
 }
 
-void WaterDistributionSystem::cache_indices() const
+void WaterDistributionSystem::cache_indices()
 {
     auto cache_index = [this](auto& container)
     {
@@ -435,4 +435,4 @@ void WaterDistributionSystem::cache_indices() const
     cache_index(_links_);
 }
 
-} // namespace bevarmejo::wds
+} // namespace bevarmejo

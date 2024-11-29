@@ -193,25 +193,24 @@ public:
 public:
     /*--- EPANET support ---*/
     // ph is public, so you can use it to modify the project.
-    const fsys::path& inp_file() const { return _inp_file_; };
+    const fsys::path& inp_file() const noexcept;
     
     /*--- System's Network Elements Collections ---*/
-    const Nodes& nodes() const {return _nodes_;};
-    const Links& links() const {return _links_;};
+    const Nodes& nodes() const noexcept;
+    const Links& links() const noexcept;
 
-    const Junctions& junctions() const {return _junctions_;};
-    const Tanks& tanks() const {return _tanks_;};
-    const Reservoirs& reservoirs() const {return _reservoirs_;};
+    const Junctions& junctions() const noexcept;
+    const Tanks& tanks() const noexcept;
+    const Reservoirs& reservoirs() const noexcept;
 
-    const Pipes& pipes() const {return _pipes_;};
-    const Pumps& pumps() const {return _pumps_;};
-    // const Valves& valves() const {return _valves_;};
+    const Pipes& pipes() const noexcept;
+    const Pumps& pumps() const noexcept;
 
     /*--- System's Components Collections ---*/
-    const Patterns& patterns() const {return m__aux_elements_.patterns;};
-    const Curves& curves() const {return m__aux_elements_.curves;};
+    const Patterns& patterns() const noexcept;
+    const Curves& curves() const noexcept;
 
-    const IDSequences& id_sequences() const { return m__id_sequences; }
+    const IDSequences& id_sequences() const noexcept;
 
     /*--- System's Network Elements Views (Subnetworks) ---*/
     // Expose a subcollection of the system's network elements (subnetwork).
@@ -222,19 +221,27 @@ public:
         ) const -> RegistryView<T>;
 
     /*--- System's Network Elements ---*/
-    template <typename NE>
-    auto network_element(const ID& id) -> NE&;
+    Junction& junction(const ID& id);
+    const Junction& junction(const ID& id) const;
 
-    template <typename NE>
-    auto network_element(const ID& id) const -> const NE&;
+    Reservoir& reservoir(const ID& id);
+    const Reservoir& reservoir(const ID& id) const;
 
-    // ...
+    Tank& tank(const ID& id);
+    const Tank& tank(const ID& id) const;
+    
+    Pipe& pipe(const ID& id);
+    const Pipe& pipe(const ID& id) const;
+
+    Pump& pump(const ID& id);
+    const Pump& pump(const ID& id) const;
 
     /*--- System's Components ---*/
-    template <typename C>
-    auto component(const std::string& id) -> C&;
-    template <typename C>
-    auto component(const std::string& id) const -> const C&;
+    Curve& curve(const std::string& name);
+    const Curve& curve(const std::string& name) const;
+
+    Pattern& pattern(const std::string& name);
+    const Pattern& pattern(const std::string& name) const;
 
     IDSequence& id_sequence(const std::string& name);
     const IDSequence& id_sequence(const std::string& name) const;
@@ -245,16 +252,16 @@ public:
 /*------- Capacity -------*/
 public:
     // Check if the system has any component.
-    bool empty() const;
+    bool empty() const noexcept;
 
     // Check if the system has a network (contains nodes and links).
-    bool empty_network() const;
+    bool empty_network() const noexcept;
 
     // Number of system's components.
-    size_t size() const;
+    size_t size() const noexcept;
 
     // Number of network's elements (nodes and links).
-    size_t network_size() const;
+    size_t network_size() const noexcept;
 
 /*------- Modifiers -------*/
 // We can:
@@ -363,7 +370,7 @@ public:
 public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
-    void cache_indices() const;
+    void cache_indices();
 private:
     // Equivalent to constuctor from .inp file
     void load_EN_time_settings(EN_Project ph);

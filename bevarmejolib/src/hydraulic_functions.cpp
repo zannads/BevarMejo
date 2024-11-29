@@ -66,7 +66,7 @@ wds::aux::QuantitySeries<double> pressure_deficiency(const wds::Junction &a_junc
     
 }
 
-wds::aux::QuantitySeries<double> head_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_head, const bool relative) {
+wds::aux::QuantitySeries<double> head_deficiency(const WaterDistributionSystem &a_wds, const double min_head, const bool relative) {
     wds::aux::QuantitySeries<double> deficiency(a_wds.time_series(label::__RESULTS_TS), 0.0);
 
     assert(min_head > 0.0);
@@ -84,7 +84,7 @@ wds::aux::QuantitySeries<double> head_deficiency(const wds::WaterDistributionSys
     return deficiency;
 }
 
-wds::aux::QuantitySeries<double> pressure_deficiency(const wds::WaterDistributionSystem &a_wds, const double min_pressure, const bool relative) {
+wds::aux::QuantitySeries<double> pressure_deficiency(const WaterDistributionSystem &a_wds, const double min_pressure, const bool relative) {
     wds::aux::QuantitySeries<double> deficiency(a_wds.time_series(label::__RESULTS_TS), 0.0);
 
     assert(min_pressure > 0.0);
@@ -135,7 +135,7 @@ double tanks_operational_levels_use(WDS::TanksView tanks)
     return sum_levels;
 }
 
-wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const wds::WaterDistributionSystem& a_wds,
+wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterDistributionSystem& a_wds,
                                                 const double min_press_dnodes_m)
 {
     // Check for the subnetworks "demand nodes", "reservoirs" and "pumps"

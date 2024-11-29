@@ -209,7 +209,7 @@ public:
 
 protected:
     // Anytown specific data
-    mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> m__anytown;
+    mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
     std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
@@ -226,8 +226,8 @@ protected:
     // For fitness function:
     double cost(const WDS &anytown, const std::vector<double>& dv) const;
     
-    void apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
-    void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
 
 private:
     // make the serializer a friend

@@ -82,12 +82,12 @@ Node& Node::operator=(Node&& rhs) noexcept {
     return *this;
 }
 
-void Node::add_link(Link *a_link) {
+void Node::add_link(const Link *a_link) {
     if (a_link != nullptr)
         m__links.insert(a_link);
 }
 
-void Node::remove_link(Link *a_link) {
+void Node::remove_link(const Link *a_link) {
     if (a_link != nullptr)
         m__links.erase(a_link);
 }
