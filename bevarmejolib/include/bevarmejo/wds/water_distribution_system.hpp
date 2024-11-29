@@ -201,10 +201,19 @@ public:
     /*--- System's Network Elements Views (Subnetworks) ---*/
     // Expose a subcollection of the system's network elements (subnetwork).
     template <typename T>
-    auto subnetwork(
-            const std::string& id_sequence_name, 
-            typename RegistryView<T>::Behaviour behaviour = RegistryView<T>::Behaviour::Exclude
-        ) const -> RegistryView<T>;
+    auto subnetwork(const std::string& id_sequence_name) -> RegistryView<T>;
+    template <typename T>
+    auto subnetwork(const std::string& id_sequence_name) const -> RegistryView<T>;
+
+    template <typename T>
+    auto subnetwork_excluding(const std::string& id_sequence_name) -> RegistryView<T>;
+    template <typename T>
+    auto subnetwork_excluding(const std::string& id_sequence_name) const -> RegistryView<T>;
+
+    template <typename T>
+    auto subnetwork_with_order(const std::string& id_sequence_name) -> RegistryView<T>;
+    template <typename T>
+    auto subnetwork_with_order(const std::string& id_sequence_name) const -> RegistryView<T>;
 
     /*--- System's Network Elements ---*/
     Junction& junction(const ID& id);
@@ -305,13 +314,10 @@ public:
 
     template <typename... Args>
     auto submit_id_sequence(const ID& id, Args&&... args) -> IDSequence&;
+    auto submit_id_sequence(const fsys::path& file_path) -> IDSequence&;
 
     template <typename... Args>
     auto submit_time_series(const ID& id, Args&&... args) -> TimeSeries&;
-
-
-    
-    auto insert_ids_from_file(const fsys::path& file_path) -> IDSequences::iterator;
 
 // removal
 public:
@@ -405,6 +411,38 @@ public:
 
 /*--- Implementation ---*/
 /*------- Element access -------*/
+// System's Network Elements Collections
+
+/*--- System's Network Elements Views (Subnetworks) ---*/
+template <typename T>
+auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) -> RegistryView<T>
+{
+    if constexpr (std::is_same_v<T, Node>)
+        return RegistryView<Node>(&_nodes_, m__id_sequences.get(id_sequence_name), RegistryView<Node>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Junction>)
+        return RegistryView<Junction>(&_junctions_, m__id_sequences.get(id_sequence_name), RegistryView<Junction>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Reservoir>)
+        return RegistryView<Reservoir>(&_reservoirs_, m__id_sequences.get(id_sequence_name), RegistryView<Reservoir>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Tank>)
+        return RegistryView<Tank>(&_tanks_, m__id_sequences.get(id_sequence_name), RegistryView<Tank>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Link>)
+        return RegistryView<Link>(&_links_, m__id_sequences.get(id_sequence_name), RegistryView<Link>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Pipe>)
+        return RegistryView<Pipe>(&_pipes_, m__id_sequences.get(id_sequence_name), RegistryView<Pipe>::Behaviour::OrderedInclude);
+
+    else if constexpr (std::is_same_v<T, Pump>)
+        return RegistryView<Pump>(&_pumps_, m__id_sequences.get(id_sequence_name), RegistryView<Pump>::Behaviour::OrderedInclude);
+
+    else
+        static_assert(std::true_type::value, 
+            "You are trying to get a subnetwork with an invalid type.");
+}
+
 
 /*------- Modifiers -------*/
 // Emplace whatever you want in the system.
@@ -540,7 +578,18 @@ auto WaterDistributionSystem::install_pump(const ID& id, Args&&... args) -> Pump
 
 // Components
 
-// TODO:
+template <typename... Args>
+auto WaterDistributionSystem::submit_id_sequence(const ID& id, Args&&... args) -> IDSequence&
+{
+    auto irtn = m__id_sequences.emplace(id, std::forward<Args>(args)...);
+
+    if (!irtn.inserted)
+        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::submit_id_sequence()", "Impossible to insert the element.",
+            "An element with the same ID already exists in the ID sequences collection.",
+            "ID: ", id, "\n");
+
+    return *irtn.iterator.operator->();
+}
 
 // removal
 
@@ -634,37 +683,6 @@ auto WaterDistributionSystem::erase(const ID& id) -> void
     }
 
     static_assert(std::true_type::value, "Unreachable code.");
-}
-
-
-template <typename T>
-auto WaterDistributionSystem::subnetwork(
-        const std::string& name,
-        typename RegistryView<T>::Behaviour behaviour
-    ) const -> RegistryView<T>
-{
-    auto ids = m__id_sequences.get(name);
-
-    if constexpr (std::is_same_v<T, Node>) {
-        return NodesView(&_nodes_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Junction>) {
-        return JunctionsView(&_junctions_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Tank>) {
-        return TanksView(&_tanks_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Reservoir>) {
-        return ReservoirsView(&_reservoirs_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Link>) {
-        return LinksView(&_links_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Pipe>) {
-        return PipesView(&_pipes_, ids, behaviour);
-    } else if constexpr (std::is_same_v<T, Pump>) {
-        return PumpsView(&_pumps_, ids, behaviour);
-    } else {
-        // Handle other types
-        // ...
-        // good question, for sure I don't add it to anything else, 
-        // but if I'm here I will be here at compile time so maybe warning??
-    }
 }
 
 using WDS = WaterDistributionSystem; // Short for WaterDistributionSystem

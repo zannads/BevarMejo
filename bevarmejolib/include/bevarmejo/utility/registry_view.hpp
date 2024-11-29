@@ -56,11 +56,10 @@ private:
 
 /*------- Member objects -------*/
 private:
+    Reg* mp__registry; // My Pointer to Registry
 #ifdef ENABLE_SAFETY_CHECKS
-    SafeMemberPtr<Reg> mp__registry; // My Pointer to Registry
     std::weak_ptr<USS> mp__u_ids; // My Pointer to Unique ID Sequence
 #else
-    Reg* mp__registry; // My Pointer to Registry
     USS* mp__u_ids; // My Pointer to Unique ID Sequence
 #endif
     Behaviour m__behaviour; // My Behaviour
@@ -69,24 +68,19 @@ private:
 /*--- (constructor) ---*/
 public:
     RegistryView() noexcept = default;
-#ifdef ENABLE_SAFETY_CHECKS
-    RegistryView(SafeMemberPtr<Reg> registry, Behaviour behaviour = Behaviour::Exclude) noexcept : 
+    RegistryView(Reg* registry, Behaviour behaviour) noexcept : 
         mp__registry(registry), 
         mp__u_ids(),
         m__behaviour(behaviour)
     { }
-    RegistryView(SafeMemberPtr<Reg> registry, std::weak_ptr<USS> elements, Behaviour behaviour = Behaviour::Exclude) noexcept :
+#ifdef ENABLE_SAFETY_CHECKS
+    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour) noexcept :
         mp__registry(registry), 
         mp__u_ids(elements),
         m__behaviour(behaviour)
     { }
 #else
-    RegistryView(Reg* registry, Behaviour behaviour = Behaviour::Exclude) noexcept : 
-        mp__registry(registry), 
-        mp__u_ids(),
-        m__behaviour(behaviour)
-    { }
-    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour = Behaviour::Exclude) noexcept :
+    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour) noexcept :
         mp__registry(registry), 
         mp__u_ids(elements.lock().get()),
         m__behaviour(behaviour)
@@ -223,11 +217,7 @@ private:
 
     /*--- Member objects ---*/
     private:
-#ifdef ENABLE_SAFETY_CHECKS
-        SafeMemberPtr<RV> m__range;
-#else
         RV* m__range;
-#endif
         base_iter m__iter;
         bool f__end;
 

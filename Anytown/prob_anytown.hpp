@@ -28,7 +28,7 @@ namespace fsys = std::filesystem;
 using json_o = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds_problem.hpp"
+#include "bevarmejo/problem/wds_problem.hpp"
 
 namespace bevarmejo {
 

@@ -14,6 +14,8 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
+#include "bevarmejo/problem/wds_problem.hpp"
+
 namespace bevarmejo {
 namespace hanoi {
 
@@ -29,9 +31,6 @@ constexpr double b = 1.5;
 
 namespace fbiobj {
 class Problem;
-
-const std::string name = "bevarmejo::hanoi::fbiobj";
-const std::string extra_info = "\tFormulation of the Hanoi problem using cost and reliablity.\n";
 
 // Dimensions of the problem.
 constexpr std::size_t n_obj = 2u;
@@ -53,29 +52,35 @@ std::pair<json_o,std::string> static_params(const bevarmejo::hanoi::fbiobj::Prob
 json_o dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
 } // namespace io::json::detail
 
-class Problem {
+class Problem final : public WDSProblem
+{
+/*------- Member types -------*/
+private:
+    using inherited = WDSProblem;
 
+/*------- Member objects -------*/
+private:
+    std::shared_ptr<bevarmejo::WaterDistributionSystem> m_hanoi;
+    std::array<double, n_available_diams> m_diams_cost; // This is a * D_i^b so it can be computed offline once.
+
+/*------- Member functions -------*/
+// (constructor)
 public:
-    Problem() = default;
-
+    Problem();
     Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths);
-
-    // Copy constructor
     Problem(const Problem& other) = default;
-
-    // Move constructor
     Problem(Problem&& other) noexcept = default;
 
-    // Copy assignment operator
-    Problem& operator=(const Problem& rhs) = default;
-
-    // Move assignment operator
-    Problem& operator=(Problem&& rhs) noexcept = default;
-
-    // Destructor
+// (destructor)
+public:
     ~Problem() = default;
 
-    /* PUBLIC functions for Pagmo Algorihtm */
+// operator=
+public:
+    Problem& operator=(const Problem& rhs) = default;
+    Problem& operator=(Problem&& rhs) noexcept = default;
+
+/*------- Pagmo-required functions -------*/
     // Number of objective functions
     std::vector<double>::size_type get_nobj() const { return n_obj; }
 
@@ -88,14 +93,6 @@ public:
     // Number of integer decision variables
     std::vector<double>::size_type get_nix() const { return n_ix; }
 
-    // Number of continous decision variables is automatically retrieved with get_bounds() and get_nix()
-
-    // Name of the problem
-    std::string get_name() const { return name; }
-
-    // Extra information about the problem
-    std::string get_extra_info() const { return extra_info; }
-
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.
     std::vector<double> fitness(const std::vector<double>& dv) const;
@@ -103,9 +100,6 @@ public:
     // Implementation of the box bounds.
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
 
-private:
-    std::shared_ptr<bevarmejo::WaterDistributionSystem> m_hanoi;
-    std::array<double, n_available_diams> m_diams_cost; // This is a * D_i^b so it can be computed offline once.
 
     double cost(const std::vector<double>& dv) const;
 

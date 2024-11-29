@@ -2,9 +2,6 @@
 
 #include <memory>
 
-#include "safe_member.hpp"
-#include "safe_member_ptr.hpp"
-
 namespace bevarmejo
 {
 
@@ -80,26 +77,5 @@ decltype(auto) value_or_empty(const std::weak_ptr<T>& pointer)
 {
     return pointer.expired() ? T{} : *pointer.lock();
 }
-
-
-#ifdef ENABLE_SAFETY_CHECKS
-template <typename T>
-bool valid(const SafeMemberPtr<T>& ptr)
-{
-    return !ptr.expired();
-}
-
-template <typename T, typename U>
-decltype(auto) value_or(const SafeMemberPtr<T>& pointer, U&& default_value)
-{
-    return pointer ? *pointer : std::forward<U>(default_value);
-}
-
-template <typename T>
-decltype(auto) value_or_empty(const SafeMemberPtr<T>& pointer)
-{
-    return pointer ? *pointer : T{};
-}
-#endif
 
 } // namespace bevarmejo

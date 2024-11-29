@@ -28,7 +28,11 @@ namespace bevarmejo {
 namespace hanoi {
 namespace fbiobj {
 
-Problem::Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths) {
+static const std::string name = "bevarmejo::hanoi::fbiobj";
+static const std::string extra_info = "\tFormulation of the Hanoi problem using cost and reliablity.\n";
+
+Problem::Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths)
+{
     assert(settings != nullptr);
 
     // Add here load of problem specific settings.
@@ -36,23 +40,17 @@ Problem::Problem(const json_o& settings, const std::vector<fsys::path>& lookup_p
 
     m_hanoi= std::make_shared<WDS>(inp_filename);
 
-    // Load the "UDEG" from the constexpr array to have the pipes always in the same order (element group uses a set so it is not guaranteed)
-    wds::Subnetwork changeable_pipes;
-    for (const auto& id : changeable_pipe_ids) {
-        // find it in the network
-        auto it = m_hanoi->pipes().find(id);
-        assert(it != m_hanoi->pipes().end());
-        // add it to the subnetwork
-        changeable_pipes.insert(*it);
-    }
-    assert(changeable_pipes.size() == n_dv); // instead of checking the result of the insert singularly
-    m_hanoi->add_subnetwork(label::__changeable_pipes, changeable_pipes);
+    // Load from the constexpr array the IDs of the pipes that can be changed.
+    m_hanoi->submit_id_sequence(label::__changeable_pipes, changeable_pipe_ids);
 
     // Compute the cost of the diameters of the pipes as it is constant and the most expensive operation as it requires the std::pow
     // I do it here to avoid doing it at every fitness evaluation
     for (auto i = 0u; i!= n_available_diams; ++i) {
         m_diams_cost[i] = a * std::pow(available_diams_in[i], b);
     }
+
+    m__name = name;
+    m__extra_info = extra_info;
 }
 
 std::vector<double> Problem::fitness(const std::vector<double>& dv) const {
@@ -95,48 +93,47 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const 
     return std::make_pair(lb, ub);
 }
 
-double Problem::cost(const std::vector<double>& dv) const {
+double Problem::cost(const std::vector<double>& dv) const
+{
     // Calculate the cost of the network
     // C sum_{i=0}^{n_pipe} (pipe_i = a * D_i^b * L_i)
 
-    double cost = 0.;
-    
-    auto pipes = m_hanoi->subnetwork(label::__changeable_pipes);
+    double value = 0.;
+    auto pipes = m_hanoi->subnetwork_with_order<WDS::Pipe>(label::__changeable_pipes);
     auto itp = pipes.begin();
     auto itd = dv.begin();
     assert(pipes.size() == dv.size());
     while (itp != pipes.end()) {
-        auto p_pipe = std::dynamic_pointer_cast<wds::Pipe>(itp->lock());
-        assert(p_pipe != nullptr);
-
+        auto&& [id, pipe] = *itp;
+       
         //C  +=   a * D_i^b                                  * L_i
-        cost += m_diams_cost[static_cast<std::size_t>(*itd)] * p_pipe->length().value();
+        value += m_diams_cost[static_cast<std::size_t>(*itd)] * pipe.length().value();
 
         ++itp;
         ++itd;
     }
     
-    return cost;
+    return value;
 }
 
-void Problem::apply_dv(WaterDistributionSystem& a_wds, const std::vector<double>& dv) const {
+void Problem::apply_dv(WaterDistributionSystem& a_wds, const std::vector<double>& dv) const
+{
     // Apply the decision variables to the network
     // I use the integer of the decision variable to choose the index of the diam 
     // from the available diameters. So between 0 and size of available diameters array.
     a_wds.cache_indices();
 
-    auto pipes = a_wds.subnetwork(label::__changeable_pipes);
+    auto pipes = a_wds.subnetwork_with_order<WDS::Pipe>(label::__changeable_pipes);
     auto itp = pipes.begin();
     auto itd = dv.begin();
     assert(pipes.size() == dv.size());
     while (itp != pipes.end()) {
         double diam_mm = available_diams_in.at(static_cast<std::size_t>(*itd))/12.*MperFT*1000.;
-        auto p_pipe = std::dynamic_pointer_cast<wds::Pipe>(itp->lock());
-        p_pipe->diameter(diam_mm);
+        auto&& [id, pipe] = *itp;
 
         // unfortunatley I have to do the same in EPANET
         int errco = 0;
-        errco = EN_setlinkvalue(a_wds.ph_, p_pipe->index(), EN_DIAMETER, diam_mm);
+        errco = EN_setlinkvalue(a_wds.ph_, pipe.index(), EN_DIAMETER, diam_mm);
 
         ++itp;
         ++itd;

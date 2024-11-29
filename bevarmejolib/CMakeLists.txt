@@ -68,11 +68,14 @@ set(UTILS
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
 )
 
+set(PROBLEM
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
+)
+
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem_detail.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/library_metadata.cpp"
         ${WDS_FILES}
         ${WDS_BASE_ELEMENTS}
@@ -84,6 +87,7 @@ add_library(bemelib
         ${HELPERS}
         ${PAGMO_H}
         ${UTILS}
+        ${PROBLEM}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
@@ -106,4 +110,5 @@ target_include_directories(bemelib PRIVATE
                         "include/bevarmejo/wds/elements"
                         "include/bevarmejo/wds/auxiliary"
                         "include/bevarmejo/wds/epanet_helpers"
+                        "include/bevarmejo/problem"
 )

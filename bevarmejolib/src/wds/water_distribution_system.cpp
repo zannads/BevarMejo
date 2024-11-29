@@ -252,6 +252,54 @@ auto WaterDistributionSystem::network_size() const noexcept -> size_t
 
 /*------- Modifiers -------*/
 // Most of them are templated, the others not implemented yet. See hpp file.
+// Additive modifiers
+// Common interface for all types of elements:
+
+// Network elements
+// Nodes
+
+// Links
+
+// Components
+
+auto WaterDistributionSystem::submit_id_sequence(const fsys::path& file_path) -> IDSequence&
+{
+    if (!fsys::exists(file_path))
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
+            "File does not exist.", "File: ", file_path);
+
+    std::ifstream ifs(file_path);
+    if (!ifs.is_open())
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
+            "Error opening the file.", "File: ", file_path);
+
+    // Asssume it works form a JSON or my custom type, I will get a vector of strings.
+
+    const auto [en_object_type, ids, comment] = io::get_egroup_data(ifs);
+
+    auto name = file_path.stem().string();
+
+    // Because I know it's only for a list of sequence otherwise, there should be a swith(en_object_type)
+    auto ret_type = m__id_sequences.emplace(std::move(name), std::move(ids));
+
+    if (!ret_type.inserted)
+        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
+            "A sequence with the same name already exists.", "Name: ", name);
+
+    return *ret_type.iterator.operator->();
+}
+    
+
+// Subtractive modifiers
+// Common interface for all types of elements:
+
+// Network elements
+// Nodes
+
+// Links
+
+// Components
+
 
 void WaterDistributionSystem::clear_results()
 {
@@ -333,29 +381,6 @@ void WaterDistributionSystem::run_hydraulics()
 
     if (solution_has_failed)
         throw std::runtime_error("Hydraulic solution failed.");
-}
-
-auto WaterDistributionSystem::insert_ids_from_file(const fsys::path &file_path) -> IDSequences::iterator
-{
-    if (!fsys::exists(file_path))
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
-            "File does not exist.", "File: ", file_path);
-
-    std::ifstream ifs(file_path);
-    if (!ifs.is_open())
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "insert()", "Impossible to insert the element(s).",
-            "Error opening the file.", "File: ", file_path);
-
-    // Asssume it works form a JSON or my custom type, I will get a vector of strings.
-
-    const auto [en_object_type, ids, comment] = io::get_egroup_data(ifs);
-
-    auto name = file_path.stem().string();
-
-    // Because I know it's only for a list of sequence otherwise, there should be a swith(en_object_type)
-    auto ret_type = m__id_sequences.emplace(std::move(name), std::move(ids));
-
-    return ret_type.iterator;
 }
 
 } // namespace bevarmejo

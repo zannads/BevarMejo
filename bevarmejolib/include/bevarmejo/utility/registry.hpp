@@ -22,11 +22,6 @@ namespace bevarmejo
 {
 template <typename T>
 class Registry final 
-
-#ifdef ENABLE_SAFETY_CHECKS
-    : public SafeMember
-#endif
-
 {
 
 /*------- Member types -------*/
@@ -633,11 +628,7 @@ public:
 
 /*--- Member objects ---*/
 private:
-#ifdef ENABLE_SAFETY_CHECKS
-    SafeMemberPtr<R> reg;
-#else
     R* reg;
-#endif
     size_type idx;
 
 /*--- Member functions ---*/
