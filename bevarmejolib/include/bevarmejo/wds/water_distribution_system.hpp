@@ -61,9 +61,9 @@ namespace bevarmejo {
 
 static const std::string l__DEMAND_NODES = "Demand Nodes";
 
-class WaterDistributionSystem
+class WaterDistributionSystem final
 {
-/*--- Member types ---*/
+/*------- Member types -------*/
 public:
     using Component = wds::Element;
     using NetworkElement = wds::NetworkElement;
@@ -120,16 +120,7 @@ public:
     // using ValvesView = RegistryView<Valve>;
 
 /*------- Member objects -------*/
-public:
-    // Handler for the project.
-    // Public because I may want to modify it (e.g., apply a decision vector).
-    // it is just faster than doing insert an interface. I will be careful.
-    mutable EN_Project ph_;
-
-protected:
-    // Path to the inp file from which the project will be uploaded.
-    fsys::path _inp_file_;
-    
+private:
     // Class-specific collections of elements
     Nodes _nodes_;
     Junctions _junctions_;
@@ -164,7 +155,6 @@ protected:
 // (constructor)
 public:
     WaterDistributionSystem() = default;
-    WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
     WaterDistributionSystem(const WaterDistributionSystem& other) = default;
     WaterDistributionSystem(WaterDistributionSystem&& other) noexcept = default;
 
@@ -191,10 +181,6 @@ public:
 // Similarly, you can modify the properties of the components by directly accessing them
 // with the WDS class methods.
 public:
-    /*--- EPANET support ---*/
-    // ph is public, so you can use it to modify the project.
-    const fsys::path& inp_file() const noexcept;
-    
     /*--- System's Network Elements Collections ---*/
     const Nodes& nodes() const noexcept;
     const Links& links() const noexcept;
@@ -368,9 +354,38 @@ public:
     auto duplicate(const ID& new_link_id, const ID& existing_link_id) -> L&;
 
 public:
-    // Cache the indices of the elements in the network.
-    // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
-    void cache_indices();
+    void clear_results();
+    
+    void run_hydraulics();
+
+///////////////////////////////////////////////////////////////////////////
+// EPANET Support starts here.
+///////////////////////////////////////////////////////////////////////////
+/*------- Member types -------*/
+
+/*------- Member objects -------*/
+public:
+    // Handler for the project.
+    // Public because I may want to modify it (e.g., apply a decision vector).
+    // it is just faster than doing insert an interface. I will be careful.
+    mutable EN_Project ph_;
+protected:
+    // Path to the inp file from which the project will be uploaded.
+    fsys::path _inp_file_;
+
+/*------- Member functions -------*/
+// (constructor)
+public:
+    WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
+
+/*------- Element access -------*/
+public:
+    // ph is public, so you can use it to modify the project.
+    const fsys::path& inp_file() const noexcept;
+
+/*------- Capacity -------*/
+
+/*------- Modifiers -------*/
 private:
     // Equivalent to constuctor from .inp file
     void load_EN_time_settings(EN_Project ph);
@@ -382,9 +397,9 @@ private:
     void load_EN_controls(EN_Project ph);
     void load_EN_rules(EN_Project ph);
 public:
-    void clear_results();
-    
-    void run_hydraulics();
+    // Cache the indices of the elements in the network.
+    // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
+    void cache_indices();
 
 }; // class WaterDistributionSystem
 
