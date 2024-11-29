@@ -212,6 +212,44 @@ public:
     const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
     const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
+// Iteration Behavior for Registry Iterators
+//
+// This registry's iterator differs from standard map iterators in its reference semantics:
+//
+// 1. Simple iteration:
+//    for (auto inst : registry)        // OK: Moves struct with references
+//    - Creates a copy of the struct
+//    - Relies on Return Value Optimization (RVO)
+//
+// 2. Attempted reference iteration:
+//    for (auto& inst : registry)       // ERROR: Cannot bind temporary to non-const reference
+//    - Fails because iterator returns a temporary
+//
+// 3. Const reference iteration:
+//    for (const auto& inst : registry) // OK: Uses const reference binding to temporary
+//    - Creates a const reference to the temporary struct
+//
+// 4. Universal reference iteration:
+//    for (auto&& inst : registry)      // OK: Perfect forwarding
+//    - Preserves reference semantics
+//    - Allows modification of non-const references
+//
+// 5. Structured binding variations:
+//    for (auto [name, element] : registry)          // OK: Creates copies
+//    - `name` and `element` are completely new objects
+//
+//    for (auto& [name, element] : registry)         // ERROR: Cannot bind temporary to non-const reference
+//    - Fails because iterator returns a temporary
+//
+//    for (const auto& [name, element] : registry)   // OK: Const references
+//    - `name` and `element` are const references
+//    - Cannot modify either
+//
+//    for (auto&& [name, element] : registry)        // OK: Perfect forwarding
+//    - Preserves original reference types
+//    - Can modify `element`
+//    - Cannot modify `name` (still const)
+
 /*------- Capacity -------*/
 public:
     bool empty() const noexcept { return m__elements.empty(); }

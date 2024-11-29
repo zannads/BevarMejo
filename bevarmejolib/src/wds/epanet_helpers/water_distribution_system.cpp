@@ -425,7 +425,7 @@ void WaterDistributionSystem::cache_indices()
 {
     auto cache_index = [this](auto& container)
     {
-        for (auto& [id, element] : container)
+        for (auto&& [id, element] : container)
             element.retrieve_index(ph_);
     };
 
