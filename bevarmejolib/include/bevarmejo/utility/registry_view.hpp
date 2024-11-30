@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
@@ -19,75 +20,163 @@ namespace bevarmejo
 // - Include: The elements in the list are the only ones in the view.
 // - OrderedInclude: The elements in the list are the only ones in the view and 
 //      they are in the order of the list and not of the registry.
+// With C++20 I could simply use filter() to select or exclude the elements and 
+// then sort() to order them. But I am using C++17, so I need to define my own
+// class to do this.
+
+// Let's start by defining the behaviour of the view, to allow for template 
+// specialization and the type traits.
+namespace RVMode
+{
+    struct Exclude {};
+    struct Include {};
+    struct OrderedInclude {};
+}   // namespace RVMode
+
 template <typename T>
-class RegistryView final 
+inline constexpr bool is_registry_view_behaviour_v = std::is_same_v<T, RVMode::Exclude> ||
+                                                     std::is_same_v<T, RVMode::Include> ||
+                                                     std::is_same_v<T, RVMode::OrderedInclude>;
+
+// A view needs a reference to the registry (it doesn't make sense without referring to a registry)
+// and a pointer to a UniqueStringSequence that contains the IDs of the elements to include or exclude
+// (pointer because it can be null, for example, to not exclude any element).
+// The view can be created on a const or non-const registry.
+// In both cases, I can't modify the registry, but in the non-const case, I can 
+// modify the elements of the registry.
+// To simplify the implementation, I will expose only the template T and base on
+// a const or not template option, I will define the return type of the methods.
+template <typename T, bool IsMutable>
+class RegistryViewCore
 {
 /*------- Member types -------*/
 private:
-    using Reg = Registry<T>;
-    using self_type = RegistryView<T>;
+    using self_type = RegistryViewCore<T, IsMutable>;
+protected:
+    using Registry_t = std::conditional_t<IsMutable, Registry<T>, const Registry<T>>;
+    using Registry_pointer = Registry_t*;
+    using const_Registry_pointer = const Registry_t*;
+    using Registry_reference = std::conditional_t<IsMutable, Registry<T>&, const Registry<T>&>;
+    using const_Registry_reference = const Registry_t&;
     using USS = UniqueStringSequence;
+    using mutable_type = std::integral_constant<bool, IsMutable>;
+    using USS_pointer = std::weak_ptr<const USS>;
 public:
-    using key_type = typename Reg::key_type;
-    using mapped_type = typename Reg::mapped_type;
-    using value_type = typename Reg::value_type;
-    using size_type = typename Reg::size_type;
-    using difference_type = typename Reg::difference_type;
-    using reference = typename Reg::reference;
-    using const_reference = typename Reg::const_reference;
-    using pointer = typename Reg::pointer;
-    using const_pointer = typename Reg::const_pointer;
-private:
-    // Forward declaration of the iterator.
-    template <class RV>
-    class Iterator;
-public:
-    using iterator = Iterator<self_type>;
-    using const_iterator = Iterator<const self_type>;
-    // TODO: reverse_iterator and const_reverse_iterator
-    enum class Behaviour {
-        Exclude,
-        Include,
-        OrderedInclude
-    };
-
-private:
-    friend iterator;
+    using key_type = typename Registry_t::key_type;
+    using mapped_type = typename Registry_t::mapped_type;
+    using value_type = typename Registry_t::value_type;
+    using size_type = typename Registry_t::size_type;
+    using difference_type = typename Registry_t::difference_type;
+    using reference = std::conditional_t<IsMutable, typename Registry_t::reference, typename Registry_t::const_reference>;
+    using const_reference = typename Registry_t::const_reference;
+    using pointer = std::conditional_t<IsMutable, typename Registry_t::pointer, typename Registry_t::const_pointer>;
+    using const_pointer = typename Registry_t::const_pointer;
+    using mapped_reference = std::conditional_t<IsMutable, typename Registry_t::mapped_type&, const typename Registry_t::mapped_type&>;
+    using const_mapped_reference = typename Registry_t::const_mapped_reference;
 
 /*------- Member objects -------*/
-private:
-    Reg* mp__registry; // My Pointer to Registry
-#ifdef ENABLE_SAFETY_CHECKS
-    std::weak_ptr<USS> mp__u_ids; // My Pointer to Unique ID Sequence
-#else
-    USS* mp__u_ids; // My Pointer to Unique ID Sequence
-#endif
-    Behaviour m__behaviour; // My Behaviour
+protected:
+    Registry_reference m__registry; // Reference to Registry
+    USS_pointer p__uss; // Pointer to Unique ID Sequence
 
 /*------- Member functions -------*/
 /*--- (constructor) ---*/
 public:
-    RegistryView() noexcept = default;
-    RegistryView(Reg* registry, Behaviour behaviour) noexcept : 
-        mp__registry(registry), 
-        mp__u_ids(),
-        m__behaviour(behaviour)
+    RegistryViewCore() = delete; // I need to know the registry.
+    explicit RegistryViewCore(Registry_reference registry) noexcept : 
+        m__registry(registry),
+        p__uss()
     { }
-#ifdef ENABLE_SAFETY_CHECKS
-    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour) noexcept :
-        mp__registry(registry), 
-        mp__u_ids(elements),
-        m__behaviour(behaviour)
+    template <typename U, typename = std::enable_if_t<std::is_constructible_v<USS_pointer, U>>>
+    explicit RegistryViewCore(Registry_reference registry, U&& elements) noexcept : 
+        m__registry(registry),
+        p__uss(std::forward<U>(elements))
     { }
-#else
-    RegistryView(Reg* registry, std::weak_ptr<USS> elements, Behaviour behaviour) noexcept :
-        mp__registry(registry), 
-        mp__u_ids(elements.lock().get()),
-        m__behaviour(behaviour)
+    RegistryViewCore(const self_type& other) noexcept = default;
+    RegistryViewCore(self_type&& other) noexcept = default;
+
+/*--- (destructor) ---*/
+public:
+    virtual ~RegistryViewCore() = default;
+
+/*--- operator= ---*/
+public:
+    self_type& operator=(const self_type& rhs) = delete;
+    self_type& operator=(self_type&& rhs) noexcept = delete;
+    template <typename U, typename = std::enable_if_t<std::is_constructible_v<USS_pointer, U>>>
+    self_type& operator=(U&& elements) noexcept
+    {
+        p__uss = std::forward<U>(elements);
+        return *this;
+    }
+
+/*--- assign ---*/
+public:
+    template <typename U, typename = std::enable_if_t<std::is_constructible_v<USS_pointer, U>>>
+    void assign(U&& elements) noexcept
+    {
+        p__uss = std::forward<U>(elements);
+    }
+}; // class RegistryViewCore
+
+template <typename T, typename M,
+          bool IsMutable, 
+          typename = std::enable_if_t<is_registry_view_behaviour_v<M>>>
+class RegistryView final : public RegistryViewCore<T, IsMutable>
+{
+/*------- Member types -------*/
+private:
+    using self_type = RegistryView<T, M, IsMutable>;
+    using core_type = RegistryViewCore<T, IsMutable>;
+    using mode_type = M;
+    using mutable_type = std::integral_constant<bool, IsMutable>;
+public:
+    using key_type = typename core_type::key_type;
+    using mapped_type = typename core_type::mapped_type;
+    using value_type = typename core_type::value_type;
+    using size_type = typename core_type::size_type;
+    using difference_type = typename core_type::difference_type;
+    using reference = typename core_type::reference;
+    using const_reference = typename core_type::const_reference;
+    using pointer = typename core_type::pointer;
+    using const_pointer = typename core_type::const_pointer;
+    using mapped_reference = typename core_type::mapped_reference;
+    using const_mapped_reference = typename core_type::const_mapped_reference;
+private:
+    // Forward declaration of the iterators (I need two different types because the sorted one has a completely different behaviour).
+    template <class RV, typename EnableIfMode = std::enable_if_t<std::is_same_v<typename RV::mode_type, RVMode::Exclude> || std::is_same_v<typename RV::mode_type, RVMode::Include>>>
+    class FilterIterator; // For the Exclude and Include modes
+    template <class RV, typename EnableIfMode = std::enable_if_t<std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>>>
+    class OrderedFilterIterator; // For the OrderedInclude mode
+public:
+    using iterator = std::conditional_t<
+        std::is_same_v<mode_type, RVMode::OrderedInclude>,
+        OrderedFilterIterator<self_type>,
+        FilterIterator<self_type>
+    >;
+    using const_iterator = std::conditional_t<
+        std::is_same_v<mode_type, RVMode::OrderedInclude>,
+        OrderedFilterIterator<const self_type>,
+        FilterIterator<const self_type>
+    >;
+ 
+private:
+    friend iterator;
+    friend const_iterator;
+
+/*------- Member objects -------*/
+// Everything is inherited from the core class.
+
+/*------- Member functions -------*/
+/*--- (constructor) ---*/
+public:
+    RegistryView() = delete; // I need to know the registry.
+    RegistryView(const self_type& other) noexcept = default;
+    RegistryView(self_type&& other) noexcept = default;
+    template <typename... Args>
+    explicit RegistryView(Args&&... args) noexcept : 
+        core_type(std::forward<Args>(args)...)
     { }
-#endif
-    RegistryView(const RegistryView &other) = default;
-    RegistryView(RegistryView &&other) noexcept = default;
 
 /*--- (destructor) ---*/
 public:
@@ -95,13 +184,11 @@ public:
 
 /*--- operator= ---*/
 public:
-    RegistryView &operator=(const RegistryView &rhs) = default;
-    RegistryView &operator=(RegistryView &&rhs) noexcept = default;
-
-/*--- assign ---*/
-public:
+    self_type& operator=(const self_type& rhs) = delete;
+    self_type& operator=(self_type&& rhs) noexcept = delete;
     
 /*------- Element access -------*/
+/*
 public:
     mapped_type& at(const key_type& id)
     {
@@ -115,15 +202,15 @@ public:
 
         // If the style is Exclude, asking for an element that is in the list of excluded elements, it is like asking for a non-existing element.
         // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
-        if (m__behaviour == Behaviour::Exclude)
+        if (m__behaviour == RVMode::Exclude)
         {
-            if (valid(mp__u_ids) && mp__u_ids.lock()->contains(id))
+            if (valid(p__uss) && p__uss.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
                     "The element is excluded.");
         }
         else // Include or OrderedInclude
         {
-            if (valid(mp__u_ids) && !mp__u_ids.lock()->contains(id))
+            if (valid(p__uss) && !p__uss.lock()->contains(id))
                 __format_and_throw<std::out_of_range>("RegistryView", "at", "The element is not included.",
                     "The element is not in the list of included elements.");
         }
@@ -138,54 +225,34 @@ public:
 
     reference back() { return *(end() - 1); }
     const_reference back() const { return *(end() - 1); }
-
+*/
 /*--- Iterators ---*/
 public:
-    iterator begin() noexcept { return iterator(this); }
-    const_iterator begin()  const noexcept { return const_iterator(this); }
-    const_iterator cbegin() const noexcept { return const_iterator(this); }
+    iterator begin() noexcept { return                    iterator(this, 0, 0); }
+    const_iterator begin()  const noexcept { return const_iterator(this, 0, 0); }
+    const_iterator cbegin() const noexcept { return const_iterator(this, 0, 0); }
 
-    iterator end() noexcept { return iterator(this, /*end = */ true); }
-    const_iterator end()  const noexcept { return const_iterator(this, /*end = */ true); }
-    const_iterator cend() const noexcept { return const_iterator(this, /*end = */ true); }
+    iterator end() noexcept { return                    iterator(this, this->m__registry.size(), this->p__uss.expired() ? 0 : this->p__uss.lock()->size()); }
+    const_iterator end()  const noexcept { return const_iterator(this, this->m__registry.size(), this->p__uss.expired() ? 0 : this->p__uss.lock()->size()); }
+    const_iterator cend() const noexcept { return const_iterator(this, this->m__registry.size(), this->p__uss.expired() ? 0 : this->p__uss.lock()->size()); }
 
 /*--- Capacity ---*/
 public:
-    // Can not mark the methods noexcept because they use the find method that
-    // can throw (because of string comparison).
-    bool empty() const { return size() > 0; }
+    // The complexity of these methods is O(n) because I need to iterate over the registry.
+    // I could make them noexcept when the SAFETY_CHECKS are off, but let's not go there.
 
-    size_type size() const 
+    bool empty() const
     {
-        if (!valid(mp__registry))
-            return 0;
+        return size() > 0;
+    }
 
-        if (m__behaviour == Behaviour::Exclude)
-        {
-            size_type count = mp__registry->size();
+    size_type size() const
+    {
+        size_type count = 0;
+        for (auto it = begin(); it != end(); ++it)
+            ++count;
 
-            // Remove the elements to exclude but only if they actually exist
-            for (const auto& id : value_or_empty(mp__u_ids))
-            {
-                if (mp__registry->contains(id))
-                    --count;
-            }
-
-            return count;
-        }
-        else // Include or OrderedInclude
-        {
-            size_type count = 0;
-
-            // Count the elements to include but only if they actually exist
-            for (const auto& id : value_or_empty(mp__u_ids))
-            {
-                if (mp__registry->contains(id))
-                    ++count;
-            }
-
-            return count;
-        }
+        return count;
     }
 
 /*--- Modifiers ---*/
@@ -198,191 +265,78 @@ public:
     
 /*--- Iterators ---*/
 private:
-    template <class RV>
-    class Iterator
+    template <class RV, typename EnableIfMode>
+    class FilterIterator
     {
     /*--- Member types ---*/
+    private:
+        using self_type = FilterIterator<RV>;
+        using mutable_type = std::integral_constant<bool, IsMutable>;
     public:
-        using iterator_type = Iterator<RV>;
+        using iterator_type = self_type;
         using base_iter = typename std::conditional<
-            std::is_const<RV>::value,
-            typename RV::Reg::const_iterator,
-            typename RV::Reg::iterator
+            std::is_const_v<RV> || !IsMutable,
+            typename RV::Registry_t::const_iterator,
+            typename RV::Registry_t::iterator
         >::type;
         using iterator_category = std::forward_iterator_tag;
         using value_type = typename base_iter::value_type;
+        using size_type = typename base_iter::size_type;
         using difference_type = typename base_iter::difference_type;
-        using pointer = typename base_iter::pointer;
         using reference = typename base_iter::reference;
+        using pointer = typename base_iter::pointer;
 
     /*--- Member objects ---*/
     private:
-        RV* m__range;
-        base_iter m__iter;
-        bool f__end;
+        RV* p__range;
+        size_type i__reg; // Index of the element in the registry.
+        size_type i__uss; // Index of the element in the UniqueStringSequence.
 
     /*--- Member functions ---*/
     /*--- (constructor) ---*/
     public:
-        Iterator() noexcept :
-            m__range(nullptr), 
-            m__iter(),
-            f__end(true)
-        { }
-        // For begin operator
-        Iterator(RV* range) noexcept :
-            Iterator(range, false)
-        { }
-        // For end operator
-        Iterator(RV* range, bool end) noexcept :
-            m__range(range), 
-            m__iter(),
-            f__end()
+        FilterIterator() noexcept = delete;
+        FilterIterator(RV* range, size_type index_reg, size_type index_uss) noexcept :
+            p__range(range),
+            i__reg(0),
+            i__uss(0)
         {
-            // If end iterator, nothing to be done. Otherwise, I need to find the first valid element.
-            // It's an end iterator when: I ask, or ur view doesn't point to a registry, or the registry is empty.
-            if (end || !valid(m__range) || !valid(m__range->mp__registry) || m__range->mp__registry->empty())
-            {
-                f__end = true;
-                return;
-            }
-            
-            // Based on the B, I need to find the first valid element in the Registry. 
-            // It could easily go all the way to the end iterator again.
-            // Use try catch to guarantee noexcept in case ENABLE_SAFETY_CHECKS is on.
-            try
-            {
-                if (m__range->m__behaviour == Behaviour::Exclude)
-                {
-                    m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains((*m__iter).name))
-                        ++m__iter;
-                }
-
-                if (m__range->m__behaviour == Behaviour::Include)
-                {
-                    m__iter = m__range->mp__registry->begin();
-                    while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains((*m__iter).name))
-                        ++m__iter;
-                }
-
-                if (m__range->m__behaviour == Behaviour::OrderedInclude)
-                {
-                    auto curr_id = m__range->mp__u_ids.lock()->begin();
-                    do
-                    {
-                        m__iter = m__range->mp__registry->find(*curr_id);
-                        ++curr_id;
-                    }
-                    while (m__iter == m__range->mp__registry->end() && curr_id != m__range->mp__u_ids.lock()->end());
-                }
-
-                f__end = m__iter == m__range->mp__registry->end();
-
-            }
-            catch(const std::exception& e)
-            {
-                std::cerr << e.what() << '\n';
-            }
-        }            
-        Iterator(const Iterator &other) noexcept = default;
-        Iterator(Iterator &&other) noexcept = default;
-
+            static_assert(std::true_type ::value, "Not implemented yet.");
+        }
+        FilterIterator(const FilterIterator &other) noexcept = default;
+        FilterIterator(FilterIterator &&other) noexcept = default;
+        
     /*--- (destructor) ---*/
     public:
-        ~Iterator() = default;
+        ~FilterIterator() = default;
         
     /*--- operator= ---*/
     public:
-        Iterator &operator=(const Iterator &rhs) noexcept = default;
-        Iterator &operator=(Iterator &&rhs) noexcept = default;
-
+        FilterIterator &operator=(const FilterIterator &rhs) noexcept = default;
+        FilterIterator &operator=(FilterIterator &&rhs) noexcept = default;
+        
     /*--- base ---*/
     protected:
-        base_iter& base() { return m__iter; }
-        const base_iter& base() const { return m__iter; }
-
+        base_iter base() const
+        {
+            return p__range->m__registry->begin() + i__reg;
+        }
+       
     /*--- access operators ---*/
     public:
-        reference operator*() const {
-#ifdef ENABLE_SAFETY_CHECKS
-            if (f__end)
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator::operator*()", "Impossible to dereference the iterator.",
-                    "The iterator is at the end.");
-#endif
-            return *m__iter;
-        }
+        reference operator*() const { return *base(); }
 
-        pointer operator->() const { 
-#ifdef ENABLE_SAFETY_CHECKS
-            if (f__end)
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator::operator->()", "Impossible to dereference the iterator.",
-                    "The iterator is at the end.");
-#endif
-            return m__iter.operator->();
-        }
-
+        pointer operator->() const { return base().operator->(); }
+        
     /*--- increment/decrement operators ---*/
     public:
-        iterator_type &operator++()
+        iterator_type& operator++()
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            if (f__end)
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator::operator++()", "Impossible to increment the iterator.",
-                    "The iterator is at the end.");
-            if (!valid(m__range) || !valid(m__range->mp__registry))
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator::operator++()", "Impossible to increment the iterator.",
-                    "The registry is not available.");
-            if (m__iter == m__range->mp__registry->end())
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator::operator++()", "Impossible to increment the iterator.",
-                    "The iterator is at the end.");
-#endif
-            // Based on the style, I need to find the next valid element in the Registry.
-            // If it is exclude, I move forward more than once, if my next element is in the list of excluded elements.
-            // If it is include, I move forward more than once, if my next element is not in the list of included elements.
-            // If it is ordered include, I simply find the next one
-
-            if (m__range->m__behaviour == Behaviour::Exclude)
-            {
-                do
-                {
-                    ++m__iter;
-                } while (m__iter != m__range->mp__registry->end() && m__range->mp__u_ids.lock()->contains((*m__iter).name));
-            }
-            
-            if (m__range->m__behaviour == Behaviour::Include)
-            {
-                do
-                {
-                    ++m__iter;
-                } while (m__iter != m__range->mp__registry->end() && !m__range->mp__u_ids.lock()->contains((*m__iter).name));
-            }
-            
-            if (m__range->m__behaviour == Behaviour::OrderedInclude)
-            {
-                // I am pointing at ID x, find it in the USS, get the next, find it in the registry, get the iterator.
-                auto curr_id = m__range->mp__u_ids.lock()->find((*m__iter).name);
-                auto next_id = std::next(curr_id);
-
-                // If I can't find it (should not happen at all) or I am at the end of the list, I am done.
-                if (curr_id == m__range->mp__u_ids.lock()->end() || next_id == m__range->mp__u_ids.lock()->end())
-                {
-                    m__iter = m__range->mp__registry->end();
-                    f__end = true;
-                    return *this;
-                }
-                
-                // else, I have a valid next element, find it in the registry.
-                m__iter = m__range->mp__registry->find(*next_id);
-            }
-
-            f__end = m__iter == m__range->mp__registry->end();  
-
-            return *this;
+            static_assert(std::true_type ::value, "Not implemented yet.");
         }
         iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
-
-        iterator_type &operator+=(size_type n)
+        
+        iterator_type& operator+=(size_type n)
         {
             while (n)
                 ++(*this);
@@ -392,7 +346,10 @@ private:
         }
         iterator_type operator+(size_type n) const {auto tmp= *this; return tmp += n;}
 
-        difference_type operator-(const iterator_type &other) const { return m__iter - other.m__iter; }
+        difference_type operator-(const iterator_type &other) const
+        {
+            static_assert(std::true_type ::value, "Not implemented yet.");
+        }
 
     /*--- comparison operators ---*/
     public:
@@ -401,10 +358,7 @@ private:
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif
-            if (f__end && other.f__end)
-                return true;
-
-            return f__end == other.f__end && m__iter == other.m__iter;
+            return i__reg == other.i__reg;
         }
 
         bool operator!=(const iterator_type &other) const
@@ -412,10 +366,7 @@ private:
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif
-            if (f__end && other.f__end)
-                return false;
-            
-            return f__end != other.f__end || m__iter != other.m__iter;
+            return i__reg != other.i__reg;
         }
 
         bool operator<(const iterator_type &other) const
@@ -423,13 +374,7 @@ private:
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif
-            if (f__end && other.f__end)
-                return false;
-
-            if (other.f__end)
-                return true;
-
-            return !f__end && m__iter < other.m__iter;
+            return i__reg < other.i__reg;
         }
 
         bool operator>(const iterator_type &other) const
@@ -437,13 +382,7 @@ private:
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif
-            if (f__end && other.f__end)
-                return false;
-
-            if (f__end)
-                return true;
-
-            return !other.f__end && m__iter > other.m__iter;
+            return i__reg > other.i__reg;
         }
 
         bool operator<=(const iterator_type &other) const
@@ -451,43 +390,260 @@ private:
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif    
-            if (f__end && other.f__end)
-                return true;
-
-            if (other.f__end)
-                    return false;
-
-            return !f__end && m__iter <= other.m__iter;
+            return i__reg <= other.i__reg;
         }
 
         bool operator>=(const iterator_type &other) const {
 #ifdef ENABLE_SAFETY_CHECKS
             check_comparable(other);
 #endif
-            if (f__end && other.f__end)
-                return true;
-
-            if (f__end)
-                return false;
-
-            return !other.f__end && m__iter >= other.m__iter;
+            return i__reg >= other.i__reg;
         }
 
-// Helper for check if the iterator is valid.
+    // Helper to check if the iterator is valid.
 #ifdef ENABLE_SAFETY_CHECKS
     private:    
         void check_comparable(const iterator_type &other) const
         {
-            if (!valid(m__range) || !valid(m__range->mp__registry))
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator", "operator==", "Impossible to compare the iterators.",
-                    "The registry is not available.");
-            if (m__range != other.m__range)
-                __format_and_throw<std::out_of_range>("RegistryView::Iterator", "operator==", "Impossible to compare the iterators.",
+            if (p__range != other.p__range)
+                __format_and_throw<std::logic_error>("RegistryView::FilterIterator", "**comparison_operator**", "Impossible to compare the iterators.",
+                    "The iterators are not from the same registry.");
+        }
+#endif   
+    }; // class RegistryView::FilterIterator
+
+    template <class RV, typename EnableIfMode>
+    class OrderedFilterIterator
+    {
+    /*--- Member types ---*/
+    private:
+        using self_type = OrderedFilterIterator<RV>;
+        using mutable_type = std::integral_constant<bool, IsMutable>;
+    public:
+        using iterator_type = self_type;
+        using base_iter = typename std::conditional<
+            std::is_const_v<RV> || !IsMutable,
+            typename RV::Registry_t::const_iterator,
+            typename RV::Registry_t::iterator
+        >::type;
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = typename base_iter::value_type;
+        using size_type = typename base_iter::size_type;
+        using difference_type = typename base_iter::difference_type;
+        using reference = typename base_iter::reference;
+        using pointer = typename base_iter::pointer;
+
+    /*--- Member objects ---*/
+    private:
+        RV* p__range;
+        size_type i__reg; // Index of the element in the registry.
+        size_type i__uss; // Index of the element in the UniqueStringSequence.
+
+    /*--- Member functions ---*/
+    /*--- (constructor) ---*/
+    public:
+        OrderedFilterIterator() noexcept = delete; // I need to know the range.
+        OrderedFilterIterator(RV* range, size_type index_reg, size_type index_uss) noexcept :
+            p__range(range),
+            i__reg(0),
+            i__uss(0)
+        {
+            if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
+            {
+                i__reg = p__range->m__registry->size();
+                i__uss = 0;
+                return;
+            }
+
+            auto p__uss = p__range->p__uss.lock();
+
+            auto it_uss = p__uss->begin() + index_uss;
+            while (it_uss != p__uss->end())
+            {
+                auto pos = p__range->m__registry->find_index(*it_uss);
+                if (pos != -1)
+                {
+                    i__reg = pos;
+                    i__uss = index_uss;
+                    return;
+                }
+
+                // This element is not in the registry, move to the next one.
+                ++it_uss;
+            }
+
+            // We could not find the element in the registry.
+            i__reg = p__range->m__registry->size();
+            i__uss = p__uss->size();
+            return;
+        }
+        OrderedFilterIterator(const OrderedFilterIterator &other) noexcept = default;
+        OrderedFilterIterator(OrderedFilterIterator &&other) noexcept = default;
+
+    /*--- (destructor) ---*/
+    public:
+        ~OrderedFilterIterator() = default;
+        
+    /*--- operator= ---*/
+    public:
+        OrderedFilterIterator &operator=(const OrderedFilterIterator &rhs) noexcept = default;
+        OrderedFilterIterator &operator=(OrderedFilterIterator &&rhs) noexcept = default;
+
+    /*--- base ---*/
+    protected:
+        base_iter base() const
+        {
+            return p__range->m__registry->begin() + i__reg;
+        }
+
+    /*--- access operators ---*/
+    public:
+        reference operator*() const { return *base(); }
+
+        pointer operator->() const { return base().operator->(); }
+
+    /*--- increment/decrement operators ---*/
+    public:
+        iterator_type& operator++()
+        {
+            if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
+            {
+                i__reg = p__range->m__registry->size();
+                i__uss = 0;
+                return *this;
+            }
+
+            auto p__uss = p__range->p__uss.lock();
+
+            // Let's start from the next element in the UniqueStringSequence.
+            auto it_uss = p__uss->begin() + i__uss + 1;
+            while (it_uss != p__uss->end())
+            {
+                auto pos = p__range->m__registry->find_index(*it_uss);
+                if (pos != -1)
+                {
+                    i__reg = pos;
+                    i__uss = std::distance(p__uss->begin(), it_uss);
+                    return *this;
+                }
+
+                // This element is not in the registry, move to the next one.
+                ++it_uss;
+            }
+
+            // We could not find any new element in the registry.
+            i__reg = p__range->m__registry->size();
+            i__uss = p__uss->size();
+            return *this;
+        }
+        iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+
+        iterator_type& operator+=(size_type n)
+        {
+            while (n)
+                ++(*this);
+                    --n;
+
+            return *this;
+        }
+        iterator_type operator+(size_type n) const {auto tmp= *this; return tmp += n;}
+
+        difference_type operator-(const iterator_type &other) const
+        {
+            // I can't simply do the difference between the indexes because the
+            // indexes are not contiguous. I need to iterate over the registry
+            // to find the difference.
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            difference_type diff = 0;
+            if (*this < other)
+            {
+                auto it = *this;
+                while (it++ != other)
+                    ++diff;
+
+                return diff;
+            }
+            else
+            {
+                auto it = other;
+                while (it++ != *this)
+                    --diff;
+
+                return diff;
+            }
+        }
+
+    /*--- comparison operators ---*/
+    public:
+        bool operator==(const iterator_type &other) const
+        {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            return i__uss == other.i__uss;
+        }
+
+        bool operator!=(const iterator_type &other) const
+        {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            return i__uss != other.i__uss;
+        }
+
+        bool operator<(const iterator_type &other) const
+        {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            return i__uss < other.i__uss;
+        }
+
+        bool operator>(const iterator_type &other) const
+        {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            return i__uss > other.i__uss;
+        }
+
+        bool operator<=(const iterator_type &other) const
+        {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif    
+            return i__uss <= other.i__uss;
+        }
+
+        bool operator>=(const iterator_type &other) const {
+#ifdef ENABLE_SAFETY_CHECKS
+            check_comparable(other);
+#endif
+            return i__uss >= other.i__uss;
+        }
+
+    // Helper to check if the iterator is valid.
+#ifdef ENABLE_SAFETY_CHECKS
+    private:    
+        void check_comparable(const iterator_type &other) const
+        {
+            if (p__range != other.p__range)
+                __format_and_throw<std::logic_error>("RegistryView::OrderedFilterIterator", "**comparison_operator**", "Impossible to compare the iterators.",
                     "The iterators are not from the same registry.");
         }
 #endif    
-    }; // class RegistryView::Iterator
+    }; // class RegistryView::OrderedFilterIterator
+
 
 }; // class RegistryView
+
+// Deduction guides
+template <typename T, typename M>
+RegistryView(Registry<T>&) -> RegistryView<T, M, true>;
+
+template <typename T, typename M>
+RegistryView(const Registry<T>&) -> RegistryView<T, M, false>;
 
 } // namespace bevarmejo
