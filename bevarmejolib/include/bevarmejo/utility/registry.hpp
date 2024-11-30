@@ -614,6 +614,7 @@ public:
     >::type;
     using iterator_category = std::bidirectional_iterator_tag;
     using value_type = typename R::value_type;
+    using size_type = typename R::size_type;
     using difference_type = typename R::difference_type;
     using pointer = typename std::conditional<
         std::is_const<R>::value,

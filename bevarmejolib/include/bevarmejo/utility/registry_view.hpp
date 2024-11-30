@@ -319,7 +319,7 @@ private:
     protected:
         base_iter base() const
         {
-            return p__range->m__registry->begin() + i__reg;
+            return p__range->m__registry.begin() + i__reg;
         }
        
     /*--- access operators ---*/
@@ -333,6 +333,8 @@ private:
         iterator_type& operator++()
         {
             static_assert(std::true_type ::value, "Not implemented yet.");
+
+            return *this;
         }
         iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
         
@@ -349,6 +351,8 @@ private:
         difference_type operator-(const iterator_type &other) const
         {
             static_assert(std::true_type ::value, "Not implemented yet.");
+
+            return 0;
         }
 
     /*--- comparison operators ---*/
@@ -448,12 +452,12 @@ private:
             i__reg(0),
             i__uss(0)
         {
-            static_assert(!std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>,
+            static_assert(std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>,
                 "This iterator is only for the OrderedInclude mode.");
 
             if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
             {
-                i__reg = p__range->m__registry->size();
+                i__reg = p__range->m__registry.size();
                 i__uss = 0;
                 return;
             }
@@ -463,7 +467,7 @@ private:
             auto it_uss = p__uss->begin() + index_uss;
             while (it_uss != p__uss->end())
             {
-                auto pos = p__range->m__registry->find_index(*it_uss);
+                auto pos = p__range->m__registry.find_index(*it_uss);
                 if (pos != -1)
                 {
                     i__reg = pos;
@@ -476,7 +480,7 @@ private:
             }
 
             // We could not find the element in the registry.
-            i__reg = p__range->m__registry->size();
+            i__reg = p__range->m__registry.size();
             i__uss = p__uss->size();
             return;
         }
@@ -496,7 +500,7 @@ private:
     protected:
         base_iter base() const
         {
-            return p__range->m__registry->begin() + i__reg;
+            return p__range->m__registry.begin() + i__reg;
         }
 
     /*--- access operators ---*/
@@ -511,7 +515,7 @@ private:
         {
             if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
             {
-                i__reg = p__range->m__registry->size();
+                i__reg = p__range->m__registry.size();
                 i__uss = 0;
                 return *this;
             }
@@ -522,7 +526,7 @@ private:
             auto it_uss = p__uss->begin() + i__uss + 1;
             while (it_uss != p__uss->end())
             {
-                auto pos = p__range->m__registry->find_index(*it_uss);
+                auto pos = p__range->m__registry.find_index(*it_uss);
                 if (pos != -1)
                 {
                     i__reg = pos;
@@ -535,7 +539,7 @@ private:
             }
 
             // We could not find any new element in the registry.
-            i__reg = p__range->m__registry->size();
+            i__reg = p__range->m__registry.size();
             i__uss = p__uss->size();
             return *this;
         }
