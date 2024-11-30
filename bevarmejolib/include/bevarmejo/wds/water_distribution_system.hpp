@@ -415,16 +415,16 @@ auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) 
         return RegistryView<Reservoir, RVMode::OrderedInclude, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Tank>)
-        return RegistryView<Tank, RVMode::OrderedInclude, true>(&_tanks_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Tank, RVMode::OrderedInclude, true>(_tanks_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Link>)
-        return RegistryView<Link, RVMode::OrderedInclude, true>(&_links_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Link, RVMode::OrderedInclude, true>(_links_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pipe>)
-        return RegistryView<Pipe, RVMode::OrderedInclude, true>(&_pipes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pipe, RVMode::OrderedInclude, true>(_pipes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pump>)
-        return RegistryView<Pump, RVMode::OrderedInclude, true>(&_pumps_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pump, RVMode::OrderedInclude, true>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 
@@ -450,7 +450,7 @@ template <typename N, typename... Args>
             "An element with the same ID already exists in the nodes collection.",
             "ID: ", id, "\n");
 
-    auto insert_in_spec_collection = [this, &id](auto& container) -> decltype(auto)
+    auto insert_in_spec_collection = [this, &id, &irtn](auto& container) -> decltype(auto)
     {
         auto irs = container.insert(id, std::static_pointer_cast<N>(irtn.iterator.operator->()));
         if (!irs.inserted)
@@ -527,7 +527,7 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
     irtn.iterator->end_node(_nodes_.get(to_node_it).get());
     _nodes_.get(to_node_it)->add_link(irtn.iterator.operator->().get());
 
-    auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it](auto& container) -> decltype(auto)
+    auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it, &irtn](auto& container) -> decltype(auto)
     {
         auto irs = container.insert(id, std::static_pointer_cast<L>(irtn.iterator.operator->()));
         if (!irs.inserted)

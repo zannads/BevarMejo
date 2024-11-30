@@ -481,34 +481,34 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	}
 
 	// If it is a design or integrated problem, we need to consider design cost and net present value of the energy cost.
-	double design_cost = 0.0;
+	double capital_cost = 0.0;
 	
 	switch (m__formulation)
 	{
 	case Formulation::rehab_f1:
 		[[fallthrough]];
 	case Formulation::twoph_f1: {
-		design_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
-		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
-		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		capital_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 		break;
 	}
 	case Formulation::mixed_f1: {
-		design_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
-		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
-		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		capital_cost += fep1::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
+		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 		break;
 	}
 	case Formulation::rehab_f2: {
-		design_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
-		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
-		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+41, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+41, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 		break;
 	}
 	case Formulation::mixed_f2: {
-		design_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
-		design_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
-		design_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+65, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
+		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
+		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+65, dvs.end()), m__tanks_costs, m__pipes_alt_costs);
 		break;
 	}
 	default:
@@ -519,7 +519,7 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 	
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
-	return -bevarmejo::net_present_value(design_cost, discount_rate, -yearly_energy_cost, amortization_years);
+	return -bevarmejo::net_present_value(capital_cost, discount_rate, -yearly_energy_cost, amortization_years);
 }
 
 double of__reliability(const WDS &anytown) {
@@ -645,12 +645,8 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
 {
 	assert(dvs.size() == 2*anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-	
 
 	auto curr_dv = dvs.begin();
-	int errorcode = 0;
-
-	// 1. existing pipes
 	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
 	{
 		std::size_t action_type = *curr_dv++;
@@ -671,7 +667,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			double old_pipe_roughness = pipe.roughness().value();
 			old_HW_coeffs.insert({id, old_pipe_roughness});
 
-			errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
+			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
 			assert(errorcode <= 100);
 
 			pipe.roughness(bevarmejo::anytown::coeff_HW_cleaned);
@@ -691,7 +687,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			// retrieve the old property of the already existing pipe
 			int out_node1_idx = 0;
 			int out_node2_idx = 0;
-			errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.index(), &out_node1_idx, &out_node2_idx);
+			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.index(), &out_node1_idx, &out_node2_idx);
 			assert(errorcode <= 100);
 
 			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
@@ -959,101 +955,78 @@ double fep1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs
 {
 	assert(dvs.size() == 2*anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
 
-	double design_cost = 0.0;
-	// 35 pipes x [action, prc]
+	double capital_cost = 0.0;
+
 	auto curr_dv = dvs.begin();
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	{
+		std::size_t action_type = *curr_dv++;
+		std::size_t alt_option = *curr_dv++;
 
-	for(auto& wp_curr_net_ele : anytown.subnetwork("existing_pipes")) {
-		if (*curr_dv == 0){
-			++curr_dv;
-			++curr_dv;
+		if (action_type == 0) // no action
 			continue;
-		}
-
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::string link_id = curr_net_ele->id();
-		bool city = anytown.subnetwork("city_pipes").contains(link_id);
-		// I assume is in the residential as they are mutually exclusive
-
-		// Either duplicate or clean I can use dvs[i*2+1] to get the cost and
-		// the length of the pipe from the network object (in case of the 
-		// duplicate pipe the length is the same of the original pipe).
+		
+		bool city = anytown.id_sequence("city_pipes").contains(id);
 		double pipe_cost_per_ft = 0.0;
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the existing_pipes subnetwork.");
 
-		if (*curr_dv == 1) { // clean
-			// I can't use dvs[i*2+1] to get the costs, but I have to search 
-			// for the diameter in the table.
+		if (action_type == 1) // clean
+		{
+			// The cost per unit of length is a function of the diameter of the pipe.
+			// Therefore, I have to search for the diameter in the table.
+			double pipe_diam = pipe.diameter().value();
 			auto it = std::find_if(pipes_alt_costs.begin(), pipes_alt_costs.end(), 
-				[&curr_pipe](const bevarmejo::anytown::pipes_alt_costs& pac) { 
-					return std::abs(pac.diameter_in*MperFT/12*1000 - curr_pipe->diameter().value()) < 0.0001; 
+				[&pipe_diam](const auto& pac) { 
+					return std::abs(pac.diameter_in*MperFT/12*1000 - pipe_diam) < 0.0001; 
 				});
 
 			// Check I actually found it 
-			if (it == pipes_alt_costs.end()) 
-				throw std::runtime_error("Could not find the diameter of the pipe in the cost table.");
+			assert(it != pipes_alt_costs.end());
 
 			if (city)
 				pipe_cost_per_ft = (*it).clean_city;
 			else
 				pipe_cost_per_ft = (*it).clean_residential;
 		}
-		else if (*curr_dv == 2) { // duplicate
+		else // if (action_type == 2) // duplicate
+		{
 			if (city) 
-				pipe_cost_per_ft = pipes_alt_costs.at(*(curr_dv+1)).dup_city;
+				pipe_cost_per_ft = pipes_alt_costs.at(alt_option).dup_city;
 			else
-				pipe_cost_per_ft = pipes_alt_costs.at(*(curr_dv+1)).dup_residential;
+				pipe_cost_per_ft = pipes_alt_costs.at(alt_option).dup_residential;
 		} 
 
-		design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value(); 
+		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 		// again I save the length in mm, but the table is in $/ft
-
-		++curr_dv;
-		++curr_dv;
 	}
-
-	return design_cost;
+	assert(curr_dv == dvs.end());
+	return capital_cost;
 }
-double fep2::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
-	assert(dvs.size() == anytown.subnetwork("existing_pipes").size());
+double fep2::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+{
+	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
 
-	double design_cost = 0.0;
-	// 35 pipes x [prc+2]
-	auto it_dv = dvs.begin();
-	auto it_net_elem = anytown.subnetwork("existing_pipes").begin();
-	int errorcode = 0;
+	double capital_cost = 0.0;
+	
+	auto curr_dv = dvs.begin();
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	{
+		std::size_t action_type = *curr_dv++;
+		std::size_t alt_option = action_type-2; // -2 because the first two options are no action and clean
 
-	while(it_dv != dvs.end() && it_net_elem != anytown.subnetwork("existing_pipes").end()) {
-		auto dv = *it_dv;
-
-		if (dv == 0){
-			// Do nothing and skip
-			++it_dv;
-			++it_net_elem;
+		if (action_type == 0) // no action
 			continue;
-		}
-		
-		// There are some costs associated with this action
-		auto net_ele = it_net_elem->lock();
-		assert(net_ele != nullptr);
-		auto pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(net_ele);
-		assert(pipe != nullptr);
 
-		bool city = anytown.subnetwork("city_pipes").contains(pipe->id());
-		// I assume is in the residential as they are mutually exclusive
-
-		// I need the length of the pipe because the cost is by unit of length.
+		bool city = anytown.id_sequence("city_pipes").contains(id);
 		double pipe_cost_per_ft = 0.0;
-		if (dv == 1) { // clean
-			// The cost per unit of length is a function of the diameter of the pipe.
+
+		if (action_type == 1) // clean
+		{
+			double pipe_diam = pipe.diameter().value();
 			auto it = std::find_if(pipes_alt_costs.begin(), pipes_alt_costs.end(), 
-				[&pipe](const bevarmejo::anytown::pipes_alt_costs& pac) { 
-					return std::abs(pac.diameter_in*MperFT/12*1000 - pipe->diameter().value()) < 0.0001; 
+				[&pipe_diam](const auto& pac) { 
+					return std::abs(pac.diameter_in*MperFT/12*1000 - pipe_diam) < 0.0001; 
 				});
 
-			// Check I actually found it 
 			assert(it != pipes_alt_costs.end());
 				
 			if (city)
@@ -1061,56 +1034,49 @@ double fep2::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs
 			else
 				pipe_cost_per_ft = (*it).clean_residential;
 		}
-		else { // if (dv >= 2) duplicate
-			std::size_t diam_idx = dv-2; // remove options 0 and 1
+		else // if (dv >= 2) duplicate
+		{
 			if (city) 
-				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_city;
+				pipe_cost_per_ft = pipes_alt_costs.at(alt_option).dup_city;
 			else
-				pipe_cost_per_ft = pipes_alt_costs.at(diam_idx).dup_residential;
+				pipe_cost_per_ft = pipes_alt_costs.at(alt_option).dup_residential;
 		} 
 
-		design_cost += pipe_cost_per_ft/MperFT * pipe->length().value(); 
-		// again I save the length in mm, but the table is in $/ft
-
-		++it_dv;
-		++it_net_elem;
+		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 	}
-
-	return design_cost;
+	assert(curr_dv == dvs.end());
+	return capital_cost;
 }
 
-double cost__new_pipes(const WDS &anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
-	assert(dvs.size() == anytown.subnetwork("new_pipes").size());
-	
+double cost__new_pipes(const WDS &anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+{
+	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
 	
 	// 6 pipes x [prc]
 	// This must be installed, thus minimum cost will never be 0.
-	double design_cost = 0.0;
+	double capital_cost = 0.0;
 	auto curr_dv = dvs.begin();
-	for (const auto& wp_curr_net_ele : anytown.subnetwork("new_pipes")) {
-		auto curr_net_ele = wp_curr_net_ele.lock();
-		std::shared_ptr<wds::Pipe> curr_pipe = std::dynamic_pointer_cast<wds::Pipe, wds::NetworkElement>(curr_net_ele);
-		if (curr_pipe == nullptr)
-			throw std::runtime_error("Could not cast to Pipe, check the new_pipes subnetwork.");
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	{
+		std::size_t alt_option = *curr_dv++;
 		
-		// dvs[i] is the row of the m__pipes_alt_costs table
-		double pipe_cost_per_ft = pipes_alt_costs.at(*curr_dv).new_cost;
-		design_cost += pipe_cost_per_ft/MperFT * curr_pipe->length().value();
-
-		++curr_dv;
+		double pipe_cost_per_ft = pipes_alt_costs.at(alt_option).new_cost;
+		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value();
 	}
 
-	return design_cost;
+	return capital_cost;
 }
 
 double cost__energy_per_day(const WDS &anytown)
 {
     double total_ene_cost_per_day = 0.0;
-	for (const auto& pump : anytown.pumps() ) {
+	for (const auto& [id, pump] : anytown.pumps() )
+	{
 		unsigned long t_prec = 0;
 		double power_kW_prec = 0.0;
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
-		for (const auto& [t, power_kW] : pump->instant_energy() ) {
+		for (const auto& [t, power_kW] : pump.instant_energy() )
+		{
 			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost_kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;
@@ -1119,32 +1085,36 @@ double cost__energy_per_day(const WDS &anytown)
 	return total_ene_cost_per_day;
 }
 
-double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs) {
+double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+{
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-	
 
-	double design_cost = 0.0;
+	double capital_cost = 0.0;
+
 	auto curr_dv = dvs.begin();
-	for(std::size_t tank_idx = 0; tank_idx < bevarmejo::anytown::max_n_installable_tanks; ++tank_idx) {
-		// Check if the tanks is going to be installed
-		// You can't install two tanks on the same locations so I discard the second one 
-		if (*curr_dv == 0. || (tank_idx > 0 && *curr_dv == *(curr_dv-2)) ) {
-			// don't install skip the location and the volume
-			++curr_dv;
-			++curr_dv;
+	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		std::size_t action_type = *curr_dv++;
+		std::size_t tank_vol_option = *curr_dv++;
+		
+		// Safety check that I don't install the second tank on a location where there is already one.
+		if (i > 0 && action_type > 0 && action_type == *(curr_dv-2))
+			action_type = 0;
+
+		if (action_type == 0)
+		{
 			continue;
 		}
 
 		// I don't care where I place it, the cost is always dependent on the volume [dv+1]
-		++curr_dv;
-		// as of this version I can only choose the specific volume of the table and not intermediate values.
-		double tank_cost = tanks_costs.at(*curr_dv).cost;
-		design_cost += tank_cost;
-		// TODO: decide how to add the cost of the riser (for now I take 16 inches as the standard riser diam)
-		design_cost += pipes_alt_costs.at(5).new_cost*bevarmejo::anytown::riser_length_ft; // no need to go back to meters because everything here is in foot
-		++curr_dv;
+		// In this version I can only choose the specific volume from the table and not intermediate values.
+		// I also need to account for the cost of the riser pipe (in this case 16 ft so option 5)
+		double tank_cost = tanks_costs.at(tank_vol_option).cost;
+		capital_cost += tank_cost;
+		
+		capital_cost += pipes_alt_costs.at(5).new_cost*bevarmejo::anytown::riser_length_ft;
 	}
-	return design_cost;
+	return capital_cost;
 }
 
 // ------------------- of__reliability ------------------- //

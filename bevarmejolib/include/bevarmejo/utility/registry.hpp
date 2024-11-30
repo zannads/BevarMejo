@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "bevarmejo/bemexcept.hpp"
@@ -532,36 +533,23 @@ private:
         if(pos == cend())
             return end();
 
-        duplicate_ptr_checker.erase(pos->ptr.get());
-        duplicate_id_checker.erase(pos->name);
-
         auto idx = pos - cbegin();
+
+        duplicate_ptr_checker.erase(m__elements[idx].ptr.get());
+        duplicate_id_checker.erase(m__elements[idx].name);
+
         auto it = m__elements.erase(m__elements.begin() + idx);
         
         return iterator(this, it - m__elements.begin());
     }
-    iterator erase(const_iterator first, const_iterator last)
-    {
-        auto idx_first = first - cbegin();
-        auto idx_last = last - cbegin();
-
-        for (auto it=first; it!=last; ++it)
-        {
-            duplicate_ptr_checker.erase(it->ptr.get());
-            duplicate_id_checker.erase(it->name);
-        }
-
-        auto it = m__elements.erase(m__elements.begin() + idx_first, m__elements.begin() + idx_last);
-
-        return iterator(this, it - m__elements.begin());
-    }
+    iterator erase(const_iterator first, const_iterator last);
     size_type erase(const key_type &name)
     {
-        auto it = find(name);
-        if (it == end())
+        auto cit = std::as_const(*this).find(name);
+        if (cit == cend())
             return 0;
 
-        erase(it);
+        erase(cit);
         return 1;
     }
 
