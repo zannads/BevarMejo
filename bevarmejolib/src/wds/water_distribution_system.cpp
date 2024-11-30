@@ -291,12 +291,124 @@ auto WaterDistributionSystem::submit_id_sequence(const fsys::path& file_path) ->
     
 
 // Subtractive modifiers
-// Common interface for all types of elements:
+// Common interface for all types of elements is templated (see hpp file).
 
 // Network elements
 // Nodes
+auto WaterDistributionSystem::remove(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+    
+    auto it = _nodes_.find(id);
+    if (it == _nodes_.end())
+        return n_removed;
+
+    // All the links connected to the node should be destroyed...
+    // I have to be careful, because if I call WDS::erase(link) it will change the node's links collection
+    // and the iterator will be invalidated.
+    // Also I can' use erase<L>(id) because I don't know the exact type of the link.
+    // Therefore I create a copy of it and use it to erase the links.
+    auto links_to_erase = it->connected_links();
+
+    for (auto& p_link : links_to_erase)
+        n_removed += uninstall(p_link->id());
+
+    assert(it->connected_links().empty());
+
+    n_removed += _nodes_.erase(id);
+
+    _junctions_.erase(id);
+    _reservoirs_.erase(id);
+    _tanks_.erase(id);
+
+    return n_removed;
+}
+
+auto WaterDistributionSystem::remove_junction(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _junctions_.find(id);
+    if (it == _junctions_.end())
+        return n_removed;
+
+    // I confirmed that the junction is a node, so I can call remove.
+    return remove(id);
+}
+
+auto WaterDistributionSystem::remove_reservoir(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _reservoirs_.find(id);
+    if (it == _reservoirs_.end())
+        return n_removed;
+
+    // I confirmed that the reservoir is a node, so I can call remove.
+    return remove(id);
+}
+
+auto WaterDistributionSystem::remove_tank(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _tanks_.find(id);
+    if (it == _tanks_.end())
+        return n_removed;
+
+    // I confirmed that the tank is a node, so I can call remove.
+    return remove(id);
+}
 
 // Links
+auto WaterDistributionSystem::uninstall(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _links_.find(id);
+    if (it == _links_.end())
+        return n_removed;
+
+    // The nodes should forget this link. Then simply erase it from all collections.
+    auto start_node_id = it->from_node()->id();
+    auto end_node_id = it->to_node()->id();
+
+    _nodes_.at(start_node_id).remove_link(it.operator->().get());
+    _nodes_.at(end_node_id).remove_link(it.operator->().get());
+    
+    n_removed = _links_.erase(id);
+
+    // Erase from all collections because erase a non existing element should be
+    //  a no-op (still you iterate over all the elements again).
+    _pipes_.erase(id);
+    _pumps_.erase(id);
+
+    return n_removed;
+}
+
+auto WaterDistributionSystem::uninstall_pipe(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _pipes_.find(id);
+    if (it == _pipes_.end())
+        return n_removed;
+
+    // We confirmed it's a pipe, so we can call uninstall.
+    return uninstall(id);
+}
+
+auto WaterDistributionSystem::uninstall_pump(const ID& id) -> size_type
+{
+    size_type n_removed = 0;
+
+    auto it = _pumps_.find(id);
+    if (it == _pumps_.end())
+        return n_removed;
+
+    // We confirmed it's a pump, so we can call uninstall.
+    return uninstall(id);
+}
 
 // Components
 

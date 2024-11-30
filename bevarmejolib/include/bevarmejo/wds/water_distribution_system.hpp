@@ -107,6 +107,10 @@ public:
 
     using IDSequences = Registry<UniqueStringSequence>;
 
+    // Utilities
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
 /*------- Member objects -------*/
 private:
     // Class-specific collections of elements
@@ -311,36 +315,36 @@ public:
 public:
 // Common interface for all types of elements:
     template <typename T>
-    auto erase(const ID& id) -> void;
+    auto erase(const ID& id) -> size_type;
 
 // Network elements
 // Nodes
-    auto remove(const ID& id) -> void;
+    auto remove(const ID& id) -> size_type;
 
-    auto remove_junction(const ID& id) -> void;
+    auto remove_junction(const ID& id) -> size_type;
 
-    auto remove_reservoir(const ID& id) -> void;
+    auto remove_reservoir(const ID& id) -> size_type;
 
-    auto remove_tank(const ID& id) -> void;
+    auto remove_tank(const ID& id) -> size_type;
 
 // Links
-    auto uninstall(const ID& id) -> void;
+    auto uninstall(const ID& id) -> size_type;
 
-    auto uninstall_pipe(const ID& id) -> void;
+    auto uninstall_pipe(const ID& id) -> size_type;
 
-    auto uninstall_pump(const ID& id) -> void;
+    auto uninstall_pump(const ID& id) -> size_type;
 
 // Components
     template <typename C>
-    auto drop(const ID& id) -> void;
+    auto drop(const ID& id) -> size_type;
 
-    auto drop_curve(const ID& id) -> void;
+    auto drop_curve(const ID& id) -> size_type;
 
-    auto drop_pattern(const ID& id) -> void;
+    auto drop_pattern(const ID& id) -> size_type;
 
-    auto drop_ids(const ID& id) -> void;
+    auto drop_ids(const ID& id) -> size_type;
 
-    auto drop_time_series(const ID& id) -> void;
+    auto drop_time_series(const ID& id) -> size_type;
 
 // Special modifications
 // Duplicate a link (install a copy in parallel)
@@ -583,7 +587,7 @@ auto WaterDistributionSystem::submit_id_sequence(const ID& id, Args&&... args) -
 
 // Common interface for all types of elements:
 template <typename T>
-auto WaterDistributionSystem::erase(const ID& id) -> void
+auto WaterDistributionSystem::erase(const ID& id) -> size_type
 {
     static_assert(std::is_same_v<T, Junction> || std::is_same_v<T, Reservoir> || std::is_same_v<T, Tank> ||
                   std::is_same_v<T, Pipe> || std::is_same_v<T, Pump> || std::is_same_v<T, Curve> || std::is_same_v<T, Pattern> ||
@@ -593,81 +597,33 @@ auto WaterDistributionSystem::erase(const ID& id) -> void
     // Erase an element that is not in the collection is a no-op.
 
     if constexpr(std::is_same_v<T, Junction> || std::is_same_v<T, Reservoir> || std::is_same_v<T, Tank>)
-    {
-        auto it = _nodes_.find(id);
-        if (it == _nodes_.end())
-            return;
-
-        // All the links connected to the node should be destroyed...
-        // I have to be careful, because if I call WDS::erase(link) it will change the node's links collection
-        // and the iterator will be invalidated.
-        // Also I can' use erase<L>(id) because I don't know the exact type of the link.
-        // Therefore I create a copy of it and use it to erase the links.
-        auto links_to_erase = it->connected_links();
-
-        for (auto& p_link : links_to_erase)
-        {
-            auto link_id = p_link->id();
-            
-            // As in WDS::erase<L>(id), remove from all collection as worst case is a double lookup of size n_links.
-            _links_.erase(link_id);
-            _pipes_.erase(link_id);
-            _pumps_.erase(link_id);
-
-            // The nodes should forget this link.
-            it->remove_link(p_link);
-        }
-
-        assert(it->connected_links().empty());
-
-        // Then simply erase it from all collections.
-        _nodes_.erase(id);
-        _junctions_.erase(id);
-        _reservoirs_.erase(id);
-        _tanks_.erase(id);
-
-        return;
-    }
+        return remove(id);
 
     if constexpr(std::is_same_v<T, Pipe> || std::is_same_v<T, Pump>)
-    {
-        auto it = _links_.find(id);
-        if (it == _links_.end())
-            return;
-
-        // The nodes should forget this link. Then simply erase it from all collections.
-        auto start_node_id = it->from_node()->id();
-        auto end_node_id = it->to_node()->id();
-
-        _nodes_.at(start_node_id).remove_link(it.operator->().get());
-        _nodes_.at(end_node_id).remove_link(it.operator->().get());
-        
-        // Erase from all collections because erase a non existing element is a no-op (still you iterate over all the elements twice).
-        _links_.erase(id);
-        _pipes_.erase(id);
-        _pumps_.erase(id);
-
-        return;
-    }
+        return uninstall(id);
 
     if constexpr(std::is_same_v<T, Curve>)
     {
         static_assert(std::true_type::value, "Not implemented yet.");
+        return 0;
     }
 
     if constexpr(std::is_same_v<T, Pattern>)
     {
         static_assert(std::true_type::value, "Not implemented yet.");
+        return 0;
     }
 
     if constexpr(std::is_same_v<T, IDSequence>)
     {
         static_assert(std::true_type::value, "Not implemented yet.");
+        return 0;
     }
 
     if constexpr(std::is_same_v<T, TimeSeries>)
     {
         static_assert(std::true_type::value, "Not implemented yet.");
+        return 0;
     }
 
     static_assert(std::true_type::value, "Unreachable code.");

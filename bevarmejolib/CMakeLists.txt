@@ -82,7 +82,6 @@ add_library(bemelib
         ${WDS_NODES}
         ${WDS_LINKS}
         ${WDS_AUX}
-        ${WDS_DATAS}
         ${IO_FILES}
         ${HELPERS}
         ${PAGMO_H}
