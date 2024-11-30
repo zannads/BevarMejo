@@ -72,7 +72,7 @@ public:
     using pointer = std::conditional_t<IsMutable, typename Registry_t::pointer, typename Registry_t::const_pointer>;
     using const_pointer = typename Registry_t::const_pointer;
     using mapped_reference = std::conditional_t<IsMutable, typename Registry_t::mapped_type&, const typename Registry_t::mapped_type&>;
-    using const_mapped_reference = typename Registry_t::const_mapped_reference;
+    using const_mapped_reference = const typename Registry_t::mapped_type&;
 
 /*------- Member objects -------*/
 protected:
@@ -144,9 +144,9 @@ public:
     using const_mapped_reference = typename core_type::const_mapped_reference;
 private:
     // Forward declaration of the iterators (I need two different types because the sorted one has a completely different behaviour).
-    template <class RV, typename EnableIfMode = std::enable_if_t<std::is_same_v<typename RV::mode_type, RVMode::Exclude> || std::is_same_v<typename RV::mode_type, RVMode::Include>>>
+    template <class RV>
     class FilterIterator; // For the Exclude and Include modes
-    template <class RV, typename EnableIfMode = std::enable_if_t<std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>>>
+    template <class RV>
     class OrderedFilterIterator; // For the OrderedInclude mode
 public:
     using iterator = std::conditional_t<
@@ -265,7 +265,7 @@ public:
     
 /*--- Iterators ---*/
 private:
-    template <class RV, typename EnableIfMode>
+    template <class RV>
     class FilterIterator
     {
     /*--- Member types ---*/
@@ -412,7 +412,7 @@ private:
 #endif   
     }; // class RegistryView::FilterIterator
 
-    template <class RV, typename EnableIfMode>
+    template <class RV>
     class OrderedFilterIterator
     {
     /*--- Member types ---*/
@@ -448,6 +448,9 @@ private:
             i__reg(0),
             i__uss(0)
         {
+            static_assert(!std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>,
+                "This iterator is only for the OrderedInclude mode.");
+
             if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
             {
                 i__reg = p__range->m__registry->size();
@@ -639,11 +642,56 @@ private:
 
 }; // class RegistryView
 
-// Deduction guides
-template <typename T, typename M>
-RegistryView(Registry<T>&) -> RegistryView<T, M, true>;
+// Typedefs
+template <typename T, bool IsMutable>
+using ExcludingRegistryView = RegistryView<T, RVMode::Exclude, IsMutable>;
 
-template <typename T, typename M>
-RegistryView(const Registry<T>&) -> RegistryView<T, M, false>;
+template <typename T, bool IsMutable>
+using IncludingRegistryView = RegistryView<T, RVMode::Include, IsMutable>;
+
+template <typename T, bool IsMutable>
+using OrderedRegistryView = RegistryView<T, RVMode::OrderedInclude, IsMutable>;
+
+// Deduction guides
+// By default, if I don't pass a UniqueStringSequence, it is of type exclude with a null pointer (so like accessing the whole registry).
+template <typename T>
+RegistryView(Registry<T>&) -> RegistryView<T, RVMode::Exclude, true>;
+
+template <typename T>
+RegistryView(const Registry<T>&) -> RegistryView<T, RVMode::Exclude, false>;
+
+// Factory functions 
+template <typename T, typename U>
+auto make_exc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Exclude, true>
+{
+    return RegistryView<T, RVMode::Exclude, true>(registry, std::forward<U>(elements));
+}
+template <typename T, typename U>
+auto make_exc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Exclude, false>
+{
+    return RegistryView<T, RVMode::Exclude, false>(registry, std::forward<U>(elements));
+}
+
+template <typename T, typename U>
+auto make_inc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Include, true>
+{
+    return RegistryView<T, RVMode::Include, true>(registry, std::forward<U>(elements));
+}
+template <typename T, typename U>
+auto make_inc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Include, false>
+{
+    return RegistryView<T, RVMode::Include, false>(registry, std::forward<U>(elements));
+}
+
+template <typename T, typename U>
+auto make_ord_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::OrderedInclude, true>
+{
+    return RegistryView<T, RVMode::OrderedInclude, true>(registry, std::forward<U>(elements));
+}
+template <typename T, typename U>
+auto make_ord_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::OrderedInclude, false>
+{
+    return RegistryView<T, RVMode::OrderedInclude, false>(registry, std::forward<U>(elements));
+}
 
 } // namespace bevarmejo
