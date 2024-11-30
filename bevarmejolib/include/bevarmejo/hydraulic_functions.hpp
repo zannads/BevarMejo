@@ -27,7 +27,7 @@ namespace bevarmejo {
     // aux::QuantitySeries<double> head_deficiency(const wds::UserDefinedElementsGroup<wds::Junction>& a_junctions, const double min_head); // calling the vectorized version
     // aux::QuantitySeries<double> head_deficiency(const wds::UserDefinedElementsGroup<wds::Junction>& a_junctions, const std::vector<double>& min_head);
     
-    double tanks_operational_levels_use(WDS::TanksView a_tanks);
+    double tanks_operational_levels_use(InputIncludingRegistryView<WDS::Tank> a_tanks);
 
     // TODO: functions not returning a bool but a value propotional to the mismatch between the minimum pressure and the actual pressure
 

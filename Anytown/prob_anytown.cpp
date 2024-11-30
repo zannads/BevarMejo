@@ -1352,7 +1352,7 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 }
 
 // ------------------- 2nd level ------------------- //
-std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
 {
 // Structure of the decision variables:
 // [35 pipes x [action, pra]
@@ -1375,7 +1375,7 @@ std::pair<std::vector<double>, std::vector<double>> fep1::bounds__exis_pipes(WDS
 
 	return std::make_pair(lb, ub);
 }
-std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(WDS::PipesView exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
 {
 // Structure of the decision variables:
 // [35 pipes x action]
@@ -1391,7 +1391,7 @@ std::pair<std::vector<double>, std::vector<double>> fep2::bounds__exis_pipes(WDS
 	return std::make_pair(std::vector<double>(n_dvs, 0), std::vector<double>(n_dvs, n_actions-1));
 }
 
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(WDS::PipesView new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrderedRegistryView<WDS::Pipe> new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs)
 {
 // Structure of the decision variables:
 // 6 pipes x [pra]
@@ -1424,7 +1424,7 @@ std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const WDS::Pum
 	return std::make_pair(lb, ub);
 }
 
-std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(WDS::JunctionsView tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs)
+std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs)
 {
 // Structure of the decision variables:
 // 2 tanks x [tpl, tvol]
