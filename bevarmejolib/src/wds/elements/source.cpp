@@ -47,9 +47,16 @@ void Source::clear_results()
 
 void Source::retrieve_EN_results()
 {
-    inherited::retrieve_EN_results();
+    this->__retrieve_EN_results();
 
+    inherited::retrieve_EN_results();
+}
+
+void Source::__retrieve_EN_results()
+{
     assert( m__en_index > 0 );
+    assert( m__wds.ph() != nullptr );
+
     auto ph = m__wds.ph();
     auto t = m__wds.current_result_time();
 

@@ -88,10 +88,11 @@ public:
     virtual void clear_results() override;
 
     void retrieve_EN_index() override final;
-
     virtual void retrieve_EN_properties() override;
-
     virtual void retrieve_EN_results() override;
+private:
+    void __retrieve_EN_properties();
+    void __retrieve_EN_results();
 
     void from_node(Node_ptr a_node);
 

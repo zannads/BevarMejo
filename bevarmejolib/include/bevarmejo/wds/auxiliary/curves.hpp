@@ -5,6 +5,7 @@
 
 namespace bevarmejo::wds
 {
+
 using GenericCurve = SpecificCurve<double, double>;
 extern template struct TypeTraits<GenericCurve>;
 

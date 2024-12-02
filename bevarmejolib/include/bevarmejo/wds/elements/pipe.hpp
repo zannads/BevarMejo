@@ -79,6 +79,8 @@ public:
 /*------- Modifiers -------*/
 public:
     void retrieve_EN_properties() override;
+private:
+    void __retrieve_EN_properties();
 
 }; // class Pipe
 

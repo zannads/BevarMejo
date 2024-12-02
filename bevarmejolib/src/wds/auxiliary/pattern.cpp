@@ -44,6 +44,7 @@ void Pattern::retrieve_EN_index()
 void Pattern::retrieve_EN_properties()
 {
     assert(m__en_index > 0);
+    assert(m__wds.ph() != nullptr);
 
     int len = 0;
     int errorcode = EN_getpatternlen(m__wds.ph(), m__en_index, &len);

@@ -98,8 +98,10 @@ public:
     virtual void clear_results() override;
 
     virtual void retrieve_EN_properties() override;
-
     virtual void retrieve_EN_results() override;
+private:
+    void __retrieve_EN_properties();
+    void __retrieve_EN_results();
 
 }; // class DimensionedLink
 

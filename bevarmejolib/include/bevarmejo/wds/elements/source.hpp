@@ -81,6 +81,8 @@ public:
     virtual void clear_results() override;
 
     virtual void retrieve_EN_results() override;
+private:
+    void __retrieve_EN_results();
 }; // class Source
     
 } // namespace bevarmejo::wds

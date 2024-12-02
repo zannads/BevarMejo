@@ -106,11 +106,13 @@ public:
     virtual void clear_results() override;
 
     void retrieve_EN_index() override final;
-
     virtual void retrieve_EN_properties() override;
-
     virtual void retrieve_EN_results() override;
+private:
+    void __retrieve_EN_properties();
+    void __retrieve_EN_results();
 
+public:
     void x_coord(double x);
 
     void y_coord(double y);
@@ -119,9 +121,9 @@ public:
 
     void z_coord(double z);
 
-    void connect_link(Link_ptr link);
+    void connect_link(Link_ptr a_link);
 
-    void disconnect_link(Link_ptr link);
+    void disconnect_link(Link_ptr a_link);
 
 }; // class Node
 

@@ -1,107 +1,86 @@
 #include <cassert>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
-#include <variant>
 
 #include "epanet2_2.h"
 #include "types.h"
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "junction.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-Junction::Junction(const std::string& id, const WaterDistributionSystem& wds) : 
-    inherited(id, wds),
+/*------- Member functions -------*/
+// (constructor)
+Junction::Junction(const WaterDistributionSystem& wds, const EN_Name_t& name) :
+    inherited(wds, name),
     m__demands(),
     m__demand(wds.time_series(label::__RESULTS_TS)),
     m__consumption(wds.time_series(label::__RESULTS_TS)),
-    m__undelivered_demand(wds.time_series(label::__RESULTS_TS)) { }
+    m__undelivered_demand(wds.time_series(label::__RESULTS_TS))
+{ }
 
-// Copy constructor
-Junction::Junction(const Junction& other) : 
-    inherited(other),
-    m__demands(other.m__demands),
-    m__demand(other.m__demand),
-    m__consumption(other.m__consumption),
-    m__undelivered_demand(other.m__undelivered_demand) { }
+/*------- Operators -------*/
 
-// Move constructor
-Junction::Junction(Junction&& rhs) noexcept : 
-    inherited(std::move(rhs)),
-    m__demands(std::move(rhs.m__demands)),
-    m__demand(std::move(rhs.m__demand)),
-    m__consumption(std::move(rhs.m__consumption)),
-    m__undelivered_demand(std::move(rhs.m__undelivered_demand)) { }
-
-// Copy assignment operator
-Junction& Junction::operator=(const Junction& rhs) {
-    if (this != &rhs) {
-        inherited::operator=(rhs);
-
-        m__demands = rhs.m__demands;
-        m__demand = rhs.m__demand;
-        m__consumption = rhs.m__consumption;
-        m__undelivered_demand = rhs.m__undelivered_demand;
-    }
-    return *this;
+/*------- Element access -------*/
+const char* Junction::type_name() const
+{
+    return self_traits::name;
 }
 
-// Move assignment operator
-Junction& Junction::operator=(Junction&& rhs) noexcept {
-    if (this != &rhs) {
-        inherited::operator=(std::move(rhs));
-
-        m__demands = std::move(rhs.m__demands);
-        m__demand = std::move(rhs.m__demand);
-        m__consumption = std::move(rhs.m__consumption);
-        m__undelivered_demand = std::move(rhs.m__undelivered_demand);
-    }
-    return *this;
+unsigned int Junction::type_code() const
+{
+    return self_traits::code;
 }
 
-Junction::FlowSeries& Junction::demand(const std::string &a_category) {
-    return m__demands.at(a_category);
+/*------- Capacity -------*/
+
+/*------- Modifiers -------*/
+void Junction::clear_results()
+{
+    inherited::clear_results();
+
+    m__demand.clear();
+    m__consumption.clear();
+    m__undelivered_demand.clear();
 }
 
-const Junction::FlowSeries& Junction::demand(const std::string &a_category) const {
-    return m__demands.at(a_category);
+void Junction::retrieve_EN_properties()
+{
+    this->__retrieve_EN_properties();
+
+    inherited::retrieve_EN_properties();
 }
 
-const bool Junction::has_demand() const {
-    return !m__demands.empty();
-}
+void Junction::__retrieve_EN_properties()
+{
+    assert(m__en_index > 0);
+    assert(m__wds.ph() != nullptr);
 
-void Junction::__retrieve_EN_properties(EN_Project ph)  {
-    inherited::__retrieve_EN_properties(ph);
+    auto ph = m__wds.ph();
 
     int n_demands= 0;
-    int errorcode= EN_getnumdemands(ph, this->index(), &n_demands);
+    int errorcode= EN_getnumdemands(ph, m__en_index, &n_demands);
     assert(errorcode < 100);
 
     for (std::size_t i= 1; i <= n_demands; ++i) {
         double base_demand= 0.0;
-        errorcode= EN_getbasedemand(ph, this->index(), i, &base_demand);
+        errorcode= EN_getbasedemand(ph, m__en_index, i, &base_demand);
         assert(errorcode < 100);
 
         int pattern_index= 0;
-        errorcode= EN_getdemandpattern(ph, this->index(), i, &pattern_index);
+        errorcode= EN_getdemandpattern(ph, m__en_index, i, &pattern_index);
         assert(errorcode < 100);
 
         char __pattern_id[EN_MAXID+1];
@@ -110,7 +89,7 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
         std::string pattern_id(__pattern_id);
 
         char __demand_category[EN_MAXID+1];
-        errorcode= EN_getdemandname(ph, this->index(), i, __demand_category);
+        errorcode= EN_getdemandname(ph, m__en_index, i, __demand_category);
         assert(errorcode < 100);
         std::string demand_category(__demand_category);
 
@@ -142,23 +121,40 @@ void Junction::__retrieve_EN_properties(EN_Project ph)  {
     }   
 }
 
-void Junction::retrieve_results(EN_Project ph, long t=0) {
-    inherited::retrieve_results(ph, t);
+void Junction::retrieve_EN_results()
+{
+    this->__retrieve_EN_results();
 
-    int errorcode = 0;
+    inherited::retrieve_EN_results();
+}
+
+void Junction::__retrieve_EN_results()
+{
+    assert(m__en_index > 0);
+    assert(m__wds.ph() != nullptr);
+
+    auto ph = m__wds.ph();
+    auto t = m__wds.current_result_time();
+
     double d_demand = 0;
-    double d_dem_deficit = 0;
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &d_demand);
+    int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &d_demand);
     if (errorcode > 100)
-        throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
+        __format_and_throw<std::runtime_error>("Junction", "retrieve_EN_results", "Error retrieving results of junction.",
+            "Property: EN_DEMAND",
+            "Error code: ", errorcode,
+            "Junction ID: ", m__name);
 
     if (ph->parser.Unitsflag != LPS)
         d_demand = epanet::convert_flow_to_L_per_s(ph, d_demand);
     m__demand.commit(t, d_demand);
 
-    errorcode = EN_getnodevalue(ph, index(), EN_DEMANDDEFICIT, &d_dem_deficit);
+    double d_dem_deficit = 0;
+    errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMANDDEFICIT, &d_dem_deficit);
     if (errorcode > 100)
-        throw std::runtime_error("Error retrieving demand deficit for node " + id()+"\n");
+        __format_and_throw<std::runtime_error>("Junction", "retrieve_EN_results", "Error retrieving results of junction.",
+            "Property: EN_DEMANDDEFICIT",
+            "Error code: ", errorcode,
+            "Junction ID: ", m__name);
 
     if (ph->parser.Unitsflag != LPS)
         d_dem_deficit = epanet::convert_flow_to_L_per_s(ph, d_dem_deficit);
@@ -170,13 +166,6 @@ void Junction::retrieve_results(EN_Project ph, long t=0) {
     m__consumption.commit(t, d_demand-d_dem_deficit);
 }
 
-void Junction::clear_results() {
-    inherited::clear_results();
 
-    m__demand.clear();
-    m__consumption.clear();
-    m__undelivered_demand.clear();
-}
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds

@@ -1,15 +1,13 @@
 #include <cassert>
 #include <string>
-#include <stdexcept>
-#include <utility>
 
 #include "epanet2_2.h"
 #include "types.h"
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
-#include "bevarmejo/wds/auxiliary/time_series.hpp"
+#include "bevarmejo/bemexcept.hpp"
+
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
@@ -20,100 +18,114 @@
 
 #include "link.hpp"
 
-namespace bevarmejo {
-namespace wds {
-
-Link::Link(const std::string& id, const WaterDistributionSystem& wds) : 
-    inherited(id, wds),
-    _node_start_(nullptr),
-    _node_end_(nullptr),
-    m__initial_status(wds.time_series(label::__CONSTANT_TS)),
-    m__flow(wds.time_series(label::__RESULTS_TS)) { }
-
-// Copy constructor
-Link::Link(const Link& other) : 
-    inherited(other),
-    _node_start_(nullptr),
-    _node_end_(nullptr),
-    m__initial_status(other.m__initial_status),
-    m__flow(other.m__flow) { }
-
-// Move constructor
-Link::Link(Link&& rhs) noexcept : 
-    inherited(std::move(rhs)),
-    _node_start_(nullptr),
-    _node_end_(nullptr),
-    m__initial_status(std::move(rhs.m__initial_status)),
-    m__flow(std::move(rhs.m__flow)) { }
-
-// Copy assignment operator
-Link& Link::operator=(const Link& rhs) {
-    if (this != &rhs) {
-        inherited::operator=(rhs);
-        m__initial_status = rhs.m__initial_status;
-        m__flow = rhs.m__flow;
-    }
-    return *this;
-}
-
-// Move assignment operator
-Link& Link::operator=(Link&& rhs) noexcept {
-    if (this != &rhs) {
-        inherited::operator=(std::move(rhs));
-        m__initial_status = std::move(rhs.m__initial_status);
-        m__flow = std::move(rhs.m__flow);
-    }
-    return *this;
-}
-
-void Link::retrieve_index(EN_Project ph) {
-    int en_index = 0;
-    int errorcode = 0;
-    errorcode = EN_getlinkindex(ph, id().c_str(), &en_index);
-    if (errorcode > 100) 
-        throw std::runtime_error("Error retrieving index of link " + id() + " from EPANET project.");
-
-    this->index(en_index);
-}
-
-void Link::__retrieve_EN_properties(EN_Project ph)
+namespace bevarmejo::wds
 {
-    assert(index() != 0);
+
+/*------- Member functions -------*/
+// (constructor)
+Link::Link(const WaterDistributionSystem& wds, const EN_Name_t& name) : 
+    inherited(wds, name),
+    m__from_node(nullptr),
+    m__to_node(nullptr),
+    m__initial_status(wds.time_series(label::__CONSTANT_TS)),
+    m__flow(wds.time_series(label::__RESULTS_TS))
+{ }
+
+/*------- Operators -------*/
+
+/*------- Element access -------*/
+
+/*------- Capacity -------*/
+
+/*------- Modifiers -------*/
+void Link::clear_results()
+{
+    inherited::clear_results();
+
+    m__flow.clear();
+}
+
+void Link::retrieve_EN_index()
+{
+    assert(m__wds.ph() != nullptr);
+
+    int en_index = 0;
+    int errorcode = EN_getlinkindex(m__wds.ph(), m__name.c_str(), &en_index);
+    if (errorcode > 100) 
+        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_index", "Error retrieving index of link.",
+            "Error code: ", errorcode,
+            "Link ID: ", m__name);
+
+    m__en_index = en_index;
+}
+
+void Link::retrieve_EN_properties()
+{
+    this->__retrieve_EN_properties();
+
+    inherited::retrieve_EN_properties();
+}
+
+void Link::__retrieve_EN_properties()
+{
+    assert(m__en_index != 0);
+    assert(m__wds.ph() != nullptr);
+
+    auto ph = m__wds.ph();
 
     // get the initial status
-    double d_initial_status = 0;
-    int errorcode = EN_getlinkvalue(ph, index(), EN_INITSTATUS, &d_initial_status);
+    double val = 0;
+    int errorcode = EN_getlinkvalue(ph, m__en_index, EN_INITSTATUS, &val);
     if (errorcode > 100) 
-        throw std::runtime_error("Error retrieving initial status of link " + id() + " from EPANET project.");
+        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_properties", "Error retrieving properties of link.",
+            "Property: EN_INITSTATUS",
+            "Error code: ", errorcode,
+            "Link ID: ", m__name);
 
-    m__initial_status= d_initial_status;
+    m__initial_status = val;
 
     // Assign Nodes
-    int node1_idx= 0;
-    int node2_idx= 0;
-    errorcode = EN_getlinknodes(ph, this->index(), &node1_idx, &node2_idx);
-    assert(errorcode <= 100);
-
-    std::string node1_id = epanet::get_node_id(ph, node1_idx);
-    std::string node2_id = epanet::get_node_id(ph, node2_idx);
+    int node_from_idx= 0;
+    int node_to_idx= 0;
+    errorcode = EN_getlinknodes(ph, this->m__en_index, &node_from_idx, &node_to_idx);
+    if (errorcode > 100) 
+        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_properties", "Error retrieving properties of link.",
+            "Property: EN_LINKNODES",
+            "Error code: ", errorcode,
+            "Link ID: ", m__name);
 
     // Install the link between the nodes
-    start_node(m__wds.nodes().get(node1_id).get());
-    end_node(m__wds.nodes().get(node2_id).get());
+    m__from_node = m__wds.nodes().get(epanet::get_node_id(ph, node_from_idx)).get();
+    m__to_node = m__wds.nodes().get(epanet::get_node_id(ph, node_to_idx)).get();
 }
 
-void Link::retrieve_results(EN_Project ph, long t) {
-    assert(index() != 0);
-    int errorcode = 0;
-    double d_flow = 0;
-    errorcode = EN_getlinkvalue(ph, index(), EN_FLOW, &d_flow);
+void Link::retrieve_EN_results()
+{
+    this->__retrieve_EN_results();
+
+    inherited::retrieve_EN_results();
+}
+
+void Link::__retrieve_EN_results()
+{
+    assert(m__en_index != 0);
+    assert(m__wds.ph() != nullptr);
+
+    auto ph = m__wds.ph();
+    auto t = m__wds.current_result_time();
+
+    double val = 0;
+    int errorcode = EN_getlinkvalue(ph, m__en_index, EN_FLOW, &val);
     if (errorcode > 100) 
-        throw std::runtime_error("Error retrieving flow of link " + id() + " from EPANET project.");
+        __format_and_throw<std::runtime_error>("Link", "retrieve_results", "Error retrieving results of link.",
+            "Property: EN_FLOW",
+            "Error code: ", errorcode,
+            "Link ID: ", m__name);
     
     if (ph->parser.Flowflag != LPS)
-        d_flow = epanet::convert_flow_to_L_per_s(ph, d_flow);
+        val = epanet::convert_flow_to_L_per_s(ph, val);
 
-    m__flow.commit(t, d_flow);
+    m__flow.commit(t, val);
 }
 
 void Link::clear_results() {
@@ -122,5 +134,4 @@ void Link::clear_results() {
     m__flow.clear();
 }
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds

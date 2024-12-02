@@ -128,8 +128,11 @@ public:
     void clear_results() override;
 
     void retrieve_EN_properties() override;
-
     void retrieve_EN_results() override;
+private:
+    void __retrieve_EN_properties();
+    void __retrieve_EN_results();
+
 }; // class Tank
 
 } // namespace bevarmejo::wds
