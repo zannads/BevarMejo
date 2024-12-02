@@ -14,9 +14,19 @@
 namespace bevarmejo::wds
 {
 
+/*------- Member functions -------*/
+// (constructor)
 Curve::Curve(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     Element(wds, name)
 { }
+
+/*------- Operators -------*/
+
+/*------- Element access -------*/
+EN_Project Curve::pass_ph() const noexcept
+{
+    return m__wds.ph();
+}
 
 void Curve::retrieve_EN_index()
 {

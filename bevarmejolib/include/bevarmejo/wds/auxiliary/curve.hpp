@@ -3,14 +3,12 @@
 
 #include <cassert>
 #include <map>
-#include <memory>
 #include <string>
 #include <utility>
 
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo::wds
 {
@@ -64,6 +62,7 @@ public:
 
 /*------- Element access -------*/
 public:
+    EN_Project pass_ph() const noexcept; // Pass the EPANET project handle outside the class to break the dependency cycle.
 
 /*------- Capacity -------*/
 public:
@@ -74,20 +73,7 @@ public:
 
 }; // class Curve
 
-// Default trait for the curve (name and type (code))
-template <typename X, typename Y>
-class SpecificCurve;
-
-template <typename X, typename Y>
-struct TypeTraits<SpecificCurve<X, Y>>
-{
-    static constexpr const char* name = "SpecificCurve";
-    static constexpr unsigned int code = 21;
-    static constexpr bool is_EN_complete = false;
-};
-
-
-template <typename X, typename Y>
+template <typename X, typename Y, typename CT>
 class SpecificCurve : public Curve
 {
     // WDS SpecificCurve
@@ -98,7 +84,7 @@ class SpecificCurve : public Curve
 
 /*------- Member types -------*/
 public:
-    using self_type = SpecificCurve<X, Y>;
+    using self_type = SpecificCurve<X, Y, CT>;
     using self_traits = TypeTraits<self_type>;
     using inherited = Curve;
     using Container = std::map<X, Y>;
@@ -184,16 +170,17 @@ public:
     void retrieve_EN_properties() override final
     {
         assert(m__en_index > 0 && "The index is not set.");
-        assert(m__wds.ph() != nullptr && "The EPANET project handle is not set.");
+        auto ph = inherited::pass_ph();
+        assert(ph != nullptr && "The EPANET project handle is not set.");
 
         int n_points;
-        int errorcode = EN_getcurvelen(m__wds.ph(), m__en_index, &n_points);
+        int errorcode = EN_getcurvelen(ph, m__en_index, &n_points);
         assert(errorcode <= 100);
 
         for (auto i = 1; i <= n_points; ++i)
         {
             double x, y;
-            errorcode = EN_getcurvevalue(m__wds.ph(), m__en_index, i, &x, &y);
+            errorcode = EN_getcurvevalue(ph, m__en_index, i, &x, &y);
             assert(errorcode <= 100);
 
             m__curve.emplace(x, y);
