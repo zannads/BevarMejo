@@ -52,7 +52,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Link() = delete;
     Link(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
     
@@ -93,7 +93,7 @@ public:
 private:
     void __retrieve_EN_properties();
     void __retrieve_EN_results();
-
+public:
     void from_node(Node_ptr a_node);
 
     void to_node(Node_ptr a_node);

@@ -73,7 +73,7 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
 
     // 1.0 Load fundamental time information and options
     // 1.1 Load time information
-    this->load_EN_time_settings(ph_);
+    this->load_EN_time_settings();
 
     // 1.3 Load analysis options
     // TODO: this->load_EN_analysis_options(ph_);
@@ -82,16 +82,16 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     // else m__config_options.save_all_hsteps = true;
 
     // 2.0 Load the auxiliary EPANET elements
-    this->load_EN_curves(ph_);
-    this->load_EN_patterns(ph_);
+    this->load_EN_curves();
+    this->load_EN_patterns();
     
     // 3.0 Load the network
-    this->load_EN_nodes(ph_);
-    this->load_EN_links(ph_);
+    this->load_EN_nodes();
+    this->load_EN_links();
 
     // TODO: 4.0 Load the rest of the elements
-    this->load_EN_controls(ph_);
-    this->load_EN_rules(ph_);
+    this->load_EN_controls();
+    this->load_EN_rules();
     
     return;
 }
@@ -200,23 +200,23 @@ void WaterDistributionSystem::load_EN_curves()
             case EN_GENERIC_CURVE:
                 io::stream_out(std::cout, 
                     "Curve with ID \""+std::string(curve_id)+"\" is a generic curve and will not link to anything.\n");
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::GenericCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::GenericCurve>(curve_id, *this, std::string(curve_id)));
                 break;
 
             case EN_VOLUME_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::VolumeCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::VolumeCurve>(curve_id, *this, curve_id));
                 break;
 
             case EN_PUMP_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::PumpCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::PumpCurve>(curve_id, *this, curve_id));
                 break;
 
             case EN_EFFIC_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::EfficiencyCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::EfficiencyCurve>(curve_id, *this, curve_id));
                 break;
 
             case EN_HLOSS_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::HeadlossCurve>(curve_id, curve_id));
+                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::HeadlossCurve>(curve_id, *this, curve_id));
                 break;
 
             default:
@@ -246,7 +246,7 @@ void WaterDistributionSystem::load_EN_patterns()
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        auto irs = m__aux_elements_.patterns.emplace(pattern_id, pattern_id);
+        auto irs = m__aux_elements_.patterns.emplace(pattern_id, *this, std::string(pattern_id));
         if (irs.inserted)
         {
             // Actually load the pattern data
@@ -282,7 +282,7 @@ void WaterDistributionSystem::load_EN_nodes()
             // then if it worked insert in the specific container.
             // double node_id because my SystemElements still need the id...
             using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
-            auto irtn = _nodes_.emplace<mapped_type>(node_id, node_id, *this);
+            auto irtn = _nodes_.emplace<mapped_type>(node_id, *this, node_id);
             if (!irtn.inserted)
                 return false;
 
@@ -356,7 +356,7 @@ void WaterDistributionSystem::load_EN_links()
         {
             // See load_EN_nodes for the explanation of this function.
             using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
-            auto irtn = _links_.emplace<mapped_type>(link_id, link_id, *this);
+            auto irtn = _links_.emplace<mapped_type>(link_id, *this, link_id);
             if (!irtn.inserted)
                 return false;
 

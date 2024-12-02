@@ -75,6 +75,8 @@ void Tank::__retrieve_EN_properties()
     assert(m__en_index > 0);
     assert(m__wds.ph() != nullptr);
 
+    auto ph = m__wds.ph();
+
     double val = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DIAMETER, &val);
     if (errorcode > 100)
@@ -188,7 +190,7 @@ void Tank::retrieve_EN_results()
     inherited::retrieve_EN_results();
 }
 
-void Tank::retrieve_EN_results()
+void Tank::__retrieve_EN_results()
 {
     assert(m__en_index > 0);
     assert(m__wds.ph() != nullptr);
@@ -199,7 +201,7 @@ void Tank::retrieve_EN_results()
     double val;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKLEVEL, &val);
     if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_results", "Error retrieving results of tank.",
+        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_results", "Error retrieving results of tank.",
             "Property: EN_TANKLEVEL",
             "Error code: ", errorcode,
             "Tank ID: ", m__name);
@@ -210,7 +212,7 @@ void Tank::retrieve_EN_results()
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKVOLUME, &val);
     if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_results", "Error retrieving results of tank.",
+        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_results", "Error retrieving results of tank.",
             "Property: EN_TANKVOLUME",
             "Error code: ", errorcode,
             "Tank ID: ", m__name);

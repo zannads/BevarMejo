@@ -62,7 +62,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Tank() = delete;
     Tank(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 

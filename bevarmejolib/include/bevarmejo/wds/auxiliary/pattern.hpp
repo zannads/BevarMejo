@@ -58,7 +58,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Pattern() = delete;
     Pattern(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
@@ -148,7 +148,6 @@ public:
 /*--- Modifiers ---*/
 public:
     void retrieve_EN_index() override;
-private:
     void retrieve_EN_properties() override;
 
     void clear() noexcept { m__multipliers.clear(); }

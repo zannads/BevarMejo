@@ -34,6 +34,13 @@ Node::Node(const WaterDistributionSystem& wds, const EN_Name_t& name) :
 /*------- Operators -------*/
 
 /*------- Element access -------*/
+// === Read/Write properties ===
+
+// === Read-only properties ===
+auto Node::connected_links() const -> const ConnectedLinks&
+{
+    return m__links;
+}
 
 /*------- Capacity -------*/
 

@@ -42,7 +42,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     NetworkElement() = delete;
     NetworkElement(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
    

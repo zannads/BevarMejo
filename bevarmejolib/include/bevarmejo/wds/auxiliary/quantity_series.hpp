@@ -111,26 +111,36 @@ public:
 
     QuantitySeries( const TimeSeries& time_steps ) : 
         inherited(time_steps), 
-        m__values() {
-            this->reserve();
-        }
+        m__values()
+    {
+        this->reserve();
+    }
 
     QuantitySeries( const TimeSeries& time_steps, 
                     const_reference a_value) : 
         inherited(time_steps),
-        m__values() {
-            // I have faith in the TimeSeries to be always well defined
-            m__values.assign(m__time_series.size(), a_value);
-        }
+        m__values()
+    {
+        // I have faith in the TimeSeries to be always well defined
+        m__values.assign(m__time_series.size(), a_value);
+    }
 
     QuantitySeries( const TimeSeries& time_steps, const container& values) : 
         inherited(time_steps),
-        m__values(values) {
-            this->reserve();
-        }
-
+        m__values(values)
+    {
+        this->reserve();
+    }
     QuantitySeries(const QuantitySeries& other) = default;
     QuantitySeries(QuantitySeries&& other) noexcept = default;
+    explicit QuantitySeries(const TimeSeries& time_steps, const QuantitySeries& other) : 
+        inherited(time_steps),
+        m__values(other.m__values)
+    {
+        this->reserve();
+    }
+
+
     QuantitySeries& operator=(const QuantitySeries& other) {
         if (this != &other) {
             // You can't reassign the TimeSeries of the inherited class because is const reference

@@ -49,7 +49,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Junction() = delete;
     Junction(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 

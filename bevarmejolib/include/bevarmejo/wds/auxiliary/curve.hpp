@@ -45,7 +45,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Curve() = delete;
     Curve(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
     
@@ -97,7 +97,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     SpecificCurve() = delete;
     SpecificCurve(const WaterDistributionSystem& wds, const EN_Name_t& name) : 
         inherited(wds, name),

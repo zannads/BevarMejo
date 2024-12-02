@@ -43,9 +43,12 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Pipe() = delete;
     Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
+    Pipe(const Pipe&) = delete;
+    Pipe(Pipe&&) = delete;
+    Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name, const Pipe& other);
     
 // (destructor)
 public:

@@ -60,7 +60,7 @@ protected:
     
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Node() = delete;
     Node(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
@@ -89,7 +89,7 @@ public:
     double& z_coord();
     double z_coord() const;
 
-    const ConnectedLinks& links() const;
+    const ConnectedLinks& connected_links() const;
 
     // === Read-only properties ===
     virtual bool has_demand() const = 0;

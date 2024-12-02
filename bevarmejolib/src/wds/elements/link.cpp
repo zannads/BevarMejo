@@ -117,7 +117,7 @@ void Link::__retrieve_EN_results()
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_FLOW, &val);
     if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Link", "retrieve_results", "Error retrieving results of link.",
+        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_results", "Error retrieving results of link.",
             "Property: EN_FLOW",
             "Error code: ", errorcode,
             "Link ID: ", m__name);
@@ -126,12 +126,6 @@ void Link::__retrieve_EN_results()
         val = epanet::convert_flow_to_L_per_s(ph, val);
 
     m__flow.commit(t, val);
-}
-
-void Link::clear_results() {
-    inherited::clear_results();
-
-    m__flow.clear();
 }
 
 } // namespace bevarmejo::wds

@@ -49,7 +49,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     DimensionedLink() = delete;
     DimensionedLink(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
     

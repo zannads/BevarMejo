@@ -47,7 +47,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Source() = delete;
     Source(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 

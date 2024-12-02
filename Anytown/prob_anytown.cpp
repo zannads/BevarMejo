@@ -667,7 +667,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			double old_pipe_roughness = pipe.roughness().value();
 			old_HW_coeffs.insert({id, old_pipe_roughness});
 
-			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
+			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
 			assert(errorcode <= 100);
 
 			pipe.roughness(bevarmejo::anytown::coeff_HW_cleaned);
@@ -687,7 +687,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			// retrieve the old property of the already existing pipe
 			int out_node1_idx = 0;
 			int out_node2_idx = 0;
-			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.index(), &out_node1_idx, &out_node2_idx);
+			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.EN_index(), &out_node1_idx, &out_node2_idx);
 			assert(errorcode <= 100);
 
 			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
@@ -710,7 +710,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			// errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
 			// assert(errorcode <= 100);
 			double link_length = 0.0;
-			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.index(), EN_LENGTH, &link_length);
+			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_LENGTH, &link_length);
 			assert(errorcode <= 100);
 			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_LENGTH, link_length);
 			assert(errorcode <= 100);
@@ -753,7 +753,7 @@ void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			double old_pipe_roughness = pipe.roughness().value();
 			old_HW_coeffs.insert({id, old_pipe_roughness});
 
-			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);
+			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);
 			assert(errorcode <= 100);
 
 			pipe.roughness(bevarmejo::anytown::coeff_HW_cleaned);
@@ -767,7 +767,7 @@ void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			// retrieve the old property of the already existing pipe
 			int out_node1_idx = 0;
 			int out_node2_idx = 0;
-			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.index(), &out_node1_idx, &out_node2_idx);
+			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.EN_index(), &out_node1_idx, &out_node2_idx);
 			assert(errorcode <= 100);
 
 			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
@@ -790,7 +790,7 @@ void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 			// errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
 			// assert(errorcode <= 100);
 			double link_length = 0.0;
-			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.index(), EN_LENGTH, &link_length);
+			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_LENGTH, &link_length);
 			assert(errorcode <= 100);
 			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_LENGTH, link_length);
 			assert(errorcode <= 100);
@@ -819,7 +819,7 @@ void apply_dv__new_pipes(WDS &anyt_wds, const std::vector<double> &dvs, const st
 		std::size_t alt_option = *curr_dv++;	
 
 		double diameter_in = pipes_alt_costs.at(alt_option).diameter_in;
-		int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.index(), EN_DIAMETER, diameter_in);
+		int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_DIAMETER, diameter_in);
 		assert(errorcode <= 100);
 
 		pipe.diameter(diameter_in*MperFT/12*1000); //save in mm
@@ -838,7 +838,7 @@ void apply_dv__pumps(WDS& anyt_wds, const std::vector<double>& dvs)
 	std::size_t i = 0;
 	for (auto&& [id, pump] : anyt_wds.pumps()) {
 		// set the pattern
-		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->index(), patterns[i].data(), patterns[i].size());
+		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), patterns[i].data(), patterns[i].size());
 		assert(errorcode <= 100);
 		++i;
 	}
@@ -934,13 +934,13 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 		assert(errco <= 100);
 
 		anytown.cache_indices();
-		assert(riser.index() != 0 && riser.index() == riser_idx);
+		assert(riser.EN_index() != 0 && riser.EN_index() == riser_idx);
 
 		// add them to the "TBR" net
 		anytown.id_sequence(label::__temp_elems).push_back(new_tank_id);
 		anytown.id_sequence(label::__temp_elems).push_back(riser_id);
 #ifdef DEBUGSIM
-		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->id(), 
+		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->EN_id(), 
 		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 		" Elev ", new_tank.elevation(),
 		" Min level ", new_tank.min_level().value(),
@@ -1138,7 +1138,7 @@ void fep1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 		else if (action_type == 1) // clean
 		{
 			// reset the HW coefficients
-			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
+			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
 			assert(errorcode <= 100);
 
 			pipe.roughness(old_HW_coeffs.at(id));
@@ -1149,7 +1149,7 @@ void fep1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 			// duplicate pipe has been named Dxx where xx is the original pipe name
 			auto dup_pipe_id = std::string("D")+id;
 
-			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			anytown.id_sequence(label::__temp_elems).erase(dup_pipe_id);
@@ -1177,7 +1177,7 @@ void fep2::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 		else if (dv == 1) // clean
 		{
 			// reset the HW coefficients
-			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
+			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
 			assert(errorcode <= 100);
 
 			pipe.roughness(old_HW_coeffs.at(id));
@@ -1188,7 +1188,7 @@ void fep2::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 			// duplicate pipe has been named Dxx where xx is the original pipe name
 			auto dup_pipe_id = std::string("D")+id;
 
-			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			anytown.id_sequence(label::__temp_elems).erase(dup_pipe_id);
@@ -1207,7 +1207,7 @@ void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs)
 	auto curr_dv = dvs.begin();
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
 	{
-		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.index(), EN_DIAMETER, bevarmejo::anytown::_nonexisting_pipe_diam_ft);
+		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::_nonexisting_pipe_diam_ft);
 		assert(errorcode <= 100);
 
 		pipe.diameter(bevarmejo::anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small small
@@ -1252,7 +1252,7 @@ void fnt1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs)
 		auto riser_id = std::string("Ris_")+std::to_string(i);
 
 		// remove the new tank and the the riser is automatically deleted 
-		int errorcode = EN_deletenode(anytown.ph_, anytown.tank(new_tank_id).index(), EN_UNCONDITIONAL);
+		int errorcode = EN_deletenode(anytown.ph_, anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
 		assert(errorcode <= 100);
 
 		anytown.id_sequence(label::__temp_elems).erase(new_tank_id);
@@ -1443,7 +1443,7 @@ std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::a
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
 		for (const auto& [id, pump] : prob.m__anytown->pumps()) {
-			auto pump_pattern_idx = pump.speed_pattern()->index();
+			auto pump_pattern_idx = pump.speed_pattern()->EN_index();
 			for (std::size_t i = 1; i <= 24; ++i) {
 				double val = 0.0;
 				int errorcode = EN_getpatternvalue(prob.m__anytown->ph_, pump_pattern_idx, i, &val);

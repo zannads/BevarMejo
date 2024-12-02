@@ -42,7 +42,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Reservoir() = delete;
     Reservoir(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 

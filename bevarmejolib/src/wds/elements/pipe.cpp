@@ -31,6 +31,11 @@ Pipe::Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     m__length(wds.time_series(label::__CONSTANT_TS))
 { }
 
+Pipe::Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name, const Pipe& other) :
+    inherited(wds, name), // This should be inherited(wds, name, other) // TODO: It should call the copy properties constructor.
+    m__length(wds.time_series(label::__CONSTANT_TS), other.m__length)
+{ }
+
 /*------- Operators -------*/
 
 /*------- Element access -------*/

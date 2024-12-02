@@ -451,7 +451,7 @@ template <typename N, typename... Args>
         "You are trying to insert a non-node element in the nodes collection.");
 
     // Have to pass the ID twice because the constructor of the element needs it.
-    auto irtn = _nodes_.emplace<N>(id, id, *this, std::forward<Args>(args)...);
+    auto irtn = _nodes_.emplace<N>(id, *this, id, std::forward<Args>(args)...);
 
     if (!irtn.inserted)
         __format_and_throw<std::invalid_argument>("WaterDistributionSystem::insert()", "Impossible to insert the element.",
@@ -520,7 +520,7 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
     check_node(to_node_it);
 
     // As for the nodes, you have to pass the ID twice because the constructor of the element needs it.
-    auto irtn = _links_.emplace<L>(id, id, *this, std::forward<Args>(args)...);
+    auto irtn = _links_.emplace<L>(id, *this, id, std::forward<Args>(args)...);
 
     if (!irtn.inserted)
         __format_and_throw<std::invalid_argument>("WaterDistributionSystem::install()", "Impossible to insert the element.",
@@ -529,10 +529,10 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
 
     // We know the nodes id are correct and exist, so we can connect the link
     // and later insert it in the specific collection.
-    irtn.iterator->start_node(_nodes_.get(from_node_id).get());
+    irtn.iterator->from_node(_nodes_.get(from_node_id).get());
     _nodes_.get(from_node_id)->connect_link(irtn.iterator.operator->().get());
 
-    irtn.iterator->end_node(_nodes_.get(to_node_it).get());
+    irtn.iterator->to_node(_nodes_.get(to_node_it).get());
     _nodes_.get(to_node_it)->connect_link(irtn.iterator.operator->().get());
 
     auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it, &irtn](auto& container) -> decltype(auto)
@@ -640,7 +640,7 @@ auto WaterDistributionSystem::duplicate(const ID& existing_link_id, const ID& ne
 {
     auto existing_link = _links_.get<L>(existing_link_id);
     return install<L>(new_link_id,
-        existing_link->from_node()->id(), existing_link->to_node()->id(),
+        existing_link->from_node()->EN_id(), existing_link->to_node()->EN_id(),
         *existing_link);
 }
 

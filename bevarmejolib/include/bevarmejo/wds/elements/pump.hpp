@@ -60,7 +60,7 @@ protected:
 
 /*------- Member functions -------*/
 // (constructor)
-protected:
+public:
     Pump() = delete;
     Pump(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 

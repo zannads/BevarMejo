@@ -306,7 +306,7 @@ auto WaterDistributionSystem::remove(const ID& id) -> size_type
     auto links_to_erase = it->connected_links();
 
     for (auto& p_link : links_to_erase)
-        n_removed += uninstall(p_link->id());
+        n_removed += uninstall(p_link->EN_id());
 
     assert(it->connected_links().empty());
 
@@ -365,11 +365,11 @@ auto WaterDistributionSystem::uninstall(const ID& id) -> size_type
         return n_removed;
 
     // The nodes should forget this link. Then simply erase it from all collections.
-    auto start_node_id = it->from_node()->id();
-    auto end_node_id = it->to_node()->id();
+    auto start_node_id = it->from_node()->EN_id();
+    auto end_node_id = it->to_node()->EN_id();
 
-    _nodes_.at(start_node_id).remove_link(it.operator->().get());
-    _nodes_.at(end_node_id).remove_link(it.operator->().get());
+    _nodes_.at(start_node_id).disconnect_link(it.operator->().get());
+    _nodes_.at(end_node_id).disconnect_link(it.operator->().get());
     
     n_removed = _links_.erase(id);
 
@@ -472,10 +472,10 @@ void WaterDistributionSystem::run_hydraulics()
             m__times.results().commit(t);
             
             for (const auto& [id, node] : _nodes_)
-                node.retrieve_results(ph_, t);
+                node.retrieve_EN_results();
             
             for (const auto& [id, link] : _links_)
-                link.retrieve_results(ph_, t);
+                link.retrieve_EN_results();
         }
 
         errorcode = EN_nextH(ph_, &delta_t);

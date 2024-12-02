@@ -513,7 +513,10 @@ private:
             __entry__(std::forward<String>(name), std::make_shared<T>(std::forward<Args>(args)...)));
     }
     template <typename U, class String, typename... Args,
-                typename = std::enable_if_t<!std::is_constructible_v<T, Args...>>>
+                typename = std::enable_if_t<
+                    !std::is_constructible_v<T, Args...> && 
+                    std::is_constructible_v<U, Args...>
+                >>
     insert_return_type emplace(const_iterator pos, String&& name, Args&&... args)
     {
         static_assert(
