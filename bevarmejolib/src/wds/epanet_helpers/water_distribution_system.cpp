@@ -225,7 +225,7 @@ void WaterDistributionSystem::load_EN_curves()
         if (valid(p_curve))
         {
             // Actually load the curve data
-            p_curve->retrieve_index();
+            p_curve->retrieve_EN_index();
             p_curve->retrieve_EN_properties();
         }
         else // it was already in (and I printed the message in the lambda)
@@ -250,7 +250,7 @@ void WaterDistributionSystem::load_EN_patterns()
         if (irs.inserted)
         {
             // Actually load the pattern data
-            irs.iterator->retrieve_index();
+            irs.iterator->retrieve_EN_index();
             irs.iterator->retrieve_EN_properties();
         }
         else // it was already in (I need to print the message this time)
@@ -324,7 +324,7 @@ void WaterDistributionSystem::load_EN_nodes()
             // the code because of the return type of the insert method and the fact that it 
             // returns an iterator which I have not made default constructible.
             auto p_node = _nodes_.get(node_id);
-            p_node->retrieve_index();
+            p_node->retrieve_EN_index();
             p_node->retrieve_EN_properties();
         }
         else // it was already in
@@ -387,7 +387,7 @@ void WaterDistributionSystem::load_EN_links()
         {
             // Actually load the link data
             auto p_link = _links_.get(link_id);
-            p_link->retrieve_index();
+            p_link->retrieve_EN_index();
             p_link->retrieve_EN_properties();
         }
         else // it was already in
@@ -440,7 +440,7 @@ void WaterDistributionSystem::cache_indices()
     auto cache_index = [this](auto& container)
     {
         for (auto&& [id, element] : container)
-            element.retrieve_index();
+            element.retrieve_EN_index();
     };
 
     cache_index(m__aux_elements_.patterns);

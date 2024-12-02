@@ -1,84 +1,81 @@
-#include <cassert>
 #include <string>
-#include <variant>
 
 #include "epanet2_2.h"
 #include "types.h"
+
+#include "bevarmejo/bemexcept.hpp"
+
+#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/elements/network_element.hpp"
+#include "bevarmejo/wds/elements/node.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "source.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-Source::Source(const std::string& id, const WaterDistributionSystem& wds) : 
-    inherited(id, wds),
+/*------- Member functions -------*/
+// (constructor)
+Source::Source(const WaterDistributionSystem& wds, const EN_Name_t& name) :
+    inherited(wds, name),
     m__inflow(wds.time_series(label::__RESULTS_TS)),
-    m__source_elevation(wds.time_series(label::__RESULTS_TS)) { }
+    m__source_elevation(wds.time_series(label::__RESULTS_TS))
+{ }
 
-// Copy constructor
-Source::Source(const Source& other) : 
-    inherited(other),
-    m__inflow(other.m__inflow),
-    m__source_elevation(other.m__source_elevation) { }
+/*------- Element access -------*/
+// === Read/Write properties ===
 
-// Move constructor
-Source::Source(Source&& rhs) noexcept : 
-    inherited(std::move(rhs)),
-    m__inflow(std::move(rhs.m__inflow)),
-    m__source_elevation(std::move(rhs.m__source_elevation)) { }
-
-// Copy assignment operator
-Source& Source::operator=(const Source& rhs) {
-    if (this != &rhs) {
-        inherited::operator=(rhs);
-        
-        m__inflow = rhs.m__inflow;
-        m__source_elevation = rhs.m__source_elevation;
-    }
-    return *this;
+// === Read-only properties ===
+bool Source::has_demand() const
+{
+    return false;
 }
 
-// Move assignment operator
-Source& Source::operator=(Source&& rhs) noexcept {
-    if (this != &rhs) {
-        inherited::operator=(std::move(rhs));
+/*------- Capacity -------*/
 
-        m__inflow = std::move(rhs.m__inflow);
-        m__source_elevation = std::move(rhs.m__source_elevation);
-    }
-    return *this;
-}
+/*------- Modifiers -------*/
 
-void Source::retrieve_results(EN_Project ph, long t) {
-    inherited::retrieve_results(ph, t);
-    assert(index()!= 0);
-
-    double val = 0.0;
-    int errorcode = EN_getnodevalue(ph, index(), EN_DEMAND, &val);
-    if (errorcode > 100)
-        throw std::runtime_error("Error retrieving demand for node " + id()+"\n");
-
-    if (ph->parser.Flowflag != LPS)
-        val = epanet::convert_flow_to_L_per_s(ph, val);
-    m__inflow.commit(t, val);
-
-    errorcode = EN_getnodevalue(ph, index(), EN_HEAD, &val);
-    if (errorcode > 100)
-        throw std::runtime_error("Error retrieving elevation for node " + id()+"\n");
-
-    if (ph->parser.Unitsflag == US)
-        val *= MperFT;
-    m__source_elevation.commit(t, val);
-}
-
-void Source::clear_results() {
+void Source::clear_results()
+{
     inherited::clear_results();
 
     m__inflow.clear();
     m__source_elevation.clear();
 }
 
-} // namespace wds
-} // namespace bevarmejo
+void Source::retrieve_EN_results()
+{
+    inherited::retrieve_EN_results();
+
+    assert( m__en_index > 0 );
+    auto ph = m__wds.ph();
+    auto t = m__wds.current_result_time();
+
+    double val = 0.0;
+    int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &val);
+    if (errorcode > 100)
+        __format_and_throw<std::runtime_error>("Source", "retrieve_EN_results", "Error retrieving the results of the source.",
+            "Property: EN_DEMAND",
+            "Error code: ", errorcode,
+            "Source ID: ", m__name);
+    
+    if (ph->parser.Flowflag != LPS)
+        val = epanet::convert_flow_to_L_per_s(ph, val);
+    m__inflow.commit(t, val);
+
+    errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
+    if (errorcode > 100)
+        __format_and_throw<std::runtime_error>("Source", "retrieve_EN_results", "Error retrieving the results of the source.",
+            "Property: EN_HEAD",
+            "Error code: ", errorcode,
+            "Source ID: ", m__name);
+
+    if (ph->parser.Unitsflag == US)
+        val *= MperFT;
+    m__source_elevation.commit(t, val);
+}
+
+
+} // namespace bevarmejo::wds

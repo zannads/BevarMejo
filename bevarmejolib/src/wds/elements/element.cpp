@@ -28,13 +28,6 @@ Element::Element(const WaterDistributionSystem& wds, const EN_Name_t& name) :
             "To allow for EPANET compatibility the ID/name must be shorter than 32 characters.",
             "ID/name: ", name,
             "Length: ", name.size());
-
-    // Let's retrieve the index and the properties of the element, if possible.
-    if (m__wds.ph() == nullptr)
-        return;
-
-    this->retrieve_EN_index();
-    this->retrieve_EN_properties();
 }
 
 auto Element::name() const -> const EN_Name_t&

@@ -1,46 +1,33 @@
-#include <cassert>
-#include <stdexcept>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <variant>
 
 #include "epanet2_2.h"
+
+#include "bevarmejo/bemexcept.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
 #include "bevarmejo/wds/elements/node.hpp"
 #include "bevarmejo/wds/elements/source.hpp"
 
+#include "bevarmejo/wds/water_distribution_system.hpp"
+
 #include "reservoir.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-Reservoir::Reservoir(const std::string& id, const WaterDistributionSystem& wds) :
-    inherited(id, wds) { }
+Reservoir::Reservoir(const WaterDistributionSystem& wds, const EN_Name_t& name) :
+    inherited(wds, name)
+{ }
 
-// Copy constructor
-Reservoir::Reservoir(const Reservoir& other) : 
-    inherited(other) { }
-
-// Move constructor
-Reservoir::Reservoir(Reservoir&& rhs) noexcept : 
-    inherited(std::move(rhs)) { }
-
-Reservoir& Reservoir::operator=(const Reservoir& other) {
-    if (this != &other) {
-        inherited::operator=(other);
-    }
-    return *this;
+const char* Reservoir::type_name() const
+{
+    return self_traits::name;
 }
 
-Reservoir& Reservoir::operator=(Reservoir&& rhs) noexcept {
-    if (this != &rhs) {
-        inherited::operator=(std::move(rhs));
-    }
-    return *this;
+unsigned int Reservoir::type_code() const
+{
+    return self_traits::code;
 }
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds

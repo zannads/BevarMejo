@@ -14,14 +14,4 @@ NetworkElement::NetworkElement(const WaterDistributionSystem& wds, const EN_Name
     m__ud_results()
 { }
 
-auto NetworkElement::results() const -> const ResultsMap&
-{
-    return m__ud_results;
-}
-
-void NetworkElement::clear_results()
-{
-    m__ud_results.clear();
-}
-
 } // namespace bevarmejo::wds

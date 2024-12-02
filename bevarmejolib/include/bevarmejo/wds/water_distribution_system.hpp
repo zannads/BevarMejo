@@ -236,6 +236,8 @@ public:
     TimeSeries& time_series(const std::string& name);
     const TimeSeries& time_series(const std::string& name) const;
 
+    time::Instant current_result_time() const;
+
 /*------- Capacity -------*/
 public:
     // Check if the system has any component.
@@ -528,10 +530,10 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
     // We know the nodes id are correct and exist, so we can connect the link
     // and later insert it in the specific collection.
     irtn.iterator->start_node(_nodes_.get(from_node_id).get());
-    _nodes_.get(from_node_id)->add_link(irtn.iterator.operator->().get());
+    _nodes_.get(from_node_id)->connect_link(irtn.iterator.operator->().get());
 
     irtn.iterator->end_node(_nodes_.get(to_node_it).get());
-    _nodes_.get(to_node_it)->add_link(irtn.iterator.operator->().get());
+    _nodes_.get(to_node_it)->connect_link(irtn.iterator.operator->().get());
 
     auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it, &irtn](auto& container) -> decltype(auto)
     {
@@ -539,8 +541,8 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
         if (!irs.inserted)
         {
             // Reset all insertions and throw an error.
-            _nodes_.get(from_node_id)->remove_link(irtn.iterator.operator->().get());
-            _nodes_.get(to_node_it)->remove_link(irtn.iterator.operator->().get());
+            _nodes_.get(from_node_id)->disconnect_link(irtn.iterator.operator->().get());
+            _nodes_.get(to_node_it)->disconnect_link(irtn.iterator.operator->().get());
             _links_.erase(id);
 
             __format_and_throw<std::logic_error>("WaterDistributionSystem::install()", "Impossible to insert the element.",

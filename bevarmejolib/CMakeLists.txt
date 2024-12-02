@@ -46,6 +46,8 @@ set(WDS_AUX
         "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
         "${WDS_SRC_ROOT}/auxiliary/global_times.cpp"
         "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/curve.cpp"
+        "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
 )
 
 set(IO_FILES

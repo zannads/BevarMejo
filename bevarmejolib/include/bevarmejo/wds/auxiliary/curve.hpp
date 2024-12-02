@@ -187,16 +187,16 @@ public:
         assert(m__wds.ph() != nullptr && "The EPANET project handle is not set.");
 
         int n_points;
-        int errorcode = EN_getcurvelen(ph, this->index(), &n_points);
+        int errorcode = EN_getcurvelen(m__wds.ph(), m__en_index, &n_points);
         assert(errorcode <= 100);
 
         for (auto i = 1; i <= n_points; ++i)
         {
             double x, y;
-            errorcode = EN_getcurvevalue(ph, this->index(), i, &x, &y);
+            errorcode = EN_getcurvevalue(m__wds.ph(), m__en_index, i, &x, &y);
             assert(errorcode <= 100);
 
-            _curve_.emplace(x, y);
+            m__curve.emplace(x, y);
         }
     }
 
