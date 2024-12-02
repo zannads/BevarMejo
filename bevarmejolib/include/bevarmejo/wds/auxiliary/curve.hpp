@@ -10,9 +10,19 @@
 #include "epanet2_2.h"
 
 #include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 namespace bevarmejo::wds
 {
+
+class Curve;
+template <>
+struct TypeTraits<Curve>
+{
+    static constexpr const char* name = "Curve";
+    static constexpr unsigned int code = 21;
+    static constexpr bool is_EN_complete = false;
+};
 
 class Curve : public Element
 {
@@ -26,6 +36,8 @@ class Curve : public Element
 
 /*------- Member types -------*/
 public:
+    using self_type = Curve;
+    using self_traits = TypeTraits<self_type>;
     using inherited = Element;
 private:
     friend class WaterDistributionSystem;
@@ -61,14 +73,6 @@ public:
     void retrieve_EN_index() override final;
 
 }; // class Curve
-
-template <>
-struct TypeTraits<Curve>
-{
-    static constexpr const char* name = "Curve";
-    static constexpr unsigned int code = 21;
-    static constexpr bool is_EN_complete = false;
-};
 
 // Default trait for the curve (name and type (code))
 template <typename X, typename Y>

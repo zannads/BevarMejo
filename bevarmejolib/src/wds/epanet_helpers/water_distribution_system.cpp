@@ -96,25 +96,39 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     return;
 }
 
-void WaterDistributionSystem::load_EN_time_settings(EN_Project ph)
+/*------- Element access -------*/
+EN_Project WaterDistributionSystem::ph() const noexcept
 {
+    return ph_;
+}
+
+const fsys::path& WaterDistributionSystem::inp_file() const noexcept
+{
+    return _inp_file_;
+}
+
+/*------- Modifiers -------*/
+void WaterDistributionSystem::load_EN_time_settings()
+{
+    assert(ph_ != nullptr);
+
     time_t a_time= 0l;
-    int errorcode= EN_gettimeparam(ph, EN_DURATION, &a_time);
+    int errorcode= EN_gettimeparam(ph_, EN_DURATION, &a_time);
     assert(errorcode < 100);
     m__times.duration__s(a_time);
 
-    errorcode= EN_gettimeparam(ph, EN_STARTTIME, &a_time);
+    errorcode= EN_gettimeparam(ph_, EN_STARTTIME, &a_time);
     assert(errorcode < 100);
     m__times.shift_start_time__s(a_time);
 
 
     // Prepare for the inputs that are patterns
     epanet::PatternTimeOptions pto;
-    errorcode= EN_gettimeparam(ph, EN_PATTERNSTEP, &a_time);
+    errorcode= EN_gettimeparam(ph_, EN_PATTERNSTEP, &a_time);
     assert(errorcode < 100);
     pto.timestep__s= a_time;
 
-    errorcode= EN_gettimeparam(ph, EN_PATTERNSTART, &a_time);
+    errorcode= EN_gettimeparam(ph_, EN_PATTERNSTART, &a_time);
     assert(errorcode < 100);
     pto.shift_start_time__s= a_time;
 
@@ -146,7 +160,7 @@ void WaterDistributionSystem::load_EN_time_settings(EN_Project ph)
     // 3: Not implemented yet
 }
 
-void WaterDistributionSystem::load_EN_curves(EN_Project ph)
+void WaterDistributionSystem::load_EN_curves()
 {
     int n_curves= 0;
     int errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
@@ -211,15 +225,15 @@ void WaterDistributionSystem::load_EN_curves(EN_Project ph)
         if (valid(p_curve))
         {
             // Actually load the curve data
-            p_curve->retrieve_index(ph_);
-            p_curve->retrieve_EN_properties(ph_);
+            p_curve->retrieve_index();
+            p_curve->retrieve_EN_properties();
         }
         else // it was already in (and I printed the message in the lambda)
             continue;
     }
 }
 
-void WaterDistributionSystem::load_EN_patterns(EN_Project ph)
+void WaterDistributionSystem::load_EN_patterns()
 {
     int n_patterns= 0;
     int errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
@@ -236,8 +250,8 @@ void WaterDistributionSystem::load_EN_patterns(EN_Project ph)
         if (irs.inserted)
         {
             // Actually load the pattern data
-            irs.iterator->retrieve_index(ph_);
-            irs.iterator->retrieve_EN_properties(ph_);
+            irs.iterator->retrieve_index();
+            irs.iterator->retrieve_EN_properties();
         }
         else // it was already in (I need to print the message this time)
             io::stream_out(std::cout, 
@@ -245,7 +259,7 @@ void WaterDistributionSystem::load_EN_patterns(EN_Project ph)
     }
 }
 
-void WaterDistributionSystem::load_EN_nodes(EN_Project ph)
+void WaterDistributionSystem::load_EN_nodes()
 {
     int n_nodes = 0;
     int errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
@@ -310,8 +324,8 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph)
             // the code because of the return type of the insert method and the fact that it 
             // returns an iterator which I have not made default constructible.
             auto p_node = _nodes_.get(node_id);
-            p_node->retrieve_index(ph_);
-            p_node->retrieve_EN_properties(ph_);
+            p_node->retrieve_index();
+            p_node->retrieve_EN_properties();
         }
         else // it was already in
             io::stream_out(std::cout, 
@@ -320,7 +334,7 @@ void WaterDistributionSystem::load_EN_nodes(EN_Project ph)
     }
 }
 
-void WaterDistributionSystem::load_EN_links(EN_Project ph)
+void WaterDistributionSystem::load_EN_links()
 {
     int n_links = 0;
     int errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
@@ -373,8 +387,8 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph)
         {
             // Actually load the link data
             auto p_link = _links_.get(link_id);
-            p_link->retrieve_index(ph_);
-            p_link->retrieve_EN_properties(ph_);
+            p_link->retrieve_index();
+            p_link->retrieve_EN_properties();
         }
         else // it was already in
             io::stream_out(std::cout, 
@@ -383,7 +397,7 @@ void WaterDistributionSystem::load_EN_links(EN_Project ph)
     }
 }
 
-void WaterDistributionSystem::load_EN_controls(EN_Project ph)
+void WaterDistributionSystem::load_EN_controls()
 {
     int n_controls= 0;
     int errorcode = EN_getcount(ph_, EN_CONTROLCOUNT, &n_controls);
@@ -403,7 +417,7 @@ void WaterDistributionSystem::load_EN_controls(EN_Project ph)
     }
 }
 
-void WaterDistributionSystem::load_EN_rules(EN_Project ph)
+void WaterDistributionSystem::load_EN_rules()
 {
     int n_rules= 0;
     int errorcode = EN_getcount(ph_, EN_RULECOUNT, &n_rules);
@@ -426,7 +440,7 @@ void WaterDistributionSystem::cache_indices()
     auto cache_index = [this](auto& container)
     {
         for (auto&& [id, element] : container)
-            element.retrieve_index(ph_);
+            element.retrieve_index();
     };
 
     cache_index(m__aux_elements_.patterns);

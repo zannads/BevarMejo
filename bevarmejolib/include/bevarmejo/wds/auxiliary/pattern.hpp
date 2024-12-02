@@ -11,51 +11,86 @@
 
 #include "bevarmejo/wds/elements/element.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-static const std::string l__PATTERN= "Pattern";
+class Pattern;
+template <>
+struct TypeTraits<Pattern>
+{
+    static constexpr const char* name = "Pattern";
+    static constexpr unsigned int code = 31;
+    static constexpr bool is_EN_complete = false;
+};
 
-class Pattern final : public Element {
+class Pattern final : public Element
+{
+/// WDS Pattern
+/*******************************************************************************
+ * The wds::Pattern class is a series of multipliers that are used to modify
+ * the base value of a time series. It exist to be EPANET compatible.
+ ******************************************************************************/
+
+/*------- Member types -------*/
 public:
-    using inherited= Element;
-    using container= std::vector<double>;
-    using value_type= double;
-    using size_type= std::size_t;
-    using difference_type= container::difference_type;
-    using reference= double&;
-    using const_reference= const double&;
-    using pointer= double*;
-    using const_pointer= const double*;
-    using iterator= container::iterator;
-    using const_iterator= container::const_iterator;
-    using reverse_iterator= container::reverse_iterator;
-    using const_reverse_iterator= container::const_reverse_iterator;
+    using self_type = Pattern;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Element;
+    using container = std::vector<double>;
+    using value_type = double;
+    using size_type = std::size_t;
+    using difference_type = container::difference_type;
+    using reference = double&;
+    using const_reference = const double&;
+    using pointer = double*;
+    using const_pointer = const double*;
+    using iterator = container::iterator;
+    using const_iterator = container::const_iterator;
+    using reverse_iterator = container::reverse_iterator;
+    using const_reverse_iterator = container::const_reverse_iterator;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
     container m__multipliers;
 
-/*--- Member functions ---*/
-/*--- Constructors ---*/
-public: 
-    // Default constructor
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Pattern() = delete;
+    Pattern(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
-    Pattern(const std::string& id) : 
-        inherited(id),
-        m__multipliers() {}
+// (destructor)
+public:
+    virtual ~Pattern() = default;
+    
+// clone()
+public:
 
-    Pattern(const Pattern& other) = default;
+/*------- Operators -------*/
+// operator=
+public:
 
-    Pattern(Pattern&& rhs) noexcept = default;
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    const char* type_name() const override final
+    {
+        return self_traits::name;
+    }
 
-    Pattern& operator=(const Pattern& rhs) = default;
+    unsigned int type_code() const override final
+    {
+        return self_traits::code;
+    }
 
-    Pattern& operator=(Pattern&& rhs) noexcept = default;
+    // === Read-only properties ===
+    // No read-only properties
 
-    virtual ~Pattern() { m__multipliers.clear(); }
+    // === Results ===
+    // No results
 
 /*--- Getters and setters ---*/
 public:
@@ -112,6 +147,10 @@ public:
     
 /*--- Modifiers ---*/
 public:
+    void retrieve_EN_index() override;
+private:
+    void retrieve_EN_properties() override;
+
     void clear() noexcept { m__multipliers.clear(); }
 
     iterator insert(const_iterator pos, const_reference value) { return m__multipliers.insert(pos, value); }
@@ -140,23 +179,8 @@ public:
 
     // TODO: swap void swap(container& other) { m__multipliers.swap(other); }
 
-/*--- Pure virtual methods override---*/
-public:
-    /*--- Properties ---*/
-    virtual const std::string& element_name() const override {return l__PATTERN;}
-    virtual unsigned int element_type() const override {return ELEMENT_PATTERN;}
-
-
-/*--- EPANET-dependent PVMs ---*/
-public:
-    /*--- Properties ---*/
-    void retrieve_index(EN_Project ph) override;
-private:
-    void __retrieve_EN_properties(EN_Project ph) override;
-
 }; // class Pattern
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__PATTERN_HPP

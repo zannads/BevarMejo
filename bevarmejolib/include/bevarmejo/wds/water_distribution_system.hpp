@@ -379,6 +379,8 @@ public:
 /*------- Element access -------*/
 public:
     // ph is public, so you can use it to modify the project.
+    EN_Project ph() const noexcept;
+
     const fsys::path& inp_file() const noexcept;
 
 /*------- Capacity -------*/
@@ -386,14 +388,14 @@ public:
 /*------- Modifiers -------*/
 private:
     // Equivalent to constuctor from .inp file
-    void load_EN_time_settings(EN_Project ph);
-    void load_EN_analysis_options(EN_Project ph);
-    void load_EN_patterns(EN_Project ph);
-    void load_EN_curves(EN_Project ph);
-    void load_EN_nodes(EN_Project ph);
-    void load_EN_links(EN_Project ph);
-    void load_EN_controls(EN_Project ph);
-    void load_EN_rules(EN_Project ph);
+    void load_EN_time_settings();
+    void load_EN_analysis_options();
+    void load_EN_patterns();
+    void load_EN_curves();
+    void load_EN_nodes();
+    void load_EN_links();
+    void load_EN_controls();
+    void load_EN_rules();
 public:
     // Cache the indices of the elements in the network.
     // This is useful to avoid calling the ENgetnodeindex and ENgetlinkindex functions every time.
