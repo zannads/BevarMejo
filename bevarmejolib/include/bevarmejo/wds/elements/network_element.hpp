@@ -10,6 +10,15 @@
 namespace bevarmejo::wds
 {
 
+class NetworkElement;
+template <>
+struct TypeTraits<NetworkElement>
+{
+    static constexpr const char* name = "NetworkElement";
+    static constexpr unsigned int code = 11;
+    static constexpr bool is_EN_complete = false;
+};
+
 class NetworkElement : public Element
 {
     // WDS ancestor object.
@@ -20,6 +29,8 @@ class NetworkElement : public Element
 
 /*------- Member types -------*/
 public:
+    using self_type = NetworkElement;
+    using self_traits = TypeTraits<self_type>;
     using inherited = Element;
     using ResultsMap = aux::QuantitiesMap;
 private:
@@ -58,14 +69,6 @@ public:
     virtual void clear_results();
 
     virtual void retrieve_EN_results() = 0;
-};
-
-template <>
-struct TypeTraits<NetworkElement>
-{
-    static constexpr const char* name = "NetworkElement";
-    static constexpr const int code = 11;
-    static constexpr bool is_EN_complete = false;
 };
 
 } // namespace bevarmejo::wds

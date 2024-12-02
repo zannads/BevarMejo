@@ -1,95 +1,87 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP
 
-#include <memory>
 #include <string>
-
-#include "epanet2_2.h"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/dimensioned_link.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
+class Pipe;
+template <>
+struct TypeTraits<Pipe>
+{
+    static constexpr const char* name = "Pipe";
+    static constexpr unsigned int code = 11211;
+    static constexpr bool is_EN_complete = true;
+};
+
+class Pipe final : public DimensionedLink
+{
 /// WDS Pipe
 /*******************************************************************************
  * The wds::Pipe class represents a pipe in the network.
  ******************************************************************************/
 
-static const std::string LNAME_PIPE= "Pipe";
-static const std::string L_LENGTH= "Length";
-
-class Pipe : public DimensionedLink {
-
+/*------- Member types -------*/
 public:
-    using inherited= DimensionedLink;
+    using self_type = Pipe;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = DimensionedLink;
+private:
+    friend class WaterDistributionSystem;
 
- /*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
     aux::QuantitySeries<double> m__length; // Constant
 
-    /*---  Results   ---*/
+    // === Results ===
 
-/*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Pipe() = delete;
-
-    Pipe(const std::string& id, const WaterDistributionSystem& wds);
-
-    // Copy constructor
-    Pipe(const Pipe& other);
-
-    // Move constructor
-    Pipe(Pipe&& rhs) noexcept;
-
-    // Copy assignment operator
-    Pipe& operator=(const Pipe& rhs);
-
-    // Move assignment operator
-    Pipe& operator=(Pipe&& rhs) noexcept;
-
-    // Destructor
+    Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
+    
+// (destructor)
+public:
     virtual ~Pipe() = default;
 
-    std::unique_ptr<Pipe> clone() const;
-
-/*--- Getters and setters ---*/
+// clone()
 public:
-    /*--- Properties ---*/
+
+/*------- Operators -------*/
+// operator=
+public:
+
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    const char* type_name() const override;
+
+    unsigned int type_code() const override;
+
     aux::QuantitySeries<double>& length() {return m__length;}
     const aux::QuantitySeries<double>& length() const {return m__length;}
     void length(double a_length) {m__length.value(a_length);}
 
-    /*---  Results   ---*/
+    // === Read-only properties ===
 
-/*--- Methods ---*/
+    // === Results ===
+
+/*------- Capacity -------*/
 public:
-    /*--- Properties ---*/
-    
-    /*---  Results   ---*/
 
-    /*---   Other    ---*/
-    std::unique_ptr<Pipe> duplicate() const;
-    std::unique_ptr<Pipe> duplicate(const std::string& id) const;
-
-/*--- Pure virtual methods ---*/
+/*------- Modifiers -------*/
 public:
-    /*--- Properties ---*/
-    const std::string& element_name() const override {return LNAME_PIPE;}
-    const unsigned int element_type() const override {return ELEMENT_PIPE;}
+    void retrieve_EN_properties() override;
 
-/*-- EPANET-dependent PVMs --*/
-public:
-    /*--- Properties ---*/
-private:
-    void __retrieve_EN_properties(EN_Project ph) override;
+}; // class Pipe
 
-};
-
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__PIPE_HPP

@@ -4,43 +4,43 @@
 #include <memory>
 #include <string>
 
-#include "epanet2_2.h"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
 
 #include "bevarmejo/wds/elements/source.hpp"
 
-#include "bevarmejo/wds/auxiliary/curves.hpp"
+namespace bevarmejo::wds
+{
 
-namespace bevarmejo {
-namespace wds {
+class Tank;
+template <>
+struct TypeTraits<Tank>
+{
+    static constexpr const char* name = "Tank";
+    static constexpr unsigned int code = 22111;
+    static constexpr bool is_EN_complete = true;
+};
 
-/// WDS Tank
-/*******************************************************************************
- * The wds::junction class represents a Tank in the network. It is a dynamic element.
- ******************************************************************************/
+class Tank final : public Source
+{
+    /// WDS Tank
+    /*******************************************************************************
+     * The wds::junction class represents a Tank in the network. It is a dynamic element.
+     ******************************************************************************/
 
-static const std::string l__NAME_TANK= "Tank";
-
-static const std::string l__DIAMETER = "Diameter";
-static const std::string l__INITIAL_LEVEL = "InitL";
-static const std::string l__MIN_LEVEL = "MinL";
-static const std::string l__LEVEL = "L";
-static const std::string l__MAX_LEVEL = "MaxL";
-static const std::string l__INITIAL_VOLUME = "InitV";
-static const std::string l__MIN_VOLUME = "MinV";
-static const std::string l__VOLUME = "V";
-static const std::string l__MAX_VOLUME = "MaxV";
-static const std::string l__CAN_OVERFLOW = "Overf";
-
-class Tank : public Source {
-
+/*------- Member types -------*/
 public:
-    using inherited= Source;
+    using self_type = Tank;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Source;
+    using LevelSeries = aux::QuantitySeries<double>;
+    using VolumeSeries = aux::QuantitySeries<double>;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
     //MIXMODEL
     aux::QuantitySeries<double> m__diameter; // Constant
     std::shared_ptr<const VolumeCurve> m__volume_curve;
@@ -55,32 +55,35 @@ protected:
     aux::QuantitySeries<double> m__initial_volume; // Constant
     aux::QuantitySeries<double> m__max_volume; // Constant
     //MIXZONEVOL
-    /*---  Results   ---*/
-    aux::QuantitySeries<double> m__level;
-    aux::QuantitySeries<double> m__volume;
 
-/*--- Constructors ---*/
-public:
+    // === Results ===
+    LevelSeries m__level;
+    VolumeSeries m__volume;
+
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Tank() = delete;
-    Tank(const std::string& id, const WaterDistributionSystem& wds);
+    Tank(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
-    // Copy constructor
-    Tank(const Tank& other);
-
-    // Move constructor
-    Tank(Tank&& rhs) noexcept;
-
-    // Copy assignment operator
-    Tank& operator=(const Tank& rhs);
-
-    // Move assignment operator
-    Tank& operator=(Tank&& rhs) noexcept;
-
+// (destructor)
+public:
     virtual ~Tank() = default;
 
-/*--- Getters and setters ---*/
+// clone()
 public:
-    /*--- Properties ---*/
+
+/*------- Operators -------*/
+// operator=
+public:
+
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    const char* type_name() const override;
+
+    unsigned int type_code() const override;
+
     aux::QuantitySeries<double>& diameter() { return m__diameter; }
     const aux::QuantitySeries<double>& diameter() const { return m__diameter; }
     void diameter(const double a_diameter) { m__diameter.value(a_diameter); }
@@ -109,35 +112,26 @@ public:
     const aux::QuantitySeries<double>& initial_level() const { return m__initial_level; }
     void initial_level(const double a_initial_level) { m__initial_level.value(a_initial_level); }
 
-    /*---  Read-only Props ---*/ //Will become a method one day
+    // === Read-Only Properties === //Will become a method one day
     const aux::QuantitySeries<double>& initial_volume() const { return m__initial_volume; }
     const aux::QuantitySeries<double>& max_volume() const { return m__max_volume; }
 
-    /*---  Results   ---*/
+    // === Results ===
     const aux::QuantitySeries<double>& level() const { return m__level; }
     const aux::QuantitySeries<double>& volume() const { return m__volume; }
 
-/*--- Pure virtual methods override---*/
+/*------- Capacity -------*/
 public:
-    /*--- Properties ---*/
-    const std::string& element_name() const override { return l__NAME_TANK; }
-    const unsigned int element_type() const override { return ELEMENT_TANK; }
 
-    /*--- Results ---*/
-    virtual void clear_results() override;
-
-/*--- EPANET-dependent PVMs override ---*/
+/*------- Modifiers -------*/
 public:
-    /*--- Properties ---*/
-private:
-    void __retrieve_EN_properties(EN_Project ph) override;
-public:
-    /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
+    void clear_results() override;
 
+    void retrieve_EN_properties() override;
+
+    void retrieve_EN_results() override;
 }; // class Tank
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__TANK_HPP

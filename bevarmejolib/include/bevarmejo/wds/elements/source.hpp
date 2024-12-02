@@ -3,78 +3,86 @@
 
 #include <string>
 
-#include "epanet2_2.h"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/node.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-/// WDS Source
-/*******************************************************************************
- * The wds::Source class represents a fix pressure node in the network. 
- * It can either be a tank or a reservoir.
- ******************************************************************************/
+class Source;
+template <>
+struct TypeTraits<Source>
+{
+    static constexpr const char* name = "Source";
+    static constexpr unsigned int code = 2111;
+    static constexpr bool is_EN_complete = false;
+};
 
-static const std::string LSOURCE_ELEV= "Source Elevation";
-static const std::string LINFLOW= "Inflow";
+class Source : public Node
+{
+    /// WDS Source
+    /*******************************************************************************
+     * The wds::Source class represents a fix pressure node in the network. 
+     * It can either be a tank or a reservoir.
+     ******************************************************************************/
 
-class Source : public Node {
-
+/*------- Member types -------*/
 public:
-    using inherited= Node;
+    using self_type = Source;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Node;
+    using FlowSeries = aux::QuantitySeries<double>;
+    using ElevationSeries = aux::QuantitySeries<double>;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
 
-    /*---  Results   ---*/
-    aux::QuantitySeries<double> m__inflow;
-    aux::QuantitySeries<double> m__source_elevation;
+    // === Results ===
+    FlowSeries m__inflow;
+    ElevationSeries m__source_elevation;
 
-/*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Source() = delete;
-    Source(const std::string& id, const WaterDistributionSystem& wds);
+    Source(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
-    // Copy constructor
-    Source(const Source& other);
-
-    // Move constructor
-    Source(Source&& rhs) noexcept;
-
-    // Copy assignment operator
-    Source& operator=(const Source& rhs);
-
-    // Move assignment operator
-    Source& operator=(Source&& rhs) noexcept;
-
-    // Destructor
+// (destructor)
+public:
     virtual ~Source() = default;
 
-/*--- Getters and setters ---*/
+// clone()
 public:
-    /*--- Properties ---*/
 
-    /*---  Results   ---*/
-    const aux::QuantitySeries<double>& inflow() const { return m__inflow; }
-    const aux::QuantitySeries<double>& source_elevation() const { return m__source_elevation; }
+/*------- Operators -------*/
+// operator=
+public:
 
-/*--- Pure virtual methods override---*/
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+
+    // === Read-only properties ===
+    bool has_demand() const override final;
+
+    // === Results ===
+    const FlowSeries& inflow() const;
+    const ElevationSeries& source_elevation() const;
+
+/*------- Capacity -------*/
+public:
+
+/*------- Modifiers -------*/
+public:
     virtual void clear_results() override;
 
-/*--- EPANET-dependent PVMs override ---*/
-public:
-    /*--- Properties ---*/
-
-    /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
-
-};
+    virtual void retrieve_EN_results() override;
+}; // class Source
     
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__SOURCE_HPP

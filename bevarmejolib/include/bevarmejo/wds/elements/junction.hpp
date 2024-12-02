@@ -1,105 +1,104 @@
-//
-// 
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP
 
 #include <string>
 #include <unordered_map>
 
-#include "epanet2_2.h"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/node.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-static const std::string LDEMAND_CONSTANT= "Demand (constant)";
-static const std::string LDEMAND_REQUESTED= "Demand (requested)";
-static const std::string LDEMAND_DELIVERED= "Demand (delivered)";
-static const std::string LDEMAND_UNDELIVERED= "Demand (undelivered)";
+class Junction;
+template <>
+struct TypeTraits<Junction>
+{
+    static constexpr const char* name = "Junction";
+    static constexpr unsigned int code = 1111;
+    static constexpr bool is_EN_complete = true;
+};
 
-/// WDS Junction
-/*******************************************************************************
- * The wds::Junction class represents a demand node in the network.
- ******************************************************************************/
+class Junction final : public Node
+{
+    /// WDS Junction
+    /*******************************************************************************
+     * The wds::Junction class represents a demand node in the network.
+     ******************************************************************************/
 
-static const std::string LNAME_JUNCTION= "Junction";
-
-class Junction : public Node {    
+/*------- Member types -------*/
 public:
-    using inherited= Node;
-    using FlowSeries= aux::QuantitySeries<double>;
+    using self_type = Junction;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Node;
+    using FlowSeries = aux::QuantitySeries<double>;
     using Demands= std::unordered_map<std::string, FlowSeries>;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
     Demands m__demands;
 
-    /*---  Results   ---*/
+    // === Results ===
     FlowSeries m__demand;
     FlowSeries m__consumption;
     FlowSeries m__undelivered_demand;
 
- /*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Junction() = delete;
-    Junction(const std::string& id, const WaterDistributionSystem& wds);
+    Junction(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
-    // Copy constructor
-    Junction(const Junction& other);
-
-    // Move constructor
-    Junction(Junction&& rhs) noexcept;
-
-    // Copy assignment operator
-    Junction& operator=(const Junction& rhs);
-
-    // Move assignment operator
-    Junction& operator=(Junction&& rhs) noexcept;
-
-    virtual ~Junction() = default;
-    
-/*--- Getters and setters ---*/
+// (destructor)
 public:
-    /*--- Properties ---*/
-    Demands& demands() {return m__demands;}
-    const Demands& demands() const {return m__demands;}
+    virtual ~Junction() = default;
+
+// clone()
+
+/*------- Operators -------*/
+// operator=
+public:
+
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    const char* type_name() const override;
+
+    unsigned int type_code() const override;
+
+    Demands& demands();
+    const Demands& demands() const;
 
     FlowSeries& demand(const std::string& a_category);
     const FlowSeries& demand(const std::string& a_category) const;
 
-    /*---  Results   ---*/
-    const aux::QuantitySeries<double>& demand_requested() const { return m__demand; }
-    const aux::QuantitySeries<double>& demand_delivered() const { return consumption(); }
-    const aux::QuantitySeries<double>& consumption() const { return m__consumption; }
-    const aux::QuantitySeries<double>& demand_undelivered() const { return m__undelivered_demand; }
+    // === Read-only properties ===
+    bool has_demand() const override;
+    const FlowSeries& demand() const; // Total demand
+    const FlowSeries& demand_requested() const; // As total demand
 
-/*--- Methods ---*/
-public:
-    const bool has_demand() const override;
+    // === Results ===
+    const FlowSeries& demand_delivered() const; // Share of the total demand that was delivered (consumption)
+    const FlowSeries& consumption() const; // Share of the total demand that was delivered (consumption)
+    const FlowSeries& demand_undelivered() const; // Share of the total demand that was not delivered
     
-/*--- Pure virtual methods override---*/
+/*------- Capacity -------*/
 public:
-    /*--- Properties ---*/
-    const std::string& element_name() const override {return LNAME_JUNCTION;}
-    const unsigned int element_type() const override {return ELEMENT_JUNCTION;}
-    virtual void clear_results() override;
 
-/*--- EPANET-dependent PVMs ---*/
+/*------- Modifiers -------*/
 public:
-    /*--- Properties ---*/
-protected:
-    void __retrieve_EN_properties(EN_Project ph) override;
-public:
-    /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
+    void clear_results() override;
+
+    void retrieve_EN_properties() override;
+
+    void retrieve_EN_results() override;
 
 }; // class Junction
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__JUNCTION_HPP

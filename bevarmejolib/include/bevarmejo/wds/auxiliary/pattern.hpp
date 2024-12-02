@@ -144,7 +144,7 @@ public:
 public:
     /*--- Properties ---*/
     virtual const std::string& element_name() const override {return l__PATTERN;}
-    virtual const unsigned int element_type() const override {return ELEMENT_PATTERN;}
+    virtual unsigned int element_type() const override {return ELEMENT_PATTERN;}
 
 
 /*--- EPANET-dependent PVMs ---*/

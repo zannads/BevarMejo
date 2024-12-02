@@ -3,90 +3,104 @@
 
 #include <string>
 
-#include "epanet2_2.h"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/network_element.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-/// WDS Link
+class Link;
+template <>
+struct TypeTraits<Link>
+{
+    static constexpr const char* name = "Link";
+    static constexpr unsigned int code = 211;
+    static constexpr bool is_EN_complete = false;
+};
+
+// Forward definition of the Node class because Links are installed between Nodes.
+class Node;
+
+class Link : public NetworkElement
+{
+// WDS Link
 /*******************************************************************************
  * The wds::Link class represents a link in the network.
  ******************************************************************************/
 
-static const std::string L_INITIAL_STATUS= "Initial Status";
-static const std::string L_FLOW= "Flow";
-
-class Node; // forward declaration
-
-class Link : public NetworkElement {
-
+/*------- Member types -------*/
 public:
-    using inherited= NetworkElement;
+    using self_type = Link;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = NetworkElement;
+    using Node_ptr = const Node*;
+    using StatusSeries = aux::QuantitySeries<int>;
+    using FlowSeries = aux::QuantitySeries<double>;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
-    const Node* _node_start_;
-    const Node* _node_end_;
+    // === Properties ===
+    Node_ptr m__from_node;
+    Node_ptr m__to_node;
+    StatusSeries m__initial_status; // Constant
 
-    aux::QuantitySeries<int> m__initial_status; // Constant
+    // === Results ===
+    FlowSeries m__flow;
 
-    /*---  Results   ---*/ 
-    aux::QuantitySeries<double> m__flow;
-    // TODO: water quality
-
-/*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Link() = delete;
-
-    Link(const std::string& id, const WaterDistributionSystem& wds);
-
-    // Copy constructor
-    Link(const Link& other);
-
-    // Move constructor
-    Link(Link&& rhs) noexcept;
-
-    // Copy assignment operator
-    Link& operator=(const Link& rhs);
-
-    // Move assignment operator
-    Link& operator=(Link&& rhs) noexcept;
-
-    // Destructor
+    Link(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
+    
+// (destructor)
+public:
     virtual ~Link() = default;
 
-/*--- Getters and setters ---*/
+// clone()
 public:
-    /*--- Properties ---*/
-    const Node* from_node() const { return _node_start_; }
-    void start_node(const Node* a_node) { _node_start_ = a_node; }
-    const Node* to_node() const { return _node_end_; }
-    void end_node(const Node* a_node) { _node_end_ = a_node; }
 
-    aux::QuantitySeries<int>& initial_status() { return m__initial_status; }
-    const aux::QuantitySeries<int>& initial_status() const { return m__initial_status; }
+/*------- Operators -------*/
+// operator=
+public:
 
-    /*---  Results   ---*/
-    const aux::QuantitySeries<double>& flow() const { return m__flow; }
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    Node_ptr from_node() const;
 
-/*--- Pure virtual methods override---*/
+    Node_ptr to_node() const;
+
+    StatusSeries& initial_status();
+    const StatusSeries& initial_status() const;
+
+    // === Results ===
+    const FlowSeries& flow() const;
+
+/*------- Capacity -------*/
+public:
+
+/*------- Modifiers -------*/
+public:
     virtual void clear_results() override;
 
-/*--- EPANET-dependent PVMs override ---*/
-public:
-    void retrieve_index(EN_Project ph) override;
-    void retrieve_results(EN_Project ph, long t) override;
-protected:
-    void __retrieve_EN_properties(EN_Project ph) override;
+    void retrieve_EN_index() override final;
+
+    virtual void retrieve_EN_properties() override;
+
+    virtual void retrieve_EN_results() override;
+
+    void from_node(Node_ptr a_node);
+
+    void to_node(Node_ptr a_node);
+
+    void initial_status(int a_status);
 
 }; // class Link
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__LINK_HPP

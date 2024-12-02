@@ -72,11 +72,6 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
 }
 
 /*------- Element access -------*/
-/*--- EPANET support ---*/
-auto WaterDistributionSystem::inp_file() const noexcept -> const fsys::path&
-{
-    return _inp_file_;
-}
 
 /*--- System's Network Elements Collections ---*/
 auto WaterDistributionSystem::nodes() const noexcept -> const Nodes&

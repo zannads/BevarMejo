@@ -4,40 +4,46 @@
 #include <memory>
 #include <string>
 
-#include "epanet2_2.h"
-
+#include "bevarmejo/wds/auxiliary/curve.hpp"
+#include "bevarmejo/wds/auxiliary/curves.hpp"
+#include "bevarmejo/wds/auxiliary/pattern.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/link.hpp"
 
-#include "bevarmejo/wds/auxiliary/pattern.hpp"
-#include "bevarmejo/wds/auxiliary/curve.hpp"
-#include "bevarmejo/wds/auxiliary/curves.hpp"
+namespace bevarmejo::wds
+{
 
-namespace bevarmejo {
-namespace wds {
+class Pump;
+template <>
+struct TypeTraits<Pump>
+{
+    static constexpr const char* name = "Pump";
+    static constexpr unsigned int code = 2211;
+    static constexpr bool is_EN_complete = true;
+};
 
+class Pump final : public Link
+{
 /// WDS Pump
 /*******************************************************************************
  * The wds::Pump class represents a pump in the network.
  ******************************************************************************/
 
-static const std::string l__NAME_PUMP= "Pump";
-static const std::string l__INIT_SETTINGS = "InitSettings";
-static const std::string l__INSTANT_ENERGY = "InstantEnergy"; // Also known as power -.-'
-static const std::string l__STATE = "State";
-static const std::string l__EFFICIENCY = "Efficiency";
-static const std::string l__POWER_RATING = "PowerRating";
-static const std::string l__ENERGY_COST = "EnergyCost";
-
-class Pump : public Link {
-
+/*------- Member types -------*/
 public:
-    using inherited= Link;
+    using self_type = Pump;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Link;
+    using PowerSeries = aux::QuantitySeries<double>;
+    using StatusSeries = aux::QuantitySeries<int>;
+    using EfficiencySeries = aux::QuantitySeries<double>;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
     aux::QuantitySeries<int> m__init_setting; // Constant
     aux::QuantitySeries<double> m__power_rating; // Constant
     aux::QuantitySeries<double> m__energy_cost; // Constant because it uses the pattern together
@@ -47,36 +53,31 @@ protected:
     std::shared_ptr<const PumpCurve> _pump_curve_;
     std::shared_ptr<const EfficiencyCurve> _efficiency_curve_;
     
-    
-    /*---  Results   ---*/
-    aux::QuantitySeries<double> m__instant_energy;
-    aux::QuantitySeries<int> m__state;
-    aux::QuantitySeries<double> m__efficiency;
+    // === Results ===
+    aux::QuantitySeries<double> m__instant_energy; // Electrical power consumed at each time step
+    StatusSeries m__state;
+    EfficiencySeries m__efficiency;
 
-/*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Pump() = delete;
+    Pump(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
 
-    Pump(const std::string& id, const WaterDistributionSystem& wds);
-
-    // Copy constructor
-    Pump(const Pump& other);
-
-    // Move constructor
-    Pump(Pump&& rhs) noexcept;
-
-    // Copy assignment operator
-    Pump& operator=(const Pump& rhs);
-
-    // Move assignment operator
-    Pump& operator=(Pump&& rhs) noexcept;
-
-    // Destructor
+// (destructor)
+public:
     virtual ~Pump() = default;
 
-/*--- Getters and setters ---*/
+// clone()
 public:
-    /*--- Properties ---*/
+
+/*------- Element access -------*/
+public:
+    // === Read/Write properties ===
+    const char* type_name() const override;
+
+    unsigned int type_code() const override;
+
     aux::QuantitySeries<int>& init_setting() { return m__init_setting; }
     const aux::QuantitySeries<int>& init_setting() const { return m__init_setting; }
     void init_setting(const int a_init_setting) { m__init_setting.value(a_init_setting); }
@@ -101,33 +102,24 @@ public:
     std::shared_ptr<const EfficiencyCurve> efficiency_curve() const { return _efficiency_curve_; }
     void efficiency_curve(std::shared_ptr<const EfficiencyCurve> a_efficiency_curve) { _efficiency_curve_ = std::move(a_efficiency_curve); }
 
-    /*---  Results   ---*/
+    // === Results ===
     const aux::QuantitySeries<double>& instant_energy() const { return m__instant_energy; }
     const aux::QuantitySeries<int>& state() const { return m__state; }
     const aux::QuantitySeries<double>& efficiency() const { return m__efficiency; }
 
-/*--- Methods ---*/
+/*------- Capacity -------*/
 public:
 
-/*--- Pure virtual methods override---*/
+/*------- Modifiers -------*/
 public:
-    const std::string& element_name() const override { return l__NAME_PUMP; }
-    const unsigned int element_type() const override { return ELEMENT_PUMP; }
-    virtual void clear_results() override;
+    void clear_results() override;
 
-/*--- EPANET-dependent PVMs ---*/
-public:
-    /*--- Properties ---*/
-protected:
-    void __retrieve_EN_properties(EN_Project ph) override;
-public:
-    /*--- Results ---*/
-    void retrieve_results(EN_Project ph, long t) override;
+    void retrieve_EN_properties() override;
 
+    void retrieve_EN_results() override;
 
 }; // class Pump
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__PUMP_HPP

@@ -3,69 +3,79 @@
 
 #include <string>
 
-#include "epanet2_2.h"
-
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
 #include "bevarmejo/wds/elements/source.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-/// WDS Reservoir
-/*******************************************************************************
- * The wds::Reservoir class represents a Reservoir in the network. It is a static element.
- ******************************************************************************/
+class Reservoir;
+template <>
+struct TypeTraits<Reservoir>
+{
+    static constexpr const char* name = "Reservoir";
+    static constexpr unsigned int code = 12111;
+    static constexpr bool is_EN_complete = true;
+};
 
-static const std::string l__NAME_RESERVOIR= "Reservoir";
+class Reservoir final : public Source
+{
+    /// WDS Reservoir
+    /*******************************************************************************
+     * The wds::Reservoir class represents a Reservoir in the network. It is a static element.
+     ******************************************************************************/
 
-class Reservoir : public Source {
+/*------- Member types -------*/
 public:
-    using inherited= Source;
+    using self_type = Reservoir;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Source;
+private:
+    friend class WaterDistributionSystem;
 
-/*--- Attributes ---*/
+/*------- Member objects -------*/
 protected:
-    /*--- Properties ---*/
+    // === Properties ===
 
-    /*---  Results   ---*/
+    // === Results ===
 
- /*--- Constructors ---*/
-public:
+/*------- Member functions -------*/
+// (constructor)
+protected:
     Reservoir() = delete;
-    Reservoir(const std::string& id, const WaterDistributionSystem& wds);
-    Reservoir(const Reservoir& other);
-    Reservoir(Reservoir&& rhs) noexcept;
-    Reservoir& operator=(const Reservoir& other);
-    Reservoir& operator=(Reservoir&& rhs) noexcept;
+    Reservoir(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
+
+// (destructor)
+public:
     virtual ~Reservoir() = default;
 
-/*--- Getters and setters ---*/
-public:
-    /*--- Properties ---*/
-
-    /*---  Results   ---*/
-
-/*--- Methods ---*/
+// clone()
 public:
 
-/*--- Pure virtual methods override---*/
+/*------- Operators -------*/
+// operator=
 public:
-    /*--- Properties ---*/
-    const std::string& element_name() const override {return l__NAME_RESERVOIR;}
-    const unsigned int element_type() const override {return ELEMENT_JUNCTION;}
 
-/*--- EPANET-dependent PVMs ---*/
+/*------- Element access -------*/
 public:
-    /*--- Properties ---*/
-private:
+    // === Read/Write properties ===
+    const char* type_name() const override;
+
+    unsigned int type_code() const override;
+
+    // === Read-only properties ===
+
+    // === Results ===
     
+/*------- Capacity -------*/
 public:
-    /*--- Results ---*/
-    
+
+/*------- Modifiers -------*/
+public:
 
 }; // class Reservoir
 
-} // namespace wds
-} // namespace bevarmejo
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__RESERVOIR_HPP

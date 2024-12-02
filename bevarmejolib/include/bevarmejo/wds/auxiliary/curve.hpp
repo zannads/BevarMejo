@@ -66,16 +66,19 @@ template <>
 struct TypeTraits<Curve>
 {
     static constexpr const char* name = "Curve";
-    static constexpr const unsigned int code = 21;
+    static constexpr unsigned int code = 21;
     static constexpr bool is_EN_complete = false;
 };
 
 // Default trait for the curve (name and type (code))
 template <typename X, typename Y>
+class SpecificCurve;
+
+template <typename X, typename Y>
 struct TypeTraits<SpecificCurve<X, Y>>
 {
     static constexpr const char* name = "SpecificCurve";
-    static constexpr const unsigned int code = 21;
+    static constexpr unsigned int code = 21;
     static constexpr bool is_EN_complete = false;
 };
 
@@ -137,7 +140,7 @@ public:
     {
         return self_traits::name;
     }
-    const int type_code() const override final
+    unsigned int type_code() const override final
     {
         return self_traits::code;
     }

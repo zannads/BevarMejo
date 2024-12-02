@@ -18,7 +18,16 @@ template <typename T>
 struct TypeTraits
 {
     static constexpr const char* name = "Unknown";
-    static constexpr const unsigned int code = 0;
+    static constexpr unsigned int code = 0;
+    static constexpr bool is_EN_complete = false;
+};
+
+class Element;
+template <>
+struct TypeTraits<Element>
+{
+    static constexpr const char* name = "Element";
+    static constexpr unsigned int code = 1;
     static constexpr bool is_EN_complete = false;
 };
 
@@ -32,6 +41,8 @@ class Element
 
 /*------- Member types -------*/
 public:
+    using self_type = Element;
+    using self_traits = TypeTraits<self_type>;
     using EN_Name_t = std::string; // Type for the name of the element compatible with the EPANET ID.
     using EN_Index_t = int; // Type for the index of the element in the EPANET project.
     using PropertiesMap = aux::QuantitiesMap;
@@ -76,7 +87,8 @@ public:
 /*------- Element access -------*/
 public:
     virtual const char* type_name() const = 0;
-    virtual const unsigned int type_code() const = 0;
+
+    virtual unsigned int type_code() const = 0;
 
     const EN_Name_t& name() const;
     const EN_Name_t& EN_id() const;
@@ -93,15 +105,6 @@ public:
     virtual void retrieve_EN_index() = 0;
 
     virtual void retrieve_EN_properties() = 0;
-};
-
-// Default Element Trait for the Element class
-template <>
-struct TypeTraits<Element>
-{
-    static constexpr const char* name = "Element";
-    static constexpr const unsigned int code = 1;
-    static constexpr bool is_EN_complete = false;
 };
 
 } // namespace wds
