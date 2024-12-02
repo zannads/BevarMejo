@@ -45,4 +45,11 @@ auto Element::EN_index() const -> EN_Index_t
     return m__en_index;
 }
 
+/*------- Modifiers -------*/
+void Element::retrieve_EN_properties()
+{
+    // As for the NetworkElement and the ud results. 
+    // TODO
+}
+
 } // namespace bevarmejo::wds

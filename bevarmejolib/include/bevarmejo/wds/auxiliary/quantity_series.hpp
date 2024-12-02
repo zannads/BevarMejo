@@ -50,6 +50,9 @@ protected:
 public:
     // get TimeSeries, you can't modify it as it is a const reference
     const TimeSeries& time_series() const { return m__time_series; }
+
+public:
+    virtual void clear() noexcept = 0;
     
 }; // class QuantitySeriesBase
 
@@ -572,7 +575,7 @@ public:
 public:
 
     // Clear the values, but keep the time steps. (e.g., for a new simulation)
-    void clear() noexcept { m__values.clear(); reserve(); }
+    void clear() noexcept override { m__values.clear(); reserve(); }
 
     // for the insert, time__s works like a key, while the iterator is just a helper to know where to start looking for
     iterator insert( time_t time__s, const_reference value );

@@ -34,6 +34,15 @@ Link::Link(const WaterDistributionSystem& wds, const EN_Name_t& name) :
 /*------- Operators -------*/
 
 /*------- Element access -------*/
+auto Link::from_node() const -> Node_ptr
+{
+    return m__from_node;
+}
+
+auto Link::to_node() const -> Node_ptr
+{
+    return m__to_node;
+}
 
 /*------- Capacity -------*/
 
@@ -126,6 +135,16 @@ void Link::__retrieve_EN_results()
         val = epanet::convert_flow_to_L_per_s(ph, val);
 
     m__flow.commit(t, val);
+}
+
+void Link::from_node(Node_ptr a_node)
+{
+    m__from_node = a_node;
+}
+
+void Link::to_node(Node_ptr a_node)
+{
+    m__to_node = a_node;
 }
 
 } // namespace bevarmejo::wds

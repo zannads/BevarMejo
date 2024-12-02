@@ -34,6 +34,7 @@ Junction::Junction(const WaterDistributionSystem& wds, const EN_Name_t& name) :
 /*------- Operators -------*/
 
 /*------- Element access -------*/
+// === Read/Write properties ===
 const char* Junction::type_name() const
 {
     return self_traits::name;
@@ -42,6 +43,37 @@ const char* Junction::type_name() const
 unsigned int Junction::type_code() const
 {
     return self_traits::code;
+}
+
+// === Read-only properties ===
+bool Junction::has_demand() const
+{
+    return !m__demands.empty();
+}
+
+auto Junction::demand() const -> const FlowSeries&
+{
+    return m__demand;
+}
+auto Junction::demand_requested() const -> const FlowSeries&
+{
+    return demand();
+}
+
+// === Results ===
+auto Junction::demand_delivered() const -> const FlowSeries&
+{
+    return consumption();
+}
+
+auto Junction::consumption() const -> const FlowSeries&
+{
+    return m__consumption;
+}
+
+auto Junction::demand_undelivered() const -> const FlowSeries&
+{
+    return m__undelivered_demand;
 }
 
 /*------- Capacity -------*/

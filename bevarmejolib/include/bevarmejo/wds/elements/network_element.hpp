@@ -68,7 +68,7 @@ public:
 public:
     virtual void clear_results();
 
-    virtual void retrieve_EN_results() = 0;
+    virtual void retrieve_EN_results();
 };
 
 } // namespace bevarmejo::wds

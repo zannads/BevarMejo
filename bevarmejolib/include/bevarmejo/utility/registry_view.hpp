@@ -650,17 +650,23 @@ private:
 template <typename T, bool IsMutable>
 using ExcludingRegistryView = RegistryView<T, RVMode::Exclude, IsMutable>;
 template <typename T>
-using InputExcludingRegistryView = ExcludingRegistryView<T, true>;
+using InputExcludingRegistryView = ExcludingRegistryView<T, false>;
+template <typename T>
+using OutputExcludingRegistryView = ExcludingRegistryView<T, true>;
 
 template <typename T, bool IsMutable>
 using IncludingRegistryView = RegistryView<T, RVMode::Include, IsMutable>;
 template <typename T>
-using InputIncludingRegistryView = IncludingRegistryView<T, true>;
+using InputIncludingRegistryView = IncludingRegistryView<T, false>;
+template <typename T>
+using OutputIncludingRegistryView = IncludingRegistryView<T, true>;
 
 template <typename T, bool IsMutable>
 using OrderedRegistryView = RegistryView<T, RVMode::OrderedInclude, IsMutable>;
 template <typename T>
-using InputOrderedRegistryView = OrderedRegistryView<T, true>;
+using InputOrderedRegistryView = OrderedRegistryView<T, false>;
+template <typename T>
+using OutputOrderedRegistryView = OrderedRegistryView<T, true>;
 
 // Deduction guides
 // By default, if I don't pass a UniqueStringSequence, it is of type exclude with a null pointer (so like accessing the whole registry).

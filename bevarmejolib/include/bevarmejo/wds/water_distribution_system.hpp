@@ -203,9 +203,9 @@ public:
     auto subnetwork_excluding(const std::string& id_sequence_name) const -> RegistryView<T, RVMode::Exclude, /*IsMutable = */ false>;
 
     template <typename T>
-    auto subnetwork_with_order(const std::string& id_sequence_name) -> RegistryView<T, RVMode::OrderedInclude, /*IsMutable = */ true>;
+    auto subnetwork_with_order(const ID& id_sequence_name) -> OutputOrderedRegistryView<T>;
     template <typename T>
-    auto subnetwork_with_order(const std::string& id_sequence_name) const -> RegistryView<T, RVMode::OrderedInclude, /*IsMutable = */ false>;
+    auto subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>;
 
     /*--- System's Network Elements ---*/
     Junction& junction(const ID& id);
@@ -439,7 +439,34 @@ auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) 
             "You are trying to get a subnetwork with an invalid type.");
 }
 
+template <typename T>
+auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>
+{
+    if constexpr (std::is_same_v<T, Node>)
+        return RegistryView<Node, RVMode::OrderedInclude, false>(_nodes_, m__id_sequences.get(id_sequence_name));
 
+    else if constexpr (std::is_same_v<T, Junction>)
+        return RegistryView<Junction, RVMode::OrderedInclude, false>(_junctions_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Reservoir>)
+        return RegistryView<Reservoir, RVMode::OrderedInclude, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Tank>)
+        return RegistryView<Tank, RVMode::OrderedInclude, false>(_tanks_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Link>)
+        return RegistryView<Link, RVMode::OrderedInclude, false>(_links_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pipe>)
+        return RegistryView<Pipe, RVMode::OrderedInclude, false>(_pipes_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pump>)
+        return RegistryView<Pump, RVMode::OrderedInclude, false>(_pumps_, m__id_sequences.get(id_sequence_name));
+
+    else
+        static_assert(std::true_type::value, 
+            "You are trying to get a subnetwork with an invalid type.");
+}
 /*------- Modifiers -------*/
 // Emplace whatever you want in the system.
 

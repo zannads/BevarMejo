@@ -542,7 +542,7 @@ void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl)
     auto pop_fitnesses  = pop.get_f();
     for (auto individual = 0u; individual<pop.size(); ++individual){
         jinds.push_back({
-            {io::key::EN_id(), population_ids[individual]},
+            {io::key::id(), population_ids[individual]},
             {io::key::dv(), pop_dvs[individual]},
             {io::key::fv(), pop_fitnesses[individual]}
         });

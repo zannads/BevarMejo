@@ -212,6 +212,11 @@ auto WaterDistributionSystem::time_series(const std::string& name) const -> cons
     return m__times.time_series(name);
 }
 
+auto WaterDistributionSystem::current_result_time() const -> time::Instant
+{
+    return m__times.results().back();
+}
+
 /*------- Capacity -------*/
 auto WaterDistributionSystem::empty() const noexcept -> bool
 {

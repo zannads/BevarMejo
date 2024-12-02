@@ -35,11 +35,57 @@ Node::Node(const WaterDistributionSystem& wds, const EN_Name_t& name) :
 
 /*------- Element access -------*/
 // === Read/Write properties ===
+double& Node::x_coord()
+{
+    return m__x_coord;
+}
+double Node::x_coord() const
+{
+    return m__x_coord;
+}
+
+double& Node::y_coord()
+{
+    return m__y_coord;
+}
+double Node::y_coord() const
+{
+    return m__y_coord;
+}
+
+double& Node::elevation()
+{
+    return m__elevation;
+}
+double Node::elevation() const
+{
+    return m__elevation;
+}
+
+double& Node::z_coord()
+{
+    return m__elevation;
+}
+double Node::z_coord() const
+{
+    return m__elevation;
+}
 
 // === Read-only properties ===
 auto Node::connected_links() const -> const ConnectedLinks&
 {
     return m__links;
+}
+
+// === Results ===
+auto Node::head() const -> const HeadSeries&
+{
+    return m__head;
+}
+
+auto Node::pressure() const -> const PressureSeries&
+{
+    return m__pressure;
 }
 
 /*------- Capacity -------*/
@@ -146,6 +192,26 @@ void Node::__retrieve_EN_results()
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;
     m__pressure.commit(t, val);
+}
+
+void Node::x_coord(double a_x_coord)
+{
+    m__x_coord = a_x_coord;
+}
+
+void Node::y_coord(double a_y_coord)
+{
+    m__y_coord = a_y_coord;
+}
+
+void Node::elevation(double a_elevation)
+{
+    m__elevation = a_elevation;
+}
+
+void Node::z_coord(double a_z_coord)
+{
+    m__elevation = a_z_coord;
 }
 
 void Node::connect_link(Link_ptr a_link)

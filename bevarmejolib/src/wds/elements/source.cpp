@@ -33,6 +33,12 @@ bool Source::has_demand() const
     return false;
 }
 
+// === Results ===
+auto Source::inflow() const -> const FlowSeries&
+{
+    return m__inflow;
+}
+
 /*------- Capacity -------*/
 
 /*------- Modifiers -------*/

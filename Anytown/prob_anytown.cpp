@@ -1285,12 +1285,12 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::mixed_f1:
 			[[fallthrough]];
 		case Formulation::twoph_f1:
-			append_bounds(fep1::bounds__exis_pipes, m__anytown->subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__pipes_alt_costs);
+			append_bounds(fep1::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__pipes_alt_costs);
 			break;
 		case Formulation::rehab_f2:
 			[[fallthrough]];
 		case Formulation::mixed_f2:
-			append_bounds(fep2::bounds__exis_pipes, m__anytown->subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__pipes_alt_costs);
+			append_bounds(fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__pipes_alt_costs);
 			break;
 		default:
 			break;
@@ -1298,7 +1298,7 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 
 	// New pipes (all design problems)
 	if (m__formulation != Formulation::opertns_f1)
-		append_bounds(bounds__new_pipes, m__anytown->subnetwork_with_order<WDS::Pipe>("new_pipes"), m__pipes_alt_costs);
+		append_bounds(bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("new_pipes"), m__pipes_alt_costs);
 
 	// Pumps (all problems with operations)
 	switch (m__formulation)
@@ -1316,7 +1316,7 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 
 	// Tanks (all design problems)
 	if (m__formulation != Formulation::opertns_f1)
-		append_bounds(fnt1::bounds__tanks, m__anytown->subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tanks_costs);
+		append_bounds(fnt1::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tanks_costs);
 
 	return {std::move(lb), std::move(ub)};
 }

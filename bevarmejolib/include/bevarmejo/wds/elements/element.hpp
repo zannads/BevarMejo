@@ -104,7 +104,7 @@ public:
 public:
     virtual void retrieve_EN_index() = 0;
 
-    virtual void retrieve_EN_properties() = 0;
+    virtual void retrieve_EN_properties();
 };
 
 } // namespace wds
