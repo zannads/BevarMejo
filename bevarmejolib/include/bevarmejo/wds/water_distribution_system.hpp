@@ -629,6 +629,18 @@ auto WaterDistributionSystem::erase(const ID& id) -> size_type
     static_assert(std::true_type::value, "Unreachable code.");
 }
 
+// Special modifications
+// Duplicate a link (install a copy in parallel)
+template <typename L>
+auto WaterDistributionSystem::duplicate(const ID& existing_link_id, const ID& new_link_id) -> L&
+{
+    auto existing_link = _links_.get<L>(existing_link_id);
+    return install<L>(new_link_id,
+        existing_link->from_node()->id(), existing_link->to_node()->id(),
+        *existing_link);
+}
+
+
 using WDS = WaterDistributionSystem; // Short for WaterDistributionSystem
 
 } // namespace bevarmejo

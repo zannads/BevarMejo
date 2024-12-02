@@ -43,7 +43,6 @@ set(WDS_LINKS
 )
 
 set(WDS_AUX     
-        "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
         "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
         "${WDS_SRC_ROOT}/auxiliary/global_times.cpp"
         "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"

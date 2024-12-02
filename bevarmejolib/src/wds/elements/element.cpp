@@ -4,68 +4,52 @@
 // Created by Dennis Zanutto on 20/10/23.
 
 #include <string>
-#include <unordered_map>
-#include <utility>
 
+#include "epanet2_enums.h"
+
+#include "bevarmejo/bemexcept.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+#include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "element.hpp"
 
-namespace bevarmejo {
-namespace wds {
+namespace bevarmejo::wds
+{
 
-Element::Element() :
-    _id_(""),
-    _index_(0),
-    m__ud_properties() { }
+Element::Element(const WaterDistributionSystem& wds, const EN_Name_t& name) :
+    m__wds(wds),
+    m__name(name),
+    m__en_index(0),
+    m__ud_properties()
+{
+    // For EPANET compatibility the string must be shorter then EN_MAXID
+    if (name.size() > EN_MAXID)
+        __format_and_throw<std::invalid_argument>("Element", "Element", "The element ID/name is too long.",
+            "To allow for EPANET compatibility the ID/name must be shorter than 32 characters.",
+            "ID/name: ", name,
+            "Length: ", name.size());
 
-Element::Element(const std::string& id) :
-    _id_(id),
-    _index_(0),
-    m__ud_properties() { }
+    // Let's retrieve the index and the properties of the element, if possible.
+    if (m__wds.ph() == nullptr)
+        return;
 
-// Copy constructor
-Element::Element(const Element& other) :
-    _id_(other._id_),
-    _index_(other._index_),
-    m__ud_properties() {
-        for (auto& [key, ptr] : other.m__ud_properties) {
-            m__ud_properties[key] = ptr->clone();
-        }
-    }
-
-// Move constructor
-Element::Element(Element&& rhs) noexcept :
-    _id_(std::move(rhs._id_)),
-    _index_(rhs._index_),
-    m__ud_properties(std::move(rhs.m__ud_properties)) { }
-
-// Copy assignment operator
-Element& Element::operator=(const Element& rhs) {
-    if (this != &rhs) {
-        _id_ = rhs._id_;
-        _index_ = rhs._index_;
-        m__ud_properties.clear();
-        for (auto& [key, ptr] : rhs.m__ud_properties) {
-            m__ud_properties[key] = ptr->clone();
-        }
-    }
-    return *this;
+    this->retrieve_EN_index();
+    this->retrieve_EN_properties();
 }
 
-// Move assignment operator
-Element& Element::operator=(Element&& rhs) noexcept {
-    if (this != &rhs) {
-        _id_ = std::move(rhs._id_);
-        _index_ = rhs._index_;
-        m__ud_properties = std::move(rhs.m__ud_properties);
-    }
-    return *this;
+auto Element::name() const -> const EN_Name_t&
+{
+    return m__name;
 }
 
-bool Element::operator==(const Element& rhs) const {
-    return _id_ == rhs._id_;
+auto Element::EN_id() const -> const EN_Name_t&
+{
+    return name();
 }
 
-} // namespace wds
-} // namespace bevarmejo
+auto Element::EN_index() const -> EN_Index_t
+{
+    return m__en_index;
+}
+
+} // namespace bevarmejo::wds
