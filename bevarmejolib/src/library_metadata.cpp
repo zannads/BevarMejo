@@ -13,8 +13,8 @@
 namespace bevarmejo::detail {
 
 constexpr unsigned int version_year = 2024;
-constexpr unsigned int version_month = 10;
-constexpr unsigned int version_release = 1;
+constexpr unsigned int version_month = 12;
+constexpr unsigned int version_release = 0;
 
 namespace io::log::cname {
 static const std::string version = "Version"; // "Version"
