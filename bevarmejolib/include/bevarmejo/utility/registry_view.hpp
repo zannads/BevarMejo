@@ -336,17 +336,26 @@ private:
 
             return *this;
         }
-        iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+        iterator_type operator++(int)
+        {
+            auto tmp = *this;
+            ++(*this);
+            return tmp;
+        }
         
         iterator_type& operator+=(size_type n)
         {
-            while (n)
+            while (n--)
+            {
                 ++(*this);
-                    --n;
-
+            }
             return *this;
         }
-        iterator_type operator+(size_type n) const {auto tmp= *this; return tmp += n;}
+        iterator_type operator+(size_type n) const
+        {
+            auto tmp = *this;
+            return tmp += n;
+        }
 
         difference_type operator-(const iterator_type &other) const
         {
@@ -543,17 +552,26 @@ private:
             i__uss = p__uss->size();
             return *this;
         }
-        iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+        iterator_type operator++(int)
+        {
+            auto tmp = *this; 
+            ++(*this);
+            return tmp;
+        }
 
         iterator_type& operator+=(size_type n)
         {
-            while (n)
+            while (n--)
+            {
                 ++(*this);
-                    --n;
-
+            }
             return *this;
         }
-        iterator_type operator+(size_type n) const {auto tmp= *this; return tmp += n;}
+        iterator_type operator+(size_type n) const
+        {
+            auto tmp = *this; 
+            return tmp += n;
+        }
 
         difference_type operator-(const iterator_type &other) const
         {
@@ -568,7 +586,9 @@ private:
             {
                 auto it = *this;
                 while (it++ != other)
+                {
                     ++diff;
+                }
 
                 return diff;
             }
@@ -576,7 +596,9 @@ private:
             {
                 auto it = other;
                 while (it++ != *this)
+                {
                     --diff;
+                }
 
                 return diff;
             }

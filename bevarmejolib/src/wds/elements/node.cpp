@@ -174,20 +174,22 @@ void Node::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
-    __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
-        "Property: EN_HEAD",
-        "Error code: ", errorcode,
-        "Node ID: ", m__name);
-    
+    if (errorcode > 100)
+        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
+            "Property: EN_HEAD",
+            "Error code: ", errorcode,
+            "Node ID: ", m__name);
+        
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__head.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_PRESSURE, &val);
-    __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
-        "Property: EN_PRESSURE",
-        "Error code: ", errorcode,
-        "Node ID: ", m__name);
+    if (errorcode > 100)
+        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
+            "Property: EN_PRESSURE",
+            "Error code: ", errorcode,
+            "Node ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;

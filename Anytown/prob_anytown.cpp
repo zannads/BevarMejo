@@ -372,10 +372,12 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	
 	apply_dv(m__anytown, dvs);
 	
-	try {
+	try
+	{
 		m__anytown->run_hydraulics();
-	} catch (...) {
-		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation.\n");
+	} catch (const std::exception& e)
+	{
+		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation: ", e.what(), "\n");
 		reset_dv(m__anytown, dvs);
 		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
 					std::numeric_limits<double>::max());
@@ -1133,7 +1135,9 @@ void fep1::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 		std::size_t alt_option = *curr_dv++;
 
 		if (action_type == 0) // no action
+		{
 			continue;
+		}
 
 		else if (action_type == 1) // clean
 		{

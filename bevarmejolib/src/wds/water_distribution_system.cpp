@@ -477,10 +477,14 @@ void WaterDistributionSystem::run_hydraulics()
             m__times.results().commit(t);
             
             for (const auto& [id, node] : _nodes_)
+            {
                 node.retrieve_EN_results();
+            }
             
             for (const auto& [id, link] : _links_)
+            {
                 link.retrieve_EN_results();
+            }
         }
 
         errorcode = EN_nextH(ph_, &delta_t);
