@@ -213,7 +213,7 @@ protected:
     std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
-    mutable std::unordered_map<std::string, double> m__old_HW_coeffs; // Store the old HW coefficients for reset_dv
+    mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:
     pagmo::algorithm m_algo;
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.

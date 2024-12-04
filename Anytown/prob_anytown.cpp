@@ -400,21 +400,21 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	switch (m__formulation)
 	{
 	case Formulation::rehab_f1: {
-		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		fep1::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 		// No pump apply
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs);
 		return;
 	}
 	case Formulation::mixed_f1: {
-		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		fep1::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 		apply_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()), m__tanks_costs);
 		return;
 	}
 	case Formulation::twoph_f1: {
-		fep1::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
+		fep1::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+70), m__pipes_alt_costs);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76), m__pipes_alt_costs);
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()), m__tanks_costs);
 
@@ -456,14 +456,14 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 		return;
 	}
 	case Formulation::rehab_f2: {
-		fep2::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
 		// No pumps apply
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()), m__tanks_costs);
 		return;
 	}
 	case Formulation::mixed_f2: {
-		fep2::apply_dv__exis_pipes(*anytown, m__old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
+		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__pipes_alt_costs);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__pipes_alt_costs);
 		apply_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+65, dvs.end()), m__tanks_costs);
@@ -597,21 +597,21 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	switch (m__formulation)
 	{
 	case Formulation::rehab_f1: {
-		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
 		// No pumps reset
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()));
 		return;
 	}
 	case Formulation::mixed_f1: {
-		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
 		reset_dv__pumps(*anytown, std::vector(dvs.begin()+76, dvs.begin()+100));
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+100, dvs.end()));
 		return;
 	}
 	case Formulation::twoph_f1: {
-		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), m__old_HW_coeffs);
+		fep1::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+70), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+70, dvs.begin()+76));
 		// No pumps reset and no need to do anything to the internal opt problem.
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+76, dvs.end()));
@@ -622,14 +622,14 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 		return;
 	}
 	case Formulation::rehab_f2: {
-		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), m__old_HW_coeffs);
+		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
 		// No pumps reset
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()));
 		return;
 	}
 	case Formulation::mixed_f2: {
-		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), m__old_HW_coeffs);
+		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
 		reset_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+65, dvs.end()));
@@ -850,17 +850,18 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 {
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 
+	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
+	std::unordered_set<std::size_t> already_installed_tanks;
+
 	auto curr_dv = dvs.begin();
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t tank_vol_option = *curr_dv++;
+		std::size_t new_tank_loc_shift = action_type-1; // -1 because the first option is no action.
 		
 		// Safety check that I don't install the second tank on a location where there is already one.
-		if (i > 0 && action_type > 0 && action_type == *(curr_dv-2))
-			action_type = 0;
-
-		if (action_type == 0)
+		if (action_type == 0 || (i > 0 && already_installed_tanks.count(new_tank_loc_shift) != 0))
 		{
 #ifdef DEBUGSIM
 			io::stream_out(std::cout, "No action for tank T"+std::to_string(i)+".\n");
@@ -868,8 +869,7 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 			continue;
 		}
 		// else if (action_type > 1) // install
-		std::size_t new_tank_loc_shift = action_type-1; // -1 because the first option is no action.
-
+		
 		auto&& [junction_id, junction] = *(anytown.subnetwork_with_order<WDS::Junction>("possible_tank_locations").begin() + new_tank_loc_shift);
 
 		// I should create a new tank at that position and with that volume
@@ -938,9 +938,10 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 		anytown.cache_indices();
 		assert(riser.EN_index() != 0 && riser.EN_index() == riser_idx);
 
-		// add them to the "TBR" net
+		// add them to the "TBR" net and the already installed tanks
 		anytown.id_sequence(label::__temp_elems).push_back(new_tank_id);
 		anytown.id_sequence(label::__temp_elems).push_back(riser_id);
+		already_installed_tanks.insert(new_tank_loc_shift);
 #ifdef DEBUGSIM
 		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->EN_id(), 
 		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
@@ -1092,18 +1093,16 @@ double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, con
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 
 	double capital_cost = 0.0;
+	std::unordered_set<std::size_t> already_installed_tanks;
 
 	auto curr_dv = dvs.begin();
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t tank_vol_option = *curr_dv++;
-		
-		// Safety check that I don't install the second tank on a location where there is already one.
-		if (i > 0 && action_type > 0 && action_type == *(curr_dv-2))
-			action_type = 0;
+		std::size_t new_tank_loc_shift = action_type-1;
 
-		if (action_type == 0)
+		if (action_type == 0 || (i > 0 && already_installed_tanks.count(new_tank_loc_shift) != 0))
 		{
 			continue;
 		}
@@ -1176,7 +1175,9 @@ void fep2::reset_dv__exis_pipes(WDS &anytown, const std::vector<double> &dvs, co
 		std::size_t alt_option = dv-2; // -2 because the first two options are no action and clean
 
 		if (dv == 0)
+		{
 			continue;
+		}
 
 		else if (dv == 1) // clean
 		{
@@ -1236,21 +1237,21 @@ void reset_dv__pumps(WDS& anytown, const std::vector<double>& dvs)
 
 void fnt1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs)
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);	
+	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+
+	std::unordered_set<std::size_t> already_installed_tanks;
 
 	auto curr_dv = dvs.begin();
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t tank_vol_option = *curr_dv++;
+		std::size_t new_tank_loc_shift = action_type-1;
 		
-		// Safety check that I don't install the second tank on a location where there is already one.
-		if (i > 0 && action_type > 0 && action_type == *(curr_dv-2))
-			action_type = 0;
-
-		if (action_type == 0) // no action
+		if (action_type == 0 || (i > 0 && already_installed_tanks.count(new_tank_loc_shift) != 0))
+		{
 			continue;
-
+		}
 		// else if (action_type > 1) // install
 		auto new_tank_id = std::string("T")+std::to_string(i);
 		auto riser_id = std::string("Ris_")+std::to_string(i);
@@ -1263,6 +1264,8 @@ void fnt1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs)
 		anytown.id_sequence(label::__temp_elems).erase(riser_id);
 		anytown.remove_tank(new_tank_id);
 		anytown.cache_indices();
+
+		already_installed_tanks.insert(new_tank_loc_shift);
 	}
 	assert(curr_dv == dvs.end());
 	return;
