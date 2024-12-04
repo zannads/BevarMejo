@@ -142,7 +142,7 @@ wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterD
     // Extract head and flows from the demand nodes, and reservoirs. Power for the pumps
     // Calculate the resilience index at each time step and return it as a timeseries
 
-    std::vector<double> req_heads_dnodes_m(a_wds.junctions().size(), min_press_dnodes_m);
+    std::vector<double> req_heads_dnodes_m(a_wds.n_junctions(), min_press_dnodes_m);
 
     // add the elevation to the min pressure to get the required head.
     auto itj = a_wds.junctions().begin();
@@ -155,14 +155,14 @@ wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterD
         ++ith;
     }
 
-    wds::aux::QuantitySeries<double> res_index(a_wds.time_series(label::__RESULTS_TS));
-    for (const auto& [t, temp] : a_wds.junctions().front().value.demand_requested() )
+    wds::aux::QuantitySeries<double> res_index(a_wds.result_time_series());
+    for (auto t : a_wds.result_time_series())
     {
-        std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.junctions().size());
-        std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.junctions().size());
-        std::vector<double> flows_sources;      flows_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
-        std::vector<double> heads_sources;      heads_sources.reserve(a_wds.reservoirs().size() + a_wds.tanks().size());
-        std::vector<double> powers_pumps;       powers_pumps.reserve(a_wds.pumps().size());
+        std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.n_junctions());
+        std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.n_junctions());
+        std::vector<double> flows_sources;      flows_sources.reserve(a_wds.n_reservoirs() + a_wds.n_tanks());
+        std::vector<double> heads_sources;      heads_sources.reserve(a_wds.n_reservoirs() + a_wds.n_tanks());
+        std::vector<double> powers_pumps;       powers_pumps.reserve(a_wds.n_pumps());
 
         for (const auto& [id, junction] : a_wds.junctions() )
         {
@@ -193,7 +193,7 @@ wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterD
                                 powers_pumps));
     }
 
-    return res_index;
+    return std::move(res_index);
 }
 
 // follows the same orderd you find in the formula in Todini (2000)

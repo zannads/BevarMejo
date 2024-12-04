@@ -212,6 +212,16 @@ auto WaterDistributionSystem::time_series(const std::string& name) const -> cons
     return m__times.time_series(name);
 }
 
+auto WaterDistributionSystem::result_time_series() -> TimeSeries&
+{
+    return m__times.results();
+}
+
+auto WaterDistributionSystem::result_time_series() const -> const TimeSeries&
+{
+    return m__times.results();
+}
+
 auto WaterDistributionSystem::current_result_time() const -> time::Instant
 {
     return m__times.results().back();
@@ -234,6 +244,11 @@ auto WaterDistributionSystem::empty_network() const noexcept -> bool
     return _nodes_.empty() && _links_.empty();
 }
 
+auto WaterDistributionSystem::has_tanks() const noexcept -> bool
+{
+    return !_tanks_.empty();
+}
+
 auto WaterDistributionSystem::size() const noexcept -> size_t
 {
     return (
@@ -248,6 +263,41 @@ auto WaterDistributionSystem::size() const noexcept -> size_t
 auto WaterDistributionSystem::network_size() const noexcept -> size_t
 {
     return _nodes_.size() + _links_.size();
+}
+
+auto WaterDistributionSystem::n_nodes() const noexcept -> size_t
+{
+    return _nodes_.size();
+}
+
+auto WaterDistributionSystem::n_links() const noexcept -> size_t
+{
+    return _links_.size();
+}
+
+auto WaterDistributionSystem::n_junctions() const noexcept -> size_t
+{
+    return _junctions_.size();
+}
+
+auto WaterDistributionSystem::n_reservoirs() const noexcept -> size_t
+{
+    return _reservoirs_.size();
+}
+
+auto WaterDistributionSystem::n_tanks() const noexcept -> size_t
+{
+    return _tanks_.size();
+}
+
+auto WaterDistributionSystem::n_pipes() const noexcept -> size_t
+{
+    return _pipes_.size();
+}
+
+auto WaterDistributionSystem::n_pumps() const noexcept -> size_t
+{
+    return _pumps_.size();
 }
 
 /*------- Modifiers -------*/

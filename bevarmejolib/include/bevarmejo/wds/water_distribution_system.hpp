@@ -236,6 +236,9 @@ public:
     TimeSeries& time_series(const std::string& name);
     const TimeSeries& time_series(const std::string& name) const;
 
+    TimeSeries& result_time_series();
+    const TimeSeries& result_time_series() const;
+
     time::Instant current_result_time() const;
 
 /*------- Capacity -------*/
@@ -246,11 +249,35 @@ public:
     // Check if the system has a network (contains nodes and links).
     bool empty_network() const noexcept;
 
+    // Check if the network has tanks.
+    bool has_tanks() const noexcept;
+
     // Number of system's components.
     size_t size() const noexcept;
 
     // Number of network's elements (nodes and links).
     size_t network_size() const noexcept;
+
+    // Number of network's nodes.
+    size_t n_nodes() const noexcept;
+
+    // Number of network's links.
+    size_t n_links() const noexcept;
+
+    // Number of network's junctions.
+    size_t n_junctions() const noexcept;
+
+    // Number of network's reservoirs.
+    size_t n_reservoirs() const noexcept;
+
+    // Number of network's tanks.
+    size_t n_tanks() const noexcept;
+
+    // Number of network's pipes.
+    size_t n_pipes() const noexcept;
+
+    // Number of network's pumps.
+    size_t n_pumps() const noexcept;
 
 /*------- Modifiers -------*/
 // We can:

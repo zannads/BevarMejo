@@ -201,7 +201,7 @@ void Junction::__retrieve_EN_results()
     // I have not uploaded the head of the junction yet because it is a node property.
     // Therefore I simply check if the head at that index is negative.
 
-    if (consumed > 0 && ph->hydraul.DemandModel == DDA && ph->hydraul.NodeHead[m__en_index] < 0)
+    if (consumed > 0 && ph->hydraul.DemandModel == DDA && ph->hydraul.NodeHead[m__en_index] <= 0)
     {
         undeliv = consumed;
         consumed = 0.0;
