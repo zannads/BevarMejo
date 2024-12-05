@@ -201,16 +201,20 @@ void Junction::__retrieve_EN_results()
     // I have not uploaded the head of the junction yet because it is a node property.
     // Therefore I simply check if the head at that index is negative.
 
-    if (consumed > 0 && ph->hydraul.DemandModel == DDA && ph->hydraul.NodeHead[m__en_index] <= 0)
+    if (consumed > 0 && ph->hydraul.DemandModel == DDA && ph->hydraul.NodeHead[m__en_index] < 0)
     {
-        undeliv = consumed;
-        consumed = 0.0;
-        emitter_flow = 0.0;
+        m__demand.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));
+        m__consumption.commit(t, epanet::convert_flow_to_L_per_s(ph, 0));
+        m__undelivered_demand.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));       
+    }
+    else
+    {
+        m__demand.commit(t, epanet::convert_flow_to_L_per_s(ph, (consumed - emitter_flow)));
+        m__consumption.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));
+        m__undelivered_demand.commit(t, epanet::convert_flow_to_L_per_s(ph, undeliv));    
     }
     
-    m__demand.commit(t, epanet::convert_flow_to_L_per_s(ph, (consumed - emitter_flow)));
-    m__consumption.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));
-    m__undelivered_demand.commit(t, epanet::convert_flow_to_L_per_s(ph, undeliv));    
+    
 }
 
 

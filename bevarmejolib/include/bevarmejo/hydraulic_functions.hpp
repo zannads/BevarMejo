@@ -36,13 +36,22 @@ namespace bevarmejo {
     wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterDistributionSystem& a_wds,
                                                 const double min_press_dnodes_m=14.0);
     
-    double resilience_index(const std::vector<double>& req_flows_dnodes_lps, 
-                            const std::vector<double>& head_dnodes_m,
-                            const std::vector<double>& req_head_dnodes_m,
-                            const std::vector<double>& flow_reserv_lps, 
-                            const std::vector<double>& head_reserv_m,
-                            const std::vector<double>& power_pumps_kw);
- 
+
+// Resilience index as defined in Todini (2000).
+// This function calculates the resilience index for a single time step simulation.
+// This function assumes that the simulation was a Demand Driven Analysis (DDA)
+// and that the simulation did not fail.
+// There is only a simple safety check for negative heads in the nodes, but this
+// is not enough to ensure that the simulation was valid (head can be positive 
+// but with high elevation, pressures can be negative).
+
+double resilience_index(const std::vector<double>& req_flows_dnodes_lps, 
+                        const std::vector<double>& head_dnodes_m,
+                        const std::vector<double>& req_head_dnodes_m,
+                        const std::vector<double>& flow_reserv_lps, 
+                        const std::vector<double>& head_reserv_m,
+                        const std::vector<double>& power_pumps_kw);
+
 } // namespace bevarmejo
 
 #endif // BEVARMEJOLIB__HYDRAULIC_FUNCTIONS_HPP

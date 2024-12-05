@@ -145,18 +145,15 @@ wds::aux::QuantitySeries<double> resilience_index_from_min_pressure(const WaterD
     std::vector<double> req_heads_dnodes_m(a_wds.n_junctions(), min_press_dnodes_m);
 
     // add the elevation to the min pressure to get the required head.
-    auto itj = a_wds.junctions().begin();
-    auto ith = req_heads_dnodes_m.begin();
-    while (itj != a_wds.junctions().end())
-    {    
-        *ith += itj->elevation();
-
-        ++itj;
-        ++ith;
+    auto it = req_heads_dnodes_m.begin();
+    for (const auto& [id, junction] : a_wds.junctions() )
+    {
+        *it += junction.elevation();
+        ++it;
     }
 
     wds::aux::QuantitySeries<double> res_index(a_wds.result_time_series());
-    for (auto t : a_wds.result_time_series())
+    for ( auto t : a_wds.result_time_series() )
     {
         std::vector<double> req_flows_dnodes;   req_flows_dnodes.reserve(a_wds.n_junctions());
         std::vector<double> heads_dnodes;       heads_dnodes.reserve(a_wds.n_junctions());
@@ -202,26 +199,28 @@ double resilience_index(const std::vector<double>& req_flows_dnodes_lps,
                         const std::vector<double>& req_head_dnodes_m,
                         const std::vector<double>& flow_reserv_lps, 
                         const std::vector<double>& head_reserv_m,
-                        const std::vector<double>& power_pumps_kw) {
-
+                        const std::vector<double>& power_pumps_kw)
+{
     assert(req_flows_dnodes_lps.size() == head_dnodes_m.size());
     assert(head_dnodes_m.size() == req_head_dnodes_m.size());
     assert(flow_reserv_lps.size() == head_reserv_m.size());
 
-
     // numerator: sum_{i=1}^{n_dnodes}(q_i*(h_i-h_i^req))
-    bool dda_invalidate = false;
     double numerator = 0.0;
-    for (std::size_t i = 0; ( !dda_invalidate ) && ( i < req_flows_dnodes_lps.size() ); ++i) {
+    for (std::size_t i = 0; i < req_flows_dnodes_lps.size(); ++i)
+    {
         // if the head is lower than zero, and the demand is not zero, then the head is not enough, the results are 
         // coming from a Demand Driven Analysis. By the definition, you are not 
         // satisfying the demand, so the Ir is 0. We just need one case.
-        if (head_dnodes_m[i] < 0 && req_flows_dnodes_lps[i] > 0)
-            dda_invalidate = true;
+        if (head_dnodes_m[i] <= 0.0 && req_flows_dnodes_lps[i] > 0.0)
+        {
+            return 0.0;
+        }
         else
+        {
             numerator += req_flows_dnodes_lps[i] * (head_dnodes_m[i] - req_head_dnodes_m[i]) / 1000; // from L/s to M^3/s
-    }
-    if (dda_invalidate) return 0.0;
+        }
+    }    
 
     // denominator: 
     // sum_{i=1}^{n_reservoirs}(q_i*h_i)
