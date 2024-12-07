@@ -13,7 +13,7 @@ using json_o = nlohmann::json;
 #include <pagmo/problem.hpp>
 
 #include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/io/streams.hpp"
 
 #include "bevarmejo/io/keys/beme.hpp"

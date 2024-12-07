@@ -23,7 +23,7 @@ namespace fsys = std::filesystem;
 using json_o = nlohmann::json;
 
 #include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/io/fsys_helpers.hpp"
+#include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
@@ -237,7 +237,7 @@ void Problem::load_network(json_o settings, std::vector<fsys::path> lookup_paths
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
 	m__anytown = std::make_shared<WDS>(
-		bemeio::locate_file(inp_filename, lookup_paths, /*log= */ true), 
+		bemeio::locate_file</* log = */true>(inp_filename, lookup_paths), 
 		preprocessf
 	);
 }

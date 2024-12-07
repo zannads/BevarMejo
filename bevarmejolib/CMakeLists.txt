@@ -51,7 +51,6 @@ set(WDS_AUX
 )
 
 set(IO_FILES
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/fsys_helpers.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/key.cpp"
 )
 
