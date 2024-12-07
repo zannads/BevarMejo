@@ -144,7 +144,8 @@ void TimeSeries::reset() noexcept { m__time_steps.clear(); }
 
 /*----------------------------------------------------------------------------*/
 
-void TimeSeries::remove_leading_zero() {
+void TimeSeries::remove_leading_zero()
+{
     // Since with commit I can add 0 when m__time_steps is empty and when I
     // use the method time_steps also 0 is added, I need to remove eventual starting 0.
     // However, I only remove one because this is meant to be called only on construction
@@ -156,20 +157,16 @@ void TimeSeries::remove_leading_zero() {
 // A time series is a monotonically increasing sequence of times, starting from 
 // values greater than 0 (0 is treated as default value). The time steps can go 
 // over the duration but I will print 
-void TimeSeries::check_valid() const {
+void TimeSeries::check_valid() const
+{
+    beme_throw_if(!is_monotonic(m__time_steps), std::invalid_argument,
+        "Time steps are not valid.",
+        "Time steps are not monotonically increasing.");
 
-    if (!is_monotonic(m__time_steps))
-        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
-                                                  "Time steps are not valid.", 
-            "Time steps are not monotonically increasing.");
-
-     if (!starts_after_zero(m__time_steps))
-        __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::check_valid, 
-                                                "Time steps are not valid.", 
-            "Time steps do not start after zero.",
-            "First time step: ", m__time_steps.front());
-        
-        
+    beme_throw_if(!starts_after_zero(m__time_steps), std::invalid_argument,
+        "Time steps are not valid.",
+        "Time steps do not start after zero.",
+        "First time step: ", m__time_steps.front());
 }
 
 } // namespace aux

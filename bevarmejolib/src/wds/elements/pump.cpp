@@ -6,7 +6,7 @@
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/pattern.hpp"
 #include "bevarmejo/wds/auxiliary/curve.hpp"
@@ -82,29 +82,29 @@ void Pump::__retrieve_EN_properties()
 
     double val = 0.0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_INITSETTING, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_properties", "Error retrieving properties of pump.",
-            "Property: EN_INITSETTING",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the pump.",
+        "Error while retrieving value: EN_INITSETTING",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__init_setting = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_POWER, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_properties", "Error retrieving properties of pump.",
-            "Property: EN_PUMP_POWER",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the pump.",
+        "Error while retrieving value: EN_PUMP_POWER",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__power_rating = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_ECOST, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_properties", "Error retrieving properties of pump.",
-            "Property: EN_PUMP_ECOST",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the pump.",
+        "Error while retrieving value: EN_PUMP_ECOST",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__energy_cost = val;
 
@@ -164,29 +164,29 @@ void Pump::__retrieve_EN_results()
 
     double val;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_ENERGY, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_results", "Error retrieving results of pump.",
-            "Property: EN_ENERGY",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the pump.",
+        "Error while retrieving value: EN_ENERGY",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__instant_energy.commit(t, val);
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_STATUS, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_results", "Error retrieving results of pump.",
-            "Property: EN_STATUS",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the pump.",
+        "Error while retrieving value: EN_STATUS",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__state.commit(t, static_cast<int>(val));
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_EFFIC, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Pump", "retrieve_EN_results", "Error retrieving results of pump.",
-            "Property: EN_PUMP_EFFIC",
-            "Error code: ", errorcode,
-            "Pump ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the pump.",
+        "Error while retrieving value: EN_PUMP_EFFIC",
+        "Error code: ", errorcode,
+        "Pump ID: ", m__name);
 
     m__efficiency.commit(t, val);
 

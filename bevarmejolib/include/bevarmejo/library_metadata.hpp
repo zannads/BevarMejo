@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 namespace bevarmejo {
 
@@ -120,16 +120,13 @@ private:
     void set(Args... args) {
         auto v = detail::Version(std::forward<Args>(args)...);
 
-        if (v < first_v())
-            __format_and_throw<std::invalid_argument, bevarmejo::ClassError>(
-                "VersionManager", "set", "Impossible to set the requested version.",
-                "The requested version is before the first version."
-                "Version = " + v.str()
-            );
-    
-        else
-            version_ = v;
-
+        beme_throw_if( v < first_v(), std::invalid_argument,
+            "Impossible to set the requested version.",
+            "The requested version is before the first version.",
+            "Version = ", v.str()
+        );
+        
+        version_ = v;
     }
 
 }; // class VersionManager

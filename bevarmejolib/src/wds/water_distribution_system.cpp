@@ -314,27 +314,25 @@ auto WaterDistributionSystem::n_pumps() const noexcept -> size_t
 
 auto WaterDistributionSystem::submit_id_sequence(const fsys::path& file_path) -> IDSequence&
 {
-    if (!fsys::exists(file_path))
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
-            "File does not exist.", "File: ", file_path);
-
+    // We assume the file exist and it's a valid file. Use locate_file() before calling this function.
     std::ifstream ifs(file_path);
-    if (!ifs.is_open())
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
-            "Error opening the file.", "File: ", file_path);
-
+    beme_throw_if(!ifs.is_open(), std::runtime_error,
+        "Impossible to insert the element(s).",
+        "Error opening the file.",
+        "File: ", file_path);
+    
     // Asssume it works form a JSON or my custom type, I will get a vector of strings.
 
     const auto [en_object_type, ids, comment] = io::get_egroup_data(ifs);
 
     auto name = file_path.stem().string();
 
-    // Because I know it's only for a list of sequence otherwise, there should be a swith(en_object_type)
     auto ret_type = m__id_sequences.emplace(std::move(name), std::move(ids));
 
-    if (!ret_type.inserted)
-        __format_and_throw<std::runtime_error>("WaterDistributionSystem", "submit_id_sequence()", "Impossible to insert the element(s).",
-            "A sequence with the same name already exists.", "Name: ", name);
+    beme_throw_if(!ret_type.inserted, std::invalid_argument,
+        "Impossible to insert the element.",
+        "A sequence with the same name already exists.",
+        "Name: ", name);
 
     return *ret_type.iterator.operator->();
 }
@@ -480,14 +478,16 @@ void WaterDistributionSystem::run_hydraulics()
     assert(ph_ != nullptr);
     // I assume indices are cached already 
     int errorcode = EN_openH(ph_);
-    if (errorcode >= 100)
-        throw std::runtime_error("Hydraulic opening failed."); // I don't think I need to close it here
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to run the hydraulic analysis.",
+        "Error while opening the hydraulics.",
+        "Error code: ", errorcode);
 
     errorcode = EN_initH(ph_, 10);
-    if (errorcode >= 100) {
-        int errorcode2 = EN_closeH(ph_);
-        throw std::runtime_error("Hydraulic initialization failed.");
-    }
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to run the hydraulic analysis.",
+        "Error while initializing the hydraulics.",
+        "Error code: ", errorcode);
 
     // if the inp file is correct these errors should be always 0
     long h_step;
@@ -511,7 +511,7 @@ void WaterDistributionSystem::run_hydraulics()
     do
     {
         errorcode = EN_runH(ph_, &t);
-
+        
         if (errorcode >= 100)
         {
             solution_has_failed = true;
@@ -545,8 +545,10 @@ void WaterDistributionSystem::run_hydraulics()
     errorcode = EN_closeH(ph_);
     assert(errorcode < 100);
 
-    if (solution_has_failed)
-        throw std::runtime_error("Hydraulic solution failed.");
+    beme_throw_if(solution_has_failed, std::runtime_error,
+        "Impossible to run the hydraulic analysis.",
+        "Critical error while running the hydraulics.",
+        "Error code: ", errorcode);
 }
 
 } // namespace bevarmejo

@@ -92,18 +92,13 @@ public:
                 (m__time_series.size()+1 == m__values.size()) );
     }
 
-    void check_access() const {
-        if ((m__time_series.size() != m__values.size()) &&
-            (m__time_series.size()+1 != m__values.size()) ) {
-            std::ostringstream errmessage;
-            bevarmejo::io::stream_out(errmessage, 
-                "QuantitySeries::check_access: Impossible to access the values with the current state.",
-                "\n\tExpected value size to be:\n\t\t", m__time_series.size(),
-                "\n\tActual value size is:\n\t\t", m__values.size()
-            );
-            
-            throw std::logic_error(errmessage.str());
-        }
+    void check_access() const
+    {
+        beme_throw_if(  (m__time_series.size() != m__values.size()) &&
+                        (m__time_series.size()+1 != m__values.size()), std::runtime_error,
+            "Impossible to access the values with the current state.",
+            "Expected value size to be: ", m__time_series.size(),
+            "Actual value size is: ", m__values.size());
     }
             
 
@@ -208,8 +203,12 @@ public:
 
         size_type pos= m__time_series.find_pos(time__s);
 
-        if (pos == m__time_series.size())
-            throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
+        beme_throw_if( pos == m__time_series.size(), std::out_of_range,
+            "Impossible to access the values with the current state.",
+            "Trying to access a time that is out of range or non existing.",
+            "Time: ", time__s,
+            "Intended position: ", pos,
+            "Time series size: ", m__time_series.size());
 
         if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return m__values.front();
@@ -221,8 +220,12 @@ public:
 
         size_type pos= m__time_series.find_pos(time__s);
 
-        if (pos == m__time_series.size()) 
-            throw std::out_of_range("QuantitySeries::when_t: time__s out of range");
+        beme_throw_if( pos == m__time_series.size(), std::out_of_range,
+            "Impossible to access the values with the current state.",
+            "Trying to access a time that is out of range or non existing.",
+            "Time: ", time__s,
+            "Intended position: ", pos,
+            "Time series size: ", m__time_series.size());
 
         if (pos == m__time_series.size() && m__time_series.size() == m__values.size())
             return m__values.front();
@@ -271,33 +274,47 @@ public:
     // No direct access to the time series! 
 
     // When the time series is a constant, you can alo access the value with some special methods:
-    reference value() {
+    reference value()
+    {
         check_access();
-        if (m__time_series.size()==1)
-            return m__values.front();
-        
-        throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+
+        beme_throw_if( m__time_series.size() != 1, std::runtime_error,
+            "Impossible to access the values with the current state.",
+            "Trying to access a constant value when the time series is not constant.",
+            "Time series size: ", m__time_series.size());
+
+        return m__values.front();
     }
-    const_reference value() const {
+    const_reference value() const
+    {
         check_access();
-        if (m__time_series.size()==1)
-            return m__values.front();
-        
-        throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+
+        beme_throw_if( m__time_series.size() != 1, std::runtime_error,
+            "Impossible to access the values with the current state.",
+            "Trying to access a constant value when the time series is not constant.",
+            "Time series size: ", m__time_series.size());
+            
+        return m__values.front();
     }
-    void value(const_reference a_value) { 
-        if (m__time_series.size()==1) {
-            if (m__values.empty())
-                m__values.push_back(a_value);
-            else
-                m__values.front()= a_value;
+    void value(const_reference a_value)
+    {
+        beme_throw_if( m__time_series.size() != 1, std::runtime_error,
+            "Impossible to set the values with the current state.",
+            "Trying to access a constant value when the time series is not constant.",
+            "Time series size: ", m__time_series.size());
+
+        if (m__values.empty())
+        {
+            m__values.push_back(a_value);
         }
-        else {
-            throw std::logic_error("QuantitySeries::value: Time series is not constant.");
+        else
+        {
+            m__values.front() = a_value;
         }
     }
     // Even simply assign it with "="
-    QuantitySeries& operator=(const_reference a_value) {
+    QuantitySeries& operator=(const_reference a_value)
+    {
         value(a_value);
         return *this;
     }
@@ -595,25 +612,24 @@ public:
     iterator erase( const_iterator first, const_iterator last );
 
     // Push back but with a name that makes sense for time series (simpler check than insert because it is always at the end)
-    void commit( time_t time__s, const_reference value ) {
-        auto pos = m__values.size();
-
-        if (pos > m__time_series.size())
-            throw std::out_of_range("QuantitySeries::commit: not enough time steps");
-
-        if (time__s != m__time_series.at(pos))
-            throw std::invalid_argument("QuantitySeries::commit: time__s must be equal to the next time step");
-
-        m__values.push_back(value);
+    void commit( time_t time__s, const_reference value )
+    {
+        commit(time__s, T(value));
     }
     void commit( time_t time__s, T&& value ) {
         auto pos = m__values.size(); 
 
-        if (pos > m__time_series.size())
-            throw std::out_of_range("QuantitySeries::commit: not enough time steps");
+        beme_throw_if( pos > m__time_series.size(), std::out_of_range,
+            "Impossible to commit the value with the current state.",
+            "Trying to commit a value when the quantity series is greater than the time series.",
+            "Time series size: ", m__time_series.size(),
+            "Quantity series size: ", pos);
 
-        if (time__s != m__time_series.at(pos))
-            throw std::invalid_argument("QuantitySeries::commit: time__s must be equal to the next time step");
+        beme_throw_if( time__s != m__time_series.at(pos), std::invalid_argument,
+            "Impossible to commit the value with the current state.",
+            "The time of the value must be equal to the last time step of the time series.",
+            "Time step: ", time__s,
+            "Expected time step: ", m__time_series.at(pos));
 
         m__values.push_back(std::move(value));
     }
@@ -685,10 +701,14 @@ public:
 using QuantitiesMap= std::unordered_map<std::string, std::unique_ptr<QuantitySeriesBase>>;
 
 template <typename T>
-QuantitySeries<T>& extract_quantity_series(QuantitiesMap& quantities, const std::string& key) {
+QuantitySeries<T>& extract_quantity_series(QuantitiesMap& quantities, const std::string& key)
+{
     auto it= quantities.find(key);
-    if (it == quantities.end())
-        throw std::out_of_range("QuantitySeries::extract_quantity_series: key not found");
+
+    beme_throw_if( it == quantities.end(), std::out_of_range,
+        "Impossible to extract the quantity series with the given key.",
+        "The key does not exist in the quantities map.",
+        "Key: ", key);
 
     return dynamic_cast<QuantitySeries<T>&>(*it->second);
 }

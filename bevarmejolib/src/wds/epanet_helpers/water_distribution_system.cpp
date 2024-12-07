@@ -14,7 +14,7 @@ namespace fsys = std::filesystem;
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/library_metadata.hpp"
 
 #include "bevarmejo/io/streams.hpp"
@@ -51,13 +51,12 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     if (errorcode>100){
         EN_deleteproject(ph_);
 
-        std::ostringstream error_message;
-        io::stream_out(error_message,
-            "Error opening the EPANET \".inp\" file\n",
-            "\tFilename: ", inp_file, 
-            "\n\tError code: ", errorcode
-        );
-        throw std::runtime_error(error_message.str());
+        beme_throw(std::runtime_error,
+            "Impossible to create a Water Distribution System.",
+            "Error while constructing from an EPANET project.",
+            "Error opening the EPANET project.",
+            "Error code: ", errorcode,
+            "Filename: ", inp_file);
     }
 
     errorcode = EN_setreport(ph_, "SUMMARY NO");
@@ -220,7 +219,11 @@ void WaterDistributionSystem::load_EN_curves()
                 break;
 
             default:
-                throw std::runtime_error("Unknown curve type\n");
+                beme_throw(std::runtime_error,
+                    "Unknown curve type.",
+                    "The curve type is not recognized by the system.",
+                    "Curve ID: ", curve_id,
+                    "Curve type: ", curve_type);
         }
         if (valid(p_curve))
         {
@@ -294,9 +297,10 @@ void WaterDistributionSystem::load_EN_nodes()
             // but not in the specific container. This could happen if there is no more memory
             // or there containers are not in sync (the element still appears in the container
             // but not in the nodes).
-            __format_and_throw<std::logic_error>("WaterDistributionSystem", "load_EN_nodes()", "Impossible to insert the element.",
-                "The element with ID \""+std::string(node_id)+"\" could not be inserted in the specific container.",
-                "Either therere is no more memory or the containers lost sync.");
+            beme_throw(std::logic_error,
+                "Impossible to insert the element.",
+                "The element could not be inserted in the specific container (either there is no more memory or the containers lost sync).",
+                "Element name: ", node_id);
         };
 
         bool f__inserted = false;
@@ -315,7 +319,11 @@ void WaterDistributionSystem::load_EN_nodes()
                 break;
 
             default:
-                throw std::runtime_error("Unknown node type\n");
+                beme_throw(std::runtime_error,
+                    "Unknown node type.",
+                    "The node type is not recognized by the system.",
+                    "Node ID: ", node_id,
+                    "Node type: ", node_type);
         }
         if (f__inserted)
         {
@@ -364,9 +372,10 @@ void WaterDistributionSystem::load_EN_links()
             if (irs.inserted)
                 return true;
 
-            __format_and_throw<std::logic_error>("WaterDistributionSystem", "load_EN_links()", "Impossible to insert the element.",
-                "The element with ID \""+std::string(link_id)+"\" could not be inserted in the specific container.",
-                "Either therere is no more memory or the containers lost sync.");
+            beme_throw(std::logic_error,
+                "Impossible to insert the element.",
+                "The element could not be inserted in the specific container (either there is no more memory or the containers lost sync).",
+                "Element name: ", link_id);
         };
 
         bool f__inserted = false;
@@ -381,7 +390,11 @@ void WaterDistributionSystem::load_EN_links()
                 break;
 
             default:
-                throw std::runtime_error("Unknown link type\n");
+                beme_throw(std::runtime_error,
+                    "Unknown link type.",
+                    "The link type is not recognized by the system.",
+                    "Link ID: ", link_id,
+                    "Link type: ", link_type);
         }
         if (f__inserted)
         {

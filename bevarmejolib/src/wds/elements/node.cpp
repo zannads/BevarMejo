@@ -106,10 +106,10 @@ void Node::retrieve_EN_index()
     m__en_index = 0;
     int index = 0;
     int errorcode = EN_getnodeindex(m__wds.ph(), m__name.c_str(), &index);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_index", "Error retrieving index of node.",
-            "Error code: ", errorcode,
-            "Node ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the index of the node.",
+        "Error code: ", errorcode,
+        "Node ID: ", m__name);
 
     m__en_index = index;
 }
@@ -131,11 +131,11 @@ void Node::__retrieve_EN_properties()
     double x=0,
            y=0;
     int errorcode = EN_getcoord(ph, m__en_index, &x, &y);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_properties", "Error retrieving properties of node.",
-            "Property: Coordinates",
-            "Error code: ", errorcode,
-            "Node ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the node.",
+        "Error while retrieving coordinates.",
+        "Error code: ", errorcode,
+        "Node ID: ", m__name);
 
     if (ph->parser.Unitsflag == US) {
         x *= MperFT;
@@ -146,11 +146,11 @@ void Node::__retrieve_EN_properties()
 
     double z = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_ELEVATION, &z);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_properties", "Error retrieving properties of node.",
-            "Property: EN_ELEVATION",
-            "Error code: ", errorcode,
-            "Node ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the node.",
+        "Error while retrieving value: EN_ELEVATION",
+        "Error code: ", errorcode,
+        "Node ID: ", m__name);
     
     if (ph->parser.Unitsflag == US)
         z *= MperFT;
@@ -174,22 +174,22 @@ void Node::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
-            "Property: EN_HEAD",
-            "Error code: ", errorcode,
-            "Node ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the node.",
+        "Error while retrieving value: EN_HEAD",
+        "Error code: ", errorcode,
+        "Node ID: ", m__name);
         
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__head.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_PRESSURE, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Node", "retrieve_EN_results", "Error retrieving results of node.",
-            "Property: EN_PRESSURE",
-            "Error code: ", errorcode,
-            "Node ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the node.",
+        "Error while retrieving value: EN_PRESSURE",
+        "Error code: ", errorcode,
+        "Node ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT/PSIperFT;

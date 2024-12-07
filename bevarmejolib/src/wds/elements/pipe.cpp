@@ -7,7 +7,7 @@
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -68,11 +68,11 @@ void Pipe::__retrieve_EN_properties()
 
     double val = 0.0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_LENGTH, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Pipe", "retrieve_EN_properties", "Error retrieving properties of pipe.",
-            "Property: EN_LENGTH",
-            "Error code: ", errorcode,
-            "Pipe ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the pipe.",
+        "Error while retrieving value: EN_LENGTH",
+        "Error code: ", errorcode,
+        "Pipe ID: ", m__name);
 
     if(ph->parser.Unitsflag == US)
         val *= MperFT; // from ft to m

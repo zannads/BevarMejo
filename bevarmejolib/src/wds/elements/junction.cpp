@@ -174,27 +174,27 @@ void Junction::__retrieve_EN_results()
     // in DemandFlow. (See epanet.c get_nodvalue(EN_DEMAND) for more details).
     double consumed = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &consumed);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Junction", "retrieve_EN_results", "Error retrieving results of junction.",
-            "Property: EN_DEMAND",
-            "Error code: ", errorcode,
-            "Junction ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the junction.",
+        "Error while retrieving value: EN_DEMAND",
+        "Error code: ", errorcode,
+        "Junction ID: ", m__name);
     
     double undeliv = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMANDDEFICIT, &undeliv);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Junction", "retrieve_EN_results", "Error retrieving results of junction.",
-            "Property: EN_DEMANDDEFICIT",
-            "Error code: ", errorcode,
-            "Junction ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the junction.",
+        "Error while retrieving value: EN_DEMANDDEFICIT",
+        "Error code: ", errorcode,
+        "Junction ID: ", m__name);
 
     double emitter_flow = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_EMITTERFLOW, &emitter_flow);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Junction", "retrieve_EN_results", "Error retrieving results of junction.",
-            "Property: EN_EMITTERFLOW",
-            "Error code: ", errorcode,
-            "Junction ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the junction.",
+        "Error while retrieving value: EN_EMITTERFLOW",
+        "Error code: ", errorcode,
+        "Junction ID: ", m__name);
     
     // If a Junction with a demand is experiencing a negative head with a DDA,
     // the demand was not satisfied and it should go as a demand undelivered.

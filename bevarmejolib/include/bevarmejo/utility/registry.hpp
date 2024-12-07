@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/utility/bememory.hpp"
 
 #include "bevarmejo/utility/registry_users.hpp"
@@ -119,35 +119,40 @@ public:
     mapped_type& at(const key_type& name) 
     {
         auto it = find_index(name);
-        if (it == -1)
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The element with the given name does not exist.",
-                "Id: ", name);
+        beme_throw_if(it == -1, std::out_of_range,
+            "Impossible to access the element."
+            "The element with the given name does not exist."
+            "Name: ", name);
+
         return *m__elements[it].ptr;
     }
     const mapped_type& at(const key_type& name) const
     {
         auto it = find_index(name);
-        if (it == -1)
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The element with the given name does not exist.",
-                "Id: ", name);
+
+        beme_throw_if(it == -1, std::out_of_range,
+            "Impossible to access the element."
+            "The element with the given name does not exist."
+            "Name: ", name);
+
         return *m__elements[it].ptr;
     }
     reference at( size_type pos )
     {
-        if (pos >= size())
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The index is out of range.",
-                "Index: ", pos, "Size: ", size());
+        beme_throw_if(pos >= size(), std::out_of_range,
+            "Impossible to access the element."
+            "The index is out of range."
+            "Index: ", pos, "Size: ", size());
+            
         return {m__elements[pos].name, *m__elements[pos].ptr};
     }
     const_reference at( size_type pos ) const
     {
-        if (pos >= size())
-            __format_and_throw<std::out_of_range>("Registry::at()", "Impossible to access the element.",
-                "The index is out of range.",
-                "Index: ", pos, "Size: ", size());
+        beme_throw_if(pos >= size(), std::out_of_range,
+            "Impossible to access the element."
+            "The index is out of range."
+            "Index: ", pos, "Size: ", size());
+        
         return {m__elements[pos].name, *m__elements[pos].ptr};
     }
 
@@ -166,10 +171,10 @@ public:
         );
 
         auto idx = find_index(name);
-        if (idx == -1)
-            __format_and_throw<std::out_of_range>("Registry::get()", "Impossible to access the element.",
-                "The element with the given name does not exist.",
-                "Id: ", name);
+        beme_throw_if(idx == -1, std::out_of_range,
+            "Impossible to access the element."
+            "The element with the given name does not exist."
+            "Name: ", name);
 
         return std::dynamic_pointer_cast<OutputT>(m__elements[idx].ptr);
     }
@@ -182,11 +187,11 @@ public:
         );
 
         auto idx = find_index(name);
-        if (idx == -1)
-            __format_and_throw<std::out_of_range>("Registry::get()", "Impossible to access the element.",
-                "The element with the given name does not exist.",
-                "Id: ", name);
-
+        beme_throw_if(idx == -1, std::out_of_range,
+            "Impossible to access the element."
+            "The element with the given name does not exist."
+            "Name: ", name);
+        
         return std::dynamic_pointer_cast<const OutputT>(m__elements[idx].ptr);
     }
 
@@ -407,26 +412,24 @@ private:
 
         // Instead of checking if the element is already in the checking sets, 
         // we can simply try to insert it and check the result of the insertion.
-        if (value.ptr == nullptr)
-        {
-            __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
-                "The element with name "+value.name+" is a pointer to null.");
-        }
+        beme_throw_if(!valid(value.ptr), std::invalid_argument,
+            "Impossible to insert the element.",
+            "The element is actually a pointer to null.",
+            "Name: ", value.name);
+        
 
         auto ins_res_dup_ptr = duplicate_ptr_checker.insert(value.ptr.get());
 
-        if (ins_res_dup_ptr.second == false)
-        {
-            __format_and_throw<std::invalid_argument>("Registry::insert()", "Impossible to insert the element.",
-                "The element is already in the registry with a different name.",
-                "Id (new) : ", value.name,
-                "Id (old) : ", 
-                    std::find_if(
-                        m__elements.begin(), m__elements.end(), 
-                        [&value](const __entry__ &inst) { return inst.ptr.get() == value.ptr.get(); }
-                    )->name,
-                "Address: ", value.ptr.get());
-        }
+        beme_throw_if( !ins_res_dup_ptr.second, std::invalid_argument,
+            "Impossible to insert the element.",
+            "The element is already in the registry with a different name.",
+            "Name (new): ", value.name,
+            "Name (old): ", 
+                std::find_if(
+                    m__elements.begin(), m__elements.end(), 
+                    [&value](const __entry__ &inst) { return inst.ptr.get() == value.ptr.get(); }
+                )->name,
+            "Address: ", value.ptr.get());
         
         auto ins_res_dup_id = duplicate_id_checker.insert(value.name);
 
@@ -626,10 +629,7 @@ private:
 /*--- Member functions ---*/
 /*--- (constructor) ---*/
 public:
-    Iterator() noexcept : 
-        reg(), 
-        idx(0)
-    { }
+    Iterator() noexcept = delete;
     Iterator(R* container, size_type index) noexcept : 
         reg(container), 
         idx(index)
@@ -658,31 +658,13 @@ protected:
 public:
     reference operator*() const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        if (!valid(reg))
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
-                "The registry is not available.");
-
-        if (idx >= reg->size())
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
-                "The index is out of range.",
-                "Index: ", idx, "Size: ", reg->size());
-#endif
+        assertm(idx < reg->size(), "Impossible to dereference the iterator. The index is out of range.");
         return reg->operator[](idx);
     }
     
     pointer operator->() const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        if (!valid(reg))
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator->()", "Impossible to dereference the iterator.",
-                "The registry is not available.");
-
-        if (idx >= reg->size())
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator->()", "Impossible to dereference the iterator.",
-                "The index is out of range.",
-                "Index: ", idx, "Size: ", reg->size());
-#endif
+        assertm(idx < reg->size(), "Impossible to dereference the iterator. The index is out of range.");
         return reg->m__elements[idx].ptr; // It is casted to const pointer automatically if the iterator is const.
     }
 
@@ -695,37 +677,19 @@ public:
 public:
     iterator_type &operator++()
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        if (!valid(reg))
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
-                "The registry is not available.");
-        if (idx >= reg->size())
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator++()", "Impossible to increment the iterator.",
-            "The index is out of range.",
-            "Index: ", idx, "Size: ", reg->size());
-#endif
-
+        assertm(idx < reg->size(), "Impossible to increment the iterator. The index is out of range.");
         ++idx;
         return *this;
     }
-    iterator_type operator++(int) {auto tmp= *this; ++(*this); return tmp;}
+    iterator_type operator++(int) {auto tmp = *this; ++(*this); return tmp;}
 
     iterator_type &operator--()
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        if (!valid(reg))
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
-                "The registry is not available.");
-        if (idx == 0)
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator--()", "Impossible to decrement the iterator.",
-            "The index is out of range.",
-            "Index: ", idx, "Size: ", reg->size());
-#endif
-
+        assertm(idx > 0, "Impossible to decrement the iterator. The index is out of range.");
         --idx;
         return *this; 
     }
-    iterator_type operator--(int) {auto tmp= *this; --(*this); return tmp;}
+    iterator_type operator--(int) {auto tmp = *this; --(*this); return tmp;}
 
     iterator_type &operator+=(difference_type n)
     {
@@ -745,14 +709,12 @@ public:
 
         return *this;
     }
-    iterator_type operator+(difference_type n) const {auto tmp= *this; return tmp += n;}
+    iterator_type operator+(difference_type n) const {auto tmp = *this; return tmp += n;}
     iterator_type &operator-=(difference_type n) {return (*this += (-n));}
     iterator_type operator-(difference_type n) const {return (*this + (-n));}
     difference_type operator-(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx - other.idx;
     }
 
@@ -760,60 +722,34 @@ public:
 public:
     bool operator==(const iterator_type &other) const 
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx == other.idx;
     }
     bool operator!=(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx != other.idx;
     }
     bool operator<(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx < other.idx;
     }
     bool operator>(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx > other.idx;
     }
     bool operator<=(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx <= other.idx;
     }
     bool operator>=(const iterator_type &other) const
     {
-#ifdef ENABLE_SAFETY_CHECKS
-        check_same_registry(other);
-#endif
+        assertm(reg == other.reg, "Impossible to compare the iterators. The iterators are not from the same registry.");
         return idx >= other.idx;
     }
-
-// Helper for check if the iterator is valid.
-#ifdef ENABLE_SAFETY_CHECKS
-private:
-    void check_same_registry(const iterator_type &other) const
-    {
-        if (!valid(reg))
-            __format_and_throw<std::out_of_range>("Registry::Iterator::operator*()", "Impossible to dereference the iterator.",
-                "The registry is not available.");
-        if (reg != other.reg) // Implicity checking also that the other registry is valid.
-            __format_and_throw<std::invalid_argument>("Registry::Iterator::check_same_registry()", "Impossible to compare the iterators.",
-                "The iterators are from different registries.");
-    }
-#endif
 };
 
 } // namespace bevarmejo

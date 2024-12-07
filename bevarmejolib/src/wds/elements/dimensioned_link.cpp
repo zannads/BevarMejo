@@ -6,7 +6,7 @@
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -63,52 +63,52 @@ void DimensionedLink::__retrieve_EN_properties()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_DIAMETER, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_DIAMETER",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_DIAMETER",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val = val/12*MperFT*1000; // from inches to ft, then to m, finally to mm
     m__diameter = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_ROUGHNESS, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_ROUGHNESS",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
-
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_ROUGHNESS",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
+        
     // for now only HW coeff is supported
     m__roughness = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_MINORLOSS, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_MINORLOSS",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_MINORLOSS",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
     
     // DIMLESS
     m__minor_loss = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_KBULK, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_KBULK",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_KBULK",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
     
     // for now I don't care about this
     m__bulk_coeff = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_KWALL, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_KWALL",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_KWALL",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
     
     // for now I don't care about this
     m__wall_coeff= val;
@@ -131,12 +131,12 @@ void DimensionedLink::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_VELOCITY, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("DimensionedLink", "retrieve_EN_results", "Error retrieving results of link.",
-            "Property: EN_VELOCITY",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
-
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the link.",
+        "Error while retrieving value: EN_VELOCITY",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
+        
     // Before saving I need to conver it to m/s
     if (ph->parser.Unitsflag == US)
         val = val*MperFT; // from ft/s to m/s

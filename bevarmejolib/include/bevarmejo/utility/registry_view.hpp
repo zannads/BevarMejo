@@ -2,11 +2,12 @@
 
 #include <algorithm>
 #include <initializer_list>
+#include <iterator>
 #include <string>
 #include <type_traits>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/utility/bememory.hpp"
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/unique_string_sequence.hpp"
@@ -191,32 +192,9 @@ public:
 /*
 public:
     mapped_type& at(const key_type& id)
-    {
-        return const_cast<mapped_type&>(std::as_const(*this).at(id));
-    }
+    { }
     const mapped_type& at(const key_type& id) const
-    {
-        if (!valid(mp__registry))
-            __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
-                "The registry is not available.");
-
-        // If the style is Exclude, asking for an element that is in the list of excluded elements, it is like asking for a non-existing element.
-        // If the style is Include or OrderedInclude, asking for an element that is not in the list of included elements, it is like asking for a non-existing element.
-        if (m__behaviour == RVMode::Exclude)
-        {
-            if (valid(p__uss) && p__uss.lock()->contains(id))
-                __format_and_throw<std::out_of_range>("RegistryView", "at", "Element not found.",
-                    "The element is excluded.");
-        }
-        else // Include or OrderedInclude
-        {
-            if (valid(p__uss) && !p__uss.lock()->contains(id))
-                __format_and_throw<std::out_of_range>("RegistryView", "at", "The element is not included.",
-                    "The element is not in the list of included elements.");
-        }
-        
-        return mp__registry->at(id);
-    }
+    { }
     reference at(size_type pos) { return *(begin()+pos); }
     const_reference at(size_type pos) const { return *(cbegin()+pos); }
 
@@ -368,61 +346,39 @@ private:
     public:
         bool operator==(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg == other.i__reg;
         }
 
         bool operator!=(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg != other.i__reg;
         }
 
         bool operator<(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg < other.i__reg;
         }
 
         bool operator>(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg > other.i__reg;
         }
 
         bool operator<=(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif    
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg <= other.i__reg;
         }
 
-        bool operator>=(const iterator_type &other) const {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+        bool operator>=(const iterator_type &other) const
+        {
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__reg >= other.i__reg;
         }
-
-    // Helper to check if the iterator is valid.
-#ifdef ENABLE_SAFETY_CHECKS
-    private:    
-        void check_comparable(const iterator_type &other) const
-        {
-            if (p__range != other.p__range)
-                __format_and_throw<std::logic_error>("RegistryView::FilterIterator", "**comparison_operator**", "Impossible to compare the iterators.",
-                    "The iterators are not from the same registry.");
-        }
-#endif   
     }; // class RegistryView::FilterIterator
 
     template <class RV>
@@ -578,9 +534,8 @@ private:
             // I can't simply do the difference between the indexes because the
             // indexes are not contiguous. I need to iterate over the registry
             // to find the difference.
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
+            
             difference_type diff = 0;
             if (*this < other)
             {
@@ -608,61 +563,39 @@ private:
     public:
         bool operator==(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss == other.i__uss;
         }
 
         bool operator!=(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss != other.i__uss;
         }
 
         bool operator<(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss < other.i__uss;
         }
 
         bool operator>(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss > other.i__uss;
         }
 
         bool operator<=(const iterator_type &other) const
         {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif    
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss <= other.i__uss;
         }
 
-        bool operator>=(const iterator_type &other) const {
-#ifdef ENABLE_SAFETY_CHECKS
-            check_comparable(other);
-#endif
+        bool operator>=(const iterator_type &other) const
+        {
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
             return i__uss >= other.i__uss;
         }
-
-    // Helper to check if the iterator is valid.
-#ifdef ENABLE_SAFETY_CHECKS
-    private:    
-        void check_comparable(const iterator_type &other) const
-        {
-            if (p__range != other.p__range)
-                __format_and_throw<std::logic_error>("RegistryView::OrderedFilterIterator", "**comparison_operator**", "Impossible to compare the iterators.",
-                    "The iterators are not from the same registry.");
-        }
-#endif    
     }; // class RegistryView::OrderedFilterIterator
 
 

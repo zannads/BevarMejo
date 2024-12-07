@@ -79,65 +79,65 @@ void Tank::__retrieve_EN_properties()
 
     double val = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DIAMETER, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_DIAMETER",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_DIAMETER",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__diameter = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MINVOLUME, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_MINVOLUME",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_MINVOLUME",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;
     m__min_volume = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MINLEVEL, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_MINLEVEL",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_MINLEVEL",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__min_level = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MAXLEVEL, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_MAXLEVEL",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_MAXLEVEL",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__max_level = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_CANOVERFLOW, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_CANOVERFLOW",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_CANOVERFLOW",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     // DIMLESS
     m__can_overflow = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKLEVEL, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_TANKLEVEL",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_TANKLEVEL",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
@@ -161,22 +161,22 @@ void Tank::__retrieve_EN_properties()
 
     // Assign Read-only properties (Results but not really).
     errorcode = EN_getnodevalue(ph, m__en_index, EN_INITVOLUME, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_INITVOLUME",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_INITVOLUME",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;
     m__initial_volume = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MAXVOLUME, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_properties", "Error retrieving properties of tank.",
-            "Property: EN_MAXVOLUME",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the tank.",
+        "Error while retrieving value: EN_MAXVOLUME",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;
@@ -200,22 +200,22 @@ void Tank::__retrieve_EN_results()
 
     double val;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKLEVEL, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_results", "Error retrieving results of tank.",
-            "Property: EN_TANKLEVEL",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the tank.",
+        "Error while retrieving value: EN_TANKLEVEL",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__level.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKVOLUME, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Tank", "retrieve_EN_results", "Error retrieving results of tank.",
-            "Property: EN_TANKVOLUME",
-            "Error code: ", errorcode,
-            "Tank ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the tank.",
+        "Error while retrieving value: EN_TANKVOLUME",
+        "Error code: ", errorcode,
+        "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= M3perFT3;

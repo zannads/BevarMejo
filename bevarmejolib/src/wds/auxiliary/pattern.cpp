@@ -4,7 +4,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 
@@ -33,11 +33,11 @@ void Pattern::retrieve_EN_index()
     m__en_index = 0;
     int index = 0;
     int errorcode = EN_getpatternindex(m__wds.ph(), m__name.c_str(), &index);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Pattern", "retrieve_EN_index", "Error retrieving index of pattern.",
-            "Error code: ", errorcode,
-            "Pattern ID: ", m__name);
-
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the index of the pattern.",
+        "Error code: ", errorcode,
+        "Pattern ID: ", m__name);
+    
     m__en_index = index;
 }
 
@@ -48,11 +48,11 @@ void Pattern::retrieve_EN_properties()
 
     int len = 0;
     int errorcode = EN_getpatternlen(m__wds.ph(), m__en_index, &len);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Pattern", "retrieve_EN_properties", "Error retrieving the properties of pattern.",
-            "Error while retrieving the length of the pattern.",
-            "Error code: ", errorcode,
-            "Pattern ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of pattern.",
+        "Error while retrieving the length of the pattern.",
+        "Error code: ", errorcode,
+        "Pattern ID: ", m__name);
     
     m__multipliers.clear();
     m__multipliers.reserve(len);
@@ -61,15 +61,15 @@ void Pattern::retrieve_EN_properties()
     double val = 0.0;
     for(int i = 1; i <= len; ++i)
     {
-        errorcode = EN_getpatternvalue(m__wds.ph(), m__en_index, i, &val); 
-        if (errorcode > 100)
-            __format_and_throw<std::runtime_error>("Pattern", "retrieve_EN_properties", "Error retrieving the properties of pattern.",
-                "Error while retrieving the value of the pattern.",
-                "Error code: ", errorcode,
-                "Pattern ID: ", m__name,
-                "Value: ", i,
-                "Length: ", len);
-        
+        errorcode = EN_getpatternvalue(m__wds.ph(), m__en_index, i, &val);
+        beme_throw_if(errorcode > 100, std::runtime_error,
+            "Impossible to retrieve the properties of pattern.",
+            "Error while retrieving the value of the pattern.",
+            "Error code: ", errorcode,
+            "Pattern ID: ", m__name,
+            "Position: ", i,
+            "Length: ", len);
+            
         m__multipliers.push_back(val);
     }
 }

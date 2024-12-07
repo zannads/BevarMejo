@@ -7,7 +7,7 @@
 
 #include "epanet2_enums.h"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -23,11 +23,11 @@ Element::Element(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     m__ud_properties()
 {
     // For EPANET compatibility the string must be shorter then EN_MAXID
-    if (name.size() > EN_MAXID)
-        __format_and_throw<std::invalid_argument>("Element", "Element", "The element ID/name is too long.",
-            "To allow for EPANET compatibility the ID/name must be shorter than 32 characters.",
-            "ID/name: ", name,
-            "Length: ", name.size());
+    beme_throw_if(name.size() > EN_MAXID, std::invalid_argument,
+        "Impossible to create the element.",
+        "The element ID/name is too long (must be shorter than 32 characters for EPANET compatibility).",
+        "ID/name: ", name,
+        "Length: ", name.size());
 }
 
 auto Element::name() const -> const EN_Name_t&

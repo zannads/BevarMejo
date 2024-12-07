@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
@@ -101,12 +101,13 @@ public:
     void duration__s(const time::Instant a_duration__s);
 
     template <typename... Args>
-    std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args) {
-
-        if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
-            __format_and_throw<std::invalid_argument>(log::cname::global_times, log::fname::create_time_series,
-            "Time series name is reserved and cannot be used.", "Time series name: ", name);
-            
+    std::pair<container::iterator, bool> create_time_series(const std::string& name, Args&&... args)
+    {
+        beme_throw_if(name == label::__CONSTANT_TS || name == label::__RESULTS_TS, std::invalid_argument,
+            "Impossible to create the requested time series.",
+            "Time series name is reserved and cannot be used.",
+            "Name: ", name);
+        
         return m__ud_time_series.emplace(name, std::make_unique<TimeSeries>(*this, std::forward<Args>(args)...));
     }
 

@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/io/streams.hpp"
 
 #include "library_metadata.hpp"
@@ -30,47 +30,44 @@ static const std::string failed_to_create = "Failed to create a Version object."
 Version::Version(std::vector<unsigned int> il) : 
     m_year(version_year), m_month(version_month), m_release(version_release)
 {
-    if (il.size() != 3)
-        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
-            "The initializer list must have 3 elements: year, month, release.",
-            "The initializer list has " + std::to_string(il.size()) + " elements."
-            );
+    beme_throw_if(il.size() != 3, std::invalid_argument,
+        "Failed to create a Version object.",
+        "The initializer list must have 3 elements: year, month, release.",
+        "The initializer list has ", il.size(), " elements."
+        );
 
     const unsigned int year = *(il.begin());
     const unsigned int month = *(il.begin()+1);
     const unsigned int release = *(il.begin()+2);
 
-    if (year < 2000 || year > version_year)
-        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
-            "Year must be between 2000 and " + std::to_string(version_year),
-            "Year = " + std::to_string(year)
-            );
+    beme_throw_if(year < 2000 || year > version_year, std::invalid_argument,
+        "Failed to create a Version object.",
+        "Invalid year number (must be between 2000 and ", version_year, ").",
+        "Year = ", year
+        );
 
-    if (month < 1 || month > 12)
-        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
-            "Invalid month number (must be between 1 and 12).",
-            "Month = " + std::to_string(month)
-            );
+    beme_throw_if(month < 1 || month > 12, std::invalid_argument,
+        "Failed to create a Version object.",
+        "Invalid month number (must be between 1 and 12).",
+        "Month = ", month
+        );
+
+    beme_throw_if(release > 99, std::invalid_argument,
+        "Failed to create a Version object.",
+        "Invalid release number (must be between 0 and 99).",
+        "Release = ", release
+        );
+
+    beme_throw_if(
+        year == version_year && month > version_month ||
+        year == version_year && month == version_month && release > version_release,
+        std::invalid_argument,
+        "Failed to create a Version object.",
+        "The version is greater than the current version.",
+        "Current version = ", Version().str(),
+        "Year = ", year, ", Month = ", month, ", Release = ", release
+        );
     
-    if (release > 99)
-        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
-            "Invalid release number (must be between 0 and 99).",
-            "Release = " + std::to_string(release)
-            );
-
-    if (year == version_year && month > version_month ||
-        year == version_year && month == version_month && release > version_release)
-        bevarmejo::__format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, io::log::fname::constructor, io::log::mex::failed_to_create,
-            "The version is greater than the current version.",
-            "Current version = ", Version().str(),
-            "Year = " + std::to_string(year) + ", Month = " + std::to_string(month) + ", Release = " + std::to_string(release)
-            );
-
     m_year = year;
     m_month = month;
     m_release = release;
@@ -153,14 +150,12 @@ std::vector<unsigned int> Version::parse( const unsigned int numeric ) {
     return std::vector<unsigned int>{year, month, release};
 }
 
-std::vector<unsigned int> Version::parse( const std::string &version_str ) {
-    
-    if (version_str.empty() || *version_str.begin() != 'v')
-        __format_and_throw<std::invalid_argument, ClassError>(
-            io::log::cname::version, "parse",
-            "Could not parse the version string.",
-            "The version string is empty or does not start with 'v'.",
-            "Version string = " + version_str
+std::vector<unsigned int> Version::parse( const std::string &version_str )
+{
+    beme_throw_if(version_str.empty() || *version_str.begin() != 'v', std::invalid_argument,
+        "Could not parse the version string.",
+        "The version string is empty or does not start with 'v'.",
+        "Version string = ", version_str
         );
 
     std::istringstream iss(std::string(version_str.begin()+1, version_str.end()));
@@ -176,12 +171,12 @@ std::vector<unsigned int> Version::parse( const std::string &version_str ) {
         }
         catch (const std::invalid_argument& e)
         {
-            __format_and_throw<std::invalid_argument, ClassError>(
-                io::log::cname::version, "parse",
+            beme_throw(std::invalid_argument,
                 "Could not parse the version string.",
                 "The version string has an invalid element.",
-                "Element = " + token
-            );
+                "Element = ", token,
+                "Error = ", e.what()
+                );
         }
     };
     

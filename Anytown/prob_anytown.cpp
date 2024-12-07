@@ -22,7 +22,7 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/labels.hpp"
@@ -133,8 +133,7 @@ Problem::Problem(std::string_view a_formulation_str, const json_o& settings, con
 	}
 	else if (a_formulation_str == io::value::twoph_f1)
 	{
-		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
-			"Impossible to construct the anytown Problem.",
+		beme_throw(std::invalid_argument, "Impossible to construct the anytown Problem.",
 			"Formulation 1 of twophase problem is not supported anymore.");
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f2)
@@ -149,8 +148,7 @@ Problem::Problem(std::string_view a_formulation_str, const json_o& settings, con
 	}
 	else
 	{
-		__format_and_throw<std::invalid_argument>(nname+io::log::cname::anytown_problem, io::log::cname::anytown_problem,
-			"Impossible to construct the anytown Problem.",
+		beme_throw(std::invalid_argument, "Impossible to construct the anytown Problem.",
 			"The provided Anytown formulation is not yet implemented.");
 	}
 	m__name = bemeio::log::nname::beme_l+nname+std::string(a_formulation_str);
@@ -279,9 +277,10 @@ void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_pa
 
 	// TODO: move also this to json_o?
 	std::ifstream prac_file{prac_filename};
-	if (!prac_file.is_open()) {
-		throw std::runtime_error("Could not open file " + prac_filename.string());
-	}
+	beme_throw_if(!prac_file.is_open(), std::runtime_error, 
+		"Impossible to construct the WDS problem,",
+		"Could not open Pipe Rehabiliation Alternatives Costs file.",
+		"File: ", prac_filename.string());
 
 	std::size_t n_alt_costs = bemeio::load_dimensions(prac_file, "#DATA");
 	m__pipes_alt_costs.resize(n_alt_costs);
@@ -293,9 +292,10 @@ void Problem::load_other_data(json_o settings, std::vector<fsys::path> lookup_pa
 		lookup_paths);
 
 	std::ifstream tanks_file{tanks_filename};
-	if (!tanks_file.is_open()) {
-		throw std::runtime_error("Could not open file " + tanks_filename.string());
-	}
+	beme_throw_if(!tanks_file.is_open(), std::runtime_error, 
+		"Impossible to construct the WDS problem,",
+		"Could not open Tank Costs file.",
+		"File: ", tanks_filename.string());
 	
 	std::size_t n_tanks = bemeio::load_dimensions(tanks_file, "#DATA");
 	m__tanks_costs.resize(n_tanks);

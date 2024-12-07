@@ -12,7 +12,7 @@ using json_o = nlohmann::json;
 
 #include <pagmo/problem.hpp>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/io/fsys_helpers.hpp"
 #include "bevarmejo/io/streams.hpp"
 
@@ -60,12 +60,12 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 
 namespace opt {
 
-ExperimentSettings  parse(int argc, char* argv[]) {
-    if (argc < 2) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
-            io::log::mex::parse_error,
-            io::log::mex::nearg,
-            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+ExperimentSettings  parse(int argc, char* argv[])
+{
+    beme_throw_if(argc < 2, std::invalid_argument,
+        "Error parsing the command line arguments.",
+        "Not enough arguments.",
+        "Usage: ", argv[0], " <settings_file> [flags]");
 
     ExperimentSettings exp_settings{};
 
@@ -85,13 +85,12 @@ ExperimentSettings  parse(int argc, char* argv[]) {
 
 namespace sim {
 
-bevarmejo::Simulation parse(int argc, char *argv[]) {
-
-    if (argc < 2) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::sim+io::log::fname::parse,
-            io::log::mex::parse_error,
-            io::log::mex::nearg,
-            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+bevarmejo::Simulation parse(int argc, char *argv[])
+{
+    beme_throw_if(argc < 2, std::invalid_argument,
+        "Error parsing the command line arguments.",
+        "Not enough arguments.",
+        "Usage: ", argv[0], " <settings_file> [flags]");
     
     Simulation simu;
 
@@ -107,12 +106,18 @@ bevarmejo::Simulation parse(int argc, char *argv[]) {
 
         // 1.2 read it
         std::ifstream file(simu.settings_file);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open simulation settings file: " + simu.settings_file.string());
-        }
-        if (file.peek() == std::ifstream::traits_type::eof()) {
+        beme_throw_if(!file.is_open(), std::runtime_error,
+            "Error parsing the command line arguments.",
+            "Failed to open simulation settings file.",
+            "File: ", simu.settings_file.string());
+
+        if (file.peek() == std::ifstream::traits_type::eof())
+        {
             file.close();
-            throw std::runtime_error("Simulation settings file is empty: " + simu.settings_file.string());
+            beme_throw(std::runtime_error,
+                "Simulation settings file is empty.",
+                "The file is empty.",
+                "File: ", simu.settings_file.string());
         }
 
         std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -150,16 +155,15 @@ bevarmejo::Simulation parse(int argc, char *argv[]) {
             VersionManager::user().set_user_v(io::json::extract(io::key::beme_version).from(j).get<std::string>());
 
         // 1.3.2 mandatory keys first: dv, udp
-         auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+        auto check_mandatory_field = [](const io::key::Key &key, const json_o &j){
             if (key.exists_in(j)) {
                 return;
             }
 
-            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
-                io::log::mex::parse_error,
+            beme_throw(std::runtime_error,
+                "Error parsing the simulation settings file.",
                 "Settings file does not contain a mandatory field.",
-                "Missing field : "+key[0]
-            );
+                "Missing field : ", key[0]);
         };
 
         check_mandatory_field(io::key::dv, j);
@@ -189,12 +193,12 @@ bevarmejo::Simulation parse(int argc, char *argv[]) {
             simu.extra_message = io::json::extract(io::key::print).from(j).get<std::string>();
 
     }
-    catch (const std::exception& e) {
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::sim+io::log::fname::parse,
-            io::log::mex::parse_error,
+    catch (const std::exception& e)
+    {
+        beme_throw(std::runtime_error,
             "Failed to parse the simulation settings file.",
-            "File: " + simu.settings_file.string() + "\n" + e.what()
-        ); 
+            e.what(),
+            "File: ", simu.settings_file.string());
     }
 
     // 3. Check the flags

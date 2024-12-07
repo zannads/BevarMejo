@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/utility/string_manip.hpp"
 
 #include "key.hpp" 
@@ -48,16 +48,16 @@ std::string Key::operator()() const {
     }
 }
 
-const std::string& Key::operator[](std::size_t alt) const {
-    
-    if (alt < m__values.size())
-        return m__values[alt];
-
-    __format_and_throw<std::out_of_range, ClassError>(log::cname::key, log::fname::generic_access,
+const std::string& Key::operator[](std::size_t alt) const
+{
+    beme_throw_if(alt >= m__values.size(), std::out_of_range,
         "Impossible to provide the requested key.",
-        "Index out of range.\n\tIndex : ", alt, 
-        "\n\tValid index range : [0, ", m__values.size()-1, "]"
+        "Index out of range.",
+        "Index : ", alt, 
+        "Size : ", m__values.size()
     );
+
+    return m__values[alt];
 }
 
 bool Key::exists_in(const json_o &j) const {
@@ -90,47 +90,57 @@ void Key::set_out_style(const std::string &s) { m__out_style = Style(s); }
 style Style(const std::string &s) {
     if (s == "Original" || s == "original")
         return style::Original;
-    else if (s == "Camel" || s == "camel")
+    
+    if (s == "Camel" || s == "camel")
         return style::Camel;
-    else if (s == "Kebab" || s == "kebab")
+    
+    if (s == "Kebab" || s == "kebab")
        return style::Kebab;
-    else if (s == "Snake" || s == "snake")
+    
+    if (s == "Snake" || s == "snake")
         return style::Snake;
-    else
-        __format_and_throw<std::invalid_argument, FunctionError>("Style",
-            "Impossible to create a style from the provided string.",
-            "Invalid string.",
-            "Style string : ", s
-        );
+   
+    beme_throw(std::invalid_argument,
+        "Impossible to create a style from the provided string.",
+        "Invalid string.",
+        "Style string: ", s);
 }
 
 } // namespace bevarmejo::io::key
 
 namespace bevarmejo::io::json::detail {
 
-json_o& hjm::from(json_o &j) const {
-
-    for (const auto &key : m__key) 
+json_o& hjm::from(json_o &j) const
+{
+    for (const auto &key : m__key)
+    {
         if (j.contains(key))
+        {
             return j[key];
+        }
+    }
 
-    __format_and_throw<std::out_of_range, bevarmejo::FunctionError>("<extract><from>", 
+    beme_throw(std::out_of_range,
         "Impossible to extract the requested key from the json object.",
         "No version of the key has been found.",
-        "\tKey : ", m__key()
+        "Key : ", m__key()
     );
 }
 
-const json_o& hjm::from(const json_o &j) const {
-    
-    for (const auto &key : m__key) 
+const json_o& hjm::from(const json_o &j) const
+{    
+    for (const auto &key : m__key)
+    {
         if (j.contains(key))
+        {
             return j[key];
-
-    __format_and_throw<std::out_of_range, bevarmejo::FunctionError>("<extract><from>", 
+        }
+    }
+    
+    beme_throw(std::out_of_range,
         "Impossible to extract the requested key from the json object.",
         "No version of the key has been found.",
-        "\tKey : ", m__key()
+        "Key : ", m__key()
     );
 }
 

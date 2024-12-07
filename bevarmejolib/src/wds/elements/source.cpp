@@ -3,7 +3,7 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/elements/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"
@@ -68,22 +68,22 @@ void Source::__retrieve_EN_results()
 
     double val = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Source", "retrieve_EN_results", "Error retrieving the results of the source.",
-            "Property: EN_DEMAND",
-            "Error code: ", errorcode,
-            "Source ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the source.",
+        "Error while retrieving value: EN_DEMAND",
+        "Error code: ", errorcode,
+        "Source ID: ", m__name);
     
     if (ph->parser.Flowflag != LPS)
         val = epanet::convert_flow_to_L_per_s(ph, val);
     m__inflow.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
-    if (errorcode > 100)
-        __format_and_throw<std::runtime_error>("Source", "retrieve_EN_results", "Error retrieving the results of the source.",
-            "Property: EN_HEAD",
-            "Error code: ", errorcode,
-            "Source ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the source.",
+        "Error while retrieving value: EN_HEAD",
+        "Error code: ", errorcode,
+        "Source ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
         val *= MperFT;

@@ -4,7 +4,7 @@ namespace fsys = std::filesystem;
 #include <vector>
 
 #include "bevarmejo/io/streams.hpp"
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "fsys_helpers.hpp"
 
@@ -21,28 +21,24 @@ namespace bevarmejo::io::other {
 static const std::string filename_pre = "Filename : ";
 }
 
-fsys::path bevarmejo::io::locate_file(const fsys::path &filename, const std::vector<fsys::path> &lookup_paths, bool log) {
+fsys::path bevarmejo::io::locate_file(const fsys::path &filename, const std::vector<fsys::path> &lookup_paths, bool log)
+{
     
     // If file is already absolute, simply test for validity and return it.
-    if (filename.is_absolute()) {
-        if (fsys::exists(filename) && fsys::is_regular_file(filename)) {
-            return filename;
-        }
-
+    if (filename.is_absolute())
+    {
         // Apparently, you passed an absolute path to an invalid file.
-        if (!fsys::exists(filename))
-            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::fname::locate_file, 
-                io::log::mex::file_not_found,
-                "The requested file is an absolute path pointing to a non existing file.",
-                io::other::filename_pre, filename.string()
-            );
+        beme_throw_if(!fsys::exists(filename), std::runtime_error, 
+            "File not located correctly.",
+            "The requested file is an absolute path pointing to a non existing file.",
+            "Filename : ", filename.string());
 
-        if (!fsys::is_regular_file(filename))
-            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::fname::locate_file, 
-                io::log::mex::file_not_found,
-                "The requested file has been found (from the absolute path), but it is not a regular file.",
-                io::other::filename_pre, filename.string()
-            );
+        beme_throw_if(!fsys::is_regular_file(filename), std::runtime_error,
+            "File not located correctly.",
+            "The requested file has been found (from the absolute path), but it is not a regular file.",
+            "Filename : ", filename.string());
+
+        return filename;
     }
 
     static std::ostringstream oss;
@@ -61,11 +57,10 @@ fsys::path bevarmejo::io::locate_file(const fsys::path &filename, const std::vec
         }
     }
 
-    __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::fname::locate_file, 
-        io::log::mex::file_not_found,
+    beme_throw(std::runtime_error,
+        "File not located correctly.",
         "The requested file does not exist or is not a regular file in all the provided lookup paths.",
-        io::other::filename_pre, filename.string(), "\n",
+        "Filename : ", filename.string(), "\n",
         oss.str()
     );
-
 }

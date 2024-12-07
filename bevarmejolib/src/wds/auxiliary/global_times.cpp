@@ -41,11 +41,10 @@ GlobalTimes::GlobalTimes(time::Instant a_shift_start_time__s, time::Instant a_du
     m__results(std::make_unique<TimeSeries>(*this)),
     m__ud_time_series()
 {
-    if (m__duration__s < 0)
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::cname::global_times,
-                                                    "Duration must be greater than or equal to 0.",
-                                                    "Duration: ", a_duration__s);
+    beme_throw_if(m__duration__s < 0, std::invalid_argument,
+        "Impossible to create the GlobalTimes object.",
+        "Duration must be greater than or equal to 0.",
+        "Duration: ", a_duration__s);
 }
 
 GlobalTimes::GlobalTimes(const GlobalTimes& other) :
@@ -152,7 +151,8 @@ std::size_t GlobalTimes::n_time_series() const {
     return m__ud_time_series.size(); 
 }
 
-const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) const {
+const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) const
+{
 
     if (name == label::__CONSTANT_TS)
         return constant();
@@ -160,68 +160,61 @@ const wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) co
     if (name == label::__RESULTS_TS)
         return results();
 
-    auto it= m__ud_time_series.find(name);
-    if (it == m__ud_time_series.end())
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::time_series,
-                                                    "Time series not found.",
-                                                    "TimeSeries name: ", name);
+    auto it = m__ud_time_series.find(name);
+    beme_throw_if(it == m__ud_time_series.end(), std::invalid_argument,
+        "Impossible to access the requested time series.",
+        "Time series not found.",
+        "TimeSeries name: ", name);
     
     return *it->second;
 }
 
-wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name) {
-
-    if (name == label::__CONSTANT_TS)
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::time_series,
-                                                    "Cannot access the constant time series from a non const GlobalTimes object.");
+wds::aux::TimeSeries& GlobalTimes::time_series(const std::string& name)
+{
+    beme_throw_if(name == label::__CONSTANT_TS, std::invalid_argument,
+        "Impossible to access the requested time series.",
+        "Cannot access the constant time series from a non const GlobalTimes object.");
     
     if (name == label::__RESULTS_TS)
         return results();
 
     auto it= m__ud_time_series.find(name);
-    if (it == m__ud_time_series.end())
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::time_series,
-                                                    "Time series not found.",
-                                                    "TimeSeries name: ", name);
+    beme_throw_if(it == m__ud_time_series.end(), std::invalid_argument,
+        "Impossible to access the requested time series.",
+        "Time series not found.",
+        "TimeSeries name: ", name);
     
     return *it->second;
 }
 
 // Setters
 
-void GlobalTimes::shift_start_time__s(const time::Instant a_shift_start_time__s) { 
+void GlobalTimes::shift_start_time__s(const time::Instant a_shift_start_time__s)
+{
     m__shift_start_time__s = a_shift_start_time__s;
 }
 
-void GlobalTimes::duration__s(const time::Instant a_duration__s) {
-    if (a_duration__s < 0)
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::duration,
-                                                    "Duration must be greater than or equal to 0.",
-                                                    "Duration: ", a_duration__s);
+void GlobalTimes::duration__s(const time::Instant a_duration__s)
+{
+    beme_throw_if(a_duration__s < 0, std::invalid_argument,
+        "Impossible to set the duration of the GlobalTimes object.",
+        "Duration must be greater than or equal to 0.",
+        "Duration: ", a_duration__s);
                                                     
     m__duration__s = a_duration__s;
 }
 
-void GlobalTimes::discard_time_series(const std::string& name) {
-
-    if (name == label::__CONSTANT_TS || name == label::__RESULTS_TS)
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::discard_time_series,
-                                                    "Impossible to discard the requested time series.",
-                                                    "Reason: Time series name is reserved and cannot be used.\n",
-                                                    "TimeSeries name: ", name);
-                                                    
+void GlobalTimes::discard_time_series(const std::string& name)
+{
+    beme_throw_if(name == label::__CONSTANT_TS || name == label::__RESULTS_TS, std::invalid_argument,
+        "Impossible to discard the requested time series.",
+        "Time series name is reserved and cannot be used.",
+        "TimeSeries name: ", name);
+                     
     auto it= m__ud_time_series.find(name);
     if (it == m__ud_time_series.end())
-        __format_and_throw<std::invalid_argument>(log::cname::global_times,
-                                                    log::fname::discard_time_series,
-                                                    "Impossible to discard the requested time series.",
-                                                    "Reason: Time series not found.\n",
-                                                    "TimeSeries name: ", name);
+        return; // Nothing to do.
+
     m__ud_time_series.erase(it);
 }
 

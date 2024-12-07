@@ -24,7 +24,7 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/wds/epanet_helpers/en_time_options.hpp"
 
 #include "bevarmejo/io/streams.hpp"
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/registry_view.hpp"
@@ -507,20 +507,21 @@ template <typename N, typename... Args>
     // Have to pass the ID twice because the constructor of the element needs it.
     auto irtn = _nodes_.emplace<N>(id, *this, id, std::forward<Args>(args)...);
 
-    if (!irtn.inserted)
-        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::insert()", "Impossible to insert the element.",
-            "An element with the same ID already exists in the nodes collection.",
-            "ID: ", id, "\n");
-
+    beme_throw_if(!irtn.inserted, std::invalid_argument,
+        "Impossible to insert the element.",
+        "An element with the same name already exists in the nodes collection.",
+        "Name: ", id);
+        
     auto insert_in_spec_collection = [this, &id, &irtn](auto& container) -> decltype(auto)
     {
         auto irs = container.insert(id, std::static_pointer_cast<N>(irtn.iterator.operator->()));
         if (!irs.inserted)
         {
             _nodes_.erase(id);
-            __format_and_throw<std::logic_error>("WaterDistributionSystem::insert()", "Impossible to insert the element.",
-                "The element with ID \""+id+"\" could not be inserted in the specific collection.",
-                "Either there is no more memory or the containers lost sync.");
+            beme_throw(std::logic_error,
+                "Impossible to insert the element.",
+                "The element could not be inserted in the specific collection (either there is no more memory or the containers lost sync).",
+                "Element name: ", id);
         }
 
         return irs.iterator.operator->();
@@ -562,25 +563,23 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
         "You are trying to install a non-link element in the links collection.");
 
     // Check that the two nodes where you are installing the link exist.
-    auto check_node = [this](const ID& id) -> void
-    {
-        if (_nodes_.find_index(id) == -1)
-            __format_and_throw<std::invalid_argument>("WaterDistributionSystem::install()", "Impossible to install the element.",
-                "Can not find the node where the link should be installed.",
-                "ID: ", id, "\n");
-    };
-
-    check_node(from_node_id);
-    check_node(to_node_it);
-
+    beme_throw_if(_nodes_.find_index(from_node_id) == -1, std::invalid_argument,
+        "Impossible to install the element.",
+        "Can not find the node where the link should be installed.",
+        "Node name: ", from_node_id);
+    beme_throw_if(_nodes_.find_index(to_node_it) == -1, std::invalid_argument,
+        "Impossible to install the element.",
+        "Can not find the node where the link should be installed.",
+        "Node name: ", to_node_it);
+    
     // As for the nodes, you have to pass the ID twice because the constructor of the element needs it.
     auto irtn = _links_.emplace<L>(id, *this, id, std::forward<Args>(args)...);
 
-    if (!irtn.inserted)
-        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::install()", "Impossible to insert the element.",
-            "An element with the same ID already exists in the links collection.",
-            "ID: ", id, "\n");
-
+    beme_throw_if(!irtn.inserted, std::invalid_argument,
+        "Impossible to insert the element.",
+        "An element with the same name already exists in the links collection.",
+        "Name: ", id);
+        
     // We know the nodes id are correct and exist, so we can connect the link
     // and later insert it in the specific collection.
     irtn.iterator->from_node(_nodes_.get(from_node_id).get());
@@ -599,9 +598,10 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
             _nodes_.get(to_node_it)->disconnect_link(irtn.iterator.operator->().get());
             _links_.erase(id);
 
-            __format_and_throw<std::logic_error>("WaterDistributionSystem::install()", "Impossible to insert the element.",
-                "The element with ID \""+id+"\" could not be inserted in the specific collection.",
-                "Either there is no more memory or the containers lost sync.");
+            beme_throw(std::logic_error,
+                "Impossible to insert the element.",
+                "The element could not be inserted in the specific collection (either there is no more memory or the containers lost sync).",
+                "Element name: ", id);
         }
 
         return irs.iterator.operator->();
@@ -633,10 +633,9 @@ auto WaterDistributionSystem::submit_id_sequence(const ID& id, Args&&... args) -
 {
     auto irtn = m__id_sequences.emplace(id, std::forward<Args>(args)...);
 
-    if (!irtn.inserted)
-        __format_and_throw<std::invalid_argument>("WaterDistributionSystem::submit_id_sequence()", "Impossible to insert the element.",
-            "An element with the same ID already exists in the ID sequences collection.",
-            "ID: ", id, "\n");
+    beme_throw_if(!irtn.inserted, std::invalid_argument,
+        "Impossible to insert the element.",
+        "A sequence with the same name already exists.", "Name: ", id);
 
     return *irtn.iterator.operator->();
 }

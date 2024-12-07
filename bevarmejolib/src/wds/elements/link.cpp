@@ -6,7 +6,7 @@
 
 #include "bevarmejo/wds/epanet_helpers/en_help.hpp"
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/quantity_series.hpp"
 
@@ -60,10 +60,10 @@ void Link::retrieve_EN_index()
 
     int en_index = 0;
     int errorcode = EN_getlinkindex(m__wds.ph(), m__name.c_str(), &en_index);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_index", "Error retrieving index of link.",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the index of the link.",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
 
     m__en_index = en_index;
 }
@@ -85,11 +85,11 @@ void Link::__retrieve_EN_properties()
     // get the initial status
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_INITSTATUS, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_INITSTATUS",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_INITSTATUS",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
 
     m__initial_status = val;
 
@@ -97,11 +97,11 @@ void Link::__retrieve_EN_properties()
     int node_from_idx= 0;
     int node_to_idx= 0;
     errorcode = EN_getlinknodes(ph, this->m__en_index, &node_from_idx, &node_to_idx);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_properties", "Error retrieving properties of link.",
-            "Property: EN_LINKNODES",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the properties of the link.",
+        "Error while retrieving value: EN_INITSTATUS",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
 
     // Install the link between the nodes
     m__from_node = m__wds.nodes().get(epanet::get_node_id(ph, node_from_idx)).get();
@@ -125,11 +125,11 @@ void Link::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_FLOW, &val);
-    if (errorcode > 100) 
-        __format_and_throw<std::runtime_error>("Link", "retrieve_EN_results", "Error retrieving results of link.",
-            "Property: EN_FLOW",
-            "Error code: ", errorcode,
-            "Link ID: ", m__name);
+    beme_throw_if(errorcode > 100, std::runtime_error,
+        "Impossible to retrieve the results of the link.",
+        "Error while retrieving value: EN_FLOW",
+        "Error code: ", errorcode,
+        "Link ID: ", m__name);
     
     if (ph->parser.Flowflag != LPS)
         val = epanet::convert_flow_to_L_per_s(ph, val);

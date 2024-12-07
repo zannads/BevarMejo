@@ -8,7 +8,7 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 namespace bevarmejo {
 namespace epanet {
@@ -78,28 +78,30 @@ inline std::string get_node_id(EN_Project ph, int index) {
     return node_id_str;
 }
 
-inline int is_string_en_object_type(const std::string& en_obj_string) {
+inline int is_string_en_object_type(const std::string& en_obj_string)
+{
+    if (en_obj_string == "EN_NODE")
+        return EN_NODE;
 
-	int en_object_type = 0;
-	if (en_obj_string == "EN_NODE")
-		en_object_type = EN_NODE;
-	else if (en_obj_string == "EN_LINK")
-		en_object_type = EN_LINK;
-	else if (en_obj_string == "EN_TIMEPAT")
-		en_object_type = EN_TIMEPAT;
-	else if (en_obj_string == "EN_CURVE")
-		en_object_type = EN_CURVE;
-	else if (en_obj_string == "EN_CONTROL")
-		en_object_type = EN_CONTROL;
-	else if (en_obj_string == "EN_RULE")
-		en_object_type = EN_RULE;
-	else {
-		std::ostringstream oss;
-		io::stream_out(oss, "Invalid EN object type: ", en_obj_string, "\n");
-		throw std::runtime_error(oss.str());
-	}
+    if (en_obj_string == "EN_LINK")
+        return EN_LINK;
 
-	return en_object_type;
+    if (en_obj_string == "EN_TIMEPAT")
+        return EN_TIMEPAT;
+
+    if (en_obj_string == "EN_CURVE")
+        return EN_CURVE;
+
+    if (en_obj_string == "EN_CONTROL")
+        return EN_CONTROL;
+
+    if (en_obj_string == "EN_RULE")
+        return EN_RULE;
+
+    beme_throw(std::invalid_argument,
+        "Can not convert string to EN object type.",
+        "String is not a valid EN object type.",
+        "String: ", en_obj_string);
 }
 
 } // namespace epanet

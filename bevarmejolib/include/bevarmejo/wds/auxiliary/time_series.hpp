@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 #include "bevarmejo/wds/auxiliary/global_times.hpp"
 
@@ -148,16 +148,15 @@ public:
 
     // ======== Actual Implementation (hyp: RTT == time::RelativeTime)========
 
+        beme_throw_if(pos > m__time_steps.size(), std::out_of_range,
+            "Impossible to access the requested time step.",
+            "The index is out of range.",
+            "Index: ", pos, "Size: ", m__time_steps.size());
+
         if (pos == 0)
             return value_type{0};
 
-        if (pos <= m__time_steps.size() )
-            return m__time_steps[pos-1];
-
-        __format_and_throw<std::out_of_range>(log::cname::time_series, log::fname::at, 
-                                                "Index out of range.", 
-            "Valid index range: [0, ", m__time_steps.size(), "]\n",
-            "Index = ", pos);
+        return m__time_steps[pos-1];
     }
 
     // No operator[] because it is not safe to use it with this setup
@@ -556,20 +555,20 @@ public:
 
         // ======== Actual Implementation (hyp: RTT == time::RelativeTime) ========
 
-        if ( time__s < 0 )
-            __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::commit, 
-                                                        "Time steps must be >= 0.",
-                "Time step = ", time__s);
-                
+        beme_throw_if(time__s < 0, std::invalid_argument,
+            "Impossible to commit the requested time step.",
+            "Time steps must be >= 0.",
+            "Time step = ", time__s);
+            
         if (m__time_steps.empty() && time__s == 0)
             return; // No problem if you commit the zero time as the first time step. As I expect to commit the zero at the beginning of every simulation.
 
-        if (!m__time_steps.empty() && time__s <= m__time_steps.back())
-            __format_and_throw<std::invalid_argument>(log::cname::time_series, log::fname::commit, 
-                                                        "Time steps must be monotonic.",
-                "Back of the TimeSeries = ", m__time_steps.back(), "\n",
-                "Time step = ", time__s);
-                
+        beme_throw_if(!m__time_steps.empty() && time__s <= m__time_steps.back(), std::invalid_argument,
+            "Impossible to commit the requested time step.",
+            "Time steps must be monotonic.",
+            "Back of the TimeSeries = ", m__time_steps.back(), "\n",
+            "Time step = ", time__s);
+        
         m__time_steps.push_back(time__s);
     }
 
