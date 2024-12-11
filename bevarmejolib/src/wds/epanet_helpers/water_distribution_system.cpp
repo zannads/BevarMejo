@@ -181,23 +181,23 @@ void WaterDistributionSystem::load_EN_curves()
             case EN_GENERIC_CURVE:
                 io::stream_out(std::cout, 
                     "Curve with ID \""+std::string(curve_id)+"\" is a generic curve and will not link to anything.\n");
-                m__aux_elements_.curves.insert(curve_id, wds::GenericCurve::retrieve_from_EN_for(*this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::GenericCurve::make_from_EN_for(*this, curve_id));
                 break;
 
             case EN_VOLUME_CURVE:
-                m__aux_elements_.curves.insert(curve_id, wds::VolumeCurve::retrieve_from_EN_for(*this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::VolumeCurve::make_from_EN_for(*this, curve_id));
                 break;
 
             case EN_PUMP_CURVE:
-                m__aux_elements_.curves.insert(curve_id, wds::PumpCurve::retrieve_from_EN_for(*this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::PumpCurve::make_from_EN_for(*this, curve_id));
                 break;
 
             case EN_EFFIC_CURVE:
-                m__aux_elements_.curves.insert(curve_id, wds::EfficiencyCurve::retrieve_from_EN_for(*this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::EfficiencyCurve::make_from_EN_for(*this, curve_id));
                 break;
 
             case EN_HLOSS_CURVE:
-                m__aux_elements_.curves.insert(curve_id, wds::HeadlossCurve::retrieve_from_EN_for(*this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::HeadlossCurve::make_from_EN_for(*this, curve_id));
                 break;
 
             default:
@@ -223,16 +223,7 @@ void WaterDistributionSystem::load_EN_patterns()
         errorcode = EN_getpatternid(ph_, i, pattern_id);
         assert(errorcode < 100);
 
-        auto irs = m__aux_elements_.patterns.emplace(pattern_id, *this, std::string(pattern_id));
-        if (irs.inserted)
-        {
-            // Actually load the pattern data
-            irs.iterator->retrieve_EN_index();
-            irs.iterator->retrieve_EN_properties();
-        }
-        else // it was already in (I need to print the message this time)
-            io::stream_out(std::cout, 
-                "Pattern with ID \""+std::string(pattern_id)+"\" already exists in the network.\n");
+        m__aux_elements_.patterns.insert(pattern_id, wds::Pattern::make_from_EN_for(*this, pattern_id));
     }
 }
 
@@ -253,43 +244,47 @@ void WaterDistributionSystem::load_EN_nodes()
         errorcode = EN_getnodetype(ph_, i, &node_type);
         assert(errorcode < 100);
 
-        auto insert_ele_in_cont = [this, node_id](auto& container) -> bool
+        auto insert_ele_in_cont = [this, node_id](auto& container) -> void
         {
             // Insert in nodes with the mapped type of the container (e.g. Junction)
-            // then if it worked insert in the specific container.
-            // double node_id because my SystemElements still need the id...
+            // then, if it has worked, insert in the specific container.
             using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
-            auto irtn = _nodes_.emplace<mapped_type>(node_id, *this, node_id);
-            if (!irtn.inserted)
-                return false;
+            std::shared_ptr p_node = mapped_type::make_from_EN_for(*this, node_id);
 
-            auto irs = container.insert(node_id, std::static_pointer_cast<mapped_type>(irtn.iterator.operator->()));
-            if (irs.inserted)
-                return true;
-            
-            // If we are here it is a weird situation, because we could insert in nodes, 
-            // but not in the specific container. This could happen if there is no more memory
-            // or there containers are not in sync (the element still appears in the container
-            // but not in the nodes).
-            beme_throw(std::logic_error,
-                "Impossible to insert the element.",
-                "The element could not be inserted in the specific container (either there is no more memory or the containers lost sync).",
-                "Element name: ", node_id);
+            auto irtn = _nodes_.insert(node_id, std::static_pointer_cast<Node>(p_node));
+            if (!irtn.inserted)
+            {
+                return; // Already in, return with no problems.
+            }
+
+            auto irs = container.insert(node_id, p_node);
+            if (!irs.inserted)
+            {            
+                // If we are here it is a weird situation, because we could insert in nodes, 
+                // but not in the specific container. This could happen if there is no more memory
+                // or there containers are not in sync (the element still appears in the container
+                // but not in the nodes).
+                beme_throw(std::logic_error,
+                    "Impossible to insert the element.",
+                    "The element could not be inserted in the specific container (either there is no more memory or the containers lost sync).",
+                    "Element name: ", node_id);
+            }
+
+            return; // Everything went well.
         };
 
-        bool f__inserted = false;
         switch (node_type)
         {
             case EN_JUNCTION:
-                f__inserted = insert_ele_in_cont(_junctions_);
+                insert_ele_in_cont(_junctions_);
                 break;
 
             case EN_RESERVOIR:
-                f__inserted = insert_ele_in_cont(_reservoirs_);
+                insert_ele_in_cont(_reservoirs_);
                 break;
             
             case EN_TANK:
-                f__inserted = insert_ele_in_cont(_tanks_);
+                insert_ele_in_cont(_tanks_);
                 break;
 
             default:
@@ -299,20 +294,6 @@ void WaterDistributionSystem::load_EN_nodes()
                     "Node ID: ", node_id,
                     "Node type: ", node_type);
         }
-        if (f__inserted)
-        {
-            // Actually load the node data
-            // I could use the iterator to get the pointer to the element (as done for patterns), but it complicates
-            // the code because of the return type of the insert method and the fact that it 
-            // returns an iterator which I have not made default constructible.
-            auto p_node = _nodes_.get(node_id);
-            p_node->retrieve_EN_index();
-            p_node->retrieve_EN_properties();
-        }
-        else // it was already in
-            io::stream_out(std::cout, 
-                "WaterDistributionSystem::load_EN_nodes() : Impossible to insert the element with ID: \"",
-                 node_id, "\". The element is already in the nodes container.\n");
     }
 }
 
@@ -334,33 +315,38 @@ void WaterDistributionSystem::load_EN_links()
         assert(errorcode < 100);
 
         
-        auto insert_ele_in_cont = [this, link_id](auto& container) -> bool
+        auto insert_ele_in_cont = [this, link_id](auto& container) -> void
         {
             // See load_EN_nodes for the explanation of this function.
             using mapped_type = typename std::decay_t<decltype(container)>::mapped_type;
-            auto irtn = _links_.emplace<mapped_type>(link_id, *this, link_id);
+            std::shared_ptr p_link  = mapped_type::make_from_EN_for(*this, link_id);
+            
+            auto irtn = _links_.insert(link_id, std::static_pointer_cast<Link>(p_link));
             if (!irtn.inserted)
-                return false;
-
-            auto irs = container.insert(link_id, std::static_pointer_cast<mapped_type>(irtn.iterator.operator->()));
-            if (irs.inserted)
-                return true;
-
-            beme_throw(std::logic_error,
+            {
+                return;
+            }
+            
+            auto irs = container.insert(link_id, p_link);
+            if (!irs.inserted)
+            {
+                beme_throw(std::logic_error,
                 "Impossible to insert the element.",
                 "The element could not be inserted in the specific container (either there is no more memory or the containers lost sync).",
                 "Element name: ", link_id);
+            }
+
+            return;
         };
 
-        bool f__inserted = false;
         switch (link_type)
         {
             case EN_PIPE:
-                f__inserted = insert_ele_in_cont(_pipes_);
+                insert_ele_in_cont(_pipes_);
                 break;
 
             case EN_PUMP:
-                f__inserted = insert_ele_in_cont(_pumps_);
+                insert_ele_in_cont(_pumps_);
                 break;
 
             default:
@@ -370,17 +356,6 @@ void WaterDistributionSystem::load_EN_links()
                     "Link ID: ", link_id,
                     "Link type: ", link_type);
         }
-        if (f__inserted)
-        {
-            // Actually load the link data
-            auto p_link = _links_.get(link_id);
-            p_link->retrieve_EN_index();
-            p_link->retrieve_EN_properties();
-        }
-        else // it was already in
-            io::stream_out(std::cout, 
-                "WaterDistributionSystem::load_EN_links() : Impossible to insert the element with ID: \"",
-                 link_id, "\". The element is already in the links container.\n");
     }
 }
 

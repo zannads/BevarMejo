@@ -26,7 +26,7 @@ Pattern::Pattern(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     this->retrieve_EN_properties();
 }
 
-auto Pattern::retrieve_from_EN_for(const WaterDistributionSystem &wds, const EN_Name_t &name) -> std::unique_ptr<Pattern>
+auto Pattern::make_from_EN_for(const WaterDistributionSystem &wds, const EN_Name_t &name) -> std::unique_ptr<Pattern>
 {
     auto p_pattern = std::make_unique<Pattern>(wds, name);
     p_pattern->retrieve_EN_index();

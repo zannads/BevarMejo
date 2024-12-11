@@ -59,6 +59,10 @@ public:
 
 // clone()
 
+// (EPANET constructor)
+public:
+    static auto make_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<Junction>;
+
 /*------- Operators -------*/
 // operator=
 public:

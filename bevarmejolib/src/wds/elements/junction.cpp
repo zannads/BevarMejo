@@ -31,6 +31,16 @@ Junction::Junction(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     m__undelivered_demand(wds.time_series(label::__RESULTS_TS))
 { }
 
+// (EPANET constructor)
+auto Junction::make_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<Junction>
+{
+    auto p_junction = std::make_unique<Junction>(wds, name);
+    p_junction->retrieve_EN_index();
+    p_junction->retrieve_EN_properties();
+
+    return std::move(p_junction);
+}
+
 /*------- Operators -------*/
 
 /*------- Element access -------*/

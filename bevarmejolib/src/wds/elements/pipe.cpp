@@ -36,6 +36,16 @@ Pipe::Pipe(const WaterDistributionSystem& wds, const EN_Name_t& name, const Pipe
     m__length(wds.time_series(label::__CONSTANT_TS), other.m__length)
 { }
 
+// (EPANET constructor)
+auto Pipe::make_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<Pipe>
+{
+    auto p_pipe = std::make_unique<Pipe>(wds, name);
+    p_pipe->retrieve_EN_index();
+    p_pipe->retrieve_EN_properties();
+
+    return std::move(p_pipe);
+}
+
 /*------- Operators -------*/
 
 /*------- Element access -------*/

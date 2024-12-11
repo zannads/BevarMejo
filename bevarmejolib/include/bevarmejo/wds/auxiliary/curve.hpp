@@ -120,6 +120,16 @@ public:
 // clone()
 public:
 
+// (EPANET constructor)
+    static auto make_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<SpecificCurve<X, Y, CT>>
+    {
+        auto p_curve = std::make_unique<SpecificCurve<X, Y, CT>>(wds, name);
+        p_curve->retrieve_EN_index();
+        p_curve->retrieve_EN_properties();
+
+        return std::move(p_curve);
+    }
+
 /*------- Operators -------*/
 // operator=
 public:
@@ -192,16 +202,6 @@ public:
     typename Container::iterator find(const X& x) {return m__curve.find(x);}
     typename Container::const_iterator find(const X& x) const {return m__curve.find(x);}
     bool contains(const X& x) const {return m__curve.find(x) != m__curve.end();}
-
-/*------- Static makes ---------*/
-    static auto retrieve_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<SpecificCurve<X, Y, CT>>
-    {
-        auto p_curve = std::make_unique<SpecificCurve<X, Y, CT>>(wds, name);
-        p_curve->retrieve_EN_index();
-        p_curve->retrieve_EN_properties();
-
-        return std::move(p_curve);
-    }
 
 }; // class SpecificCurve
 
