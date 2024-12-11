@@ -69,6 +69,10 @@ public:
 // clone()
 public:
 
+// EPANET retrieval
+public:
+    static auto retrieve_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t& name) -> std::unique_ptr<Pattern>;
+
 /*------- Operators -------*/
 // operator=
 public:

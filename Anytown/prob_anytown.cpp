@@ -113,7 +113,7 @@ std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double>
 
 	return patterns;
 }
-
+ 
 Problem::Problem(std::string_view a_formulation_str, const json_o& settings, const std::vector<fsys::path> &lookup_paths)
 {
 	if (a_formulation_str == io::value::rehab_f1)

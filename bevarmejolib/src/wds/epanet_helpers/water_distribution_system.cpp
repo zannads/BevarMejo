@@ -176,46 +176,28 @@ void WaterDistributionSystem::load_EN_curves()
         errorcode = EN_getcurvetype(ph_, i, &curve_type);
         assert(errorcode < 100);
 
-        auto get_curve_ptr = [this, curve_id](auto irs) -> std::shared_ptr<Curve>
-        {
-            if (irs.inserted)
-                return irs.iterator.operator->();
-
-            if (irs.iterator != m__aux_elements_.curves.end())
-            { // Not inserted because already existing. 
-                io::stream_out(std::cout, 
-                    "Curve with ID \""+std::string(curve_id)+"\" already exists in the network.\n");
-
-                return nullptr;
-            }
-
-            // Insertion failed for other reasons an withouth throwing...
-            return nullptr;
-        };
-
-        std::shared_ptr<Curve> p_curve;
         switch (curve_type)
         {
             case EN_GENERIC_CURVE:
                 io::stream_out(std::cout, 
                     "Curve with ID \""+std::string(curve_id)+"\" is a generic curve and will not link to anything.\n");
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::GenericCurve>(curve_id, *this, std::string(curve_id)));
+                m__aux_elements_.curves.insert(curve_id, wds::GenericCurve::retrieve_from_EN_for(*this, curve_id));
                 break;
 
             case EN_VOLUME_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::VolumeCurve>(curve_id, *this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::VolumeCurve::retrieve_from_EN_for(*this, curve_id));
                 break;
 
             case EN_PUMP_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::PumpCurve>(curve_id, *this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::PumpCurve::retrieve_from_EN_for(*this, curve_id));
                 break;
 
             case EN_EFFIC_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::EfficiencyCurve>(curve_id, *this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::EfficiencyCurve::retrieve_from_EN_for(*this, curve_id));
                 break;
 
             case EN_HLOSS_CURVE:
-                p_curve = get_curve_ptr(m__aux_elements_.curves.emplace<wds::HeadlossCurve>(curve_id, *this, curve_id));
+                m__aux_elements_.curves.insert(curve_id, wds::HeadlossCurve::retrieve_from_EN_for(*this, curve_id));
                 break;
 
             default:
@@ -225,14 +207,6 @@ void WaterDistributionSystem::load_EN_curves()
                     "Curve ID: ", curve_id,
                     "Curve type: ", curve_type);
         }
-        if (valid(p_curve))
-        {
-            // Actually load the curve data
-            p_curve->retrieve_EN_index();
-            p_curve->retrieve_EN_properties();
-        }
-        else // it was already in (and I printed the message in the lambda)
-            continue;
     }
 }
 
