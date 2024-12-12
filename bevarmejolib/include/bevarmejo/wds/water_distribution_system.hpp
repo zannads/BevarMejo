@@ -19,9 +19,9 @@ namespace fsys = std::filesystem;
 #include <vector>
 
 #include "epanet2_2.h"
+#include "bevarmejo/utility/epanet/time.hpp"
 
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
-#include "bevarmejo/wds/utility/epanet/en_time_options.hpp"
 
 #include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/utility/bemexcept.hpp"

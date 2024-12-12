@@ -37,6 +37,8 @@ namespace bemeio = bevarmejo::io;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
+#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
+
 #include "prob_anytown.hpp"
 
 namespace bevarmejo {
@@ -371,13 +373,13 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	// everything in a new thread and then simply discard it.
 	
 	apply_dv(m__anytown, dvs);
-	
-	try
+
+	sim::solvers::epanet::HydSimSettings settings;
+	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
+
+	if (!sim::solvers::epanet::is_successful(results))
 	{
-		m__anytown->run_hydraulics();
-	} catch (const std::exception& e)
-	{
-		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation: ", e.what(), "\n");
+		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
 		reset_dv(m__anytown, dvs);
 		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
 					std::numeric_limits<double>::max());

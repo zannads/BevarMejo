@@ -9,7 +9,7 @@
 
 #include "bevarmejo/utility/bemexcept.hpp"
 
-#include "bevarmejo/wds/utility/epanet/en_time_options.hpp"
+#include "bevarmejo/utility/epanet/time.hpp"
 
 namespace bevarmejo {
 

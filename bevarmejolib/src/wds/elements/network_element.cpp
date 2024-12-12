@@ -4,7 +4,7 @@
 #include "bevarmejo/wds/element.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
-#include "network_element.hpp"
+#include "elements/network_element.hpp"
 
 namespace bevarmejo::wds
 {

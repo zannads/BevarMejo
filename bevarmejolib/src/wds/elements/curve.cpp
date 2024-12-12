@@ -9,7 +9,7 @@
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
-#include "curve.hpp"
+#include "elements/curve.hpp"
 
 namespace bevarmejo::wds
 {

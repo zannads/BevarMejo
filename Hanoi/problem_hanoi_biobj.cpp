@@ -21,6 +21,8 @@ using json_o = nlohmann::json;
 #include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
+#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
+
 #include "problem_hanoi_biobj.hpp"
 
 namespace fsys = std::filesystem;
@@ -63,15 +65,16 @@ std::vector<double> Problem::fitness(const std::vector<double>& dv) const {
 
     // Calculate the reliability 
     //     I need to run the sim first 
-    try
-    {
-        m_hanoi->run_hydraulics();
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-        return {std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
-    }
+    sim::solvers::epanet::HydSimSettings settings;
+	auto results = sim::solvers::epanet::solve_hydraulics(*m_hanoi, settings);
+
+	if (!sim::solvers::epanet::is_successful(results))
+	{
+		bevarmejo::io::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
+		// reset_dv(m__anytown, dvs);
+		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
+					std::numeric_limits<double>::max());
+	}
     
     // Change sign as reliability needs to be maximized
     double ir = resilience_index_from_min_pressure(*m_hanoi, min_head_m).when_t(0);

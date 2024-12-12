@@ -10,7 +10,22 @@
 #     set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")
 #     message(STATUS "PUGIXML_ROOT environmental variable NOT found, using ${PUGIXML_ROOT}" )
 # ENDIF()
+set(BEME_IO
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/key.cpp"
+)
 
+set(BEME_UTILS
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/library_metadata.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_help.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_serializers.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/default_objects_serializers.cpp"
+)
+
+# ==============================
+# WDS
+# ==============================
 set(WDS_INC_ROOT    
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" 
         CACHE PATH "Path to the rootfolder of the WDS"
@@ -55,19 +70,16 @@ set(BEME_WDS
         ${BEME_WDS_UTIL}
 )
 
-set(BEME_IO
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/key.cpp"
+# ==============================
+# SIMULATION
+# ==============================
+set(BEME_SIMULATION
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/hydraulic.cpp"
 )
 
-set(BEME_UTILS
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/library_metadata.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_help.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_serializers.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/default_objects_serializers.cpp"
-)
-
+# ==============================
+# PROBLEM
+# ==============================
 set(BEME_PROBLEM
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
@@ -80,6 +92,7 @@ add_library(bemelib
         ${BEME_PROBLEM}
         ${BEME_UTILS}
         ${BEME_WDS}
+        ${BEME_SIMULATION}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
@@ -95,12 +108,8 @@ target_include_directories(bemelib PRIVATE
                         "include/bevarmejo"
                         "include/bevarmejo/io"
                         "include/bevarmejo/utility"
-                        "include/bevarmejo/epanet_helpers"
-                        "include/bevarmejo/utility/pagmo"
-                        "include/bevarmejo/utility/pagmo/algorithms"
                         "include/bevarmejo/wds"
-                        "include/bevarmejo/wds/elements"
-                        "include/bevarmejo/wds/auxiliary"
-                        "include/bevarmejo/wds/epanet_helpers"
+                        "include/bevarmejo/simulation"
+                        "include/bevarmejo/evaluation"
                         "include/bevarmejo/problem"
 )

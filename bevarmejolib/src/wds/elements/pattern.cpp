@@ -10,7 +10,7 @@
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
-#include "pattern.hpp"
+#include "elements/pattern.hpp"
 
 namespace bevarmejo::wds
 {
