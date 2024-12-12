@@ -19,7 +19,7 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/io/fsys.hpp"
-#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
 #include "problem_hanoi_biobj.hpp"
 

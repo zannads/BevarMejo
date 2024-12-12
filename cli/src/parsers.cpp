@@ -23,7 +23,7 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/utility/string_manip.hpp"
 
-#include "bevarmejo/library_metadata.hpp"
+#include "bevarmejo/utility/library_metadata.hpp"
 #include "bevarmejo/factories.hpp"
 
 #include "bevarmejo/cli_settings.hpp"

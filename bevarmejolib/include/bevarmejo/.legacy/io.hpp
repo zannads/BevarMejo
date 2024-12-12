@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "bevarmejo/io/streams.hpp"
-#include "bevarmejo/wds/epanet_helpers/en_help.hpp"
+#include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
 namespace bevarmejo::io {
 namespace inp::detail {

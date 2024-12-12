@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+#include "bevarmejo/wds/utility/quantity_series.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 

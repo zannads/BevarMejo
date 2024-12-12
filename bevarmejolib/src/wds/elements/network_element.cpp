@@ -1,7 +1,7 @@
 #include <string>
 
-#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
-#include "bevarmejo/wds/elements/element.hpp"
+#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "bevarmejo/wds/element.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "network_element.hpp"

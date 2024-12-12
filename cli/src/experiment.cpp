@@ -30,11 +30,11 @@ using json_o = nlohmann::json;
 #include "bevarmejo/io/keys/bemeopt.hpp"
 
 #include "bevarmejo/factories.hpp"
-#include "bevarmejo/library_metadata.hpp"
+#include "bevarmejo/utility/library_metadata.hpp"
 
-#include "bevarmejo/pagmo_helpers/containers_serializers.hpp"
-#include "bevarmejo/pagmo_helpers/containers_help.hpp"
-#include "bevarmejo/pagmo_helpers/algorithms/nsga2_help.hpp"
+#include "bevarmejo/utility/pagmo/containers_serializers.hpp"
+#include "bevarmejo/utility/pagmo/containers_serializers.hpp"
+#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
 
 #include "bevarmejo/utility/string_manip.hpp"
 

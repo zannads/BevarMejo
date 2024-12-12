@@ -2,9 +2,9 @@
 
 #include "bevarmejo/constants.hpp"
 
-#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+#include "bevarmejo/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/junction.hpp"
+#include "bevarmejo/wds/elements/network_elements/nodes/junction.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
