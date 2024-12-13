@@ -34,11 +34,6 @@ void HydSimSettings::save_all_hsteps(bool a_save_all)
     f__save_all_hsteps = a_save_all;
 }
 
-
-
-
-
-
 // Forward declaration of the internal functions
 namespace detail
 {
@@ -46,20 +41,19 @@ namespace detail
 void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 void release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 
-namespace EarlyTerminationMode
-{
-    struct Never { }; // Never terminate early, return all the error/warning codes
-    struct OnErrors { }; // Terminate early only if the error are critical (ignore warnings, errorcode > 100)
-    struct Always { }; // Return early if any error or warning code is returned (errorcode > 0)
-};
 
-namespace ReportingMode
-{
-    struct All { }; // Save all the hydraulic steps
-    struct Scheduled { }; // Save only the scheduled hydraulic steps (as in EPANET)
-}; // namespace ReportingModes
+// Early termination mode, flag that tells if the simulation should stop on warnings. (Useful to reduce computation time in optimisations).
+// Reporting mode, flag to mantain backward compatibility.
+//      If you don't save all the hydraulic steps but only the reporting ones as EPANET and wntr do,
+//      you get a wrong estimate for the energy going out of the system when EPANET
+//      inserts extra time steps in the simulations.
+//      If the energy going out of the system is computed as Flow x Head x TimeStep,
+//      the TimeStep is the reporting one, while flow and head would be the values 
+//      at the beginning of the reported period.
+//      This is incorrect as it should be the sum of (Flow x Head x HydraulicTimeStep)
+//      for all the intermediate time steps.
 
-template <typename ETM, typename RM>
+template <bool ETM, bool RM>
 bool save_results(const int errorcode, const time_t t, const HydSimSettings& a_settings, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res) noexcept
 {
     if constexpr (std::is_same_v<RM, ReportingMode::Scheduled>)
@@ -91,21 +85,20 @@ bool save_results(const int errorcode, const time_t t, const HydSimSettings& a_s
         link.retrieve_EN_results();
     }
 
-    if constexpr (std::is_same_v<ETM, EarlyTerminationMode::Never>)
+    // We are always quitting when there is a memory error.
+    if (errorcode > 100)
     {
-        return false;
+        return true;
     }
-    else if constexpr (std::is_same_v<ETM, EarlyTerminationMode::OnErrors>)
+
+    if constexpr (ETM)
     {
-        return errorcode > 100;
-    }
-    else if constexpr (std::is_same_v<ETM, EarlyTerminationMode::Always>)
-    {
+        // In case of warnings (simulation failed), we return early
         return errorcode > 0;
     }
-    else
+    else // No early termination
     {
-        static_assert(false, "Unknown EarlyTerminationMode");
+        return false;
     }
 }
 
