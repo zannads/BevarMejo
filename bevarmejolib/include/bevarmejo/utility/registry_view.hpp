@@ -104,20 +104,7 @@ public:
 public:
     self_type& operator=(const self_type& rhs) = delete;
     self_type& operator=(self_type&& rhs) noexcept = delete;
-    template <typename U, typename = std::enable_if_t<std::is_constructible_v<USS_pointer, U>>>
-    self_type& operator=(U&& elements) noexcept
-    {
-        p__uss = std::forward<U>(elements);
-        return *this;
-    }
 
-/*--- assign ---*/
-public:
-    template <typename U, typename = std::enable_if_t<std::is_constructible_v<USS_pointer, U>>>
-    void assign(U&& elements) noexcept
-    {
-        p__uss = std::forward<U>(elements);
-    }
 }; // class RegistryViewCore
 
 template <typename T, typename M,
@@ -226,6 +213,23 @@ public:
 
     size_type size() const
     {
+        // Special cases for when the UniqueStringSequence is non-existent or 
+        // empty. In these cases, it depends on the mode and the registry and 
+        // I can tell with constant time complexity.
+        // If we are excluding no element, the size is the registry's size.
+        // On the other hand, if we are including no element, the size is 0.
+        if (this->p__uss.expired() || this->p__uss.lock()->empty())
+        {
+            if constexpr (std::is_same_v<mode_type, RVMode::Exclude>)
+            {
+                return this->m__registry.size();
+            }
+            else if constexpr (std::is_same_v<mode_type, RVMode::Include>)
+            {
+                return 0;
+            }
+        }
+        
         size_type count = 0;
         for (auto it = begin(); it != end(); ++it)
             ++count;
@@ -279,7 +283,46 @@ private:
             i__reg(0),
             i__uss(0)
         {
-            static_assert(std::true_type ::value, "Not implemented yet.");
+            static_assert(std::is_same_v<mode_type, RVMode::Exclude> || std::is_same_v<mode_type, RVMode::Include>,
+                "The FilterIterator can only be used with Exclude or Include modes.");
+
+            // If the UniqueStringSequence is non-existent or empty, I got to the end
+            // iterator for the include mode, and the required iterator for the exclude mode.
+            if (p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
+            {
+                if constexpr(std::is_same_v<mode_type, RVMode::Exclude>)
+                {
+                    i__reg = index_reg;
+                }
+                else
+                {
+                    i__reg = p__range->m__registry.size();
+                }
+                return;
+            }
+
+            // Index_reg is as candidate_i__reg in the increment operator.
+            // See the rationale there.
+
+            auto p__uss = p__range->p__uss.lock();
+
+            for (; index_reg < p__range->m__registry.size(); ++index_reg)
+            {
+                bool condition_target = false;
+                if constexpr (std::is_same_v<mode_type, RVMode::Include>)
+                {
+                    condition_target = true;
+                }
+
+                auto candidate_it__uss = p__uss->find(p__range->m__registry.at(index_reg).name);
+                if (condition_target == (candidate_it__uss != p__uss->end()))
+                {
+                    i__reg = index_reg;
+                    return;
+                }
+            }
+            i__reg = p__range->m__registry.size();
+            return;
         }
         FilterIterator(const FilterIterator &other) noexcept = default;
         FilterIterator(FilterIterator &&other) noexcept = default;
@@ -310,8 +353,54 @@ private:
     public:
         iterator_type& operator++()
         {
-            static_assert(std::true_type ::value, "Not implemented yet.");
+            // We search for the next element in the registry that is (Include) 
+            // or is not (Exclude) in the UniqueStringSequence.
+            // We always only move the registry index and the uss index stays to 0.
 
+            // Special cases for when the UniqueStringSequence is non-existent or
+            // empty.
+            if (p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
+            {
+                if constexpr(std::is_same_v<mode_type, RVMode::Exclude>)
+                {
+                    assertm(i__reg < p__range->m__registry.size(), "Impossible to increment the iterator. The index is out of range.");
+                    ++i__reg;
+                }
+                else
+                {
+                    i__reg = p__range->m__registry.size();
+                }
+                return *this;
+            }
+
+            // We can search for the next element in the registry that needs to 
+            // be included or excluded, because we have a valid UniqueStringSequence.
+            auto p__uss = p__range->p__uss.lock();
+
+            // We need to find the next element in the registry, therefore we try
+            // and see if more steps are needed.
+            for (auto candidate_i__reg = i__reg + 1; candidate_i__reg < p__range->m__registry.size(); ++candidate_i__reg)
+            {
+                // By default it is in exclude mode.
+                // So, we stop when we find an element that is not in the UniqueStringSequence.
+                bool condition_target = false;
+                // On the other hand, in include mode, we stop when we find the
+                // element in the UniqueStringSequence.
+                if constexpr(std::is_same_v<mode_type, RVMode::Include>)
+                {
+                    condition_target = true;
+                }
+
+                // Let's look for it, if not found it will return -1.
+                auto candidate_it__uss = p__uss->find(p__range->m__registry.at(candidate_i__reg).name);
+                if (condition_target == (candidate_it__uss != p__uss->end()))
+                {
+                    i__reg = candidate_i__reg;
+                    return *this;
+                }
+            }
+            // We got to the end of the registry.
+            i__reg = p__range->m__registry.size();
             return *this;
         }
         iterator_type operator++(int)
@@ -337,9 +426,32 @@ private:
 
         difference_type operator-(const iterator_type &other) const
         {
-            static_assert(std::true_type ::value, "Not implemented yet.");
+            // I can't simply do the difference between the indexes because the
+            // indexes are not contiguous. I need to iterate over the registry
+            // to find the difference.
+            assertm(p__range == other.p__range, "Impossible to compare the iterators. The iterators are not from the same registry.");
+            
+            difference_type diff = 0;
+            if (*this < other)
+            {
+                auto it = *this;
+                while (it++ != other)
+                {
+                    ++diff;
+                }
 
-            return 0;
+                return diff;
+            }
+            else
+            {
+                auto it = other;
+                while (it++ != *this)
+                {
+                    --diff;
+                }
+
+                return diff;
+            }
         }
 
     /*--- comparison operators ---*/
@@ -487,20 +599,15 @@ private:
 
             auto p__uss = p__range->p__uss.lock();
 
-            // Let's start from the next element in the UniqueStringSequence.
-            auto it_uss = p__uss->begin() + i__uss + 1;
-            while (it_uss != p__uss->end())
+            for (auto candidate_i__uss = i__uss + 1; candidate_i__uss < p__uss->size(); ++candidate_i__uss)
             {
-                auto pos = p__range->m__registry.find_index(*it_uss);
-                if (pos != -1)
+                auto candidate_i__reg = p__range->m__registry.find_index(p__uss->at(candidate_i__uss));
+                if (candidate_i__reg != -1)
                 {
-                    i__reg = pos;
-                    i__uss = std::distance(p__uss->begin(), it_uss);
+                    i__reg = candidate_i__reg;
+                    i__uss = candidate_i__uss;
                     return *this;
                 }
-
-                // This element is not in the registry, move to the next one.
-                ++it_uss;
             }
 
             // We could not find any new element in the registry.
