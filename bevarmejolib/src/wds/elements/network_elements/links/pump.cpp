@@ -125,7 +125,7 @@ void Pump::__retrieve_EN_properties()
     errorcode = EN_getpatternid(ph, static_cast<int>(val), pattern_id);
     assert(errorcode < 100);
     
-    m__speed_pattern = m__wds.patterns().get(pattern_id);
+    m__speed_pattern = m__wds.get_pattern(pattern_id);
     
     // Assign EN Curves (Pump curve and Efficiency curve)
     errorcode= EN_getlinkvalue(ph, this->m__en_index, EN_PUMP_HCURVE, &val);
@@ -139,7 +139,7 @@ void Pump::__retrieve_EN_properties()
         errorcode = EN_getcurveid(ph, static_cast<int>(val), curve_id);
         assert(errorcode < 100);
 
-        m__pump_curve = m__wds.curves().get<PumpCurve>(curve_id);
+        m__pump_curve = m__wds.get_curve<PumpCurve>(curve_id);
     }
 
     errorcode = EN_getlinkvalue(ph, this->m__en_index, EN_PUMP_ECURVE, &val);
@@ -153,7 +153,7 @@ void Pump::__retrieve_EN_properties()
         errorcode = EN_getcurveid(ph, static_cast<int>(val), curve_id);
         assert(errorcode < 100);
         
-        m__efficiency_curve = m__wds.curves().get<EfficiencyCurve>(curve_id);
+        m__efficiency_curve = m__wds.get_curve<EfficiencyCurve>(curve_id);
     }
 }
 

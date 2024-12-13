@@ -164,7 +164,7 @@ void Tank::__retrieve_EN_properties()
 
         // EPANET says that this curve with this ID should be a volume curve.
         // If this assertion fails it means there are some inconsistencies in the upload from EPANET.
-        m__volume_curve = m__wds.curves().get<VolumeCurve>(curve_id);
+        m__volume_curve = m__wds.get_curve<VolumeCurve>(curve_id);
     }
     else m__volume_curve = nullptr;
     

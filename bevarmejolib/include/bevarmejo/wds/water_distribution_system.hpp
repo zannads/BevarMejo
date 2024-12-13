@@ -225,27 +225,86 @@ public:
     auto subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>;
 
     /*--- System's Network Elements ---*/
+    // Common interface for all types of elements:
+    template <typename OutputT>
+    std::shared_ptr<OutputT> get(const ID& id);
+    template <typename OutputT>
+    std::shared_ptr<const OutputT> get(const ID& id) const;
+
+    // Network elements
+    // Nodes
+    template <typename OutputT = Node>
+    std::shared_ptr<OutputT> get_node(const ID& id);
+    template <typename OutputT = Node>
+    std::shared_ptr<const OutputT> get_node(const ID& id) const;
+
     Junction& junction(const ID& id);
     const Junction& junction(const ID& id) const;
+
+    template <typename OutputT = Junction>
+    std::shared_ptr<OutputT> get_junction(const ID& id);
+    template <typename OutputT = Junction>
+    std::shared_ptr<const OutputT> get_junction(const ID& id) const;
 
     Reservoir& reservoir(const ID& id);
     const Reservoir& reservoir(const ID& id) const;
 
+    template <typename OutputT = Reservoir>
+    std::shared_ptr<OutputT> get_reservoir(const ID& id);
+    template <typename OutputT = Reservoir>
+    std::shared_ptr<const OutputT> get_reservoir(const ID& id) const;
+
     Tank& tank(const ID& id);
     const Tank& tank(const ID& id) const;
-    
+
+    template <typename OutputT = Tank>
+    std::shared_ptr<OutputT> get_tank(const ID& id);
+    template <typename OutputT = Tank>
+    std::shared_ptr<const OutputT> get_tank(const ID& id) const;
+
+    // Links
+    template <typename OutputT = Link>
+    std::shared_ptr<OutputT> get_link(const ID& id);
+    template <typename OutputT = Link>
+    std::shared_ptr<const OutputT> get_link(const ID& id) const;
+
     Pipe& pipe(const ID& id);
     const Pipe& pipe(const ID& id) const;
+
+    template <typename OutputT = Pipe>
+    std::shared_ptr<OutputT> get_pipe(const ID& id);
+    template <typename OutputT = Pipe>
+    std::shared_ptr<const OutputT> get_pipe(const ID& id) const;
 
     Pump& pump(const ID& id);
     const Pump& pump(const ID& id) const;
 
+    template <typename OutputT = Pump>
+    std::shared_ptr<OutputT> get_pump(const ID& id);
+    template <typename OutputT = Pump>
+    std::shared_ptr<const OutputT> get_pump(const ID& id) const;
+
     /*--- System's Components ---*/
+    template <typename OutputT>
+    std::shared_ptr<OutputT> get_component(const ID& id);
+    template <typename OutputT>
+    std::shared_ptr<const OutputT> get_component(const ID& id) const;
+
     Curve& curve(const std::string& name);
     const Curve& curve(const std::string& name) const;
 
+    template <typename OutputT = Curve>
+    std::shared_ptr<OutputT> get_curve(const std::string& name);
+    template <typename OutputT = Curve>
+    std::shared_ptr<const OutputT> get_curve(const std::string& name) const;
+
     Pattern& pattern(const std::string& name);
     const Pattern& pattern(const std::string& name) const;
+
+    template <typename OutputT = Pattern>
+    std::shared_ptr<OutputT> get_pattern(const std::string& name);
+    template <typename OutputT = Pattern>
+    std::shared_ptr<const OutputT> get_pattern(const std::string& name) const;
 
     IDSequence& id_sequence(const std::string& name);
     const IDSequence& id_sequence(const std::string& name) const;
@@ -511,6 +570,43 @@ auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) 
         static_assert(std::true_type::value, 
             "You are trying to get a subnetwork with an invalid type.");
 }
+
+/*--- System's Network Elements ---*/
+template <typename OutputT>
+auto WaterDistributionSystem::get_node(const ID& id) -> std::shared_ptr<OutputT>
+{
+    return _nodes_.get<OutputT>(id);
+}
+template <typename OutputT>
+auto WaterDistributionSystem::get_node(const ID& id) const -> std::shared_ptr<const OutputT>
+{
+    return _nodes_.get<OutputT>(id);
+}
+
+/*--- System's Components ---*/
+
+template <typename OutputT>
+auto WaterDistributionSystem::get_curve(const std::string& name) ->std::shared_ptr<OutputT>
+{
+    return m__aux_elements_.curves.get<OutputT>(name);
+}
+template <typename OutputT>
+auto WaterDistributionSystem::get_curve(const std::string& name) const -> std::shared_ptr<const OutputT>
+{
+    return m__aux_elements_.curves.get<OutputT>(name);
+}
+
+template <typename OutputT>
+auto WaterDistributionSystem::get_pattern(const std::string& name) -> std::shared_ptr<OutputT>
+{
+    return m__aux_elements_.patterns.get<OutputT>(name);
+}
+template <typename OutputT>
+auto WaterDistributionSystem::get_pattern(const std::string& name) const -> std::shared_ptr<const OutputT>
+{
+    return m__aux_elements_.patterns.get<OutputT>(name);
+}
+
 /*------- Modifiers -------*/
 // Emplace whatever you want in the system.
 

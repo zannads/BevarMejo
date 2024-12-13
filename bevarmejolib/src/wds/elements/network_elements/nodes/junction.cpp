@@ -147,7 +147,7 @@ void Junction::__retrieve_EN_properties()
         {   
             aux::QuantitySeries<double> pdemand(m__wds.time_series(label::__EN_PATTERN_TS));
 
-            const auto& pattern = m__wds.patterns().at(pattern_id);
+            const auto& pattern = m__wds.pattern(pattern_id);
 
             // TODO: this is very much wrong because it doesn't consider the shift time step 
             // and that patterns may have a different length and I may need to wrap around.

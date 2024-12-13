@@ -104,8 +104,8 @@ void Link::__retrieve_EN_properties()
         "Link ID: ", m__name);
 
     // Install the link between the nodes
-    m__from_node = m__wds.nodes().get(epanet::get_node_id(ph, node_from_idx)).get();
-    m__to_node = m__wds.nodes().get(epanet::get_node_id(ph, node_to_idx)).get();
+    m__from_node = m__wds.get_node(epanet::get_node_id(ph, node_from_idx)).get();
+    m__to_node = m__wds.get_node(epanet::get_node_id(ph, node_to_idx)).get();
 }
 
 void Link::retrieve_EN_results()
