@@ -1317,7 +1317,7 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::opertns_f1:
 			[[fallthrough]];
 		case Formulation::mixed_f2:
-			append_bounds(bounds__pumps, m__anytown->pumps());
+			append_bounds(bounds__pumps, std::as_const(*m__anytown).pumps());
 			break;
 		default:
 			break;
@@ -1387,7 +1387,7 @@ std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrder
     return std::make_pair(lb, ub);
 }
 
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const WDS::Pumps &pumps)
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(InputExcludingRegistryView<WDS::Pump> pumps)
 {
 // Structure of the decision variables:
 // 24 hours x [npr]

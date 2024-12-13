@@ -118,7 +118,7 @@ namespace fep2 {
 std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 }  
 std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrderedRegistryView<WDS::Pipe> new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const WDS::Pumps &pumps);
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(InputExcludingRegistryView<WDS::Pump> pumps);
 namespace fnt1 {
 std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 }

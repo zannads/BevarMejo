@@ -74,56 +74,96 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
 /*------- Element access -------*/
 
 /*--- System's Network Elements Collections ---*/
-auto WaterDistributionSystem::nodes() const noexcept -> const Nodes&
+auto WaterDistributionSystem::nodes() noexcept -> OutputExcludingRegistryView<Node>
 {
-    return _nodes_;
+    return RegistryView<Node, RVMode::Exclude, true>(_nodes_);
+}
+auto WaterDistributionSystem::nodes() const noexcept -> InputExcludingRegistryView<Node>
+{
+    return RegistryView<Node, RVMode::Exclude, false>(_nodes_);
 }
 
-auto WaterDistributionSystem::links() const noexcept -> const Links&
+auto WaterDistributionSystem::links() noexcept -> OutputExcludingRegistryView<Link>
 {
-    return _links_;
+    return RegistryView<Link, RVMode::Exclude, true>(_links_);
+}
+auto WaterDistributionSystem::links() const noexcept -> InputExcludingRegistryView<Link>
+{
+    return RegistryView<Link, RVMode::Exclude, false>(_links_);
 }
 
-auto WaterDistributionSystem::junctions() const noexcept -> const Junctions&
+auto WaterDistributionSystem::junctions() noexcept -> OutputExcludingRegistryView<Junction>
 {
-    return _junctions_;
+    return RegistryView<Junction, RVMode::Exclude, true>(_junctions_);
+}
+auto WaterDistributionSystem::junctions() const noexcept -> InputExcludingRegistryView<Junction>
+{
+    return RegistryView<Junction, RVMode::Exclude, false>(_junctions_);
 }
 
-auto WaterDistributionSystem::tanks() const noexcept -> const Tanks&
+auto WaterDistributionSystem::reservoirs() noexcept -> OutputExcludingRegistryView<Reservoir>
 {
-    return _tanks_;
+    return RegistryView<Reservoir, RVMode::Exclude, true>(_reservoirs_);
+}
+auto WaterDistributionSystem::reservoirs() const noexcept -> InputExcludingRegistryView<Reservoir>
+{
+    return RegistryView<Reservoir, RVMode::Exclude, false>(_reservoirs_);
 }
 
-auto WaterDistributionSystem::reservoirs() const noexcept -> const Reservoirs&
+auto WaterDistributionSystem::tanks() noexcept -> OutputExcludingRegistryView<Tank>
 {
-    return _reservoirs_;
+    return RegistryView<Tank, RVMode::Exclude, true>(_tanks_);
+}
+auto WaterDistributionSystem::tanks() const noexcept -> InputExcludingRegistryView<Tank>
+{
+    return RegistryView<Tank, RVMode::Exclude, false>(_tanks_);
 }
 
-auto WaterDistributionSystem::pipes() const noexcept -> const Pipes&
+auto WaterDistributionSystem::pipes() noexcept -> OutputExcludingRegistryView<Pipe>
 {
-    return _pipes_;
+    return RegistryView<Pipe, RVMode::Exclude, true>(_pipes_);
+}
+auto WaterDistributionSystem::pipes() const noexcept -> InputExcludingRegistryView<Pipe>
+{
+    return RegistryView<Pipe, RVMode::Exclude, false>(_pipes_);
 }
 
-auto WaterDistributionSystem::pumps() const noexcept -> const Pumps&
+auto WaterDistributionSystem::pumps() noexcept -> OutputExcludingRegistryView<Pump>
 {
-    return _pumps_;
+    return RegistryView<Pump, RVMode::Exclude, true>(_pumps_);
+}
+auto WaterDistributionSystem::pumps() const noexcept -> InputExcludingRegistryView<Pump>
+{
+    return RegistryView<Pump, RVMode::Exclude, false>(_pumps_);
 }
 
 /*--- System's Components Collections ---*/
 
-auto WaterDistributionSystem::patterns() const noexcept -> const Patterns&
+auto WaterDistributionSystem::patterns() noexcept -> OutputExcludingRegistryView<Pattern>
 {
-    return m__aux_elements_.patterns;
+    return RegistryView<Pattern, RVMode::Exclude, true>(m__aux_elements_.patterns);
+}
+auto WaterDistributionSystem::patterns() const noexcept -> InputExcludingRegistryView<Pattern>
+{
+    return RegistryView<Pattern, RVMode::Exclude, false>(m__aux_elements_.patterns);
 }
 
-auto WaterDistributionSystem::curves() const noexcept -> const Curves&
+auto WaterDistributionSystem::curves() noexcept -> OutputExcludingRegistryView<Curve>
 {
-    return m__aux_elements_.curves;
+    return RegistryView<Curve, RVMode::Exclude, true>(m__aux_elements_.curves);
+}
+auto WaterDistributionSystem::curves() const noexcept -> InputExcludingRegistryView<Curve>
+{
+    return RegistryView<Curve, RVMode::Exclude, false>(m__aux_elements_.curves);
 }
 
-auto WaterDistributionSystem::id_sequences() const noexcept -> const IDSequences&
+auto WaterDistributionSystem::id_sequences() noexcept -> OutputExcludingRegistryView<IDSequence>
 {
-    return m__id_sequences;
+    return RegistryView<IDSequence, RVMode::Exclude, true>(m__id_sequences);
+}
+auto WaterDistributionSystem::id_sequences() const noexcept -> InputExcludingRegistryView<IDSequence>
+{
+    return RegistryView<IDSequence, RVMode::Exclude, false>(m__id_sequences);
 }
 
 /*--- System's Network Elements Views (Subnetworks) ---*/

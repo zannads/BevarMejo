@@ -174,24 +174,41 @@ public:
 // with the WDS class methods.
 public:
     /*--- System's Network Elements Collections ---*/
-    const Nodes& nodes() const noexcept;
-    const Links& links() const noexcept;
+    auto nodes() noexcept -> OutputExcludingRegistryView<Node>;
+    auto nodes() const noexcept -> InputExcludingRegistryView<Node>;
 
-    const Junctions& junctions() const noexcept;
-    const Tanks& tanks() const noexcept;
-    const Reservoirs& reservoirs() const noexcept;
+    auto links() noexcept -> OutputExcludingRegistryView<Link>;
+    auto links() const noexcept -> InputExcludingRegistryView<Link>;
 
-    const Pipes& pipes() const noexcept;
-    const Pumps& pumps() const noexcept;
+    auto junctions() noexcept -> OutputExcludingRegistryView<Junction>;
+    auto junctions() const noexcept -> InputExcludingRegistryView<Junction>;
 
+    auto reservoirs() noexcept -> OutputExcludingRegistryView<Reservoir>;
+    auto reservoirs() const noexcept -> InputExcludingRegistryView<Reservoir>;
+
+    auto tanks() noexcept -> OutputExcludingRegistryView<Tank>;
+    auto tanks() const noexcept -> InputExcludingRegistryView<Tank>;
+
+    auto pipes() noexcept -> OutputExcludingRegistryView<Pipe>;
+    auto pipes() const noexcept -> InputExcludingRegistryView<Pipe>;
+
+    auto pumps() noexcept -> OutputExcludingRegistryView<Pump>;
+    auto pumps() const noexcept -> InputExcludingRegistryView<Pump>;
+    
     /*--- System's Components Collections ---*/
-    const Patterns& patterns() const noexcept;
-    const Curves& curves() const noexcept;
+    auto patterns() noexcept -> OutputExcludingRegistryView<Pattern>;
+    auto patterns() const noexcept -> InputExcludingRegistryView<Pattern>;
 
-    const IDSequences& id_sequences() const noexcept;
+    auto curves() noexcept -> OutputExcludingRegistryView<Curve>;
+    auto curves() const noexcept -> InputExcludingRegistryView<Curve>;
+
+    auto id_sequences() noexcept -> OutputExcludingRegistryView<IDSequence>;
+    auto id_sequences() const noexcept -> InputExcludingRegistryView<IDSequence>;
 
     /*--- System's Network Elements Views (Subnetworks) ---*/
     // Expose a subcollection of the system's network elements (subnetwork).
+    // Differently from the standard ones, these can not be noexcept because the 
+    // user may pass an invalid name for the id_sequence.
     template <typename T>
     auto subnetwork(const std::string& id_sequence_name) -> RegistryView<T, RVMode::Include, /*IsMutable = */ true>;
     template <typename T>
@@ -434,7 +451,7 @@ public:
 
 /*--- Implementation ---*/
 /*------- Element access -------*/
-// System's Network Elements Collections
+/*--- System's Network Elements Collections ---*/
 
 /*--- System's Network Elements Views (Subnetworks) ---*/
 template <typename T>
