@@ -151,8 +151,17 @@ bevarmejo::Simulation parse(int argc, char *argv[])
             }
         }
 
-        if(io::key::beme_version.exists_in(j)) 
-            VersionManager::user().set_user_v(io::json::extract(io::key::beme_version).from(j).get<std::string>());
+        if(io::key::beme_version.exists_in(j))
+        {
+            auto user_v_str = io::json::extract(io::key::beme_version).from(j).get<std::string>();
+            if (!is_valid_version(user_v_str))
+            {
+                io::stream_out(std::cerr,
+                    "The requested version is not valid. To use this version, recompile the library with the -DPROJECT_VERSION=YY.MM.PP flag.\n",
+                    "Requested version: ", user_v_str, "\n");
+                std::abort();
+            }
+        }
 
         // 1.3.2 mandatory keys first: dv, udp
         auto check_mandatory_field = [](const io::key::Key &key, const json_o &j){

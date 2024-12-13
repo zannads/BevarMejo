@@ -39,8 +39,7 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     _pipes_(),
     m__aux_elements_(),
     m__id_sequences(),
-    m__times(),
-    m__config_options()
+    m__times()
 {
     assert(!inp_file.empty());
 
@@ -76,9 +75,6 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
 
     // 1.3 Load analysis options
     // TODO: this->load_EN_analysis_options(ph_);
-    if ( VersionManager::user().version() < VersionManager::v(2024,4,0) ) 
-        m__config_options.save_all_hsteps = false;
-    // else m__config_options.save_all_hsteps = true;
 
     // 2.0 Load the auxiliary EPANET elements
     this->load_EN_curves();

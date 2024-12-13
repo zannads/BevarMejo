@@ -15,7 +15,6 @@ set(BEME_IO
 )
 
 set(BEME_UTILS
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/library_metadata.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_help.cpp"

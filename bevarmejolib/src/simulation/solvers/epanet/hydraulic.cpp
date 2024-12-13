@@ -9,11 +9,6 @@ time_t HydSimSettings::report_resolution() const noexcept
     return report_resolution__s;
 }
 
-bool HydSimSettings::save_all_hsteps() const noexcept
-{
-    return f__save_all_hsteps;
-}
-
 void HydSimSettings::report_resolution(time_t a_resolution)
 {
     beme_throw_if(a_resolution <= 0, std::invalid_argument,
@@ -24,16 +19,6 @@ void HydSimSettings::report_resolution(time_t a_resolution)
     report_resolution__s = a_resolution;
 }
 
-void HydSimSettings::save_all_hsteps(bool a_save_all)
-{
-    beme_throw_if(a_save_all == false /* && version is greater than ...*/, std::invalid_argument,
-        "Impossible to set the required behaviour for the reporting.",
-        "From version ... the default EPANET behaviour is not allowed.",
-        "Save all hydraulic steps: ", a_save_all);
-
-    f__save_all_hsteps = a_save_all;
-}
-
 // Forward declaration of the internal functions
 namespace detail
 {
@@ -41,39 +26,36 @@ namespace detail
 void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 void release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 
-
 // Early termination mode, flag that tells if the simulation should stop on warnings. (Useful to reduce computation time in optimisations).
-// Reporting mode, flag to mantain backward compatibility.
-//      If you don't save all the hydraulic steps but only the reporting ones as EPANET and wntr do,
-//      you get a wrong estimate for the energy going out of the system when EPANET
-//      inserts extra time steps in the simulations.
-//      If the energy going out of the system is computed as Flow x Head x TimeStep,
-//      the TimeStep is the reporting one, while flow and head would be the values 
-//      at the beginning of the reported period.
-//      This is incorrect as it should be the sum of (Flow x Head x HydraulicTimeStep)
-//      for all the intermediate time steps.
-
-template <bool ETM, bool RM>
+template <bool ETM>
 bool save_results(const int errorcode, const time_t t, const HydSimSettings& a_settings, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res) noexcept
 {
-    if constexpr (std::is_same_v<RM, ReportingMode::Scheduled>)
-    {
-        // In scheduled mode, we save only the results at the reporting time steps
-        // Therefore, if it is not a reporting time step, we return early and ignore 
-        // also the errorcode.
 
-        if (t % a_settings.report_resolution() != 0)
-        {
-            return false;
-        }
+#if LIBRARY_VERSION <= 240400
+// If you save only the reporting time steps (as EPANET and wntr do) instead of all hydraulic steps,
+// you may get an incorrect estimate of the energy leaving the system. This happens because EPANET
+// can insert extra time steps in the simulation. When energy is calculated as Flow x Head x TimeStep,
+// the TimeStep used is the reporting one, while Flow and Head are values at the beginning of the reported period.
+// The correct calculation should sum (Flow x Head x HydraulicTimeStep) for all intermediate hydraulic time steps.
+// Until v24.04.00, the default behaviour was to save only the reporting time steps.
+    if (t % a_settings.report_resolution() != 0)
+    {
+        return false;
     }
+#endif
     
-    // We end up here both when RM is All or it is Scheduled and a reporting time step.
     // First we need to add the time to the time series of results.
     // Then I can add the value to all the QuantitySeries linked to that result.
     a_wds.result_time_series().commit(t);
 
-    res.commit(t, errorcode);
+    if (errorcode <= 100)
+    {
+        res.commit(t, 0);
+    }
+    else
+    {
+        res.commit(t, errorcode);
+    }
 
     for (auto&& [id, node] : a_wds.nodes())
     {
@@ -142,7 +124,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
 
         bool early_termination = false;
         // Based onthe settings and the version call the right save_results
-        early_termination = detail::save_results<detail::EarlyTerminationMode::OnErrors, detail::ReportingMode::All>(
+        early_termination = detail::save_results<false>(
             errorcode, t, a_settings, a_wds, res);
         
         if (early_termination)

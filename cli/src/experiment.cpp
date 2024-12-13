@@ -484,7 +484,7 @@ void Experiment::prepare_exp_file() const {
     json_o jsys;
     // example machine, OS etc ... 
     json_o jsoft;
-    jsoft[io::key::beme_version()] = VersionManager::library().version().str();
+    jsoft[io::key::beme_version()] = bevarmejo::version_str;
 
     json_o jarchipelago; 
     {

@@ -17,7 +17,6 @@ public:
 /*------- Member objects -------*/
 private:
     time_t report_resolution__s = 0l;  // Step of the reporting in EPANET
-    bool f__save_all_hsteps = true;       // Bool to turn on/off the report behaviour like in EPANET
 
 /*------- Member functions -------*/
 // (constructor)
@@ -38,12 +37,10 @@ public:
 /*--- Element access ---*/
 public:
     time_t report_resolution() const noexcept;
-    bool save_all_hsteps() const noexcept;
 
 /*--- Modifiers ---*/
 public:
     void report_resolution(time_t a_resolution);
-    void save_all_hsteps(bool a_save_all);
 
 }; // class HydSimSettings
 

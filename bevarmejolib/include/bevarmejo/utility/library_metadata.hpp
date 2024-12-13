@@ -1,134 +1,96 @@
 #pragma once 
 
-#include <string>
-#include <utility>
-#include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
+namespace bevarmejo
+{
 
-namespace bevarmejo {
+namespace detail
+{
 
-class VersionManager;
+constexpr unsigned int version = LIBRARY_VERSION;
+constexpr unsigned int version_year = LIBRARY_MAJOR_VERSION;
+constexpr unsigned int version_month = LIBRARY_MINOR_VERSION;
+constexpr unsigned int version_release = LIBRARY_PATCH_VERSION;
 
-namespace detail {
+constexpr std::array<char, 10> version_arr = {
+        'v',
+        static_cast<char>('0' + version_year/10),
+        static_cast<char>('0' + version_year%10),
+        '.',
+        static_cast<char>('0' + version_month/10),
+        static_cast<char>('0' + version_month%10),
+        '.',
+        static_cast<char>('0' + version_release/10),
+        static_cast<char>('0' + version_release%10),
+        '\0'
+    };
 
-class Version {
+#if LIBRARY_VERSION <= 240400
+constexpr unsigned int min_version = 230600;
+#else
+constexpr unsigned int min_version = 240401;
+#endif
 
-private:
-    unsigned int m_year;
-    unsigned int m_month;
-    unsigned int m_release;
+// From a string, parse major, minor and patch versions
+inline std::tuple<unsigned int, unsigned int, unsigned int> parse(const std::string& v_str)
+{
+    // Let's intialize the version numbers with invalid values so that if at least one is not found, the return will be invalid.
+    unsigned int major = 0;
+    unsigned int minor = 0;
+    unsigned int patch = 100;
 
-    friend class bevarmejo::VersionManager; // Allow only the VersionManager to access the private constructor.
+    if (v_str.empty() || *v_str.begin() != 'v')
+    {
+        return std::make_tuple(major, minor, patch);
+    }
 
-private:
-    Version();
-    Version(unsigned int year, unsigned int month, unsigned int release);
-    Version(std::vector<unsigned int> il);
+    std::istringstream iss(std::string(v_str.begin()+1, v_str.end()));
 
-    Version(unsigned int numeric);
-    Version(const std::string &version_str);
+    auto parse_value = [&iss](unsigned int& v) -> void {
+        try
+        {
+            std::string token;
+            std::getline(iss, token, '.');
+            v = std::stoi(token);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    };
+    
+    parse_value(major);
+    parse_value(minor);
+    parse_value(patch);
 
-public:
-    Version(const Version&) = default;
-    Version& operator=(const Version&) = default;
-    Version(Version&&) = default;
-    Version& operator=(Version&&) = default;
+    return std::make_tuple(major, minor, patch);
+}
 
-    ~Version() = default;
+// From major, minor and patch versions, create a numeric version
+inline unsigned int as_numeric(const std::tuple<unsigned int, unsigned int, unsigned int>& v)
+{
+    // A version tuple is valid if:
+    //  - the patch version is less than 100
+    //  - the minor version is a month
+    //  - the major version is the last two digits of a year between min_version and version
 
-    unsigned int year() const;
-    unsigned int month() const;
-    unsigned int release() const;
-
-    unsigned int numeric() const;
-    std::string str() const;
-
-    bool operator<(const Version& other) const;
-    bool operator==(const Version& other) const;
-    bool operator>(const Version& other) const;
-    bool operator<=(const Version& other) const;
-    bool operator>=(const Version& other) const;
-    bool operator!=(const Version& other) const;
-
-    bool operator<(const std::string& other) const;
-    bool operator==(const std::string& other) const;
-    bool operator>(const std::string& other) const;
-    bool operator<=(const std::string& other) const;
-    bool operator>=(const std::string& other) const;
-    bool operator!=(const std::string& other) const;
-
-    bool operator<(const unsigned int other) const;
-    bool operator==(const unsigned int other) const;
-    bool operator>(const unsigned int other) const;
-    bool operator<=(const unsigned int other) const;
-    bool operator>=(const unsigned int other) const;
-    bool operator!=(const unsigned int other) const;
-
-private:
-    static std::vector<unsigned int> parse( const unsigned int numeric );
-    static std::vector<unsigned int> parse( const std::string &version_str );
-
-    static constexpr unsigned int numeric( const unsigned int year, const unsigned int month, const unsigned int release );
-    static std::string str( const unsigned int year, const unsigned int month, const unsigned int release );
-
-}; // class Version
+    if (std::get<2>(v) > 99 || std::get<1>(v) > 12 || std::get<1>(v) < 1 || std::get<0>(v) < min_version/10000 || std::get<0>(v) > version/10000)
+    {
+        return 0;
+    }
+    
+    return std::get<0>(v) * 10000 + std::get<1>(v) * 100 + std::get<2>(v);
+}
 
 } // namespace detail
 
-class VersionManager {
+inline bool is_valid_version(const std::string& version_str)
+{
+    auto v_numeric =  detail::as_numeric(detail::parse(version_str));
 
-private:
-    detail::Version version_; // Just hold the version, either for the static library or the static user requested version
+    return v_numeric != 0 && v_numeric >= detail::min_version && v_numeric <= detail::version;
+}
 
-    VersionManager();
-
-    // Disable copy and move constructor and assignment operator
-    VersionManager(const VersionManager&) = delete;
-    VersionManager& operator=(const VersionManager&) = delete;
-    VersionManager(VersionManager&&) = delete;
-    VersionManager& operator=(VersionManager&&) = delete;
-public:
-    ~VersionManager() = default;
-
-public:
-
-    static VersionManager& user();
-
-    static const VersionManager& library();
-
-    template <typename... Args>
-    static void set_user_v(Args... args) {
-        user().set(std::forward<Args>(args)...);
-    }
-
-    const detail::Version& version() const;
-    const detail::Version& operator()() const;
-
-// You should not be able to create a version object actually. // I will leave it for testing purposes.
-    static detail::Version v();
-
-    template <typename... Args>
-    static detail::Version v(Args... args) {
-        return detail::Version(std::forward<Args>(args)...);
-    }
-
-private:
-    static detail::Version first_v();
-
-    template <typename... Args>
-    void set(Args... args) {
-        auto v = detail::Version(std::forward<Args>(args)...);
-
-        beme_throw_if( v < first_v(), std::invalid_argument,
-            "Impossible to set the requested version.",
-            "The requested version is before the first version.",
-            "Version = ", v.str()
-        );
-        
-        version_ = v;
-    }
-
-}; // class VersionManager
+constexpr const char* version_str = detail::version_arr.data();
 
 } // namespace bevarmejo

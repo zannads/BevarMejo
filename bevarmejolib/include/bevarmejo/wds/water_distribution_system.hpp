@@ -138,10 +138,6 @@ private:
 
     // User defined and default TimeSeries for the simulation
     wds::aux::GlobalTimes m__times;
-    
-    struct ConfigOptions {
-        bool save_all_hsteps = true;                // Bool to turn on/off the report behaviour like in EPANET
-    } m__config_options;
 
 /*------- Member functions -------*/
 // (constructor)
