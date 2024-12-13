@@ -140,8 +140,8 @@ public:
     reference at( size_type pos )
     {
         beme_throw_if(pos >= size(), std::out_of_range,
-            "Impossible to access the element."
-            "The index is out of range."
+            "Impossible to access the element.",
+            "The index is out of range.",
             "Index: ", pos, "Size: ", size());
             
         return {m__elements[pos].name, *m__elements[pos].ptr};
@@ -149,8 +149,8 @@ public:
     const_reference at( size_type pos ) const
     {
         beme_throw_if(pos >= size(), std::out_of_range,
-            "Impossible to access the element."
-            "The index is out of range."
+            "Impossible to access the element.",
+            "The index is out of range.",
             "Index: ", pos, "Size: ", size());
         
         return {m__elements[pos].name, *m__elements[pos].ptr};
