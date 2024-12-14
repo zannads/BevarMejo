@@ -31,6 +31,19 @@ constexpr unsigned int min_version = 230600;
 constexpr unsigned int min_version = 240401;
 #endif
 
+constexpr std::array<char, 10> min_version_arr = {
+        'v',
+        static_cast<char>('0' + (min_version%1000000)/100000),
+        static_cast<char>('0' + (min_version%100000)/10000),
+        '.',
+        static_cast<char>('0' + (min_version%10000)/1000),
+        static_cast<char>('0' + (min_version%1000)/100),
+        '.',
+        static_cast<char>('0' + (min_version%100)/10),
+        static_cast<char>('0' + (min_version%10)/1),
+        '\0'
+    };
+
 // From a string, parse major, minor and patch versions
 inline std::tuple<unsigned int, unsigned int, unsigned int> parse(const std::string& v_str)
 {
@@ -92,5 +105,7 @@ inline bool is_valid_version(const std::string& version_str)
 }
 
 constexpr const char* version_str = detail::version_arr.data();
+
+constexpr const char* min_version_str = detail::min_version_arr.data();
 
 } // namespace bevarmejo

@@ -158,7 +158,8 @@ bevarmejo::Simulation parse(int argc, char *argv[])
             {
                 io::stream_out(std::cerr,
                     "The requested version is not valid. To use this version, recompile the library with the -DPROJECT_VERSION=YY.MM.PP flag.\n",
-                    "Requested version: ", user_v_str, "\n");
+                    "Requested version: ", user_v_str, "\n",
+                    "Valid versions for this executable: [", min_version_str, ", ", version_str, "].\n");
                 std::abort();
             }
         }
