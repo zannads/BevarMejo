@@ -73,6 +73,7 @@ set(BEME_WDS
 # SIMULATION
 # ==============================
 set(BEME_SIMULATION
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/hyd_sim_settings.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/hydraulic.cpp"
 )
 

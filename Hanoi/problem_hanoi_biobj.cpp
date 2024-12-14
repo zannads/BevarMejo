@@ -66,6 +66,21 @@ std::vector<double> Problem::fitness(const std::vector<double>& dv) const {
     // Calculate the reliability 
     //     I need to run the sim first 
     sim::solvers::epanet::HydSimSettings settings;
+
+    long h_step = 0;
+    int errorcode = EN_gettimeparam(m_hanoi->ph(), EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long r_step = 0;
+    errorcode = EN_gettimeparam(m_hanoi->ph(), EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+    long horizon = 0;
+    errorcode = EN_gettimeparam(m_hanoi->ph(), EN_DURATION, &horizon);
+    assert(errorcode < 100);
+
+	settings.resolution(h_step);
+	settings.report_resolution(r_step);
+	settings.horizon(horizon);
+
 	auto results = sim::solvers::epanet::solve_hydraulics(*m_hanoi, settings);
 
 	if (!sim::solvers::epanet::is_successful(results))

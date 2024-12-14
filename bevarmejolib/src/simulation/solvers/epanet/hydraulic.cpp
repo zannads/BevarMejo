@@ -92,23 +92,9 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
     a_wds.clear_results();
     a_wds.result_time_series().reset();
 
-    /*-------------------------*/
-    // This part will be removed once I have the settings working.
     auto ph = a_wds.ph();
-    long h_step = 0;
-    int errorcode = EN_gettimeparam(ph, EN_HYDSTEP, &h_step);
-    assert(errorcode < 100);
-    long r_step = 0;
-    errorcode = EN_gettimeparam(ph, EN_REPORTSTEP, &r_step);
-    assert(errorcode < 100);
-    long horizon = 0;
-    errorcode = EN_gettimeparam(ph, EN_DURATION, &horizon);
-    assert(errorcode < 100);
-
-    /*-------------------------*/
-    // This will look like slightly different, but the idea is the same.
-    long n_reports = horizon / r_step + 1; // +1 because the first report is at time 0
-    a_wds.result_time_series().reserve(n_reports);
+    
+    a_wds.result_time_series().reserve(a_settings.n_steps());
 
     auto res = HydSimResults(a_wds.result_time_series());
 

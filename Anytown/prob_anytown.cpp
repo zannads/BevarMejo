@@ -375,6 +375,21 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	apply_dv(m__anytown, dvs);
 
 	sim::solvers::epanet::HydSimSettings settings;
+
+	long h_step = 0;
+    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long r_step = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+    long horizon = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
+    assert(errorcode < 100);
+
+	settings.resolution(h_step);
+	settings.report_resolution(r_step);
+	settings.horizon(horizon);
+
 	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
 
 	if (!sim::solvers::epanet::is_successful(results))

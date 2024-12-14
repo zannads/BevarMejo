@@ -118,25 +118,26 @@ void WaterDistributionSystem::load_EN_time_settings()
 
 
     // Prepare for the inputs that are patterns
-    epanet::PatternTimeOptions pto;
-    errorcode= EN_gettimeparam(ph_, EN_PATTERNSTEP, &a_time);
+    errorcode = EN_gettimeparam(ph_, EN_PATTERNSTEP, &a_time);
     assert(errorcode < 100);
-    pto.timestep__s= a_time;
+    epanet::time_t pstep = a_time;
 
     errorcode= EN_gettimeparam(ph_, EN_PATTERNSTART, &a_time);
     assert(errorcode < 100);
-    pto.shift_start_time__s= a_time;
+    epanet::time_t pstart = a_time;
 
-    assert(epanet::is_valid_pto(pto));
-    time_t curr_t= pto.shift_start_time__s;
+    assert(pstart >= 0);
+    assert(pstep > 0);
+    
+    time_t curr_t = pstart;
     if (curr_t == 0)
-        curr_t = pto.timestep__s; // Because I can't commit to a timeSeries starting at 0
+        curr_t = pstep; // Because I can't commit to a timeSeries starting at 0
 
     std::vector<time_t> time_steps;
     while (curr_t <= m__times.duration__s())
     {
         time_steps.push_back(curr_t);
-        curr_t += pto.timestep__s;
+        curr_t += pstep;
     }
 
     m__times.create_time_series(label::__EN_PATTERN_TS, time_steps);
