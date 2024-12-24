@@ -1131,6 +1131,8 @@ double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, con
 		capital_cost += tank_cost;
 		
 		capital_cost += pipes_alt_costs.at(5).new_cost*bevarmejo::anytown::riser_length_ft;
+
+		already_installed_tanks.insert(new_tank_loc_shift);
 	}
 	return capital_cost;
 }
