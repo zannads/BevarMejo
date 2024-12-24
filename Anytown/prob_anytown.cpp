@@ -674,13 +674,13 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 		if (action_type == 0) // no action
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "No action for pipe ", id, "\n");
+			bemeio::stream_out(std::cout, "No action for pipe ", id, "\n");
 #endif
 		}
 		else if (action_type == 1) // clean
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "Cleaned pipe ", id, "\n");
+			bemeio::stream_out(std::cout, "Cleaned pipe ", id, "\n");
 #endif
 			// retrieve and cache the old HW coefficients, then set the new ones.
 			double old_pipe_roughness = pipe.roughness().value();
@@ -694,7 +694,7 @@ void fep1::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 		else if (action_type == 2) // duplicate
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "Duplicated pipe ", id, " with diam ", pipes_alt_costs.at(alt_option).diameter_in, "in (", pipe.diameter()(), " mm)\n");
+			bemeio::stream_out(std::cout, "Duplicated pipe ", id, " with diam ", pipes_alt_costs.at(alt_option).diameter_in, "in (", pipes_alt_costs.at(alt_option).diameter_in*MperFT/12, " mm)\n");
 #endif
 			// Ideally I would just need to modify my network object and then
 			// this changed would be refelected automatically on the EPANET 
@@ -760,13 +760,13 @@ void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 		if (dv == 0)
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "No action for pipe ", id, "\n");
+			bemeio::stream_out(std::cout, "No action for pipe ", id, "\n");
 #endif
 		}
 		else if (dv == 1) // clean
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "Cleaned pipe ", id, "\n");
+			bemeio::stream_out(std::cout, "Cleaned pipe ", id, "\n");
 #endif
 			// retrieve and cache the old HW coefficients, then set the new ones.
 			double old_pipe_roughness = pipe.roughness().value();
@@ -780,7 +780,7 @@ void fep2::apply_dv__exis_pipes(WDS& anyt_wds, std::unordered_map<std::string, d
 		else //  dv >= 2 // duplicate
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "Duplicated pipe ", id, " with diam ", pipes_alt_costs.at(alt_option).diameter_in, "in (", pipe.diameter()(), " mm)\n");
+			bemeio::stream_out(std::cout, "Duplicated pipe ", id, " with diam ", pipes_alt_costs.at(alt_option).diameter_in, "in (", pipes_alt_costs.at(alt_option).diameter_in*MperFT/12, " mm)\n");
 #endif
 			// DUPLICATE on EPANET project
 			// retrieve the old property of the already existing pipe
@@ -844,7 +844,7 @@ void apply_dv__new_pipes(WDS &anyt_wds, const std::vector<double> &dvs, const st
 		pipe.diameter(diameter_in*MperFT/12*1000); //save in mm
 
 #ifdef DEBUGSIM
-		std::cout << "New pipe with ID " << link_id << " installed with diam of " << diameter_in << " in (" <<curr_pipe->diameter()() <<" mm)\n";
+		std::cout << "New pipe with ID " << id << " installed with diam of " << diameter_in << " in (" <<diameter_in*MperFT/12*1000 <<" mm)\n";
 #endif
 	}
 }
@@ -881,7 +881,7 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 		if (action_type == 0 || (i > 0 && already_installed_tanks.count(new_tank_loc_shift) != 0))
 		{
 #ifdef DEBUGSIM
-			io::stream_out(std::cout, "No action for tank T"+std::to_string(i)+".\n");
+			bemeio::stream_out(std::cout, "No action for tank T"+std::to_string(i)+".\n");
 #endif
 			continue;
 		}
@@ -960,7 +960,7 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 		anytown.id_sequence(label::__temp_elems).push_back(riser_id);
 		already_installed_tanks.insert(new_tank_loc_shift);
 #ifdef DEBUGSIM
-		bemeio::stream_out(std::cout, "Installed tank at node ", new_tank_install_node->EN_id(), 
+		bemeio::stream_out(std::cout, "Installed tank at node ", junction_id, 
 		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
 		" Elev ", new_tank.elevation(),
 		" Min level ", new_tank.min_level().value(),
