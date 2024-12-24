@@ -11,7 +11,7 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 // now include all the specific Bevarmejo problems
 #include "Anytown/prob_anytown.hpp"
@@ -68,28 +68,24 @@ pagmo::problem build_problem(const std::string &problem_name_str, const json_o &
             return pagmo::problem{ bevarmejo::anytown::Problem(probname.formulation, pparams, lookup_paths) };
         }
 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-            io::log::mex::build_problem_error, 
-            io::log::mex::unknown_problem_feature(io::log::mex::problem_name),
-            io::log::mex::__problem_name, probname.problem
-        );
+        beme_throw(std::invalid_argument,
+            "Impossible to build the requested problem.",
+            "The provided problem name is not recognized.",
+            "Problem name : ", probname.problem);
     }
     
     if ( probname.suite == "pagmo" )
     {
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-            io::log::mex::build_problem_error, 
-            io::log::mex::unimplemented_problem_feature(io::log::mex::problem_suite),
-            io::log::mex::__problem_suite, probname.suite
-        ); 
+        beme_throw(std::invalid_argument,
+            "Impossible to build the requested problem.",
+            "The provided problem suite is not supported yet.",
+            "Problem suite : pagmo");
     }
     
-    __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-        io::log::mex::build_problem_error, 
-        io::log::mex::unknown_problem_feature(io::log::mex::problem_suite),
-        io::log::mex::__problem_suite, probname.suite
-    );
-
+    beme_throw(std::invalid_argument,
+        "Impossible to build the requested problem.",
+        "The provided problem suite is not recognized.",
+        "Problem suite : ", probname.suite);
 }
 
 } // namespace bevarmejo

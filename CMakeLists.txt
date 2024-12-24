@@ -28,8 +28,35 @@ set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ) 
 set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 	   CACHE FILEPATH "Vcpkg toolchain file")
 
+# Allow manually specifying an older version during configuration
+if(NOT PROJECT_VERSION)
+  set(PROJECT_VERSION "24.12.0")  # Default version
+endif()
 
-project ("BèvarMéjo")
+# Parse the version string into components
+string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
+list(GET VERSION_LIST 0 MAJOR_VERSION)
+list(GET VERSION_LIST 1 MINOR_VERSION)
+list(GET VERSION_LIST 2 PATCH_VERSION)
+
+# Calculate version as a single integer for easy comparison
+math(EXPR LIBRARY_VERSION 
+    "${MAJOR_VERSION} * 10000 + ${MINOR_VERSION} * 100 + ${PATCH_VERSION}")
+
+# Check that the project version is a valid version string (in bounds/years, no patch version greater than 99, minor version is a valid month
+if(LIBRARY_VERSION LESS 230600 OR LIBRARY_VERSION GREATER 241200 OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
+  message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
+endif()  
+
+project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
+
+# Add version-specific preprocessor definitions
+add_definitions(-DLIBRARY_VERSION=${LIBRARY_VERSION})
+add_definitions(-DLIBRARY_MAJOR_VERSION=${MAJOR_VERSION})
+add_definitions(-DLIBRARY_MINOR_VERSION=${MINOR_VERSION})
+add_definitions(-DLIBRARY_PATCH_VERSION=${PATCH_VERSION})
+
+message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 
 #Set the path to the EPANET folder and library
 #The path to the folder can be set in 2 ways:
@@ -140,6 +167,19 @@ IF(LINUX)
         )
   target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
 ENDIF(LINUX)
+
+# Allow the user to define ENABLE_SAFETY_CHECKS manually
+option(ENABLE_SAFETY_CHECKS "Enable safety checks" OFF)
+
+# Define ENABLE_SAFETY_CHECKS in Debug mode if not defined manually
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_SAFETY_CHECKS)
+  set(ENABLE_SAFETY_CHECKS ON)
+endif()
+
+# Add the definition to the compiler flags
+if (ENABLE_SAFETY_CHECKS)
+  add_definitions(-DENABLE_SAFETY_CHECKS)
+endif()
 
 # Include my library
 add_subdirectory("bevarmejolib")

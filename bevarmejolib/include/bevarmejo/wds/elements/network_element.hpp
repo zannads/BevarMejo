@@ -1,88 +1,76 @@
-// 
-
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__NETWORK_ELEMENT_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__NETWORK_ELEMENT_HPP
 
 #include <string>
 
-#include "epanet2_2.h"
+#include "bevarmejo/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/auxiliary/quantity_series.hpp"
+#include "bevarmejo/wds/element.hpp"
 
-#include "bevarmejo/wds/elements/element.hpp"
+namespace bevarmejo::wds
+{
 
-
-namespace bevarmejo {
-namespace wds {
-
-class WaterDistributionSystem;
-
-class NetworkElement : public Element {
-    // WDS ancestor object
-    /************************************************************************
-     * The bevarmejo::wds::NetworkElement class is the ancestor of networks 
-     * and pipes elements of the WDS. It is a pure virtual class.
-    */
-
-    public:
-        using inherited= Element;
-
-        using ResultsMap= aux::QuantitiesMap;
-
-    /*--- Attributes ---*/
-    protected:
-        /*--- Properties ---*/
-        const WaterDistributionSystem& m__wds;
-
-        /*---  Results   ---*/
-    private:
-        ResultsMap m__ud_results;
-
-    /*--- Constructors ---*/
-    public:
-        NetworkElement() = delete;
-
-        NetworkElement(const std::string& id, const WaterDistributionSystem& wds);
-
-        // Copy constructor
-        NetworkElement(const NetworkElement& other);
-
-        // Move constructor
-        NetworkElement(NetworkElement&& other) noexcept;
-
-        // Copy assignment operator
-        NetworkElement& operator=(const NetworkElement& rhs);
-
-        // Move assignment operator
-        NetworkElement& operator=(NetworkElement&& rhs) noexcept;
-
-        // Destructor
-        virtual ~NetworkElement() = default;
-
-    /*--- Getters and setters ---*/
-    public:
-        /*--- Properties ---*/
-
-        /*---  Results   ---*/
-        const ResultsMap& results() const { return m__ud_results; }
-        virtual void clear_results();
-
-    /*--- Pure virtual methods ---*/
-    public:
-        /*--- Properties ---*/
-
-        /*---  Results   ---*/
-
-    /*--- EPANET-dependent PVMs ---*/
-    public:
-        /*--- Properties ---*/
-
-        /*---  Results   ---*/
-        virtual void retrieve_results(EN_Project ph, long t) = 0;
-
+class NetworkElement;
+template <>
+struct TypeTraits<NetworkElement>
+{
+    static constexpr const char* name = "NetworkElement";
+    static constexpr unsigned int code = 11;
+    static constexpr bool is_EN_complete = false;
 };
 
-} // namespace wds
-} // namespace bevarmejo
+class NetworkElement : public Element
+{
+    // WDS ancestor object.
+    /************************************************************************
+     * The bevarmejo::wds::NetworkElement class is the ancestor of networks 
+     * elements of the WDS (nodes and links). It is a pure virtual class.
+    */
+
+/*------- Member types -------*/
+public:
+    using self_type = NetworkElement;
+    using self_traits = TypeTraits<self_type>;
+    using inherited = Element;
+    using ResultsMap = aux::QuantitiesMap;
+private:
+    friend class WaterDistributionSystem;
+
+/*------- Member objects -------*/
+protected:
+    ResultsMap m__ud_results; // User-defined Results of the network element.
+
+/*------- Member functions -------*/
+// (constructor)
+public:
+    NetworkElement() = delete;
+    NetworkElement(const WaterDistributionSystem& wds, const EN_Name_t& name); // Constructor
+   
+// (destructor)
+public:
+    virtual ~NetworkElement() = default;
+
+// clone()
+public:
+
+/*------- Operators -------*/
+// operator=
+public:
+
+/*------- Element access -------*/
+public:
+    const ResultsMap& results() const;
+
+/*------- Capacity -------*/
+public:
+
+/*------- Modifiers -------*/
+public:
+    virtual void clear_results();
+
+    virtual void retrieve_EN_results();
+};
+
+} // namespace bevarmejo::wds
 
 #endif // BEVARMEJOLIB__WDS_ELEMENTS__NETWORK_ELEMENT_HPP
