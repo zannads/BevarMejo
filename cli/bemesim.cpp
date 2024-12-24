@@ -51,6 +51,25 @@ int main(int argc, char* argv[]) {
     if (!simu.extra_message.empty())
         bevarmejo::io::stream_out(std::cout, simu.extra_message, "\n");
 
+    bool success = true;
+    if (!simu.fvs.empty() && simu.fvs.size() == res.size())
+    {
+       
+        for (size_t i = 0; i < simu.fvs.size(); ++i)
+        {
+            if ( std::abs(simu.fvs[i] - res[i]) > 1e-8 )
+            {
+                bevarmejo::io::stream_out(std::cerr, "Mismatch between the fitness vector provided and the one returned by the problem simulation.\n",
+                    std::setprecision(16),
+                    "Index: ", i, "\n",
+                    "Expected: ", simu.fvs[i], "\n",
+                    "Returned: ", res[i], "\n");
+
+                success = false;
+            }
+        }
+    }
+
     // If I pass the --saveinp flag than I should save the inp file
     if (simu.save_inp) {
         bevarmejo::io::stream_out(std::cout, "Thanks for using BeMe-Sim, saving the inp file...\n");
@@ -58,9 +77,9 @@ int main(int argc, char* argv[]) {
             bevarmejo::io::inp::temp_net_to_file(simu.p, simu.dvs, std::to_string(simu.id) + ".inp");
         } catch (const std::exception& e) {
             bevarmejo::io::stream_out(std::cerr, "An error happend while saving the inp file:\n", e.what(), "\n" );
-            return 1;
+            success = false;
         }
     }
 
-    return 0;
+    return success ? 0 : 1;
 }
