@@ -941,7 +941,8 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 
 		// do it again in EPANET
 		int riser_idx = 0;
-		errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		// errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, new_tank_id.c_str(), junction_id.c_str(), &riser_idx);
 		assert(errco <= 100);
 
 		errco = EN_setpipedata(anytown.ph_, riser_idx,
