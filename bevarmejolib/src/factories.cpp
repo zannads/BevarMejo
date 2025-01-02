@@ -11,7 +11,7 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/bemexcept.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 
 // now include all the specific Bevarmejo problems
 #include "Anytown/prob_anytown.hpp"
@@ -56,67 +56,36 @@ pagmo::problem build_problem(const std::string &problem_name_str, const json_o &
 
     bevarmejo::io::detail::ProblemName probname = bevarmejo::io::split_problem_name(problem_name_str);
 
-    if ( probname.suite == "bevarmejo" ) {
-
-        if ( probname.problem == "hanoi" ) {
+    if ( probname.suite == "bevarmejo" )
+    {
+        if ( probname.problem == "hanoi" )
+        {
             return pagmo::problem{ bevarmejo::hanoi::fbiobj::Problem(pparams, lookup_paths) };
         }
         
-        if ( probname.problem == "anytown" ) {
-
-            if (probname.formulation == bevarmejo::anytown::io::value::rehab_f1)
-                return pagmo::problem{ bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::rehab_f1, pparams, lookup_paths) };
-
-            if (probname.formulation == bevarmejo::anytown::io::value::mixed_f1)
-                return pagmo::problem{ bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::mixed_f1, pparams, lookup_paths) };
-
-            if (probname.formulation == bevarmejo::anytown::io::value::opertns_f1)
-                return pagmo::problem{ bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::opertns_f1, pparams, lookup_paths) };
-
-            if (probname.formulation == bevarmejo::anytown::io::value::twoph_f1)
-                // return pagmo::problem{ bevarmejo::anytown::twophases::f1::Problem(pparams, lookup_paths) };
-                __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-                    io::log::mex::build_problem_error, 
-                    io::log::mex::unsupported_problem_feature(io::log::mex::problem_formulation),
-                    io::log::mex::__problem_formulation, probname.formulation
-                );
-
-            if (probname.formulation == bevarmejo::anytown::io::value::rehab_f2)
-                return pagmo::problem{ bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::rehab_f2, pparams, lookup_paths) };
-
-            if (probname.formulation == bevarmejo::anytown::io::value::mixed_f2)
-                return pagmo::problem{ bevarmejo::anytown::Problem(bevarmejo::anytown::Formulation::mixed_f2, pparams, lookup_paths) };
-
-            // Get to this point it's unrecongnized
-            __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-                io::log::mex::build_problem_error, 
-                io::log::mex::unknown_problem_feature(io::log::mex::problem_formulation),
-                io::log::mex::__problem_formulation, probname.formulation
-            );
+        if ( probname.problem == "anytown" )
+        {
+            return pagmo::problem{ bevarmejo::anytown::Problem(probname.formulation, pparams, lookup_paths) };
         }
 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-            io::log::mex::build_problem_error, 
-            io::log::mex::unknown_problem_feature(io::log::mex::problem_name),
-            io::log::mex::__problem_name, probname.problem
-        );
+        beme_throw(std::invalid_argument,
+            "Impossible to build the requested problem.",
+            "The provided problem name is not recognized.",
+            "Problem name : ", probname.problem);
     }
     
-    
-    if ( probname.suite == "pagmo" ) {
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-            io::log::mex::build_problem_error, 
-            io::log::mex::unimplemented_problem_feature(io::log::mex::problem_suite),
-            io::log::mex::__problem_suite, probname.suite
-        ); 
+    if ( probname.suite == "pagmo" )
+    {
+        beme_throw(std::invalid_argument,
+            "Impossible to build the requested problem.",
+            "The provided problem suite is not supported yet.",
+            "Problem suite : pagmo");
     }
     
-    __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::fname::build_problem, 
-        io::log::mex::build_problem_error, 
-        io::log::mex::unknown_problem_feature(io::log::mex::problem_suite),
-        io::log::mex::__problem_suite, probname.suite
-    );
-
+    beme_throw(std::invalid_argument,
+        "Impossible to build the requested problem.",
+        "The provided problem suite is not recognized.",
+        "Problem suite : ", probname.suite);
 }
 
 } // namespace bevarmejo

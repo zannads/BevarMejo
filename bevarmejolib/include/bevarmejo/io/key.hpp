@@ -7,7 +7,7 @@
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/utility/string_manip.hpp"
 
 namespace bevarmejo::io::key {
 

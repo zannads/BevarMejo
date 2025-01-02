@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
 namespace bevarmejo::io {
 namespace inp::detail {
@@ -52,6 +53,26 @@ inline std::size_t load_dimensions(std::istream& is, const std::string_view tag)
     std::ostringstream oss;
     oss << "Tag " << tag << " not found." << std::endl;
     throw std::runtime_error(oss.str());
+}
+
+inline std::tuple<int, std::vector<std::string>, std::string> get_egroup_data(std::istream& is)
+{
+	// search for the tag #TYPE
+	load_dimensions(is, "#TYPE"); 
+	// read the type of the elements
+	auto a_obj_type = std::string();
+	stream_in(is, a_obj_type);
+	int en_object_type = bevarmejo::epanet::is_string_en_object_type(a_obj_type);
+
+	std::size_t n_elements = load_dimensions(is, "#DATA");
+	auto ids_list = std::vector<std::string>(n_elements);
+	stream_in(is, ids_list);
+
+	load_dimensions(is, "#COMMENT");
+    auto comment = std::string();
+	stream_in(is, comment);
+
+	return std::make_tuple(en_object_type, ids_list, comment);
 }
 
 } // namespace bevarmejo::io

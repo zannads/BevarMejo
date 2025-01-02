@@ -14,6 +14,7 @@ namespace fsys = std::filesystem;
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,7 @@ namespace fsys = std::filesystem;
 using json_o = nlohmann::json;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/wds_problem.hpp"
+#include "bevarmejo/problem/wds_problem.hpp"
 
 namespace bevarmejo {
 
@@ -39,6 +40,8 @@ static const std::string __temp_elems = "TEs";
 // Data of Anytown: hard coded as they don't change for now.
 // If you need to change them, but still harcoded, "override" them in a new namespace for that type of problem.
 namespace anytown {
+
+static const std::string nname = "anytown::"; // "anytown::"
 
 constexpr double treatment_plant_head_ft = 10.0;
 constexpr double min_w_level_tank_ft = 225.0;
@@ -101,16 +104,6 @@ enum class Formulation {
     mixed_f2
 }; // enum class Formulation
 
-// Values for the allowed formulations in the json file. (Must be visible outside this translation unit)
-namespace io::value {
-static const std::string rehab_f1 = "rehab::f1";
-static const std::string mixed_f1 = "mixed::f1";
-static const std::string opertns_f1 = "operations::f1";
-static const std::string twoph_f1 = "twophases::f1";
-static const std::string rehab_f2 = "rehab::f2";
-static const std::string mixed_f2 = "mixed::f2";
-} // namespace io::value
-
 // For the json serializer
 namespace io::json::detail {
 std::pair<json_o,std::string> static_params(const bevarmejo::anytown::Problem &prob);
@@ -119,15 +112,15 @@ json_o dynamic_params(const bevarmejo::anytown::Problem &prob);
 
 // For the bounds
 namespace fep1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 }
 namespace fep2 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(const wds::Subnetwork &exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
 }  
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(const wds::Subnetwork &new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
-std::pair<std::vector<double>, std::vector<double>> bounds__pumps(const wds::Pumps &pumps);
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrderedRegistryView<WDS::Pipe> new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__pumps(InputExcludingRegistryView<WDS::Pump> pumps);
 namespace fnt1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(const wds::Subnetwork &tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
 }
 
 // For fitness function:
@@ -179,7 +172,7 @@ private:
 
 public:
     Problem() = default;
-    Problem(Formulation a_formulation, json_o settings, const std::vector<fsys::path>& lookup_paths);
+    Problem(std::string_view a_formulation, const json_o& settings, const std::vector<fsys::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;
@@ -216,11 +209,11 @@ public:
 
 protected:
     // Anytown specific data
-    mutable std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> m__anytown;
+    mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
     std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
     std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
-    mutable std::unordered_map<std::string, double> m__old_HW_coeffs; // Store the old HW coefficients for reset_dv
+    mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:
     pagmo::algorithm m_algo;
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
@@ -233,8 +226,8 @@ protected:
     // For fitness function:
     double cost(const WDS &anytown, const std::vector<double>& dv) const;
     
-    void apply_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
-    void reset_dv(std::shared_ptr<bevarmejo::wds::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
 
 private:
     // make the serializer a friend
