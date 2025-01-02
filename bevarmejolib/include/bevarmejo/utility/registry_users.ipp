@@ -1,6 +1,6 @@
 #pragma once
-#ifndef BEVARMEJOLIB__UTILITY__REGISTRY_USERS_HPP
-#define BEVARMEJOLIB__UTILITY__REGISTRY_USERS_HPPS
+#ifndef BEVARMEJOLIB__UTILITY__REGISTRY_USERS_IPP
+#define BEVARMEJOLIB__UTILITY__REGISTRY_USERS_IPP
 
 // Write here the forward definition of the classes that will be friends of the Registry.
 #ifndef FORWARD_DEFINITIONS_REGISTRY_FRIEND_CLASSES
@@ -18,4 +18,4 @@ friend class bevarmejo::WaterDistributionSystem; \
 // Add here other friend relationships and divide them with a backslash.
 #endif // FRIEND_RELATIONSHIPS_FOR_REGISTRY
 
-#endif // BEVARMEJOLIB__UTILITY__REGISTRY_USERS_HPP
+#endif // BEVARMEJOLIB__UTILITY__REGISTRY_USERS_IPP

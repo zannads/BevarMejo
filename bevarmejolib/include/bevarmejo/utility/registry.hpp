@@ -8,7 +8,7 @@
 #include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/utility/bememory.hpp"
 
-#include "bevarmejo/utility/registry_users.hpp"
+#include "bevarmejo/utility/registry_users.ipp"
 
 // Forward declaration of friend classes.
 // Only these classes are allowed to create them, insert and remove elements.
