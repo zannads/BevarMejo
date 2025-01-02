@@ -80,6 +80,7 @@ public:
     using Pipe = wds::Pipe;
     using Pump = wds::Pump;
     // using Valve = wds::Valve;
+    using NetworkElementsTypes = std::tuple<Node, Junction, Reservoir, Tank, Link, Pipe, Pump>;
 
     // System's components: Curves and Patterns
     using Curve = wds::Curve;
@@ -88,6 +89,7 @@ public:
     using IDSequence = UniqueStringSequence;
     // wds::aux::GlobalTimes
     using TimeSeries = wds::aux::TimeSeries;
+    using ResourceTypes = std::tuple<Curve, Pattern, IDSequence, TimeSeries>;
 
     // System's Network Elements Collections:
     using ID = typename Registry<Component>::key_type;

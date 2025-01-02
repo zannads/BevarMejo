@@ -39,6 +39,9 @@ inline constexpr bool is_registry_view_behaviour_v = std::is_same_v<T, RVMode::E
                                                      std::is_same_v<T, RVMode::Include> ||
                                                      std::is_same_v<T, RVMode::OrderedInclude>;
 
+// Tuple of the View Modes
+using ViewModes = std::tuple<RVMode::Exclude, RVMode::Include, RVMode::OrderedInclude>;
+
 // A view needs a reference to the registry (it doesn't make sense without referring to a registry)
 // and a pointer to a UniqueStringSequence that contains the IDs of the elements to include or exclude
 // (pointer because it can be null, for example, to not exclude any element).
