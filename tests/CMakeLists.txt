@@ -19,4 +19,4 @@ endfunction()
 # add_test_executable( time_series wds/auxiliary/)
 # add_test_executable( quantity_series )
 
-add_test_executable( library_metadata "" )
+add_test_executable( type_traits utility/ )
