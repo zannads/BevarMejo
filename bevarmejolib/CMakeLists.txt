@@ -78,6 +78,14 @@ set(BEME_SIMULATION
 )
 
 # ==============================
+# EVALUATION
+# ==============================
+set(BEME_EVALUATION
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/evaluation/metrics/hydraulic_functions.cpp"
+)
+
+
+# ==============================
 # PROBLEM
 # ==============================
 set(BEME_PROBLEM
@@ -93,6 +101,7 @@ add_library(bemelib
         ${BEME_UTILS}
         ${BEME_WDS}
         ${BEME_SIMULATION}
+        ${BEME_EVALUATION}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
