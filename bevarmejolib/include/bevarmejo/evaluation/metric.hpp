@@ -102,7 +102,9 @@ public:
     template <typename Callable,
         typename M1 = RVMode::Exclude, typename M2 = RVMode::Exclude, // Modes for the system and the subnetwork selectors
         typename = std::enable_if_t<eval::detail::is_metric_callable_on_wds_net_elements_v<Callable>>>
-    explicit Metric(Callable callable, std::string sys_selector_name = "None", std::string subnet_selector_name = "None") :
+    explicit Metric(Callable&& callable,
+                    M1 sys_selector_mode = M1{}, std::string sys_selector_name = "None",
+                    M2 subnet_selector_mode = M2{}, std::string subnet_selector_name = "None") :
         m__sys_selector__name(std::move(sys_selector_name)),
         m__sys_selector__mode(make_selector<ViewModes, M1>())
     {
@@ -114,53 +116,21 @@ public:
             // As of now, merging is the average or comulative(?) of the series.
             using CallableArgType = typename wds::Junction; // Placeholder for the type of the callable argument to be extracted from the callable
 
-            auto compute_on_view = [&callable](auto a_view) -> std::vector<wds::aux::QuantitySeries<double>>
-            {
-                std::vector<wds::aux::QuantitySeries<double>> series;
-                for (const auto& [name, element] : a_view)
-                {
-                    series.emplace_back(callable(element));
-                }
-                
-                return series;
-            };
+            auto view = a_wds.network_elements_view<CallableArgType, M2>(subnet_name);
 
-            auto merge_elements_results = [](const std::vector<wds::aux::QuantitySeries<double>>& series) -> wds::aux::QuantitySeries<double>
+            std::vector<wds::aux::QuantitySeries<double>> series;
+            for (const auto& [name, element] : a_view)
             {
-                assertm(!series.empty(), "The series of elements is empty.");
-                wds::aux::QuantitySeries<double> merged_series(series.front().time_series());
-                for (const auto& element_series : series)
-                {
-                    // merged_series.merge(element_series);
-                }
-
-                return merged_series;
-            };
-
-            // Get the view for the subnet
-            if constexpr (std::is_same_v<M2, RVMode::Exclude>)
-            {
-                auto view = a_wds.subnetwork_excluding<CallableArgType>(subnet_name);
-
-                return merge_elements_results(compute_on_view(view));
-            }
-            else if constexpr (std::is_same_v<M2, RVMode::Include>)
-            {
-                auto view = a_wds.subnetwork<CallableArgType>(subnet_name);
-
-                return merge_elements_results(compute_on_view(view));
-            }
-            else if constexpr (std::is_same_v<M2, RVMode::OrderedInclude>)
-            {
-                auto view = a_wds.subnetwork_with_order<CallableArgType>(subnet_name);
-
-                return merge_elements_results(compute_on_view(view));
-            }
-            else
-            {
-                static_assert(std::true_type::value, "Invalid mode for the subnet selector.");
+                series.emplace_back(callable(element));
             }
             
+            wds::aux::QuantitySeries<double> merged_series(series.front().time_series());
+            for (const auto& element_series : series)
+            {
+                // merged_series.merge(element_series);
+            }
+
+            return merged_series;
         };
     }
 
