@@ -86,12 +86,12 @@ public:
     // access the first element
     reference front();
     // access the first element
-    const_instance_reference front() const;
+    const_reference front() const;
 
     // access the last element
-    instance_reference back();
+    reference back();
     // access the last element
-    const_instance_reference back() const;
+    const_reference back() const;
 
     // get a copy of the underlying data
     Container data() const;
