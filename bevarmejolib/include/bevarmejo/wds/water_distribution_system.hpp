@@ -75,11 +75,14 @@ public:
     using Junction = wds::Junction;
     using Reservoir = wds::Reservoir;
     using Tank = wds::Tank;
+    using NodeTypes = std::tuple<Node, Junction, Reservoir, Tank>;
 
     using Link = wds::Link;
     using Pipe = wds::Pipe;
     using Pump = wds::Pump;
     // using Valve = wds::Valve;
+    using LinkTypes = std::tuple<Link, Pipe, Pump>;
+
     using NetworkElementsTypes = std::tuple<Node, Junction, Reservoir, Tank, Link, Pipe, Pump>;
 
     // System's components: Curves and Patterns
