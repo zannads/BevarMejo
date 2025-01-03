@@ -37,9 +37,21 @@ class MockLinkMetric
         }
 };
 
-bevarmejo::wds::aux::QuantitySeries<double> MockFunction(const bevarmejo::WDS& a_wds)
+bevarmejo::wds::aux::QuantitySeries<double> MockWDSFunction(const bevarmejo::WDS& a_wds)
 {
     return bevarmejo::wds::aux::QuantitySeries<double>(a_wds.result_time_series());
+}
+
+template<typename T>
+bevarmejo::wds::aux::QuantitySeries<double> MockNodeFunction(const T& a_element)
+{
+    return bevarmejo::wds::aux::QuantitySeries<double>(a_element.head().time_series());
+}
+
+template<typename T>
+bevarmejo::wds::aux::QuantitySeries<double> MockLinkFunction(const T& a_element)
+{
+    return bevarmejo::wds::aux::QuantitySeries<double>(a_element.flow().time_series());
 }
 
 // Tests for Metric
@@ -48,8 +60,8 @@ TEST(MetricTests, MetricTraits)
     static_assert(bevarmejo::eval::detail::is_metric_callable__ret_type__and__inp_arg<MockWDSMetric, bevarmejo::WDS>::value, "is_metric_callable__ret_type__and__inp_arg failed for MockWDSMetric");
     static_assert(bevarmejo::eval::detail::is_metric_callable_on_wds_v<MockWDSMetric>, "is_metric_callable_on_wds_v failed for MockWDSMetric");
 
-    static_assert(bevarmejo::eval::detail::is_metric_callable__ret_type__and__inp_arg<decltype(MockFunction), bevarmejo::WDS>::value, "is_metric_callable__ret_type__and__inp_arg failed for MockFunction");
-    static_assert(bevarmejo::eval::detail::is_metric_callable_on_wds_v<decltype(MockFunction)>, "is_metric_callable_on_wds_v failed for MockFunction");
+    static_assert(bevarmejo::eval::detail::is_metric_callable__ret_type__and__inp_arg<decltype(MockWDSFunction), bevarmejo::WDS>::value, "is_metric_callable__ret_type__and__inp_arg failed for MockWDSFunction");
+    static_assert(bevarmejo::eval::detail::is_metric_callable_on_wds_v<decltype(MockWDSFunction)>, "is_metric_callable_on_wds_v failed for MockWDSFunction");
 
     static_assert(bevarmejo::eval::detail::is_metric_callable__ret_type__and__inp_arg<MockNodeMetric<bevarmejo::wds::Node>, bevarmejo::wds::Node>::value, "is_metric_callable__ret_type__and__inp_arg failed for MockNodeMetric<bevarmejo::Node>");
     static_assert(bevarmejo::eval::detail::is_metric_callable_on_wds_net_elements_v<MockNodeMetric<bevarmejo::wds::Node>>, "is_metric_callable_on_wds_net_elements_v failed for MockNodeMetric<bevarmejo::Node>");
@@ -83,7 +95,7 @@ TEST(MetricTests, MetricConstructionWDS)
         return bevarmejo::wds::aux::QuantitySeries<double>(a_wds.result_time_series());
     });
 
-    bevarmejo::Metric metric3(MockFunction);
+    bevarmejo::Metric metric3(MockWDSFunction);
 
     
     bevarmejo::Metric metric11(MockWDSMetric{}, bevarmejo::RVMode::Include{});
@@ -93,7 +105,7 @@ TEST(MetricTests, MetricConstructionWDS)
         return bevarmejo::wds::aux::QuantitySeries<double>(a_wds.result_time_series());
     }, bevarmejo::RVMode::Include{});
 
-    bevarmejo::Metric metric13(MockFunction, bevarmejo::RVMode::Include{});
+    bevarmejo::Metric metric13(MockWDSFunction, bevarmejo::RVMode::Include{});
 
     bevarmejo::Metric metric21(MockWDSMetric{}, bevarmejo::RVMode::OrderedInclude{}, "city_pipes");
 
@@ -102,10 +114,7 @@ TEST(MetricTests, MetricConstructionWDS)
         return bevarmejo::wds::aux::QuantitySeries<double>(a_wds.result_time_series());
     }, bevarmejo::RVMode::OrderedInclude{}, "city_pipes");
 
-    bevarmejo::Metric metric23(MockFunction, bevarmejo::RVMode::OrderedInclude{}, "city_pipes");
-
-
-    
+    bevarmejo::Metric metric23(MockWDSFunction, bevarmejo::RVMode::OrderedInclude{}, "city_pipes");
 
 }    
 
