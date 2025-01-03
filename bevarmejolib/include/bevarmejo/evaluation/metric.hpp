@@ -78,6 +78,9 @@ private:
 // (constructor)
 public:
     Metric() = delete; // No default constructor
+    Metric(const Metric& rhs); // Copy constructor
+    Metric(Metric&& rhs) noexcept = default; // Move constructor
+    
     // Constructor template to accept any callable that can be used with the evaluator
     // that gets a WDS as input.
     template <typename Callable,
@@ -167,7 +170,7 @@ public:
 
 // operator=
 public:
-    // Metric& operator=(const Metric& rhs) = default; TODO: specialise using clone method
+    Metric& operator=(const Metric& rhs);
     Metric& operator=(Metric&& rhs) noexcept = default;
     
 // Actually only one method to compute the metric
