@@ -31,11 +31,11 @@ template <typename Callable, typename ArgType>
 using is_metric_callable__ret_type__and__inp_arg = std::is_invocable_r<bevarmejo::wds::aux::QuantitySeries<double>, Callable, const ArgType&>;
 
 // Trait to check if a callable is valid for any input argument in a tuple
-template <typename Callable, typename Tuple, std::size_t Index = 0>
+template <typename Callable, typename Tuple, std::size_t Index = 0, std::size_t Size = std::tuple_size_v<Tuple>>
 struct is_metric_callable__ret_type__and__inp_tuple
 {
     static constexpr bool value = (
-                                    (Index < std::tuple_size_v<Tuple>) &&
+                                    (Index < Size) &&
                                     (
                                      is_metric_callable__ret_type__and__inp_arg<Callable, std::tuple_element_t<Index, Tuple>>::value ||
                                      is_metric_callable__ret_type__and__inp_tuple<Callable, Tuple, Index + 1>::value
@@ -44,8 +44,8 @@ struct is_metric_callable__ret_type__and__inp_tuple
 };
 
 // Specialization for the end of the tuple
-template <typename Callable, typename Tuple>
-struct is_metric_callable__ret_type__and__inp_tuple<Callable, Tuple, std::tuple_size_v<Tuple>>
+template <typename Callable, typename Tuple, std::size_t Size>
+struct is_metric_callable__ret_type__and__inp_tuple<Callable, Tuple, Size, Size>
 {
     static constexpr bool value = false;
 };
@@ -83,7 +83,7 @@ public:
     template <typename Callable,
         typename M = RVMode::Exclude, // Mode for the system selector
         typename = std::enable_if_t<eval::detail::is_metric_callable_on_wds_v<Callable>>>
-    explicit Metric(Callable callable, std::string sys_selector_name = "None") :
+    explicit Metric(Callable&& callable, M sys_selector_mode = M{}, std::string sys_selector_name = "None") :
         m__sys_selector__name(std::move(sys_selector_name)),
         m__sys_selector__mode(make_selector<ViewModes, M>())
     {
@@ -97,7 +97,7 @@ public:
     // Templated constructor to accept any callable that can be used with the evaluator
     // that gets a WDS element as input.
     template <typename Callable,
-        typename M1, typename M2, // Modes for the system and the subnetwork selectors
+        typename M1 = RVMode::Exclude, typename M2 = RVMode::Exclude, // Modes for the system and the subnetwork selectors
         typename = std::enable_if_t<eval::detail::is_metric_callable_on_wds_net_elements_v<Callable>>>
     explicit Metric(Callable callable, std::string sys_selector_name = "None", std::string subnet_selector_name = "None") :
         m__sys_selector__name(std::move(sys_selector_name)),
@@ -109,14 +109,14 @@ public:
             // Then iterate on that view and call the callable on each element.
             // At the end of this we have a vector of wds::aux::QuantitySeries<double> that we can merge.
             // As of now, merging is the average or comulative(?) of the series.
-            using CallableArgType = std::tuple_element_t<0, a_wds::NetworkElementsTypes>; // TODO: extract the type from the callable
+            using CallableArgType = typename wds::Junction; // Placeholder for the type of the callable argument to be extracted from the callable
 
             auto compute_on_view = [&callable](auto a_view) -> std::vector<wds::aux::QuantitySeries<double>>
             {
                 std::vector<wds::aux::QuantitySeries<double>> series;
                 for (const auto& [name, element] : a_view)
                 {
-                    series.push_back(callable(element));
+                    series.emplace_back(callable(element));
                 }
                 
                 return series;
@@ -124,7 +124,8 @@ public:
 
             auto merge_elements_results = [](const std::vector<wds::aux::QuantitySeries<double>>& series) -> wds::aux::QuantitySeries<double>
             {
-                wds::aux::QuantitySeries<double> merged_series;
+                assertm(!series.empty(), "The series of elements is empty.");
+                wds::aux::QuantitySeries<double> merged_series(series.front().time_series());
                 for (const auto& element_series : series)
                 {
                     // merged_series.merge(element_series);
@@ -166,7 +167,7 @@ public:
 
 // operator=
 public:
-    Metric& operator=(const Metric& rhs) = default;
+    // Metric& operator=(const Metric& rhs) = default; TODO: specialise using clone method
     Metric& operator=(Metric&& rhs) noexcept = default;
     
 // Actually only one method to compute the metric
