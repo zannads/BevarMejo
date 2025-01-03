@@ -222,6 +222,11 @@ public:
     template <typename T>
     auto subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>;
 
+    template <typename T, typename Mode>
+    auto network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, Mode, /*IsMutable = */ true>;
+    template <typename T, typename Mode>
+    auto network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, Mode, /*IsMutable = */ false>;
+
     /*--- System's Network Elements ---*/
     // Common interface for all types of elements:
     template <typename OutputT>
@@ -563,6 +568,64 @@ auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) 
 
     else if constexpr (std::is_same_v<T, Pump>)
         return RegistryView<Pump, RVMode::OrderedInclude, false>(_pumps_, m__id_sequences.get(id_sequence_name));
+
+    else
+        static_assert(std::true_type::value, 
+            "You are trying to get a subnetwork with an invalid type.");
+}
+
+template <typename T, typename Mode>
+auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, Mode, true>
+{
+    if constexpr (std::is_same_v<T, Node>)
+        return RegistryView<Node, Mode, true>(_nodes_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Junction>)
+        return RegistryView<Junction, Mode, true>(_junctions_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Reservoir>)
+        return RegistryView<Reservoir, Mode, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Tank>)
+        return RegistryView<Tank, Mode, true>(_tanks_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Link>)
+        return RegistryView<Link, Mode, true>(_links_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pipe>)
+        return RegistryView<Pipe, Mode, true>(_pipes_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pump>)
+        return RegistryView<Pump, Mode, true>(_pumps_, m__id_sequences.get(id_sequence_name));
+
+    else
+        static_assert(std::true_type::value, 
+            "You are trying to get a subnetwork with an invalid type.");
+}
+
+template <typename T, typename Mode>
+auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, Mode, false>
+{
+    if constexpr (std::is_same_v<T, Node>)
+        return RegistryView<Node, Mode, false>(_nodes_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Junction>)
+        return RegistryView<Junction, Mode, false>(_junctions_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Reservoir>)
+        return RegistryView<Reservoir, Mode, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Tank>)
+        return RegistryView<Tank, Mode, false>(_tanks_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Link>)
+        return RegistryView<Link, Mode, false>(_links_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pipe>)
+        return RegistryView<Pipe, Mode, false>(_pipes_, m__id_sequences.get(id_sequence_name));
+
+    else if constexpr (std::is_same_v<T, Pump>)
+        return RegistryView<Pump, Mode, false>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 
