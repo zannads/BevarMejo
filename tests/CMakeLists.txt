@@ -20,3 +20,5 @@ endfunction()
 # add_test_executable( quantity_series )
 
 add_test_executable( type_traits utility/ )
+
+add_test_executable( metric evaluation/ )
