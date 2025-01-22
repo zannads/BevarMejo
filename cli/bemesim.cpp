@@ -10,8 +10,8 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/parsers.hpp"
 #include "bevarmejo/simulation.hpp"
 
-// temp until I fix 
-#include "bevarmejo/utility/pagmo/containers_serializers.hpp"
+// temp inclusion until I figure out how to expose the save_soluton method
+#include "Anytown/prob_anytown.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -71,11 +71,22 @@ int main(int argc, char* argv[]) {
     }
 
     // If I pass the --saveinp flag than I should save the inp file
-    if (simu.save_inp) {
+    if (simu.save_inp)
+    {
         bevarmejo::io::stream_out(std::cout, "Thanks for using BeMe-Sim, saving the inp file...\n");
-        try {
-            bevarmejo::io::inp::temp_net_to_file(simu.p, simu.dvs, std::to_string(simu.id) + ".inp");
-        } catch (const std::exception& e) {
+        try
+        {
+            if ( simu.p.is<bevarmejo::anytown::Problem>() )
+            {
+                simu.p.extract<bevarmejo::anytown::Problem>()->save_solution(simu.dvs, std::to_string(simu.id) + ".inp");
+            }
+            else 
+            {
+                bevarmejo::io::stream_out(std::cerr, "The problem is not supported for saving the inp file.\n");
+                success = false;
+            }
+        } catch (const std::exception& e)
+        {
             bevarmejo::io::stream_out(std::cerr, "An error happend while saving the inp file:\n", e.what(), "\n" );
             success = false;
         }

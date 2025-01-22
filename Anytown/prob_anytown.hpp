@@ -230,9 +230,9 @@ protected:
     void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
 
 private:
-    // make the serializer a friend
-    friend std::pair<json_o,std::string> io::json::detail::static_params(const Problem &prob);
-    friend json_o io::json::detail::dynamic_params(const Problem &prob);
+    // Json serializers
+    friend void to_json(json_o &j, const Problem &prob);
+    friend void from_json(const json_o &j, Problem &prob);
     
 }; // class Problem
 

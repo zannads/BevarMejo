@@ -22,21 +22,17 @@ namespace fsys = std::filesystem;
 #include <nlohmann/json.hpp>
 using json_o = nlohmann::json;
 
-#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
 #include "bevarmejo/io/keys/bemeexp.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
 
-#include "bevarmejo/factories.hpp"
+#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/utility/library_metadata.hpp"
-
-#include "bevarmejo/utility/pagmo/containers_serializers.hpp"
-#include "bevarmejo/utility/pagmo/containers_serializers.hpp"
-#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
-
 #include "bevarmejo/utility/string_manip.hpp"
+
+#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
@@ -269,44 +265,49 @@ void Experiment::build_island(const json_o &config)
     check_mandatory_field(io::key::generations, jpop);
     const auto& genz = io::json::extract(io::key::generations).from(jpop);
 
+    check_mandatory_field(io::key::algorithm, config);
+    json_o jalgo = io::json::extract(io::key::algorithm).from(config);
+
     // the algorithms need to know how many generations to report because the island calls the evolve method n times
     // until n*__report_gen > __generations, default = __generations
     //  m__settings.n_evolves = 1 unless the user specifies it
-    if (io::key::repgen.exists_in(jpop)) {
-        const auto &repgenz = io::json::extract(io::key::repgen).from(jpop);
-
-        m__settings.n_evolves = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
+    json_o repgenz{};
+    if (io::key::repgen.exists_in(jpop))
+    {
+        repgenz = io::json::extract(io::key::repgen).from(jpop);
     }
 
-    // Constuct the pagmo::algorithm
-    check_mandatory_field(io::key::algorithm, config);
-    const json_o &jalgo = io::json::extract(io::key::algorithm).from(config);
+    // If it is not present, I retrieve it from the [algorithm][params][generations] field
+    if (repgenz.empty() && io::key::params.exists_in(jalgo) && io::key::generations.exists_in(io::json::extract(io::key::params).from(jalgo)))
+    {
+        repgenz = io::json::extract(io::key::generations).from(io::json::extract(io::key::params).from(jalgo));
+    }
+    // If it is not present, it means it is the same as the generations
+    if (repgenz.empty())
+    {
+        repgenz = genz;
+    }
 
-    std::string sname = io::json::extract(io::key::name).from(jalgo).get<std::string>();
+    // TODO: this should be island specifics
+    m__settings.n_evolves = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
 
-    json_o jparams{};
-    if( io::key::params.exists_in(jalgo) )
-        jparams = io::json::extract(io::key::params).from(jalgo);
-    // add the report gen to the algorithm params
-    if (io::key::repgen.exists_in(jpop))
-        jparams[io::key::repgen[0]] = io::json::extract(io::key::repgen).from(jpop);
-    else 
-        jparams[io::key::repgen[0]] = genz;
+    // We have established the number of evolutions and the number of generations
+    // for the report gen. Now overwrite the generations in the parameters of the algorithm
+    if ( !io::key::params.exists_in(jalgo) )
+    {
+        jalgo[io::key::params[0]] = json_o{};
+    }
+    io::json::extract(io::key::params).from(jalgo)[io::key::generations[0]] = repgenz;
     
-    assert(sname == "nsga2");
-    pagmo::algorithm algo{ bevarmejo::Nsga2(jparams) };
+    pagmo::algorithm algo = jalgo.get<pagmo::algorithm>();
 
     // Construct a pagmo::problem
-    const json_o &jprob = io::json::extract(io::key::problem).from(config);
+    json_o jprob = io::json::extract(io::key::problem).from(config);
+    // Update it with the extra paths for the lookup
+    jprob[io::key::lookup_paths[0]] = m__lookup_paths;
 
-    sname = io::json::extract(io::key::name).from(jprob).get<std::string>();
-
-    jparams = json_o{};
-    if (io::key::params.exists_in(jprob))
-        jparams = io::json::extract(io::key::params).from(jprob);
+    auto p = jprob.get<pagmo::problem>();
     
-    pagmo::problem p{ bevarmejo::build_problem(sname, jparams , m__lookup_paths) };
-        
     // Now that I have everything I can build the population and then the island
     pagmo::population pop{ std::move(p), io::json::extract(io::key::size).from(jpop).get<unsigned int>() };
 
@@ -431,23 +432,12 @@ void Experiment::prepare_isl_files() const
         auto& isl = *(m__archipelago.begin() + i);
 
         // Add the static information about the island. The dynamic ones will be appended.
-        json_o jstat;
-        // reporting::static_part_to_json calls the correct transformation to 
-        // json for the static part of the object (here the island). The same 
-        // exist for the dynamic part, but it may be deleted for some type of
-        // objects, e.g. the island. 
-        // Internally, static_part_to_json calls the correct method based on the 
-        // UD class hold by the pagmo container. It uses is() and extract().
-        auto append_static_info = [](json_o &jstat, auto pagmo_container) {
-            auto jinfo = io::json::static_descr(pagmo_container);
-            if ( !jinfo.empty() ) jstat.update(jinfo);
-        }; 
-
-        append_static_info(jstat, isl);
-        append_static_info(jstat, isl.get_algorithm());
-        append_static_info(jstat, isl.get_population().get_problem());
-        append_static_info(jstat, isl.get_r_policy());
-        append_static_info(jstat, isl.get_s_policy());
+        json_o jstat{};
+        jstat.update( json_o{{io::key::island(), isl}} );
+        jstat.update( json_o{{io::key::algorithm(), isl.get_algorithm()}} );
+        jstat.update( json_o{{io::key::problem(), isl.get_population().get_problem()}} );
+        jstat.update( json_o{{io::key::r_policy(), isl.get_r_policy()}} );
+        jstat.update( json_o{{io::key::s_policy(), isl.get_s_policy()}} );
 
         // Add the intial population and the initial dynamic parameters of the objects. 
         json_o& jout = jstat;
@@ -486,11 +476,8 @@ void Experiment::prepare_exp_file() const {
     json_o jsoft;
     jsoft[io::key::beme_version()] = bevarmejo::version_str;
 
-    json_o jarchipelago; 
-    {
-        auto jtopology = io::json::static_descr(m__archipelago.get_topology());
-        if ( !jtopology.empty() ) jarchipelago.update(jtopology);
-    }
+    json_o jarchipelago;
+    jarchipelago[io::key::topology()] = m__archipelago.get_topology();
 
     // Save the relative name of the islands.
     jarchipelago[io::key::islands()] = json_o::array();
@@ -545,6 +532,14 @@ void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl)
         jcgen[io::key::hevals()] = pop.get_problem().get_hevals();
 
     // Same as for append_static_info, but for the dynamic part
+    /*
+    As of version 25.01.0, the dynamic information is not saved in the JSON file 
+    anymore.
+    The dynamic information was useful only for the UDP with an internal optimization
+    of the controls of the problem, which is the only type of algorithm not supported
+    anymore.
+
+
     auto append_dynamic_info = [](json_o &jdyn, auto pagmo_container) {
         auto jinfo = io::json::dynamic_descr(pagmo_container);
         if ( !jinfo.empty() ) jdyn.update(jinfo);
@@ -552,6 +547,7 @@ void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl)
 
     append_dynamic_info(jcgen, isl.get_algorithm());
     append_dynamic_info(jcgen, pop.get_problem());
+    */
 
     jout = std::move(jcgen);
 }

@@ -47,11 +47,6 @@ namespace label {
 const std::string __changeable_pipes = "cp";
 } // namespace label
 
-namespace io::json::detail {
-std::pair<json_o,std::string> static_params(const bevarmejo::hanoi::fbiobj::Problem &prob);
-json_o dynamic_params(const bevarmejo::hanoi::fbiobj::Problem &prob) = delete;
-} // namespace io::json::detail
-
 class Problem final : public WDSProblem
 {
 /*------- Member types -------*/
@@ -107,8 +102,6 @@ public:
 
     // No need to use reset as at every run the same design variables are for sure overwritten.
 
-private:
-    friend std::pair<json_o,std::string> io::json::detail::static_params(const Problem &prob);
 };
 
 } // namespace fbiobj

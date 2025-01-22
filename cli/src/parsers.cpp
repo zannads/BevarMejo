@@ -22,9 +22,8 @@ using json_o = nlohmann::json;
 #include "bevarmejo/io/keys/bemesim.hpp"
 
 #include "bevarmejo/utility/string_manip.hpp"
-
 #include "bevarmejo/utility/library_metadata.hpp"
-#include "bevarmejo/factories.hpp"
+#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
 #include "bevarmejo/cli_settings.hpp"
 #include "bevarmejo/simulation.hpp"
@@ -181,16 +180,10 @@ bevarmejo::Simulation parse(int argc, char *argv[])
 
         simu.dvs = io::json::extract(io::key::dv).from(j).get<std::vector<double>>();
 
-        const json_o &jproblem = io::json::extract(io::key::problem).from(j);
-        check_mandatory_field(io::key::name, jproblem);
-        check_mandatory_field(io::key::params, jproblem);
-
         // 1.5 build the problem
-        simu.p = build_problem(
-            io::json::extract(io::key::name).from(jproblem).get<std::string>(), 
-            io::json::extract(io::key::params).from(jproblem),
-            simu.lookup_paths
-        );
+        json_o jproblem = io::json::extract(io::key::problem).from(j);
+        jproblem[io::key::lookup_paths[0]] = simu.lookup_paths;
+        simu.p = jproblem.get<pagmo::problem>();
 
         // 1.6 optional keys that don't change the behavior of the simulation
         if(io::key::fv.exists_in(j))

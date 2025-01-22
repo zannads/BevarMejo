@@ -33,8 +33,6 @@ namespace bemeio = bevarmejo::io;
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 
-#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
-
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
@@ -1459,10 +1457,11 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 	reset_dv(this->m__anytown, dv);
 }
 
-// Json serializers 
-std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::anytown::Problem &prob)
+void to_json(json_o& j, const bevarmejo::anytown::Problem &prob)
 {
-	json_o j;
+	// Reset, just in case.
+	j = json_o{};
+
 	// TODO: this values should have been saved in the problem object. But for now I will hardcode them.
 	j[io::key::avail_diam()] = "available_diams.txt";
 	j[io::key::tank_costs()] = "tanks_costs.txt";
@@ -1491,12 +1490,7 @@ std::pair<json_o,std::string> io::json::detail::static_params(const bevarmejo::a
                         "residential_pipes.snt"
 	};
 
-	return {j, prob.get_extra_info() };
-}
-
-json_o io::json::detail::dynamic_params(const bevarmejo::anytown::Problem &prob)
-{
-	return json_o(); 
+	j["extra-info"] = prob.get_extra_info();
 }
 
 } // namespace anytown

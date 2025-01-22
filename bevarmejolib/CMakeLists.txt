@@ -17,9 +17,6 @@ set(BEME_IO
 set(BEME_UTILS
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_help.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/containers_serializers.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/pagmo/default_objects_serializers.cpp"
 )
 
 # ==============================
@@ -95,7 +92,6 @@ set(BEME_PROBLEM
 
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
         ${BEME_IO}
         ${BEME_PROBLEM}
         ${BEME_UTILS}

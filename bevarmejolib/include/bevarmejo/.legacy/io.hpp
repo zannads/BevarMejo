@@ -18,15 +18,6 @@
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
 namespace bevarmejo::io {
-namespace inp::detail {
-
-template <typename P>
-inline void temp_net_to_file(const P& p, const std::vector<double>& dv, const std::string& out_file) {
-    p.save_solution(dv, out_file);
-}
-
-} // namespace inp::detail
-
 
 /* LOAD dimensions from TAG
 * Special type of stream input for tag */
