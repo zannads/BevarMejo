@@ -34,7 +34,10 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/utility/pagmo/containers_serializers.hpp"
 #include "bevarmejo/utility/pagmo/containers_serializers.hpp"
-#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
+
+#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
+#include "bevarmejo/utility/pagmo/serializers/json/default_objects.hpp"
+#include "bevarmejo/utility/pagmo/serializers/json/bevarmejo_allowed_objects.hpp"
 
 #include "bevarmejo/utility/string_manip.hpp"
 
@@ -269,39 +272,48 @@ void Experiment::build_island(const json_o &config)
     check_mandatory_field(io::key::generations, jpop);
     const auto& genz = io::json::extract(io::key::generations).from(jpop);
 
+    check_mandatory_field(io::key::algorithm, config);
+    json_o jalgo = io::json::extract(io::key::algorithm).from(config);
+
     // the algorithms need to know how many generations to report because the island calls the evolve method n times
     // until n*__report_gen > __generations, default = __generations
     //  m__settings.n_evolves = 1 unless the user specifies it
-    if (io::key::repgen.exists_in(jpop)) {
-        const auto &repgenz = io::json::extract(io::key::repgen).from(jpop);
-
-        m__settings.n_evolves = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
+    json_o repgenz{};
+    if (io::key::repgen.exists_in(jpop))
+    {
+        repgenz = io::json::extract(io::key::repgen).from(jpop);
     }
 
-    // Constuct the pagmo::algorithm
-    check_mandatory_field(io::key::algorithm, config);
-    const json_o &jalgo = io::json::extract(io::key::algorithm).from(config);
+    // If it is not present, I retrieve it from the [algorithm][params][generations] field
+    if (repgenz.empty() && io::key::params.exists_in(jalgo) && io::key::generations.exists_in(io::json::extract(io::key::params).from(jalgo)))
+    {
+        repgenz = io::json::extract(io::key::generations).from(io::json::extract(io::key::params).from(jalgo));
+    }
+    // If it is not present, it means it is the same as the generations
+    if (repgenz.empty())
+    {
+        repgenz = genz;
+    }
 
-    std::string sname = io::json::extract(io::key::name).from(jalgo).get<std::string>();
+    // TODO: this should be island specifics
+    m__settings.n_evolves = ceil(genz.get<double>()/repgenz.get<double>()); // get double instead of unsigned int to force non integer division
 
-    json_o jparams{};
-    if( io::key::params.exists_in(jalgo) )
-        jparams = io::json::extract(io::key::params).from(jalgo);
-    // add the report gen to the algorithm params
-    if (io::key::repgen.exists_in(jpop))
-        jparams[io::key::repgen[0]] = io::json::extract(io::key::repgen).from(jpop);
-    else 
-        jparams[io::key::repgen[0]] = genz;
+    // We have established the number of evolutions and the number of generations
+    // for the report gen. Now overwrite the generations in the parameters of the algorithm
+    if ( !io::key::params.exists_in(jalgo) )
+    {
+        jalgo[io::key::params[0]] = json_o{};
+    }
+    io::json::extract(io::key::params).from(jalgo)[io::key::generations[0]] = repgenz;
     
-    assert(sname == "nsga2");
-    pagmo::algorithm algo{ bevarmejo::Nsga2(jparams) };
+    pagmo::algorithm algo = jalgo.get<pagmo::algorithm>();
 
     // Construct a pagmo::problem
     const json_o &jprob = io::json::extract(io::key::problem).from(config);
 
-    sname = io::json::extract(io::key::name).from(jprob).get<std::string>();
+    auto sname = io::json::extract(io::key::type).from(jprob).get<std::string>();
 
-    jparams = json_o{};
+    auto jparams = json_o{};
     if (io::key::params.exists_in(jprob))
         jparams = io::json::extract(io::key::params).from(jprob);
     
@@ -440,6 +452,7 @@ void Experiment::prepare_isl_files() const
         // UD class hold by the pagmo container. It uses is() and extract().
         auto append_static_info = [](json_o &jstat, auto pagmo_container) {
             auto jinfo = io::json::static_descr(pagmo_container);
+            std::cout << jinfo.dump(4) << std::endl;
             if ( !jinfo.empty() ) jstat.update(jinfo);
         }; 
 

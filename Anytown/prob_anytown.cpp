@@ -33,8 +33,6 @@ namespace bemeio = bevarmejo::io;
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
 
-#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
-
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"

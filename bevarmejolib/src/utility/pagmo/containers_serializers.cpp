@@ -12,7 +12,6 @@ using json_o = nlohmann::json;
 
 // Include the detailed implementation of each object 
 #include "bevarmejo/utility/pagmo/default_objects_serializers.hpp"
-#include "bevarmejo/utility/pagmo/algorithms/nsga2_help.hpp"
 #include "Anytown/prob_anytown.hpp"
 #include "Hanoi/problem_hanoi_biobj.hpp"
 
@@ -22,26 +21,15 @@ using json_o = nlohmann::json;
 #include "bevarmejo/io/keys/bemeopt.hpp"
 
 #include "bevarmejo/utility/pagmo/containers_serializers.hpp"
+#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
 namespace bevarmejo::io::json {
 
 /*-------------------- Algorithm --------------------*/
-json_o static_descr(const pagmo::algorithm& algo) {
-    json_o j = {
-        {key::name(), algo.get_name()},
-    };
-
-    // based on algorithm name, I can call the specific function to convert the extra info
-    if ( algo.is<pagmo::nsga2>()  ) { // Equivalent to algo.get_name() == pagmo::nsga2().get_name()
-        
-        auto [jparams, jextra] = detail::static_params(*algo.extract<pagmo::nsga2>());
-        j[key::params()] = jparams;
-        j[key::extras()] = jextra;
-    } else {
-        // Default implementation
-        j[key::extras()] = algo.get_extra_info();
-    }
-
+json_o static_descr(const pagmo::algorithm& algo)
+{
+    json_o j = algo;
+    std::cout << j.dump(4) << std::endl;
     return json_o{ {key::algorithm(), j} };
 }
 
@@ -53,7 +41,7 @@ json_o dynamic_descr(const pagmo::algorithm& algo) {
 
 json_o static_descr(const pagmo::problem& prob) {
     json_o j = {
-        {key::name(), prob.get_name()},
+        {key::type(), prob.get_name()},
     };
 
     // based on the problem, I can call its own specific implementation
@@ -97,7 +85,7 @@ json_o dynamic_descr(const pagmo::problem& prob) {
 /*-------------------- Island --------------------*/
 json_o static_descr(const pagmo::island& isl) {
     json_o j = {
-        {key::name(), isl.get_name()},
+        {key::type(), isl.get_name()},
     };
 
     if ( isl.is<pagmo::thread_island>() ) {
@@ -119,7 +107,7 @@ json_o static_descr(const pagmo::island& isl) {
 /*-------------------- Replacement policy --------------------*/
 json_o static_descr(const pagmo::r_policy& rp) {
     json_o j = {
-        {key::name(), rp.get_name()}
+        {key::type(), rp.get_name()}
     };
 
     if ( rp.is<pagmo::fair_replace>() ) {
@@ -136,7 +124,7 @@ json_o static_descr(const pagmo::r_policy& rp) {
 /*-------------------- Selection policy --------------------*/
 json_o static_descr(const pagmo::s_policy& sp) {
     json_o j = {
-        {key::name(), sp.get_name()}
+        {key::type(), sp.get_name()}
     };
 
     if ( sp.is<pagmo::select_best>() ) {
@@ -153,7 +141,7 @@ json_o static_descr(const pagmo::s_policy& sp) {
 /*-------------------- Topology --------------------*/
 json_o static_descr(const pagmo::topology& tp) {
     json_o j = {
-        {key::name(), tp.get_name()}
+        {key::type(), tp.get_name()}
     };
 
     if ( tp.is<pagmo::unconnected>() ) {

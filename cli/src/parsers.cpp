@@ -182,12 +182,12 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         simu.dvs = io::json::extract(io::key::dv).from(j).get<std::vector<double>>();
 
         const json_o &jproblem = io::json::extract(io::key::problem).from(j);
-        check_mandatory_field(io::key::name, jproblem);
+        check_mandatory_field(io::key::type, jproblem);
         check_mandatory_field(io::key::params, jproblem);
 
         // 1.5 build the problem
         simu.p = build_problem(
-            io::json::extract(io::key::name).from(jproblem).get<std::string>(), 
+            io::json::extract(io::key::type).from(jproblem).get<std::string>(), 
             io::json::extract(io::key::params).from(jproblem),
             simu.lookup_paths
         );
