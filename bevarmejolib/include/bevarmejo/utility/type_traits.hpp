@@ -118,7 +118,7 @@ public:
     bool is() const
     {
         static_assert(bevarmejo::contains_type_v<T, types>, "This type is not a valid type for this selector.");
-        return __is(typeid(T));
+        return __is(bevarmejo::index_of_type_v<T, types>);
     }
 
 // Pure virtual method to get the value
@@ -128,7 +128,7 @@ public:
 
 // Hidden virtual method for the "is" method
 protected:
-    virtual bool __is(const std::type_info& type) const = 0;
+    virtual bool __is(std::size_t a_value) const = 0;
 
 }; // class EnumClassEqCore
 
@@ -181,9 +181,9 @@ private:
 
 // Hidden virtual method for the "is" method
 protected:
-    bool __is(const std::type_info& type) const override
+    bool __is(std::size_t a_value) const override
     {
-        return typeid(Tag) == type;
+        return this->value() == a_value;
     }
 
 // Pure virtual method to get the value
