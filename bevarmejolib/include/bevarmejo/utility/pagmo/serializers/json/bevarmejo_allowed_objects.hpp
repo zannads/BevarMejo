@@ -25,7 +25,7 @@ static const bevarmejo::io::key::Key m{"Mutation probability", "m"}; // "Mutatio
 static const bevarmejo::io::key::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
 static const bevarmejo::io::key::Key seed{"Seed"}; // "Seed"
 static const bevarmejo::io::key::Key verbosity{"Verbosity"}; // "Verbosity"
-} // namespace bevarmejo::io::key
+} // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
 template <>
