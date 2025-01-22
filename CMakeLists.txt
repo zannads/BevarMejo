@@ -28,9 +28,14 @@ set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ) 
 set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 	   CACHE FILEPATH "Vcpkg toolchain file")
 
-# Allow manually specifying an older version during configuration
+# Allow manually specifying an older version during configuration, if not, default to current
+set(CURRENT_VERSION 250100)
+set(FIRST_VERSION 230600)
 if(NOT PROJECT_VERSION)
-  set(PROJECT_VERSION "24.12.0")  # Default version
+  math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
+  math(EXPR MINOR_VERSION "(${CURRENT_VERSION} % 10000) / 100")
+  math(EXPR PATCH_VERSION "${CURRENT_VERSION} % 100")
+  set(PROJECT_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 endif()
 
 # Parse the version string into components
@@ -44,7 +49,7 @@ math(EXPR LIBRARY_VERSION
     "${MAJOR_VERSION} * 10000 + ${MINOR_VERSION} * 100 + ${PATCH_VERSION}")
 
 # Check that the project version is a valid version string (in bounds/years, no patch version greater than 99, minor version is a valid month
-if(LIBRARY_VERSION LESS 230600 OR LIBRARY_VERSION GREATER 241200 OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
+if(LIBRARY_VERSION LESS FIRST_VERSION OR LIBRARY_VERSION GREATER CURRENT_VERSION OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
   message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
 endif()  
 
