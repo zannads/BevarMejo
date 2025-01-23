@@ -126,6 +126,9 @@ void Experiment::build(const json_o &jinput)
             // TODO: set the output file format
         }
 
+        // Key outf_key_style, aka "Output file key style".
+        // It should be a string with the style to use when writing the keys in the output files.
+        // The allowed styles are "Original", "Camel", "Snake", "Kebab".
         if (io::key::outf_key_style.exists_in(jsettings))
         {
             try
@@ -137,30 +140,29 @@ void Experiment::build(const json_o &jinput)
                // TODO: log the error
             }
         }
+        // If non existing, the default is
 
+        // Key outf_pretty, aka "Output file enable indent".
+        // When boolean, false deactives the indent, true activates it with a default value of 4.
+        // When numeric, it is automatically true and the value is the number of spaces to indent (can be 0).
         if (io::key::outf_pretty.exists_in(jsettings))
         {
             if (io::json::extract(io::key::outf_pretty).from(jsettings).is_boolean())
             {
                 m__settings.outf_indent = io::json::extract(io::key::outf_pretty).from(jsettings).get<bool>();
+                // m__settings.outf_indent_val = default value;
+            }
+            else if ((io::json::extract(io::key::outf_pretty).from(jsettings).is_number()))
+            {
+                m__settings.outf_indent = true;
+                m__settings.outf_indent_val = io::json::extract(io::key::outf_pretty).from(jsettings).get<unsigned int>();
             }
             else
             {
                 // TODO: log the error
             }
         }
-
-        if ( m__settings.outf_indent && io::key::outf_pretty_json_indent.exists_in(jsettings))
-        {
-            if (io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).is_number())
-            {
-                m__settings.outf_indent_val = io::json::extract(io::key::outf_pretty_json_indent).from(jsettings).get<unsigned int>();
-            }
-            else
-            {
-                // TODO: log the error
-            }
-        }
+        // If non existing, the default is true with a value of 4.
     }
 
     if (io::key::lookup_paths.exists_in(jinput))
