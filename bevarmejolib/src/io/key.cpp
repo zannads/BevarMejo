@@ -43,15 +43,15 @@ std::string Key::operator()() const
 {
     if constexpr (default_style == style::CamelCase)
     {
-        return bevarmejo::to_camel_case(m__values[0]);
+        return bevarmejo::sentence_case_to_camel_case(m__values[0]);
     }
     else if constexpr (default_style == style::KebabCase)
     {
-        return bevarmejo::to_kebab_case(m__values[0]);
+        return bevarmejo::sentence_case_to_kebab_case(m__values[0]);
     }
     else if constexpr (default_style == style::PascalCase)
     {
-        return bevarmejo::to_pascal_case(m__values[0]);
+        return bevarmejo::sentence_case_to_pascal_case(m__values[0]);
     }
     else if constexpr (default_style == style::SentenceCase)
     {
@@ -59,7 +59,7 @@ std::string Key::operator()() const
     }
     else if constexpr (default_style == style::SnakeCase)
     {
-        return bevarmejo::to_snake_case(m__values[0]);
+        return bevarmejo::sentence_case_to_snake_case(m__values[0]);
     }
     else
     {

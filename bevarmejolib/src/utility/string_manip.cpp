@@ -16,13 +16,13 @@ std::string bevarmejo::now_as_str()
     return std::string(buffer);
 }
 
-std::string bevarmejo::to_camel_case(const std::string& s)
+std::string bevarmejo::sentence_case_to_camel_case(const std::string& s)
 {
     // TODO: implement this function
     return std::string(s);
 }
 
-std::string bevarmejo::to_kebab_case(const std::string& s)
+std::string bevarmejo::sentence_case_to_kebab_case(const std::string& s)
 {
     // kebab case means that the string is separated by hyphens '-' and all the letters are lowercase
 
@@ -54,16 +54,24 @@ std::string bevarmejo::to_kebab_case(const std::string& s)
     return std::move(result);
 }
 
-std::string bevarmejo::to_pascal_case(const std::string &s)
+std::string bevarmejo::sentence_case_to_pascal_case(const std::string &s)
 {
-    // TODO: implement this function
-    return std::string(s);
+    // Simply take the output of the CamelCase function and capitalize the first letter.
+    std::string camel_case = sentence_case_to_camel_case(s);
+    if (!camel_case.empty())
+    {
+        camel_case[0] = std::toupper(camel_case[0]);
+    }
+    return std::move(camel_case);
 }
 
-std::string bevarmejo::to_snake_case(const std::string& s)
+std::string bevarmejo::sentence_case_to_snake_case(const std::string& s)
 {
-    // TODO: implement this function
-    return std::string(s);
+    // Simply take the output of the KebabCase function and replace all hyphens with underscores.
+
+    std::string kebab_case = sentence_case_to_kebab_case(s);
+    std::replace(kebab_case.begin(), kebab_case.end(), '-', '_');
+    return std::move(kebab_case);
 }
 
 std::vector<std::string> bevarmejo::split(const std::string& s, char delimiter)

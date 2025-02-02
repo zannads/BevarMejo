@@ -56,16 +56,16 @@ public:
     std::string get(std::size_t alt = 0ul) const
     {
         if constexpr ( S == style::CamelCase )
-            return bevarmejo::to_camel_case(get<style::SentenceCase>(alt));
+            return bevarmejo::sentence_case_to_camel_case(get<style::SentenceCase>(alt));
         
         if constexpr ( S == style::KebabCase )
-            return bevarmejo::to_kebab_case(get<style::SentenceCase>(alt));
+            return bevarmejo::sentence_case_to_kebab_case(get<style::SentenceCase>(alt));
 
         if constexpr ( S == style::PascalCase )
-            return bevarmejo::to_pascal_case(get<style::SentenceCase>(alt));
+            return bevarmejo::sentence_case_to_pascal_case(get<style::SentenceCase>(alt));
         
         if constexpr ( S == style::SnakeCase )
-            return bevarmejo::to_snake_case(get<style::SentenceCase>(alt));
+            return bevarmejo::sentence_case_to_snake_case(get<style::SentenceCase>(alt));
     
          // ======== Actual Implementation (hyp: S == style::SentenceCase) ========
          return operator[](alt);
