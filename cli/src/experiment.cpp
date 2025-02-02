@@ -120,28 +120,7 @@ void Experiment::build(const json_o &jinput)
     // Upload the settings or the fields that can change the behavior of the construction of the experiment (e..g, lookup paths)
     if (io::key::settings.exists_in(jinput)) {
         const json_o &jsettings = io::json::extract(io::key::settings).from(jinput);
-
-        if (io::key::outf_format.exists_in(jsettings))
-        {
-            // TODO: set the output file format
-        }
-
-        // Key outf_key_style, aka "Output file key style".
-        // It should be a string with the style to use when writing the keys in the output files.
-        // The allowed styles are "Original", "Camel", "Snake", "Kebab".
-        if (io::key::outf_key_style.exists_in(jsettings))
-        {
-            try
-            {
-                io::key::Key::set_out_style(io::json::extract(io::key::outf_key_style).from(jsettings).get<std::string>());
-            }
-            catch (const std::exception &e)
-            {
-               // TODO: log the error
-            }
-        }
-        // If non existing, the default is
-
+        
         // Key outf_pretty, aka "Output file enable indent".
         // When boolean, false deactives the indent, true activates it with a default value of 4.
         // When numeric, it is automatically true and the value is the number of spaces to indent (can be 0).

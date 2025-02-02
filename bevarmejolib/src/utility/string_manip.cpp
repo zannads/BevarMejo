@@ -54,6 +54,12 @@ std::string bevarmejo::to_kebab_case(const std::string& s)
     return std::move(result);
 }
 
+std::string bevarmejo::to_pascal_case(const std::string &s)
+{
+    // TODO: implement this function
+    return std::string(s);
+}
+
 std::string bevarmejo::to_snake_case(const std::string& s)
 {
     // TODO: implement this function

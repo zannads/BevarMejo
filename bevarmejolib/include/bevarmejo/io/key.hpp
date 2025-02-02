@@ -9,19 +9,21 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/utility/string_manip.hpp"
 
-namespace bevarmejo::io::key {
+namespace bevarmejo::io::key
+{
 
-enum class style {
-Original,
-Camel,
-Kebab,
-Snake,
-};
-constexpr std::size_t n_styles = 4ul;
+class Key final
+{
+public:
+    enum class style
+    {
+        CamelCase,
+        KebabCase,
+        PascalCase,
+        SentenceCase,
+        SnakeCase
+    };
 
-style Style(const std::string &s);
-
-class Key final{
 private:
     std::vector<std::string> m__values;
 
@@ -38,7 +40,7 @@ public:
 
     // The key object is meant to be a static const global object and defined
     // in the various translation units where they are needed.
-    // With the operator() I can access the original value as const references.
+    // With the operator() I can access the Sentence value as const references.
     // Same with the operator[] method but with the possibility to access the alternatives.
     // While with the get method I can access the values in the various formats
     // using the template parameter.
@@ -46,22 +48,26 @@ public:
     // Main value of the key in the output style.
     std::string operator()() const;
 
-    // Alternative value of the key in original style.
+    // Alternative value of the key in Sentence style.
     const std::string& operator[](std::size_t alt) const;
 
     // Get any alternative value of the key in the desired style.
-    template <style S= style::Original>
-    std::string get(std::size_t alt = 0ul) const {
-        if constexpr ( S == style::Camel )
-            return bevarmejo::to_camel_case(get<style::Original>(alt));
+    template <style S= style::SentenceCase>
+    std::string get(std::size_t alt = 0ul) const
+    {
+        if constexpr ( S == style::CamelCase )
+            return bevarmejo::to_camel_case(get<style::SentenceCase>(alt));
         
-        if constexpr ( S == style::Kebab )
-            return bevarmejo::to_kebab_case(get<style::Original>(alt));
+        if constexpr ( S == style::KebabCase )
+            return bevarmejo::to_kebab_case(get<style::SentenceCase>(alt));
+
+        if constexpr ( S == style::PascalCase )
+            return bevarmejo::to_pascal_case(get<style::SentenceCase>(alt));
         
-        if constexpr ( S == style::Snake )
-            return bevarmejo::to_snake_case(get<style::Original>(alt));
+        if constexpr ( S == style::SnakeCase )
+            return bevarmejo::to_snake_case(get<style::SentenceCase>(alt));
     
-         // ======== Actual Implementation (hyp: S == style::Original) ========
+         // ======== Actual Implementation (hyp: S == style::SentenceCase) ========
          return operator[](alt);
             
     }
@@ -78,10 +84,10 @@ public:
     // Check if the key exists in the json object.
     bool exists_in(const json_o &j) const; 
 
-    // Returns the number of versions that a key can have. (Original, Camel, Snake, Kebab) 
+    // Returns the number of versions that a key can have. (Sentence, Camel, Snake, Kebab, Pascal) 
     static std::size_t n_versions(); 
     
-    // Counts the number of alternatives, in all case of the key (Original, Camel, Snake, Kebab).
+    // Counts the number of alternatives, in all case of the key (Sentence, Camel, Snake, Kebab, Pascal).
     // It's the number of steps of the iterators and it is equal to size()*n_versions().
     std::size_t n_alternatives() const;
     
@@ -94,12 +100,11 @@ public:
     // So the index of the iterator modulo n_versions() gives me the style and the integer division
     // gives me the value of the key.
 
-private:
-
-    template <typename T>
-    class Iterator {
+public:
+    class const_iterator
+    {
         private:
-            T& m__key;
+            const Key* m__key;
             std::size_t m__index;
 
         public:
@@ -107,57 +112,38 @@ private:
             using value_type = std::string;
             using reference = std::string&;
             using const_reference = const std::string&;
+        private:
+            friend class Key;
+        
+        private:
+            // Normal constructors are private so that only keys can create iterators.
+            const_iterator(const Key* key, std::size_t index);
+        public:
+            // Copy and move constructor and assignment operators are default.
+            const_iterator(const const_iterator&) = default;
+            const_iterator(const_iterator&&) = default;
+            const_iterator& operator=(const const_iterator&) = default;
+            const_iterator& operator=(const_iterator&&) = default;
+            ~const_iterator() = default;
 
-            Iterator(T& key, std::size_t index) : m__key(key), m__index(index) {}
-            
-            value_type operator*() const {
-                assert(m__index < m__key.n_alternatives());
+            value_type operator*() const;
 
-                std::size_t alt = m__index / n_styles;
-                std::size_t style = m__index % n_styles;
+            const_iterator& operator++();
+            const_iterator operator++(int);
 
-                if (style == 0)
-                    return m__key.template get<style::Original>(alt);
-                else if (style == 1)
-                    return m__key.template get<style::Camel>(alt);
-                else if (style == 2)
-                    return m__key.template get<style::Kebab>(alt);
-                else
-                    return m__key.template get<style::Snake>(alt);
-
-            }
-
-            Iterator& operator++() {
-                if (m__index < m__key.n_alternatives())
-                    ++m__index;
-                return *this;
-            }
-            Iterator operator++(int) { auto tmp = *this; ++(*this); return tmp; }
-
-            bool operator==(const Iterator& other) const { return m__index == other.m__index; }
-            bool operator!=(const Iterator& other) const { return m__index != other.m__index; }
+            bool operator==(const const_iterator& other) const;
+            bool operator!=(const const_iterator& other) const;
     };
 
 public:
-    using const_iterator = Iterator<const Key>;
 
     const_iterator begin() const;
-    const_iterator end() const;
 
-private:
-    // Static global methods to set the output style of the keys.// Default is Kebab. 
-    // Before version 23.10.1, there was no global output style.
-    static style m__out_style;
+    const_iterator end() const;
 
 public:
     // Read what is the current output style of the keys.
-    static const style& get_out_style();
-
-    // Set the output style of the keys. 
-    static void set_out_style(style s);
-
-    static void set_out_style(const std::string &s);
-
+    static style get_out_style();
 };
 
 }  // namespace bevarmejo::io::key

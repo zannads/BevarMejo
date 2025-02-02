@@ -51,7 +51,11 @@ math(EXPR LIBRARY_VERSION
 # Check that the project version is a valid version string (in bounds/years, no patch version greater than 99, minor version is a valid month
 if(LIBRARY_VERSION LESS FIRST_VERSION OR LIBRARY_VERSION GREATER CURRENT_VERSION OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
   message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
-endif()  
+endif()
+
+# ---------------------------------------------------------------------
+# START OF THE MAIN CMAKE FILE
+# ---------------------------------------------------------------------
 
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
@@ -62,6 +66,25 @@ add_definitions(-DLIBRARY_MINOR_VERSION=${MINOR_VERSION})
 add_definitions(-DLIBRARY_PATCH_VERSION=${PATCH_VERSION})
 
 message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
+
+# ---------------------------------------------------------------------
+# [OPTIONAL] Set the style for the keys in the output file
+# ---------------------------------------------------------------------
+# Define the list of valid styles.
+set(STYLES "CamelCase" "kebab-case" "pascalCase" "Sentence case" "snake_case")
+
+set(OUT_STYLE "snake_case" CACHE STRING "Style for the keys in the output file. Select between: ${STYLES}")
+
+# Check if the selected style is valid.
+list(FIND STYLES "${OUT_STYLE}" STYLE_INDEX)
+if(STYLE_INDEX EQUAL -1)
+  message(FATAL_ERROR "Invalid style selected: ${OUT_STYLE}. Please select one of: ${STYLES}")
+endif()
+
+# Add the style as a preprocessor definition.
+add_compile_definitions(OUT_STYLE_${STYLE_INDEX})
+
+message(STATUS "BèvarMéjo output files' keys style: ${OUT_STYLE}")
 
 #Set the path to the EPANET folder and library
 #The path to the folder can be set in 2 ways:

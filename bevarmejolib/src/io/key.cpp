@@ -19,32 +19,54 @@ static const std::string generic_access = "[[access_operator]]";
 
 namespace bevarmejo::io::key {
 
+#if defined(OUT_STYLE_0)
+    constexpr Key::style default_style = Key::style::CamelCase;
+#elif defined(OUT_STYLE_1)
+    constexpr Key::style default_style = Key::style::KebabCase;
+#elif defined(OUT_STYLE_2)
+    constexpr Key::style default_style = Key::style::PascalCase;
+#elif defined(OUT_STYLE_3)
+    constexpr Key::style default_style = Key::style::SentenceCase;
+#elif defined(OUT_STYLE_4)
+    constexpr Key::style default_style = Key::style::SnakeCase;
+#else
+    #error "The output style selected is invalid."
+#endif
+constexpr std::size_t n_styles = 5ul;
+
 Key::Key() : Key (std::initializer_list<std::string>{""}) {}
 
 Key::Key(std::initializer_list<std::string> values) : m__values(values) {}
 
-std::string Key::operator()() const { 
-    
-    switch (m__out_style)
+std::string Key::operator()() const
+{
+    if constexpr (default_style == style::CamelCase)
     {
-    case style::Original:
-        return m__values[0];
-        break;
-
-    case style::Camel:
         return bevarmejo::to_camel_case(m__values[0]);
-        break;
-
-    case style::Kebab:
+    }
+    else if constexpr (default_style == style::KebabCase)
+    {
         return bevarmejo::to_kebab_case(m__values[0]);
-        break;
-
-    case style::Snake:
+    }
+    else if constexpr (default_style == style::PascalCase)
+    {
+        return bevarmejo::to_pascal_case(m__values[0]);
+    }
+    else if constexpr (default_style == style::SentenceCase)
+    {
+        return m__values[0];
+    }
+    else if constexpr (default_style == style::SnakeCase)
+    {
         return bevarmejo::to_snake_case(m__values[0]);
-        break;
-    
-    default:
-        break;
+    }
+    else
+    {
+        beme_throw(std::logic_error,
+        "Throw in unreachable code.",
+        "The default style is not valid.",
+        "Style : ", static_cast<int>(default_style)
+        );
     }
 }
 
@@ -75,35 +97,78 @@ std::size_t Key::n_alternatives() const { return m__values.size()*n_versions(); 
 
 std::size_t Key::size() const { return m__values.size(); }
 
-Key::const_iterator Key::begin() const { return const_iterator(*this, 0); }
+Key::const_iterator Key::begin() const { return const_iterator(this, 0); }
 
-Key::const_iterator Key::end() const { return const_iterator(*this, n_alternatives()); }
+Key::const_iterator Key::end() const { return const_iterator(this, n_alternatives()); }
 
-style Key::m__out_style = style::Kebab;
+Key::style Key::get_out_style() { return default_style; }
 
-const style& Key::get_out_style() { return m__out_style; }
+Key::const_iterator::const_iterator(const Key* key, std::size_t index) : 
+    m__key{key}, m__index{index}
+{ }
 
-void Key::set_out_style(style s) { m__out_style = s; }
+Key::const_iterator::value_type Key::const_iterator::operator*() const
+{
+    // m__index is the index of the alternative and version.
+    // First check all styles for the main key, then proceed to the alternatives.
+    std::size_t alt = m__index / n_styles;
+    std::size_t ver = m__index % n_styles;
 
-void Key::set_out_style(const std::string &s) { m__out_style = Style(s); }
+    if (ver == 0)
+    {
+        return m__key->get<style::CamelCase>(alt);
+    }
+    else if (ver == 1)
+    {
+        return m__key->get<style::KebabCase>(alt);
+    }
+    else if (ver == 2)
+    {
+        return m__key->get<style::PascalCase>(alt);
+    }
+    else if (ver == 3)
+    {
+        return m__key->get<style::SentenceCase>(alt);
+    }
+    else if (ver == 4)
+    {
+        return m__key->get<style::SnakeCase>(alt);
+    }
+    else
+    {
+        beme_throw(std::logic_error,
+            "Throw in unreachable code.",
+            "The version is not valid.",
+            "Version : ", ver
+        );
+    }
 
-style Style(const std::string &s) {
-    if (s == "Original" || s == "original")
-        return style::Original;
-    
-    if (s == "Camel" || s == "camel")
-        return style::Camel;
-    
-    if (s == "Kebab" || s == "kebab")
-       return style::Kebab;
-    
-    if (s == "Snake" || s == "snake")
-        return style::Snake;
-   
-    beme_throw(std::invalid_argument,
-        "Impossible to create a style from the provided string.",
-        "Invalid string.",
-        "Style string: ", s);
+}
+
+Key::const_iterator& Key::const_iterator::operator++()
+{
+    assertm(m__index < m__key->n_alternatives(), "Impossible to increment the iterator. The index is out of range.");
+    ++m__index;
+    return *this;
+}
+
+Key::const_iterator Key::const_iterator::operator++(int)
+{
+    auto tmp = *this;
+    ++(*this);
+    return tmp;
+}
+
+bool Key::const_iterator::operator==(const Key::const_iterator& other) const
+{
+    assertm(m__key == other.m__key, "Impossible to compare the iterators. The iterators are not from the same key.");
+    return m__index == other.m__index;
+}
+
+bool Key::const_iterator::operator!=(const Key::const_iterator& other) const
+{
+    assertm(m__key == other.m__key, "Impossible to compare the iterators. The iterators are not from the same key.");
+    return m__index != other.m__index;
 }
 
 } // namespace bevarmejo::io::key

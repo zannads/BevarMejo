@@ -26,9 +26,6 @@ static const Key specs{"Specializations", "Specs"}; // "Specializations", "Specs
 static const Key rand_starts{"Random starts"}; // "Random starts"
 
 static const Key settings{"Settings"}; // "Settings"
-static const Key outf_format{"Output file format", "of format"}; // "Output file format", "of format"
-static const Key outf_key_style{"Output file key style", "of key style"}; // "Output file key style", "of key style"
 static const Key outf_pretty{"Output file enable indent", "of indent"}; // "Output file enable indent", "of indent"
-static const Key outf_pretty_json_indent{"Output file indent value", "of indent v"}; // "Output file pretty JSON indent value", "of pretty JSON indent v"
 
 }   // namespace bevarmejo::io::key
