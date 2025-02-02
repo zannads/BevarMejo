@@ -9,7 +9,7 @@ using json_o = nlohmann::json;
 
 #include "bevarmejo/utility/string_manip.hpp"
 
-namespace bevarmejo::io::key
+namespace bevarmejo::io
 {
 
 class Key final
@@ -146,24 +146,24 @@ public:
     static style get_out_style();
 };
 
-}  // namespace bevarmejo::io::key
+}  // namespace bevarmejo::io
 
 namespace bevarmejo::io::json {
 namespace detail {
 class hjm;
 } // namespace detail
 
-detail::hjm extract(const key::Key &k);
+detail::hjm extract(const Key &k);
 
 namespace detail {
 class hjm final {
 private:
-    const io::key::Key &m__key;
+    const io::Key &m__key;
 
-    friend hjm bevarmejo::io::json::extract(const key::Key &k);
+    friend hjm bevarmejo::io::json::extract(const Key &k);
 
     hjm() = delete;
-    hjm(const io::key::Key &k) : m__key{k} {}
+    hjm(const io::Key &k) : m__key{k} {}
     hjm(const hjm&) = delete;
     hjm(hjm&&) = delete;
     hjm& operator=(const hjm&) = delete;

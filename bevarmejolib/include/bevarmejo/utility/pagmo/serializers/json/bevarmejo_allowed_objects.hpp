@@ -19,12 +19,12 @@ using json_o = nlohmann::json;
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::key::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
-static const bevarmejo::io::key::Key eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
-static const bevarmejo::io::key::Key m{"Mutation probability", "m"}; // "Mutation probability", "m"
-static const bevarmejo::io::key::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
-static const bevarmejo::io::key::Key seed{"Seed"}; // "Seed"
-static const bevarmejo::io::key::Key verbosity{"Verbosity"}; // "Verbosity"
+static const bevarmejo::io::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
+static const bevarmejo::io::Key eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
+static const bevarmejo::io::Key m{"Mutation probability", "m"}; // "Mutation probability", "m"
+static const bevarmejo::io::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
+static const bevarmejo::io::Key seed{"Seed"}; // "Seed"
+static const bevarmejo::io::Key verbosity{"Verbosity"}; // "Verbosity"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN

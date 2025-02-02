@@ -176,7 +176,7 @@ void Experiment::build(const json_o &jinput)
     m__lookup_paths.push_back(fsys::current_path());
 
     // Check that the settings file has the required fields
-    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+    auto check_mandatory_field = [](const io::Key &key, const json_o &j) {
         if (key.exists_in(j)) {
             return;
         }
@@ -227,7 +227,7 @@ void Experiment::build_island(const json_o &config)
     // Construct a pagmo::population
     // Population, its size and the generations are mandatory. 
     // Seed, report gen are optional. 
-    auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
+    auto check_mandatory_field = [](const io::Key &key, const json_o &j) {
         if (key.exists_in(j)) {
             return;
         }

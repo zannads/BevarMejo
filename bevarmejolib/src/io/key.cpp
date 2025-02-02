@@ -17,7 +17,8 @@ namespace bevarmejo::io::log::fname {
 static const std::string generic_access = "[[access_operator]]";
 }
 
-namespace bevarmejo::io::key {
+namespace bevarmejo::io
+{
 
 #if defined(OUT_STYLE_0)
     constexpr Key::style default_style = Key::style::CamelCase;
@@ -171,7 +172,7 @@ bool Key::const_iterator::operator!=(const Key::const_iterator& other) const
     return m__index != other.m__index;
 }
 
-} // namespace bevarmejo::io::key
+} // namespace bevarmejo::io
 
 namespace bevarmejo::io::json::detail {
 
@@ -211,7 +212,7 @@ const json_o& hjm::from(const json_o &j) const
 
 } // namespace bevarmejo::io::json::detail
 
-bevarmejo::io::json::detail::hjm bevarmejo::io::json::extract(const key::Key &k)
+bevarmejo::io::json::detail::hjm bevarmejo::io::json::extract(const Key &k)
 {
     return bevarmejo::io::json::detail::hjm(k);
 }

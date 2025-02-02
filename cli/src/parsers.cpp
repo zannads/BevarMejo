@@ -164,7 +164,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         }
 
         // 1.3.2 mandatory keys first: dv, udp
-        auto check_mandatory_field = [](const io::key::Key &key, const json_o &j){
+        auto check_mandatory_field = [](const io::Key &key, const json_o &j){
             if (key.exists_in(j)) {
                 return;
             }

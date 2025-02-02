@@ -47,12 +47,12 @@ static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-static const bemeio::key::Key opers {"Operations"}; // "Operations"
-static const bemeio::key::Key avail_diam {"Available diameters"}; // "Available diameters"
-static const bemeio::key::Key tank_costs {"Tank costs"}; // "Tank costs"
-static const bemeio::key::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
-static const bemeio::key::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
-static const bemeio::key::Key __inp__ {"inp"}; // "inp"
+static const bemeio::Key opers {"Operations"}; // "Operations"
+static const bemeio::Key avail_diam {"Available diameters"}; // "Available diameters"
+static const bemeio::Key tank_costs {"Tank costs"}; // "Tank costs"
+static const bemeio::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
+static const bemeio::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
+static const bemeio::Key __inp__ {"inp"}; // "inp"
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {

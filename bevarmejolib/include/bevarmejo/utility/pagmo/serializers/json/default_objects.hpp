@@ -22,9 +22,9 @@ using json_o = nlohmann::json;
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::key::Key pool_flag{"Using pool"}; // "Using pool"
-static const bevarmejo::io::key::Key abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
-static const bevarmejo::io::key::Key frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
+static const bevarmejo::io::Key pool_flag{"Using pool"}; // "Using pool"
+static const bevarmejo::io::Key abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
+static const bevarmejo::io::Key frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
