@@ -10,9 +10,6 @@
 #     set( PUGIXML_ROOT "${PROJECT_SOURCE_DIR}/../pugixml/src" CACHE PATH "Path to the rootfolder of PUGIXML")
 #     message(STATUS "PUGIXML_ROOT environmental variable NOT found, using ${PUGIXML_ROOT}" )
 # ENDIF()
-set(BEME_IO
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/key.cpp"
-)
 
 set(BEME_UTILS
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"

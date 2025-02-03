@@ -117,22 +117,23 @@ void Experiment::build(const Json &jinput)
 {
     // Upload the settings or the fields that can change the behavior of the construction of the experiment (e..g, lookup paths)
     if (io::key::settings.exists_in(jinput)) {
-        const Json &jsettings = io::json::extract(io::key::settings).from(jinput);
+        const Json &jsettings = jinput.at(io::key::settings.as_in(jinput));
         
-        // Key outf_pretty, aka "Output file enable indent".
+        // AliasedKey outf_pretty, aka "Output file enable indent".
         // When boolean, false deactives the indent, true activates it with a default value of 4.
         // When numeric, it is automatically true and the value is the number of spaces to indent (can be 0).
         if (io::key::outf_pretty.exists_in(jsettings))
         {
-            if (io::json::extract(io::key::outf_pretty).from(jsettings).is_boolean())
+            const auto& joutf_pretty = jsettings.at(io::key::outf_pretty.as_in(jsettings));
+            if (joutf_pretty.is_boolean())
             {
-                m__settings.outf_indent = io::json::extract(io::key::outf_pretty).from(jsettings).get<bool>();
+                m__settings.outf_indent = joutf_pretty.get<bool>();
                 // m__settings.outf_indent_val = default value;
             }
-            else if ((io::json::extract(io::key::outf_pretty).from(jsettings).is_number()))
+            else if (joutf_pretty.is_number())
             {
                 m__settings.outf_indent = true;
-                m__settings.outf_indent_val = io::json::extract(io::key::outf_pretty).from(jsettings).get<unsigned int>();
+                m__settings.outf_indent_val = joutf_pretty.get<unsigned int>();
             }
             else
             {
@@ -144,7 +145,7 @@ void Experiment::build(const Json &jinput)
 
     if (io::key::lookup_paths.exists_in(jinput))
     {
-        const Json &jpaths = io::json::extract(io::key::lookup_paths).from(jinput);
+        const Json &jpaths = jinput.at(io::key::lookup_paths.as_in(jinput));
 
         auto add_if_valid_path = [](const fsys::path &p, std::vector<fsys::path> &lookup_paths) {
             if (fsys::exists(p) && fsys::is_directory(p))
@@ -174,7 +175,7 @@ void Experiment::build(const Json &jinput)
     m__lookup_paths.push_back(fsys::current_path());
 
     // Check that the settings file has the required fields
-    auto check_mandatory_field = [](const io::Key &key, const Json &j) {
+    auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j) {
         if (key.exists_in(j)) {
             return;
         }
@@ -187,27 +188,11 @@ void Experiment::build(const Json &jinput)
 
     // as of now name is a mandatory field
     check_mandatory_field(io::key::name, jinput);
-    m__name = io::json::extract(io::key::name).from(jinput).get<std::string>();
+    m__name = jinput.at(io::key::name.as_in(jinput)).get<std::string>();
 
-    Json typconfig{};
-    Json specs{};
-    std::size_t rand_starts = 1;
-
-    if (io::key::typconfig.exists_in(jinput))
-        typconfig = io::json::extract(io::key::typconfig).from(jinput);
-    
-    if (io::key::specs.exists_in(jinput))
-        specs = io::json::extract(io::key::specs).from(jinput);
-
-    if (io::key::rand_starts.exists_in(jinput))
-    {
-        if (io::json::extract(io::key::rand_starts).from(jinput).is_number())
-            rand_starts = io::json::extract(io::key::rand_starts).from(jinput).get<std::size_t>();
-        else
-        {
-            // TODO: log the error
-        }
-    }
+    auto typconfig = jinput.value(io::key::typconfig.as_in(jinput), Json{});
+    auto specs = jinput.value(io::key::specs.as_in(jinput), Json{});
+    auto rand_starts = jinput.value(io::key::rand_starts.as_in(jinput), std::size_t{1});
 
     build_islands(typconfig, specs, rand_starts);
 
@@ -225,7 +210,7 @@ void Experiment::build_island(const Json &config)
     // Construct a pagmo::population
     // Population, its size and the generations are mandatory. 
     // Seed, report gen are optional. 
-    auto check_mandatory_field = [](const io::Key &key, const Json &j) {
+    auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j) {
         if (key.exists_in(j)) {
             return;
         }
@@ -238,33 +223,25 @@ void Experiment::build_island(const Json &config)
     };
 
     check_mandatory_field(io::key::population, config);
-    const auto& jpop = io::json::extract(io::key::population).from(config);
+    const auto& jpop = config.at(io::key::population.as_in(config));
 
-    check_mandatory_field(io::key::size, jpop);
     check_mandatory_field(io::key::generations, jpop);
-    const auto& genz = io::json::extract(io::key::generations).from(jpop);
+    const auto& genz = jpop.at(io::key::generations.as_in(jpop));
 
     check_mandatory_field(io::key::algorithm, config);
-    Json jalgo = io::json::extract(io::key::algorithm).from(config);
+    Json jalgo = config.at(io::key::algorithm.as_in(config));
 
     // the algorithms need to know how many generations to report because the island calls the evolve method n times
     // until n*__report_gen > __generations, default = __generations
     //  m__settings.n_evolves = 1 unless the user specifies it
-    Json repgenz{};
-    if (io::key::repgen.exists_in(jpop))
-    {
-        repgenz = io::json::extract(io::key::repgen).from(jpop);
-    }
+    auto repgenz = jpop.value(io::key::repgen.as_in(jpop), Json{});
 
-    // If it is not present, I retrieve it from the [algorithm][params][generations] field
-    if (repgenz.empty() && io::key::params.exists_in(jalgo) && io::key::generations.exists_in(io::json::extract(io::key::params).from(jalgo)))
+    // If it is not present, I retrieve it from the [algorithm][params][generations] field.
+    // And if it is not present even there, it means it is the same as the generations.
+    if (repgenz.empty() && io::key::params.exists_in(jalgo))
     {
-        repgenz = io::json::extract(io::key::generations).from(io::json::extract(io::key::params).from(jalgo));
-    }
-    // If it is not present, it means it is the same as the generations
-    if (repgenz.empty())
-    {
-        repgenz = genz;
+        const auto& jalgo_p = jalgo.at(io::key::params.as_in(jalgo));
+        repgenz = jalgo_p.value(io::key::generations.as_in(jalgo_p), genz);
     }
 
     // TODO: this should be island specifics
@@ -274,21 +251,24 @@ void Experiment::build_island(const Json &config)
     // for the report gen. Now overwrite the generations in the parameters of the algorithm
     if ( !io::key::params.exists_in(jalgo) )
     {
-        jalgo[io::key::params[0]] = Json{};
+        jalgo[io::key::params()] = Json{};
     }
-    io::json::extract(io::key::params).from(jalgo)[io::key::generations[0]] = repgenz;
+    jalgo.at(io::key::params.as_in(jalgo))[io::key::generations()] = repgenz;
     
     pagmo::algorithm algo = jalgo.get<pagmo::algorithm>();
 
     // Construct a pagmo::problem
-    Json jprob = io::json::extract(io::key::problem).from(config);
+    check_mandatory_field(io::key::problem, config);
+    Json jprob = config.at(io::key::problem.as_in(config));
+    
     // Update it with the extra paths for the lookup
     jprob[io::key::lookup_paths[0]] = m__lookup_paths;
 
     auto p = jprob.get<pagmo::problem>();
     
     // Now that I have everything I can build the population and then the island
-    pagmo::population pop{ std::move(p), io::json::extract(io::key::size).from(jpop).get<unsigned int>() };
+    check_mandatory_field(io::key::size, jpop);
+    pagmo::population pop{ std::move(p), jpop.at(io::key::size.as_in(jpop)).get<unsigned int>() };
 
     // Create and track the island
     m__archipelago.push_back(algo, pop); 
@@ -649,7 +629,7 @@ void Experiment::finalise_exp_file() const
             "File : ", exp_filename().string());
     }
 
-    Json &jarchi = io::json::extract(io::key::archi).from(jdata);
+    Json &jarchi = jdata.at(io::key::archi.as_in(jdata));
 
     if (!io::key::islands.exists_in(jarchi))
     {
@@ -660,7 +640,7 @@ void Experiment::finalise_exp_file() const
             "File : ", exp_filename().string());
     }
 
-    Json &jislands = io::json::extract(io::key::islands).from(jarchi);
+    Json &jislands = jarchi.at(io::key::islands.as_in(jarchi));
     Json jislands_old = jislands;
     jislands = Json::array();
 

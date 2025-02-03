@@ -58,13 +58,9 @@ struct adl_serializer<pagmo::algorithm>
             "Cannot build the pagmo::algorithm",
             "The mandatory key 'type' is missing.");
         
-        auto algo_type = bevarmejo::io::json::extract(bevarmejo::io::key::type).from(j).get<std::string>();
+        auto algo_type = j.at(bevarmejo::io::key::type.as_in(j)).get<std::string>();
 
-        Json algo_params{};
-        if (bevarmejo::io::key::params.exists_in(j))
-        {
-            algo_params = bevarmejo::io::json::extract(bevarmejo::io::key::params).from(j);
-        }
+        auto algo_params = j.value(bevarmejo::io::key::params.as_in(j), Json{});
 
         // Based on the algo_type, I have to build the algorithm
         if (algo_type == "nsga2") // TODO: transform into a key
@@ -158,19 +154,11 @@ struct adl_serializer<pagmo::problem>
             "Cannot build the pagmo::problem",
             "The mandatory key 'type' is missing.");
 
-        auto prob_type = bevarmejo::io::json::extract(bevarmejo::io::key::type).from(j).get<std::string>();
+        auto prob_type = j.at(bevarmejo::io::key::type.as_in(j)).get<std::string>();
+        
+        auto prob_params = j.value(bevarmejo::io::key::params.as_in(j), Json{});
 
-        Json prob_params{};
-        if (bevarmejo::io::key::params.exists_in(j))
-        {
-            prob_params = bevarmejo::io::json::extract(bevarmejo::io::key::params).from(j);
-        }
-
-        std::vector<std::filesystem::path> lookup_paths{};
-        if (bevarmejo::io::key::lookup_paths.exists_in(j))
-        {
-            lookup_paths = bevarmejo::io::json::extract(bevarmejo::io::key::lookup_paths).from(j).get<std::vector<std::filesystem::path>>();
-        }
+        auto lookup_paths = j.value(bevarmejo::io::key::lookup_paths.as_in(j), std::vector<std::filesystem::path>{});
 
         // Based on the prob_type, I have to build the problem
         if (prob_type == "bevarmejo::hanoi::fbiobj")

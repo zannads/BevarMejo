@@ -13,16 +13,16 @@
 #include <pagmo/topologies/unconnected.hpp>
 
 #include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/aliased_key.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/utility/except.hpp"
 #include "bevarmejo/utility/string.hpp"
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::Key pool_flag{"Using pool"}; // "Using pool"
-static const bevarmejo::io::Key abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
-static const bevarmejo::io::Key frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
+static const bevarmejo::io::AliasedKey pool_flag{"Using pool"}; // "Using pool"
+static const bevarmejo::io::AliasedKey abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
+static const bevarmejo::io::AliasedKey frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN

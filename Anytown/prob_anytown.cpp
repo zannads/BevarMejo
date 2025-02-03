@@ -20,9 +20,9 @@ namespace fsys = std::filesystem;
 #include <pagmo/island.hpp>
 
 #include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/io/aliased_key.hpp"
 #include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
 namespace bemeio = bevarmejo::io;
@@ -45,12 +45,12 @@ static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
 namespace io::key {
-static const bemeio::Key opers {"Operations"}; // "Operations"
-static const bemeio::Key avail_diam {"Available diameters"}; // "Available diameters"
-static const bemeio::Key tank_costs {"Tank costs"}; // "Tank costs"
-static const bemeio::Key __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
-static const bemeio::Key __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
-static const bemeio::Key __inp__ {"inp"}; // "inp"
+static const bemeio::AliasedKey opers {"Operations"}; // "Operations"
+static const bemeio::AliasedKey avail_diam {"Available diameters"}; // "Available diameters"
+static const bemeio::AliasedKey tank_costs {"Tank costs"}; // "Tank costs"
+static const bemeio::AliasedKey __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
+static const bemeio::AliasedKey __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
+static const bemeio::AliasedKey __inp__ {"inp"}; // "inp"
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -177,8 +177,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 
 	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2) {
 		// Need to se the operations for the rehabilitation problems
-		assert(io::key::opers.exists_in(settings));
-		std::vector<double> operations = bemeio::json::extract(io::key::opers).from(settings).get<std::vector<double>>();
+		auto operations = settings.at(io::key::opers.as_in(settings)).get<std::vector<double>>();
 		assert(operations.size() == 24);
 
 		// Fix pumps' patterns
@@ -228,10 +227,9 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 }
 
 void Problem::load_network(Json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf) {
-	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
-	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
-	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
-	const auto inp_filename = bemeio::json::extract(io::key::__inp__).from(wds_settings).get<fsys::path>();
+	
+	const auto& wds_settings = settings.at(io::key::__wds__.as_in(settings));
+	const auto inp_filename = wds_settings.at(io::key::__inp__.as_in(wds_settings)).get<fsys::path>();
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
 	m__anytown = std::make_shared<WDS>(
@@ -241,10 +239,9 @@ void Problem::load_network(Json settings, std::vector<fsys::path> lookup_paths, 
 }
 
 void Problem::load_subnets(Json settings, std::vector<fsys::path> lookup_paths) {
-	assert(settings != nullptr && io::key::__wds__.exists_in(settings) );
-	const auto& wds_settings = bemeio::json::extract(io::key::__wds__).from(settings);
-	assert(wds_settings != nullptr && io::key::__inp__.exists_in(wds_settings) );
-	const auto& udegs = bemeio::json::extract(io::key::__udegs__).from(wds_settings);
+	
+	const auto& wds_settings = settings.at(io::key::__wds__.as_in(settings));
+	const auto& udegs = wds_settings.at(io::key::__udegs__.as_in(wds_settings));
 
 	for (const auto& udeg : udegs) {
 		
@@ -270,7 +267,7 @@ void Problem::load_other_data(Json settings, std::vector<fsys::path> lookup_path
 
 	// Load Pipe rehabilitation alternative costs 
 	auto prac_filename = bemeio::locate_file(
-		bemeio::json::extract(io::key::avail_diam).from(settings).get<fsys::path>(),
+		settings.at(io::key::avail_diam.as_in(settings)).get<fsys::path>(),
 		lookup_paths);
 
 	// TODO: move also this to Json?
@@ -286,7 +283,7 @@ void Problem::load_other_data(Json settings, std::vector<fsys::path> lookup_path
 	
 	// Load Tank costs 
 	auto tanks_filename = bemeio::locate_file(
-		bemeio::json::extract(io::key::tank_costs).from(settings).get<fsys::path>(), 
+		settings.at(io::key::tank_costs.as_in(settings)).get<fsys::path>(),
 		lookup_paths);
 
 	std::ifstream tanks_file{tanks_filename};

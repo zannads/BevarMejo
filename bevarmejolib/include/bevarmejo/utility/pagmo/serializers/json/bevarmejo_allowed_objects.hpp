@@ -10,19 +10,19 @@
 #include <pagmo/algorithms/nsga2.hpp>
 
 #include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/aliased_key.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/utility/except.hpp"
 #include "bevarmejo/utility/string.hpp"
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::Key cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
-static const bevarmejo::io::Key eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
-static const bevarmejo::io::Key m{"Mutation probability", "m"}; // "Mutation probability", "m"
-static const bevarmejo::io::Key eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
-static const bevarmejo::io::Key seed{"Seed"}; // "Seed"
-static const bevarmejo::io::Key verbosity{"Verbosity"}; // "Verbosity"
+static const bevarmejo::io::AliasedKey cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
+static const bevarmejo::io::AliasedKey eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
+static const bevarmejo::io::AliasedKey m{"Mutation probability", "m"}; // "Mutation probability", "m"
+static const bevarmejo::io::AliasedKey eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
+static const bevarmejo::io::AliasedKey seed{"Seed"}; // "Seed"
+static const bevarmejo::io::AliasedKey verbosity{"Verbosity"}; // "Verbosity"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
@@ -82,44 +82,22 @@ struct adl_serializer<pagmo::nsga2>
                 beme_throw(std::runtime_error,
                     "Cannot serialize the pagmo::nsga2",
                     "Unknown key is not supported.",
-                    "Key : ", key);
+                    "AliasedKey : ", key);
             }
         }
     }
 
     static void from_json(const Json &j, pagmo::nsga2 &algo)
     {
-        unsigned int gen = 1u;
-        double cr = 0.9;
-        double eta_c = 15.;
-        double m = 1./34.;
-        double eta_m = 7.;
-        unsigned int seed = pagmo::random_device::next();
-        unsigned int verb = 0;
-
-        if (bevarmejo::io::key::generations.exists_in(j))
-            gen = bevarmejo::io::json::extract(bevarmejo::io::key::generations).from(j).get<unsigned int>();
-
-        if (bevarmejo::io::key::detail::cr.exists_in(j))
-            cr = bevarmejo::io::json::extract(bevarmejo::io::key::detail::cr).from(j).get<double>();
-
-        if (bevarmejo::io::key::detail::eta_c.exists_in(j))
-            eta_c = bevarmejo::io::json::extract(bevarmejo::io::key::detail::eta_c).from(j).get<double>();
-
-        if (bevarmejo::io::key::detail::m.exists_in(j))
-            m = bevarmejo::io::json::extract(bevarmejo::io::key::detail::m).from(j).get<double>();
-
-        if (bevarmejo::io::key::detail::eta_m.exists_in(j))
-            eta_m = bevarmejo::io::json::extract(bevarmejo::io::key::detail::eta_m).from(j).get<double>();
-
-        if (bevarmejo::io::key::detail::seed.exists_in(j))
-            seed = bevarmejo::io::json::extract(bevarmejo::io::key::detail::seed).from(j).get<unsigned int>();
+        unsigned int gen = j.value(bevarmejo::io::key::generations.as_in(j), 1u);
+        double cr = j.value(bevarmejo::io::key::detail::cr.as_in(j), 0.9);
+        double eta_c = j.value(bevarmejo::io::key::detail::eta_c.as_in(j), 15.);
+        double m = j.value(bevarmejo::io::key::detail::m.as_in(j), 1./34.);
+        double eta_m = j.value(bevarmejo::io::key::detail::eta_m.as_in(j), 7.);
+        unsigned int seed = j.value(bevarmejo::io::key::detail::seed.as_in(j), pagmo::random_device::next());
+        unsigned int verb = j.value(bevarmejo::io::key::detail::verbosity.as_in(j), 0u);
 
         algo = pagmo::nsga2(gen, cr, eta_c, m, eta_m, seed);
-
-        if (bevarmejo::io::key::detail::verbosity.exists_in(j))
-            verb = bevarmejo::io::json::extract(bevarmejo::io::key::detail::verbosity).from(j).get<unsigned int>();
-
         algo.set_verbosity(verb);
     }
 

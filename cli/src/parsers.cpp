@@ -124,33 +124,32 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         Json j = Json::parse(file_content);
 
         // 1.3.1 Optional keys that may change the behavior of the simulation
-        if(io::key::lookup_paths.exists_in(j)) {
-            Json paths = io::json::extract(io::key::lookup_paths).from(j);
+        auto paths = j.value(io::key::lookup_paths.as_in(j), Json{});
+        
+        if (paths != nullptr && paths.is_string())
+        {
+            Json jpath = Json::array();
+            jpath.push_back(paths.get<std::string>());
+            paths = std::move(jpath);
+        }
 
-            if (paths != nullptr) {
-                // Paths could be a string or an array of strings. In both case we need to check if they are directories 
+        for (const auto& path : paths)
+        {
+            fsys::path p{path};
 
-                if (paths.is_string()) {
-                    Json jpath = Json::array();
-                    jpath.push_back(paths.get<std::string>());
-                    paths = jpath;
-                }
-
-                for (const auto& path : paths) {
-                    fsys::path p{path};
-
-                    if (fsys::exists(p) && fsys::is_directory(p)) {
-                        simu.lookup_paths.push_back(p);
-                    } else {
-                        std::cerr << "Path in the simulation settings file is not a valid directory: " << p.string() << std::endl;
-                    }
-                }
+            if (fsys::exists(p) && fsys::is_directory(p))
+            {
+                simu.lookup_paths.push_back(p);
+            }
+            else
+            {
+                std::cerr << "Path in the simulation settings file is not a valid directory: " << p.string() << std::endl;
             }
         }
 
         if(io::key::beme_version.exists_in(j))
         {
-            auto user_v_str = io::json::extract(io::key::beme_version).from(j).get<std::string>();
+            auto user_v_str = j.at(io::key::beme_version.as_in(j)).get<std::string>();
             if (!is_valid_version(user_v_str))
             {
                 io::stream_out(std::cerr,
@@ -162,7 +161,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         }
 
         // 1.3.2 mandatory keys first: dv, udp
-        auto check_mandatory_field = [](const io::Key &key, const Json &j){
+        auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j){
             if (key.exists_in(j)) {
                 return;
             }
@@ -176,23 +175,19 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         check_mandatory_field(io::key::dv, j);
         check_mandatory_field(io::key::problem, j);
 
-        simu.dvs = io::json::extract(io::key::dv).from(j).get<std::vector<double>>();
+        simu.dvs = j.at(io::key::dv.as_in(j)).get<std::vector<double>>();;
 
         // 1.5 build the problem
-        Json jproblem = io::json::extract(io::key::problem).from(j);
+        Json jproblem = j.at(io::key::problem.as_in(j));
         jproblem[io::key::lookup_paths[0]] = simu.lookup_paths;
         simu.p = jproblem.get<pagmo::problem>();
 
         // 1.6 optional keys that don't change the behavior of the simulation
-        if(io::key::fv.exists_in(j))
-            simu.fvs = io::json::extract(io::key::fv).from(j).get<std::vector<double>>();
-        
-        if(io::key::id.exists_in(j))
-            simu.id = io::json::extract(io::key::id).from(j).get<unsigned long long>();
-        
-        if(io::key::print.exists_in(j)) 
-            simu.extra_message = io::json::extract(io::key::print).from(j).get<std::string>();
+        simu.fvs = j.value(io::key::fv.as_in(j), std::vector<double>{});
 
+        simu.id = j.value(io::key::id.as_in(j), 0ull);
+
+        simu.extra_message = j.value(io::key::print.as_in(j), std::string{});
     }
     catch (const std::exception& e)
     {
