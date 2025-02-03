@@ -10,11 +10,9 @@
 #include <pagmo/s_policy.hpp>
 #include <pagmo/topology.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 
 // Pagmo objects that can be serialized
 #include "bevarmejo/utility/pagmo/serializers/json/bevarmejo_allowed_objects.hpp"
@@ -30,10 +28,10 @@ NLOHMANN_JSON_NAMESPACE_BEGIN
 template <>
 struct adl_serializer<pagmo::algorithm>
 {
-    static void to_json(json_o &j, const pagmo::algorithm &algo)
+    static void to_json(Json &j, const pagmo::algorithm &algo)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
     
         // based on algorithm name, I can call the specific function to convert the extra info
         if ( algo.is<pagmo::nsga2>()  )
@@ -50,7 +48,7 @@ struct adl_serializer<pagmo::algorithm>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::algorithm &algo)
+    static void from_json(const Json &j, pagmo::algorithm &algo)
     {
         // The key "type" is mandatory, describes the algorithm class to be used.
         // The key "params" is optional, contains the parameters for the algorithm.
@@ -62,7 +60,7 @@ struct adl_serializer<pagmo::algorithm>
         
         auto algo_type = bevarmejo::io::json::extract(bevarmejo::io::key::type).from(j).get<std::string>();
 
-        json_o algo_params{};
+        Json algo_params{};
         if (bevarmejo::io::key::params.exists_in(j))
         {
             algo_params = bevarmejo::io::json::extract(bevarmejo::io::key::params).from(j);
@@ -87,10 +85,10 @@ struct adl_serializer<pagmo::algorithm>
 template <>
 struct adl_serializer<pagmo::island>
 {
-    static void to_json(json_o &j, const pagmo::island &isl)
+    static void to_json(Json &j, const pagmo::island &isl)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         // based on the island name, call its serializer
         if ( isl.is<pagmo::thread_island>() )
@@ -112,7 +110,7 @@ struct adl_serializer<pagmo::island>
         j[bevarmejo::io::key::seed()] = isl.get_population().get_seed();
     }
 
-    static void from_json(const json_o &j, pagmo::island &isl)
+    static void from_json(const Json &j, pagmo::island &isl)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::island",
@@ -124,10 +122,10 @@ struct adl_serializer<pagmo::island>
 template <>
 struct adl_serializer<pagmo::problem>
 {
-    static void to_json(json_o &j, const pagmo::problem &prob)
+    static void to_json(Json &j, const pagmo::problem &prob)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         // based on the problem name, call its serializer
         if ( prob.is<bevarmejo::hanoi::fbiobj::Problem>() )
@@ -148,7 +146,7 @@ struct adl_serializer<pagmo::problem>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::problem &prob)
+    static void from_json(const Json &j, pagmo::problem &prob)
     {
         // The key "type" is mandatory, describes the problem class to be used.
         // The key "params" is optional, contains the parameters for the problem.
@@ -162,7 +160,7 @@ struct adl_serializer<pagmo::problem>
 
         auto prob_type = bevarmejo::io::json::extract(bevarmejo::io::key::type).from(j).get<std::string>();
 
-        json_o prob_params{};
+        Json prob_params{};
         if (bevarmejo::io::key::params.exists_in(j))
         {
             prob_params = bevarmejo::io::json::extract(bevarmejo::io::key::params).from(j);
@@ -199,10 +197,10 @@ struct adl_serializer<pagmo::problem>
 template <>
 struct adl_serializer<pagmo::r_policy>
 {
-    static void to_json(json_o &j, const pagmo::r_policy &rp)
+    static void to_json(Json &j, const pagmo::r_policy &rp)
     {
        // Reset, just in case.
-       j = json_o{};
+       j = Json{};
 
         // based on the r_policy name, call its serializer.
         if ( rp.is<pagmo::fair_replace>() )
@@ -219,7 +217,7 @@ struct adl_serializer<pagmo::r_policy>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::r_policy &rp)
+    static void from_json(const Json &j, pagmo::r_policy &rp)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::r_policy",
@@ -231,10 +229,10 @@ struct adl_serializer<pagmo::r_policy>
 template <>
 struct adl_serializer<pagmo::s_policy>
 {
-    static void to_json(json_o &j, const pagmo::s_policy &sp)
+    static void to_json(Json &j, const pagmo::s_policy &sp)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         // based on the s_policy name, call its serializer.
         if ( sp.is<pagmo::select_best>() )
@@ -251,7 +249,7 @@ struct adl_serializer<pagmo::s_policy>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::s_policy &sp)
+    static void from_json(const Json &j, pagmo::s_policy &sp)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::s_policy",
@@ -263,10 +261,10 @@ struct adl_serializer<pagmo::s_policy>
 template <>
 struct adl_serializer<pagmo::topology>
 {
-    static void to_json(json_o &j, const pagmo::topology &tp)
+    static void to_json(Json &j, const pagmo::topology &tp)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         // based on the topology name, call its serializer.
         if ( tp.is<pagmo::unconnected>() )
@@ -283,7 +281,7 @@ struct adl_serializer<pagmo::topology>
     
     }
 
-    static void from_json(const json_o &j, pagmo::topology &tp)
+    static void from_json(const Json &j, pagmo::topology &tp)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::topology",

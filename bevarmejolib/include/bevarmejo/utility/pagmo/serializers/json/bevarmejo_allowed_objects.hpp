@@ -9,13 +9,11 @@
 
 #include <pagmo/algorithms/nsga2.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/string_manip.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/string.hpp"
 
 namespace bevarmejo::io::key::detail
 {
@@ -32,10 +30,10 @@ template <>
 struct adl_serializer<pagmo::nsga2>
 {
 
-    static void to_json(json_o &j, const pagmo::nsga2 &algo)
+    static void to_json(Json &j, const pagmo::nsga2 &algo)
     {
         // Reset the json object, just in case.
-        j = json_o{};
+        j = Json{};
    
         // Unfortuntaley, except for the verbosity, there are no methods to retrieve
         // the parameters of the algorithm. I need to parse them starting from the
@@ -89,7 +87,7 @@ struct adl_serializer<pagmo::nsga2>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::nsga2 &algo)
+    static void from_json(const Json &j, pagmo::nsga2 &algo)
     {
         unsigned int gen = 1u;
         double cr = 0.9;

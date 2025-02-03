@@ -24,8 +24,7 @@ namespace fsys = std::filesystem;
 #include <pagmo/population.hpp>
 #include <pagmo/island.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
+#include "bevarmejo/io/json.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/problem/wds_problem.hpp"
@@ -106,8 +105,8 @@ enum class Formulation {
 
 // For the json serializer
 namespace io::json::detail {
-std::pair<json_o,std::string> static_params(const bevarmejo::anytown::Problem &prob);
-json_o dynamic_params(const bevarmejo::anytown::Problem &prob);
+std::pair<Json,std::string> static_params(const bevarmejo::anytown::Problem &prob);
+Json dynamic_params(const bevarmejo::anytown::Problem &prob);
 }
 
 // For the bounds
@@ -172,7 +171,7 @@ private:
 
 public:
     Problem() = default;
-    Problem(std::string_view a_formulation, const json_o& settings, const std::vector<fsys::path>& lookup_paths);
+    Problem(std::string_view a_formulation, const Json& settings, const std::vector<fsys::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;
@@ -219,9 +218,9 @@ protected:
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
     // For constructor:
-    void load_network(json_o settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-    void load_subnets(json_o settings, std::vector<fsys::path> lookup_paths);
-    void load_other_data(json_o settings, std::vector<fsys::path> lookup_paths);
+    void load_network(Json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
+    void load_subnets(Json settings, std::vector<fsys::path> lookup_paths);
+    void load_other_data(Json settings, std::vector<fsys::path> lookup_paths);
 
     // For fitness function:
     double cost(const WDS &anytown, const std::vector<double>& dv) const;
@@ -231,8 +230,8 @@ protected:
 
 private:
     // Json serializers
-    friend void to_json(json_o &j, const Problem &prob);
-    friend void from_json(const json_o &j, Problem &prob);
+    friend void to_json(Json &j, const Problem &prob);
+    friend void from_json(const Json &j, Problem &prob);
     
 }; // class Problem
 

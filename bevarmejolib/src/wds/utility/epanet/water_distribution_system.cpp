@@ -14,8 +14,8 @@ namespace fsys = std::filesystem;
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/library_metadata.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/metadata.hpp"
 
 #include "bevarmejo/io/streams.hpp"
 

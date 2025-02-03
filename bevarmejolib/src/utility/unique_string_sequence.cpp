@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 
 #include "unique_string_sequence.hpp"
 

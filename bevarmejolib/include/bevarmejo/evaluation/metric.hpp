@@ -6,7 +6,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 #include "bevarmejo/utility/quantity_series.hpp"
 #include "bevarmejo/utility/type_traits.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"

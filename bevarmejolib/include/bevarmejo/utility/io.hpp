@@ -4,10 +4,8 @@
 
 #include <iostream>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
 #include "bevarmejo/io/fsys.hpp"
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"

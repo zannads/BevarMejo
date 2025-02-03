@@ -15,7 +15,6 @@ set(BEME_IO
 )
 
 set(BEME_UTILS
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/string_manip.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
 )
 

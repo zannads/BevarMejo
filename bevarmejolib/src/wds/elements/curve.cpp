@@ -2,7 +2,7 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 
 #include "bevarmejo/wds/utility/quantity_series.hpp"
 #include "bevarmejo/wds/element.hpp"

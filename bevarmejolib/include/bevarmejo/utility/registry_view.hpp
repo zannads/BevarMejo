@@ -7,8 +7,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/bememory.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/memory.hpp"
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/unique_string_sequence.hpp"
 

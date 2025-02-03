@@ -7,22 +7,20 @@ namespace fsys = std::filesystem;
 #include <string>
 #include <utility>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
 #include <pagmo/problem.hpp>
 
-#include "bevarmejo/utility/bemexcept.hpp"
 #include "bevarmejo/io/fsys.hpp"
-#include "bevarmejo/io/streams.hpp"
-
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
 #include "bevarmejo/io/keys/bemeexp.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/io/keys/bemesim.hpp"
 
-#include "bevarmejo/utility/string_manip.hpp"
-#include "bevarmejo/utility/library_metadata.hpp"
+#include "bevarmejo/io/streams.hpp"
+
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/string.hpp"
+#include "bevarmejo/utility/metadata.hpp"
 #include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
 #include "bevarmejo/cli_settings.hpp"
@@ -123,17 +121,17 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         file.close();
 
         // 1.3 parse it
-        json_o j = json_o::parse(file_content);
+        Json j = Json::parse(file_content);
 
         // 1.3.1 Optional keys that may change the behavior of the simulation
         if(io::key::lookup_paths.exists_in(j)) {
-            json_o paths = io::json::extract(io::key::lookup_paths).from(j);
+            Json paths = io::json::extract(io::key::lookup_paths).from(j);
 
             if (paths != nullptr) {
                 // Paths could be a string or an array of strings. In both case we need to check if they are directories 
 
                 if (paths.is_string()) {
-                    json_o jpath = json_o::array();
+                    Json jpath = Json::array();
                     jpath.push_back(paths.get<std::string>());
                     paths = jpath;
                 }
@@ -164,7 +162,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         }
 
         // 1.3.2 mandatory keys first: dv, udp
-        auto check_mandatory_field = [](const io::Key &key, const json_o &j){
+        auto check_mandatory_field = [](const io::Key &key, const Json &j){
             if (key.exists_in(j)) {
                 return;
             }
@@ -181,7 +179,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         simu.dvs = io::json::extract(io::key::dv).from(j).get<std::vector<double>>();
 
         // 1.5 build the problem
-        json_o jproblem = io::json::extract(io::key::problem).from(j);
+        Json jproblem = io::json::extract(io::key::problem).from(j);
         jproblem[io::key::lookup_paths[0]] = simu.lookup_paths;
         simu.p = jproblem.get<pagmo::problem>();
 

@@ -12,13 +12,11 @@
 #include <pagmo/s_policies/select_best.hpp>
 #include <pagmo/topologies/unconnected.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/key.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/string_manip.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/string.hpp"
 
 namespace bevarmejo::io::key::detail
 {
@@ -37,10 +35,10 @@ NLOHMANN_JSON_NAMESPACE_BEGIN
 template <>
 struct adl_serializer<pagmo::thread_island>
 {
-    static void to_json(json_o &j, const pagmo::thread_island &isl)
+    static void to_json(Json &j, const pagmo::thread_island &isl)
     {
         // Reset the json object, just in case.
-        j = json_o{};
+        j = Json{};
 
         // I have to parse the extra info to get the pool flag
         // I know it returns "\tUsing pool: yes" or no
@@ -53,7 +51,7 @@ struct adl_serializer<pagmo::thread_island>
         j[bevarmejo::io::key::detail::pool_flag()] = (tokens[1] == " yes") ? true : false; // space is there too
     }
 
-    static void from_json(const json_o &j, pagmo::thread_island &isl)
+    static void from_json(const Json &j, pagmo::thread_island &isl)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::thread_island",
@@ -70,10 +68,10 @@ struct adl_serializer<pagmo::thread_island>
 template <>
 struct adl_serializer<pagmo::fair_replace>
 {
-    static void to_json(json_o &j, const pagmo::fair_replace &rp)
+    static void to_json(Json &j, const pagmo::fair_replace &rp)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         // I know the extra info returns "\tAbsolute migration rate: 1" and the 
         // number is an integer or a "\tFractional migration rate: 0.1" and the
@@ -92,7 +90,7 @@ struct adl_serializer<pagmo::fair_replace>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::fair_replace &rp)
+    static void from_json(const Json &j, pagmo::fair_replace &rp)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::fair_replace",
@@ -106,10 +104,10 @@ struct adl_serializer<pagmo::fair_replace>
 template <>
 struct adl_serializer<pagmo::select_best>
 {
-    static void to_json(json_o &j, const pagmo::select_best &sp)
+    static void to_json(Json &j, const pagmo::select_best &sp)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
 
         std::string extra_info = sp.get_extra_info(); 
         extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
@@ -125,7 +123,7 @@ struct adl_serializer<pagmo::select_best>
         }
     }
 
-    static void from_json(const json_o &j, pagmo::select_best &sp)
+    static void from_json(const Json &j, pagmo::select_best &sp)
     {
         beme_throw(std::runtime_error,
             "Cannot build the pagmo::select_best",
@@ -138,14 +136,14 @@ struct adl_serializer<pagmo::select_best>
 template <>
 struct adl_serializer<pagmo::unconnected>
 {
-    static void to_json(json_o &j, const pagmo::unconnected &tp)
+    static void to_json(Json &j, const pagmo::unconnected &tp)
     {
         // Reset, just in case.
-        j = json_o{};
+        j = Json{};
         // Nothing to write
     }
 
-    static void from_json(const json_o &j, pagmo::unconnected &tp)
+    static void from_json(const Json &j, pagmo::unconnected &tp)
     {
         // Nothing to read, the unconnnected topology does not have any parameter.
     }

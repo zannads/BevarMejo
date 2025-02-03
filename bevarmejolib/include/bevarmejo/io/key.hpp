@@ -4,10 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
-#include "bevarmejo/utility/string_manip.hpp"
+#include "bevarmejo/io/json.hpp"
 
 namespace bevarmejo::io
 {
@@ -45,44 +42,29 @@ public:
     // While with the get method I can access the values in the various formats
     // using the template parameter.
 
-    // Main value of the key in the output style.
+    // Main value of the key in the DEFAULT output style.
     std::string operator()() const;
 
     // Alternative value of the key in Sentence style.
     const std::string& operator[](std::size_t alt) const;
 
-    // Get any alternative value of the key in the desired style.
-    template <style S= style::SentenceCase>
-    std::string get(std::size_t alt = 0ul) const
-    {
-        if constexpr ( S == style::CamelCase )
-            return bevarmejo::sentence_case_to_camel_case(get<style::SentenceCase>(alt));
-        
-        if constexpr ( S == style::KebabCase )
-            return bevarmejo::sentence_case_to_kebab_case(get<style::SentenceCase>(alt));
-
-        if constexpr ( S == style::PascalCase )
-            return bevarmejo::sentence_case_to_pascal_case(get<style::SentenceCase>(alt));
-        
-        if constexpr ( S == style::SnakeCase )
-            return bevarmejo::sentence_case_to_snake_case(get<style::SentenceCase>(alt));
-    
-         // ======== Actual Implementation (hyp: S == style::SentenceCase) ========
-         return operator[](alt);
-            
-    }
-
     // Get any alternative value of the key in the camel style.
-    std::string camel(std::size_t alt = 0ul) const;
+    std::string as_camel_case(std::size_t alt = 0ul) const;
 
     // Get any alternative value of the key in the kebab style.
-    std::string kebab(std::size_t alt = 0ul) const;
+    std::string as_kebab_case(std::size_t alt = 0ul) const;
+
+    // Get any alternative value of the key in the pascal style.
+    std::string as_pascal_case(std::size_t alt = 0ul) const;
+
+    // Get any alternative value of the key in the sentence style.
+    std::string as_sentence_case(std::size_t alt = 0ul) const;
 
     // Get any alternative value of the key in the snake style.
-    std::string snake(std::size_t alt = 0ul) const;
+    std::string as_snake_case(std::size_t alt = 0ul) const;
 
     // Check if the key exists in the json object.
-    bool exists_in(const json_o &j) const; 
+    bool exists_in(const Json &j) const; 
 
     // Returns the number of versions that a key can have. (Sentence, Camel, Snake, Kebab, Pascal) 
     static std::size_t n_versions(); 
@@ -144,9 +126,40 @@ public:
 public:
     // Read what is the current output style of the keys.
     static style get_out_style();
+
+public:
+    // operators for string comparison
+    bool operator==(const std::string &s) const;
+    bool operator==(const std::string_view &s) const;
+    bool operator==(const char *s) const;
+
+    bool operator<(const std::string &s) const;
+    bool operator<(const std::string_view &s) const;
+    bool operator<(const char *s) const;
 };
 
+
+
+
+
 }  // namespace bevarmejo::io
+
+inline bool operator<(const std::string &lhs, const bevarmejo::io::Key &rhs)
+{
+    if (rhs == lhs)
+    {
+        return false;
+    }
+
+    return lhs < rhs[0];
+}
+
+
+inline bool operator==(const std::string &lhs, const bevarmejo::io::Key &rhs)
+{
+    return rhs == lhs;
+}
+
 
 namespace bevarmejo::io::json {
 namespace detail {
@@ -171,9 +184,9 @@ private:
 public:
     ~hjm() = default;
 
-    json_o& from(json_o &j) const;
+    Json& from(Json &j) const;
 
-    const json_o& from(const json_o &j) const;
+    const Json& from(const Json &j) const;
 }; // Hidden Json Methods
 } // namespace detail
 

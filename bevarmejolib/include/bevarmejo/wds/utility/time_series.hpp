@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 
 #include "bevarmejo/wds/utility/global_times.hpp"
 

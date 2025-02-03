@@ -2,11 +2,10 @@
 #include <string>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/string.hpp"
 
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/string_manip.hpp"
+#include "bevarmejo/io/json.hpp"
 
 #include "key.hpp" 
 
@@ -83,7 +82,32 @@ const std::string& Key::operator[](std::size_t alt) const
     return m__values[alt];
 }
 
-bool Key::exists_in(const json_o &j) const {
+std::string Key::as_camel_case(std::size_t alt) const
+{
+    return bevarmejo::sentence_case_to_camel_case(this->operator[](alt));
+}
+
+std::string Key::as_kebab_case(std::size_t alt) const
+{
+    return bevarmejo::sentence_case_to_kebab_case(this->operator[](alt));
+}
+
+std::string Key::as_pascal_case(std::size_t alt) const
+{
+    return bevarmejo::sentence_case_to_pascal_case(this->operator[](alt));
+}
+
+std::string Key::as_sentence_case(std::size_t alt) const
+{
+    return this->operator[](alt);
+}
+
+std::string Key::as_snake_case(std::size_t alt) const
+{
+    return bevarmejo::sentence_case_to_snake_case(this->operator[](alt));
+}
+
+bool Key::exists_in(const Json &j) const {
     
     for (const auto &key : *this) 
         if (j.contains(key))
@@ -104,6 +128,81 @@ Key::const_iterator Key::end() const { return const_iterator(this, n_alternative
 
 Key::style Key::get_out_style() { return default_style; }
 
+bool Key::operator==(const std::string &s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key == s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Key::operator==(const std::string_view &s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key == s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Key::operator==(const char *s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key == s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Key::operator<(const std::string &s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key < s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Key::operator<(const std::string_view &s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key < s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Key::operator<(const char *s) const
+{
+    for (const auto &key : *this)
+    {
+        if (key < s)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+// Iterators
 Key::const_iterator::const_iterator(const Key* key, std::size_t index) : 
     m__key{key}, m__index{index}
 { }
@@ -117,23 +216,23 @@ Key::const_iterator::value_type Key::const_iterator::operator*() const
 
     if (ver == 0)
     {
-        return m__key->get<style::CamelCase>(alt);
+        return m__key->as_camel_case(alt);
     }
     else if (ver == 1)
     {
-        return m__key->get<style::KebabCase>(alt);
+        return m__key->as_kebab_case(alt);
     }
     else if (ver == 2)
     {
-        return m__key->get<style::PascalCase>(alt);
+        return m__key->as_pascal_case(alt);
     }
     else if (ver == 3)
     {
-        return m__key->get<style::SentenceCase>(alt);
+        return m__key->as_sentence_case(alt);
     }
     else if (ver == 4)
     {
-        return m__key->get<style::SnakeCase>(alt);
+        return m__key->as_snake_case(alt);
     }
     else
     {
@@ -176,7 +275,7 @@ bool Key::const_iterator::operator!=(const Key::const_iterator& other) const
 
 namespace bevarmejo::io::json::detail {
 
-json_o& hjm::from(json_o &j) const
+Json& hjm::from(Json &j) const
 {
     for (const auto &key : m__key)
     {
@@ -193,7 +292,7 @@ json_o& hjm::from(json_o &j) const
     );
 }
 
-const json_o& hjm::from(const json_o &j) const
+const Json& hjm::from(const Json &j) const
 {    
     for (const auto &key : m__key)
     {

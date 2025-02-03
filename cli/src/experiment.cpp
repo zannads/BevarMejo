@@ -19,18 +19,16 @@ namespace fsys = std::filesystem;
 #include <pagmo/algorithm.hpp>
 #include <pagmo/population.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
-#include "bevarmejo/io/labels.hpp"
-#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
 #include "bevarmejo/io/keys/bemeexp.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
+#include "bevarmejo/io/labels.hpp"
+#include "bevarmejo/io/streams.hpp"
 
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/library_metadata.hpp"
-#include "bevarmejo/utility/string_manip.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/metadata.hpp"
+#include "bevarmejo/utility/string.hpp"
 
 #include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
@@ -83,12 +81,12 @@ Experiment::Experiment(const fsys::path &settings_file) :
     file.close();
 
     // For now, I only implement the JSON file format.
-    json_o jinput;
+    Json jinput;
     if (settings_file.extension() == io::other::ext__json) 
     {   
         try
         {
-            jinput = json_o::parse(file_contents);
+            jinput = Json::parse(file_contents);
         }
         catch (const std::exception& e)
         {
@@ -115,11 +113,11 @@ Experiment::Experiment(const fsys::path &settings_file) :
     build(jinput);
 }
 
-void Experiment::build(const json_o &jinput)
+void Experiment::build(const Json &jinput)
 {
     // Upload the settings or the fields that can change the behavior of the construction of the experiment (e..g, lookup paths)
     if (io::key::settings.exists_in(jinput)) {
-        const json_o &jsettings = io::json::extract(io::key::settings).from(jinput);
+        const Json &jsettings = io::json::extract(io::key::settings).from(jinput);
         
         // Key outf_pretty, aka "Output file enable indent".
         // When boolean, false deactives the indent, true activates it with a default value of 4.
@@ -146,7 +144,7 @@ void Experiment::build(const json_o &jinput)
 
     if (io::key::lookup_paths.exists_in(jinput))
     {
-        const json_o &jpaths = io::json::extract(io::key::lookup_paths).from(jinput);
+        const Json &jpaths = io::json::extract(io::key::lookup_paths).from(jinput);
 
         auto add_if_valid_path = [](const fsys::path &p, std::vector<fsys::path> &lookup_paths) {
             if (fsys::exists(p) && fsys::is_directory(p))
@@ -176,7 +174,7 @@ void Experiment::build(const json_o &jinput)
     m__lookup_paths.push_back(fsys::current_path());
 
     // Check that the settings file has the required fields
-    auto check_mandatory_field = [](const io::Key &key, const json_o &j) {
+    auto check_mandatory_field = [](const io::Key &key, const Json &j) {
         if (key.exists_in(j)) {
             return;
         }
@@ -191,8 +189,8 @@ void Experiment::build(const json_o &jinput)
     check_mandatory_field(io::key::name, jinput);
     m__name = io::json::extract(io::key::name).from(jinput).get<std::string>();
 
-    json_o typconfig{};
-    json_o specs{};
+    Json typconfig{};
+    Json specs{};
     std::size_t rand_starts = 1;
 
     if (io::key::typconfig.exists_in(jinput))
@@ -222,12 +220,12 @@ void Experiment::build(const json_o &jinput)
 
 }
 
-void Experiment::build_island(const json_o &config)
+void Experiment::build_island(const Json &config)
 {
     // Construct a pagmo::population
     // Population, its size and the generations are mandatory. 
     // Seed, report gen are optional. 
-    auto check_mandatory_field = [](const io::Key &key, const json_o &j) {
+    auto check_mandatory_field = [](const io::Key &key, const Json &j) {
         if (key.exists_in(j)) {
             return;
         }
@@ -247,12 +245,12 @@ void Experiment::build_island(const json_o &config)
     const auto& genz = io::json::extract(io::key::generations).from(jpop);
 
     check_mandatory_field(io::key::algorithm, config);
-    json_o jalgo = io::json::extract(io::key::algorithm).from(config);
+    Json jalgo = io::json::extract(io::key::algorithm).from(config);
 
     // the algorithms need to know how many generations to report because the island calls the evolve method n times
     // until n*__report_gen > __generations, default = __generations
     //  m__settings.n_evolves = 1 unless the user specifies it
-    json_o repgenz{};
+    Json repgenz{};
     if (io::key::repgen.exists_in(jpop))
     {
         repgenz = io::json::extract(io::key::repgen).from(jpop);
@@ -276,14 +274,14 @@ void Experiment::build_island(const json_o &config)
     // for the report gen. Now overwrite the generations in the parameters of the algorithm
     if ( !io::key::params.exists_in(jalgo) )
     {
-        jalgo[io::key::params[0]] = json_o{};
+        jalgo[io::key::params[0]] = Json{};
     }
     io::json::extract(io::key::params).from(jalgo)[io::key::generations[0]] = repgenz;
     
     pagmo::algorithm algo = jalgo.get<pagmo::algorithm>();
 
     // Construct a pagmo::problem
-    json_o jprob = io::json::extract(io::key::problem).from(config);
+    Json jprob = io::json::extract(io::key::problem).from(config);
     // Update it with the extra paths for the lookup
     jprob[io::key::lookup_paths[0]] = m__lookup_paths;
 
@@ -299,7 +297,7 @@ void Experiment::build_island(const json_o &config)
     m__islands_names.push_back(std::to_string(pop.get_seed()));
 }
 
-void Experiment::build_islands(const json_o &typconfig, const json_o &specs, const std::size_t rand_starts)
+void Experiment::build_islands(const Json &typconfig, const Json &specs, const std::size_t rand_starts)
 {
     // At least one between typconfig and specs should be present
     // Random starts must be at least 1
@@ -328,7 +326,7 @@ void Experiment::build_islands(const json_o &typconfig, const json_o &specs, con
 
     for (std::size_t i = 0; i < n_specs; ++i)
     {
-        json_o config = typconfig;
+        Json config = typconfig;
 
         if (!specs.empty())
         {
@@ -413,18 +411,18 @@ void Experiment::prepare_isl_files() const
         auto& isl = *(m__archipelago.begin() + i);
 
         // Add the static information about the island. The dynamic ones will be appended.
-        json_o jstat{};
-        jstat.update( json_o{{io::key::island(), isl}} );
-        jstat.update( json_o{{io::key::algorithm(), isl.get_algorithm()}} );
-        jstat.update( json_o{{io::key::problem(), isl.get_population().get_problem()}} );
-        jstat.update( json_o{{io::key::r_policy(), isl.get_r_policy()}} );
-        jstat.update( json_o{{io::key::s_policy(), isl.get_s_policy()}} );
+        Json jstat{};
+        jstat.update( Json{{io::key::island(), isl}} );
+        jstat.update( Json{{io::key::algorithm(), isl.get_algorithm()}} );
+        jstat.update( Json{{io::key::problem(), isl.get_population().get_problem()}} );
+        jstat.update( Json{{io::key::r_policy(), isl.get_r_policy()}} );
+        jstat.update( Json{{io::key::s_policy(), isl.get_s_policy()}} );
 
         // Add the intial population and the initial dynamic parameters of the objects. 
-        json_o& jout = jstat;
-        jout[io::key::generations()] = json_o::array();
+        Json& jout = jstat;
+        jout[io::key::generations()] = Json::array();
 
-        json_o jcurr_isl_status;
+        Json jcurr_isl_status;
         freeze_isl_runtime_data(jcurr_isl_status, isl);
 
         jout[io::key::generations()].push_back(jcurr_isl_status);
@@ -452,21 +450,21 @@ void Experiment::prepare_exp_file() const {
 
     // Add the information about the experiment.
     
-    json_o jsys;
+    Json jsys;
     // example machine, OS etc ... 
-    json_o jsoft;
+    Json jsoft;
     jsoft[io::key::beme_version()] = bevarmejo::version_str;
 
-    json_o jarchipelago;
+    Json jarchipelago;
     jarchipelago[io::key::topology()] = m__archipelago.get_topology();
 
     // Save the relative name of the islands.
-    jarchipelago[io::key::islands()] = json_o::array();
+    jarchipelago[io::key::islands()] = Json::array();
     for (auto i = 0; i < m__archipelago.size(); ++i)
         jarchipelago[io::key::islands()].push_back(isl_filename(i, /*runtime=*/ true).filename().string());
 
     // Save the file
-    json_o jout = {
+    Json jout = {
         {io::key::system(), jsys},
         {io::key::archi(), jarchipelago},
         {io::key::software(), jsoft},
@@ -481,20 +479,20 @@ void Experiment::prepare_exp_file() const {
     ofs.close();
 }
 
-void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl) const
+void Experiment::freeze_isl_runtime_data(Json &jout, const pagmo::island &isl) const
 {
     std::string currtime = bevarmejo::now_as_str();
 
     const pagmo::population pop = isl.get_population();
     // 2.1 Mandatory info: time, fitness evaulations 
-    json_o jcgen = {
+    Json jcgen = {
         {io::key::fevals(), pop.get_problem().get_fevals()},
         {io::key::ctime(), currtime},
-        {io::key::individuals(), json_o::array()}
+        {io::key::individuals(), Json::array()}
     };
 
     // 2.2 Mandatory info, the population's individuals
-    json_o &jinds = jcgen[io::key::individuals()];
+    Json &jinds = jcgen[io::key::individuals()];
     auto population_ids = pop.get_ID();
     auto pop_dvs        = pop.get_x();
     auto pop_fitnesses  = pop.get_f();
@@ -521,7 +519,7 @@ void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl)
     anymore.
 
 
-    auto append_dynamic_info = [](json_o &jdyn, auto pagmo_container) {
+    auto append_dynamic_info = [](Json &jdyn, auto pagmo_container) {
         auto jinfo = io::json::dynamic_descr(pagmo_container);
         if ( !jinfo.empty() ) jdyn.update(jinfo);
     };
@@ -536,7 +534,7 @@ void Experiment::freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl)
 void Experiment::append_isl_runtime_data(const pagmo::island &isl, const fsys::path &isl_filen) const
 {
     // Open the file, append the new data, close the file.
-    json_o jcurr_isl_status;
+    Json jcurr_isl_status;
     freeze_isl_runtime_data(jcurr_isl_status, isl);
     
     std::ofstream ofs(isl_filen, std::ios::app);
@@ -576,13 +574,13 @@ void Experiment::finalise_isl_files() const
         // The data was saved in JSONL format, so I have to read it line by line.
         // The first one is the static data, all the others are the dynamic data
         // and we just need to append them to the array of the "generations" key.
-        json_o jdata;
+        Json jdata;
         std::string line;
         while (line.empty() && !rnt_file.eof())
             std::getline(rnt_file, line);
         
         // Just check that the "generations" key is present (we trust that the file is well formatted).
-        jdata = json_o::parse(line);
+        jdata = Json::parse(line);
         beme_throw_if(!io::key::generations.exists_in(jdata), std::runtime_error,
             "Impossible to finalise the runtime file for the island.",
             "The runtime file for the island does not contain the generations key.",
@@ -596,7 +594,7 @@ void Experiment::finalise_isl_files() const
             if (line.empty()) continue;
 
             // We trust that the file is well formatted, so we just append the line to the generations key.
-            jdata[io::key::generations()].push_back(json_o::parse(line));    
+            jdata[io::key::generations()].push_back(Json::parse(line));    
         }
 
         rnt_file.close();
@@ -639,7 +637,7 @@ void Experiment::finalise_exp_file() const
             "File : ", exp_filename().string());
     }
 
-    json_o jdata = json_o::parse(exp_file);
+    Json jdata = Json::parse(exp_file);
     exp_file.close();
 
     if (!io::key::archi.exists_in(jdata))
@@ -651,7 +649,7 @@ void Experiment::finalise_exp_file() const
             "File : ", exp_filename().string());
     }
 
-    json_o &jarchi = io::json::extract(io::key::archi).from(jdata);
+    Json &jarchi = io::json::extract(io::key::archi).from(jdata);
 
     if (!io::key::islands.exists_in(jarchi))
     {
@@ -662,9 +660,9 @@ void Experiment::finalise_exp_file() const
             "File : ", exp_filename().string());
     }
 
-    json_o &jislands = io::json::extract(io::key::islands).from(jarchi);
-    json_o jislands_old = jislands;
-    jislands = json_o::array();
+    Json &jislands = io::json::extract(io::key::islands).from(jarchi);
+    Json jislands_old = jislands;
+    jislands = Json::array();
 
     for (auto i = 0; i < m__archipelago.size(); ++i)
     {

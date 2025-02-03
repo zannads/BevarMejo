@@ -7,7 +7,7 @@
 
 #include "epanet2_enums.h"
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 #include "bevarmejo/wds/utility/quantity_series.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 

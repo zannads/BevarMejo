@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 
 #include "bevarmejo/utility/epanet/time.hpp"
 

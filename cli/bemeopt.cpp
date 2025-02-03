@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "bevarmejo/cli_settings.hpp"
-#include "bevarmejo/utility/bemexcept.hpp"
+#include "bevarmejo/utility/except.hpp"
 #include "bevarmejo/experiment.hpp"
 #include "bevarmejo/parsers.hpp"
 

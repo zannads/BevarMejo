@@ -9,8 +9,7 @@ namespace fsys = std::filesystem;
 #include <utility>
 #include <vector>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
+#include "bevarmejo/io/json.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
@@ -62,7 +61,7 @@ private:
 // (constructor)
 public:
     Problem();
-    Problem(const json_o& settings, const std::vector<fsys::path>& lookup_paths);
+    Problem(const Json& settings, const std::vector<fsys::path>& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
 

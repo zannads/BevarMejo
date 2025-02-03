@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/bemexcept.hpp"
-#include "bevarmejo/utility/bememory.hpp"
+#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/memory.hpp"
 
 #include "bevarmejo/utility/registry_users.ipp"
 
