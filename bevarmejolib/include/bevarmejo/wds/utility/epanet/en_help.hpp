@@ -8,7 +8,7 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 
 namespace bevarmejo {
 namespace epanet {

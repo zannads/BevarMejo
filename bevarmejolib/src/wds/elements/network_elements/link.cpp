@@ -6,7 +6,7 @@
 
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 
 #include "bevarmejo/wds/utility/quantity_series.hpp"
 

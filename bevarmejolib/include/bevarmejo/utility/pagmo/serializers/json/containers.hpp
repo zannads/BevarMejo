@@ -12,7 +12,7 @@
 
 #include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 
 // Pagmo objects that can be serialized
 #include "bevarmejo/utility/pagmo/serializers/json/bevarmejo_allowed_objects.hpp"

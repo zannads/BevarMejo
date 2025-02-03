@@ -5,7 +5,7 @@
 
 #include "bevarmejo/io/json.hpp"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 #include "bevarmejo/utility/string.hpp"
 
 namespace bevarmejo::io

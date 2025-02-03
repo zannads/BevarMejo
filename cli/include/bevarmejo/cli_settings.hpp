@@ -7,7 +7,7 @@ namespace fsys = std::filesystem;
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 #include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo {

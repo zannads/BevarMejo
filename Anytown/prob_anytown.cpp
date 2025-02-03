@@ -19,7 +19,7 @@ namespace fsys = std::filesystem;
 #include <pagmo/population.hpp>
 #include <pagmo/island.hpp>
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 #include "bevarmejo/io/aliased_key.hpp"
 #include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/io/json.hpp"

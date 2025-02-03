@@ -3,7 +3,7 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 
 #include "bevarmejo/wds/element.hpp"
 #include "bevarmejo/wds/elements/network_element.hpp"

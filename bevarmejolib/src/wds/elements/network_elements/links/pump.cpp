@@ -6,7 +6,7 @@
 
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 
 #include "bevarmejo/wds/elements/pattern.hpp"
 #include "bevarmejo/wds/elements/curve.hpp"

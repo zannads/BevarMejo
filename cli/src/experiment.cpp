@@ -26,7 +26,7 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
 
-#include "bevarmejo/utility/except.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
 #include "bevarmejo/utility/metadata.hpp"
 #include "bevarmejo/utility/string.hpp"
 
