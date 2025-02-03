@@ -35,9 +35,10 @@ void Curve::retrieve_EN_index()
     m__en_index = 0;
     int index = 0;
     int errorcode = EN_getcurveindex(m__wds.ph(), m__name.c_str(), &index);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the index of the curve.",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API.",
         "Curve ID: ", m__name);
         
     m__en_index = index;

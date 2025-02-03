@@ -105,10 +105,10 @@ void Node::retrieve_EN_index()
 
     m__en_index = 0;
     int index = 0;
-    int errorcode = EN_getnodeindex(m__wds.ph(), m__name.c_str(), &index);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    int errorcode = EN_getnodeindex(m__wds.ph(), (m__name+"a").c_str(), &index);
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the index of the node.",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API.",
         "Node ID: ", m__name);
 
     m__en_index = index;
@@ -131,10 +131,9 @@ void Node::__retrieve_EN_properties()
     double x=0,
            y=0;
     int errorcode = EN_getcoord(ph, m__en_index, &x, &y);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the node.",
         "Error while retrieving coordinates.",
-        "Error code: ", errorcode,
         "Node ID: ", m__name);
 
     if (ph->parser.Unitsflag == US) {
@@ -146,10 +145,9 @@ void Node::__retrieve_EN_properties()
 
     double z = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_ELEVATION, &z);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the node.",
-        "Error while retrieving value: EN_ELEVATION",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_ELEVATION",
         "Node ID: ", m__name);
     
     if (ph->parser.Unitsflag == US)
@@ -174,10 +172,9 @@ void Node::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the node.",
-        "Error while retrieving value: EN_HEAD",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_HEAD",
         "Node ID: ", m__name);
         
     if (ph->parser.Unitsflag == US)
@@ -185,10 +182,9 @@ void Node::__retrieve_EN_results()
     m__head.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_PRESSURE, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the node.",
-        "Error while retrieving value: EN_PRESSURE",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_PRESSURE",
         "Node ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)

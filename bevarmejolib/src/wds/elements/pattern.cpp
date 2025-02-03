@@ -42,9 +42,9 @@ void Pattern::retrieve_EN_index()
     m__en_index = 0;
     int index = 0;
     int errorcode = EN_getpatternindex(m__wds.ph(), m__name.c_str(), &index);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the index of the pattern.",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API",
         "Pattern ID: ", m__name);
     
     m__en_index = index;
@@ -57,10 +57,9 @@ void Pattern::retrieve_EN_properties()
 
     int len = 0;
     int errorcode = EN_getpatternlen(m__wds.ph(), m__en_index, &len);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of pattern.",
-        "Error while retrieving the length of the pattern.",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving the length of the pattern.",
         "Pattern ID: ", m__name);
     
     m__multipliers.clear();
@@ -71,13 +70,12 @@ void Pattern::retrieve_EN_properties()
     for(int i = 1; i <= len; ++i)
     {
         errorcode = EN_getpatternvalue(m__wds.ph(), m__en_index, i, &val);
-        beme_throw_if(errorcode > 100, std::runtime_error,
+        beme_throw_if_EN_error(errorcode,
             "Impossible to retrieve the properties of pattern.",
-            "Error while retrieving the value of the pattern.",
-            "Error code: ", errorcode,
+            "Error originating from the EPANET API while retrieving the value of the pattern.",
             "Pattern ID: ", m__name,
-            "Position: ", i,
-            "Length: ", len);
+            "\n    Position: ", i,
+            " Length: ", len);
             
         m__multipliers.push_back(val);
     }

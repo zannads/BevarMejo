@@ -68,10 +68,9 @@ void Source::__retrieve_EN_results()
 
     double val = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the source.",
-        "Error while retrieving value: EN_DEMAND",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_DEMAND",
         "Source ID: ", m__name);
     
     if (ph->parser.Flowflag != LPS)
@@ -79,10 +78,9 @@ void Source::__retrieve_EN_results()
     m__inflow.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_HEAD, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the source.",
-        "Error while retrieving value: EN_HEAD",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_HEAD",
         "Source ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)

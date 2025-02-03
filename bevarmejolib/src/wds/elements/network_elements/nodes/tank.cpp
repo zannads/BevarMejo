@@ -89,10 +89,9 @@ void Tank::__retrieve_EN_properties()
 
     double val = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DIAMETER, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_DIAMETER",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_DIAMETER",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -100,10 +99,9 @@ void Tank::__retrieve_EN_properties()
     m__diameter = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MINVOLUME, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_MINVOLUME",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_MINVOLUME",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -111,10 +109,9 @@ void Tank::__retrieve_EN_properties()
     m__min_volume = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MINLEVEL, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_MINLEVEL",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_MINLEVEL",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -122,10 +119,9 @@ void Tank::__retrieve_EN_properties()
     m__min_level = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MAXLEVEL, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_MAXLEVEL",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_MAXLEVEL",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -133,20 +129,18 @@ void Tank::__retrieve_EN_properties()
     m__max_level = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_CANOVERFLOW, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_CANOVERFLOW",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_CANOVERFLOW",
         "Tank ID: ", m__name);
 
     // DIMLESS
     m__can_overflow = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKLEVEL, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_TANKLEVEL",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_TANKLEVEL",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -171,10 +165,9 @@ void Tank::__retrieve_EN_properties()
 
     // Assign Read-only properties (Results but not really).
     errorcode = EN_getnodevalue(ph, m__en_index, EN_INITVOLUME, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_INITVOLUME",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_INITVOLUME",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -182,10 +175,9 @@ void Tank::__retrieve_EN_properties()
     m__initial_volume = val;
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_MAXVOLUME, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the tank.",
-        "Error while retrieving value: EN_MAXVOLUME",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_MAXVOLUME",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -210,10 +202,9 @@ void Tank::__retrieve_EN_results()
 
     double val;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKLEVEL, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the tank.",
-        "Error while retrieving value: EN_TANKLEVEL",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_TANKLEVEL",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -221,10 +212,9 @@ void Tank::__retrieve_EN_results()
     m__level.commit(t, val);
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_TANKVOLUME, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the tank.",
-        "Error while retrieving value: EN_TANKVOLUME",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_TANKVOLUME",
         "Tank ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)

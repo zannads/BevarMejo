@@ -184,26 +184,23 @@ void Junction::__retrieve_EN_results()
     // in DemandFlow. (See epanet.c get_nodvalue(EN_DEMAND) for more details).
     double consumed = 0.0;
     int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &consumed);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the junction.",
-        "Error while retrieving value: EN_DEMAND",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_DEMAND",
         "Junction ID: ", m__name);
     
     double undeliv = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMANDDEFICIT, &undeliv);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the junction.",
-        "Error while retrieving value: EN_DEMANDDEFICIT",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_DEMANDDEFICIT",
         "Junction ID: ", m__name);
 
     double emitter_flow = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_EMITTERFLOW, &emitter_flow);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the junction.",
-        "Error while retrieving value: EN_EMITTERFLOW",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_EMITTERFLOW",
         "Junction ID: ", m__name);
     
     // If a Junction with a demand is experiencing a negative head with a DDA,

@@ -64,9 +64,9 @@ struct ExceptionThrower
             io::stream_out(oss, "\n  why: ", why_str);
 
         if constexpr (sizeof...(Args) > 0)
-            io::stream_out(oss, "\n  ", std::forward<Args>(args)...);
+            io::stream_out(oss, "\n    ", std::forward<Args>(args)...);
 
-        io::stream_out(oss, "\n");
+        io::stream_out(oss, "\n    "); // 4 additional spaces to create more indentation on the EPANET error message.
 
         throw Exception(errorcode, oss.str());
     }

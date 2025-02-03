@@ -92,28 +92,25 @@ void Pump::__retrieve_EN_properties()
 
     double val = 0.0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_INITSETTING, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the pump.",
-        "Error while retrieving value: EN_INITSETTING",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_INITSETTING",
         "Pump ID: ", m__name);
 
     m__init_setting = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_POWER, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the pump.",
-        "Error while retrieving value: EN_PUMP_POWER",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_PUMP_POWER",
         "Pump ID: ", m__name);
 
     m__power_rating = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_ECOST, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the pump.",
-        "Error while retrieving value: EN_PUMP_ECOST",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_PUMP_ECOST",
         "Pump ID: ", m__name);
 
     m__energy_cost = val;
@@ -174,28 +171,25 @@ void Pump::__retrieve_EN_results()
 
     double val;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_ENERGY, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the pump.",
-        "Error while retrieving value: EN_ENERGY",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_ENERGY",
         "Pump ID: ", m__name);
 
     m__instant_energy.commit(t, val);
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_STATUS, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the pump.",
-        "Error while retrieving value: EN_STATUS",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_STATUS",
         "Pump ID: ", m__name);
 
     m__state.commit(t, static_cast<int>(val));
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_PUMP_EFFIC, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the pump.",
-        "Error while retrieving value: EN_PUMP_EFFIC",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_PUMP_EFFIC",
         "Pump ID: ", m__name);
 
     m__efficiency.commit(t, val);

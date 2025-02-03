@@ -63,10 +63,9 @@ void DimensionedLink::__retrieve_EN_properties()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_DIAMETER, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_DIAMETER",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_DIAMETER",
         "Link ID: ", m__name);
 
     if (ph->parser.Unitsflag == US)
@@ -74,40 +73,36 @@ void DimensionedLink::__retrieve_EN_properties()
     m__diameter = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_ROUGHNESS, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_ROUGHNESS",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_ROUGHNESS",
         "Link ID: ", m__name);
         
     // for now only HW coeff is supported
     m__roughness = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_MINORLOSS, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_MINORLOSS",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_MINORLOSS",
         "Link ID: ", m__name);
     
     // DIMLESS
     m__minor_loss = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_KBULK, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_KBULK",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_KBULK",
         "Link ID: ", m__name);
     
     // for now I don't care about this
     m__bulk_coeff = val;
 
     errorcode = EN_getlinkvalue(ph, m__en_index, EN_KWALL, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_KWALL",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_KWALL",
         "Link ID: ", m__name);
     
     // for now I don't care about this
@@ -131,10 +126,9 @@ void DimensionedLink::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_VELOCITY, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the link.",
-        "Error while retrieving value: EN_VELOCITY",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_VELOCITY",
         "Link ID: ", m__name);
         
     // Before saving I need to conver it to m/s

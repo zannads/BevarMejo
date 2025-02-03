@@ -60,9 +60,9 @@ void Link::retrieve_EN_index()
 
     int en_index = 0;
     int errorcode = EN_getlinkindex(m__wds.ph(), m__name.c_str(), &en_index);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the index of the link.",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API.",
         "Link ID: ", m__name);
 
     m__en_index = en_index;
@@ -85,10 +85,9 @@ void Link::__retrieve_EN_properties()
     // get the initial status
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_INITSTATUS, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_INITSTATUS",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_INITSTATUS",
         "Link ID: ", m__name);
 
     m__initial_status = val;
@@ -97,10 +96,9 @@ void Link::__retrieve_EN_properties()
     int node_from_idx= 0;
     int node_to_idx= 0;
     errorcode = EN_getlinknodes(ph, this->m__en_index, &node_from_idx, &node_to_idx);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the link.",
-        "Error while retrieving value: EN_INITSTATUS",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_INITSTATUS",
         "Link ID: ", m__name);
 
     // Install the link between the nodes
@@ -125,10 +123,9 @@ void Link::__retrieve_EN_results()
 
     double val = 0;
     int errorcode = EN_getlinkvalue(ph, m__en_index, EN_FLOW, &val);
-    beme_throw_if(errorcode > 100, std::runtime_error,
+    beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the results of the link.",
-        "Error while retrieving value: EN_FLOW",
-        "Error code: ", errorcode,
+        "Error originating from the EPANET API while retrieving value: EN_FLOW",
         "Link ID: ", m__name);
     
     if (ph->parser.Flowflag != LPS)
