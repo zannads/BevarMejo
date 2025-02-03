@@ -105,7 +105,7 @@ void Node::retrieve_EN_index()
 
     m__en_index = 0;
     int index = 0;
-    int errorcode = EN_getnodeindex(m__wds.ph(), (m__name+"a").c_str(), &index);
+    int errorcode = EN_getnodeindex(m__wds.ph(), m__name.c_str(), &index);
     beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the index of the node.",
         "Error originating from the EPANET API.",
