@@ -174,18 +174,6 @@ void Experiment::build(const Json &jinput)
     // Final lookup path is always the current directory.
     m__lookup_paths.push_back(fsys::current_path());
 
-    // Check that the settings file has the required fields
-    auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j) {
-        if (key.exists_in(j)) {
-            return;
-        }
-
-        beme_throw(std::runtime_error,
-            "Error parsing the settings file.",
-            "Settings file does not contain a mandatory field.",
-            "Missing field : ", key[0]);
-    };
-
     // as of now name is a mandatory field
     check_mandatory_field(io::key::name, jinput);
     m__name = jinput.at(io::key::name.as_in(jinput)).get<std::string>();
@@ -210,18 +198,6 @@ void Experiment::build_island(const Json &config)
     // Construct a pagmo::population
     // Population, its size and the generations are mandatory. 
     // Seed, report gen are optional. 
-    auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j) {
-        if (key.exists_in(j)) {
-            return;
-        }
-
-        beme_throw(std::runtime_error,
-            "Error parsing the settings file.",
-            "Settings file does not contain a mandatory field.",
-            "Missing field : ", key[0]
-        );
-    };
-
     check_mandatory_field(io::key::population, config);
     const auto& jpop = config.at(io::key::population.as_in(config));
 

@@ -325,3 +325,7 @@ public:
 };
 
 }  // namespace bevarmejo::io
+
+// Helper macro to check for mandatory fields in the settings file.
+#define check_mandatory_field(key, j)\
+    beme_throw_if(!key.exists_in(j), std::runtime_error, "Error extracting the required data.", "The JSON object does not contain the mandatory field.", "Missing field : ", key())

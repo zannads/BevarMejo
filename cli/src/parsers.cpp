@@ -161,17 +161,6 @@ bevarmejo::Simulation parse(int argc, char *argv[])
         }
 
         // 1.3.2 mandatory keys first: dv, udp
-        auto check_mandatory_field = [](const io::AliasedKey &key, const Json &j){
-            if (key.exists_in(j)) {
-                return;
-            }
-
-            beme_throw(std::runtime_error,
-                "Error parsing the simulation settings file.",
-                "Settings file does not contain a mandatory field.",
-                "Missing field : ", key[0]);
-        };
-
         check_mandatory_field(io::key::dv, j);
         check_mandatory_field(io::key::problem, j);
 
