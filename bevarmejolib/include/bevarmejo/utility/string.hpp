@@ -24,6 +24,18 @@ inline std::string now_as_str()
 
 namespace detail
 {
+// Bevarmejo library text cases.
+enum class text_case : std::size_t
+{
+    SentenceCase = 0,
+    CamelCase = 1,
+    KebabCase = 2,
+    PascalCase = 3,
+    SnakeCase = 4
+};
+// The number of cases bevarmejo library handles. (Sentence, Camel, Snake, Kebab, Pascal) 
+constexpr std::size_t n_text_cases = 5;
+
 // Helper class to hold a compile-time string of length N (including '\0').
 // This lets us do transformations in constexpr code without std::string.
 template <std::size_t N>
