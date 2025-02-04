@@ -49,31 +49,31 @@ struct adl_serializer<pagmo::nsga2>
             const auto tokens = bevarmejo::split(kv, ':');
             const std::string& key = tokens[0];
 
-            if (key == bevarmejo::io::key::detail::cr[0])
+            if (key == bevarmejo::io::key::detail::cr.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::cr()] = std::stod(tokens[1]);
             }
-            else if (key == bevarmejo::io::key::detail::eta_c[0])
+            else if (key == bevarmejo::io::key::detail::eta_c.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::eta_c()] = std::stod(tokens[1]);
             }
-            else if (key == bevarmejo::io::key::detail::m[0])
+            else if (key == bevarmejo::io::key::detail::m.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::m()] = std::stod(tokens[1]);
             }
-            else if (key == bevarmejo::io::key::detail::eta_m[0])
+            else if (key == bevarmejo::io::key::detail::eta_m.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::eta_m()] = std::stod(tokens[1]);
             }
-            else if (key == bevarmejo::io::key::detail::seed[0])
+            else if (key == bevarmejo::io::key::detail::seed.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::seed()] = std::stoull(tokens[1]); 
             }
-            else if (key == bevarmejo::io::key::detail::verbosity[0])
+            else if (key == bevarmejo::io::key::detail::verbosity.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::detail::verbosity()] = std::stoul(tokens[1]);
             }
-            else if (key == bevarmejo::io::key::generations[0])
+            else if (key == bevarmejo::io::key::generations.as<bevarmejo::detail::text_case::SentenceCase>())
             {
                 j[bevarmejo::io::key::generations()] = std::stoul(tokens[1]);
             }

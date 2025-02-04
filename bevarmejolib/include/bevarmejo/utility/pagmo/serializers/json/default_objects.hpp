@@ -46,7 +46,7 @@ struct adl_serializer<pagmo::thread_island>
         extra_info.erase(std::remove(extra_info.begin(), extra_info.end(), '\t'), extra_info.end());
         auto tokens = bevarmejo::split(extra_info, ':');
         assert(tokens.size() == 2);
-        assert(tokens[0] == bevarmejo::io::key::detail::pool_flag[0]);
+        assert(tokens[0] == bevarmejo::io::key::detail::pool_flag.as<bevarmejo::detail::text_case::SentenceCase>());
 
         j[bevarmejo::io::key::detail::pool_flag()] = (tokens[1] == " yes") ? true : false; // space is there too
     }
@@ -81,7 +81,7 @@ struct adl_serializer<pagmo::fair_replace>
         auto tokens = bevarmejo::split(extra_info, ':');
         assert(tokens.size() == 2);
 
-        if (tokens[0] == bevarmejo::io::key::detail::abs_mig_rate[0])
+        if (tokens[0] == bevarmejo::io::key::detail::abs_mig_rate.as<bevarmejo::detail::text_case::SentenceCase>())
         {
             j[bevarmejo::io::key::detail::abs_mig_rate()] = std::stoi(tokens[1]);
         } else /* if (tokens[0] == "Fractional migration rate") */
@@ -114,7 +114,7 @@ struct adl_serializer<pagmo::select_best>
         auto tokens = bevarmejo::split(extra_info, ':');
         assert(tokens.size() == 2);
 
-        if (tokens[0] == bevarmejo::io::key::detail::abs_mig_rate[0])
+        if (tokens[0] == bevarmejo::io::key::detail::abs_mig_rate.as<bevarmejo::detail::text_case::SentenceCase>())
         {
             j[bevarmejo::io::key::detail::abs_mig_rate()] = std::stoi(tokens[1]);
         } else /* if (tokens[0] == "Fractional migration rate") */

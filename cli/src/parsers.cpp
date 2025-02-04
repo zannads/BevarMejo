@@ -168,7 +168,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
 
         // 1.5 build the problem
         Json jproblem = j.at(io::key::problem.as_in(j));
-        jproblem[io::key::lookup_paths[0]] = simu.lookup_paths;
+        jproblem[io::key::lookup_paths()] = simu.lookup_paths;
         simu.p = jproblem.get<pagmo::problem>();
 
         // 1.6 optional keys that don't change the behavior of the simulation

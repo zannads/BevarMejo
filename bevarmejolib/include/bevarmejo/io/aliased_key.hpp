@@ -113,17 +113,6 @@ public:
         }
     }
 
-    // Alternative value of the AliasedKey in Sentence style.
-    const std::string& operator[](std::size_t alt) const
-    {
-        beme_throw_if(alt >= m__values.size(), std::out_of_range,
-            "Impossible to provide the requested key.",
-            "Index out of range.",
-            "Index : ", alt, 
-            "Size : ", m__values.size()
-        );
-
-        return m__values[alt];
     }
 
     // Get any alternative value of the AliasedKey in the camel style.

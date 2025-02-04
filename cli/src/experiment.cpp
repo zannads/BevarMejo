@@ -238,7 +238,7 @@ void Experiment::build_island(const Json &config)
     Json jprob = config.at(io::key::problem.as_in(config));
     
     // Update it with the extra paths for the lookup
-    jprob[io::key::lookup_paths[0]] = m__lookup_paths;
+    jprob[io::key::lookup_paths()] = m__lookup_paths;
 
     auto p = jprob.get<pagmo::problem>();
     
