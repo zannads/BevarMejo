@@ -71,7 +71,7 @@ message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 # [OPTIONAL] Set the style for the keys in the output file
 # ---------------------------------------------------------------------
 # Define the list of valid styles.
-set(STYLES "CamelCase" "kebab-case" "pascalCase" "Sentence case" "snake_case")
+set(STYLES "Sentence case" "CamelCase" "kebab-case" "pascalCase" "snake_case")
 
 set(OUT_STYLE "snake_case" CACHE STRING "Style for the keys in the output file. Select between: ${STYLES}")
 
