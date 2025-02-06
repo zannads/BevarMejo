@@ -11,59 +11,26 @@
 
 namespace bevarmejo::io
 {
-
-namespace detail
-{
-// Helper function to create a tuple for all the possible version of a given
-// sentence case constexpr string.
-template <std::size_t N>
-inline constexpr auto make_text_cases(const char (&in)[N])
-{
-    return std::make_tuple(
-        bevarmejo::detail::ConstexprString<N>(in),
-        bevarmejo::sentence_case_to_camel_case(in),
-        bevarmejo::sentence_case_to_kebab_case(in),
-        bevarmejo::sentence_case_to_pascal_case(in),
-        bevarmejo::sentence_case_to_snake_case(in)
-    );
-}
-
-} // namespace detail
-
-
-// The AliasedKey object is meant to be a static const global object and defined
-// in the various translation units where they are needed.
-// With the operator() I can access the Sentence value as const references.
-// Same with the operator[] method but with the possibility to access the alternatives.
-// While with the get method I can access the values in the various formats
-// using the template parameter.
+/* The AliasedKey object is meant to be a static const global object and defined
+ * in the various translation units where they are needed.
+ * It is basically a collection of alternative ways in which the user could write
+ * a key in a configuration file.
+ * The user can call a key in the configuration file in one of these alternative
+ * ways.
+ * The programmer writes the keys in Sentence case and with a compilation flag
+ * (defined in the CMake) the key is transformed in the desired style.
+ * The Key is saved in Sentence case and using the magic of constexpr functions
+ * the key is transformed in the desired style at compile time.
+*/
 template <std::size_t... Ns>
 class AliasedKey final
 {
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member types ----------------------------------*/
 /*----------------------------------------------------------------------------*/
-private:
-    // "Data" is a tuple of: ( tupleOfStylesForAlt1, tupleOfStylesForAlt2, ... )
-    // e.g. for 2 alternatives, data_ is:
-    //   std::tuple<
-    //      std::tuple<ConstexprString<N1>, ConstexprString<N1>, ...>,
-    //      std::tuple<ConstexprString<N2>, ConstexprString<N2>, ...>
-    //   >
-    //
-    // Each inner tuple is exactly the result of make_text_cases(...) for that alt.
-    using data_type = std::tuple<decltype(detail::make_text_cases(std::declval<const char(&)[Ns]>() ))... >;
 public:
-    // Count how many alternatives:
-    static constexpr std::size_t n_alternatives = sizeof...(Ns);
-
-    // Count how many styles:
-    static constexpr std::size_t n_styles = bevarmejo::detail::n_text_cases;
-
-    // Count how many total values:
-    static constexpr std::size_t n_versions = n_alternatives * n_styles;
-    static constexpr std::size_t size = n_alternatives * n_styles;
-
+    using styles = bevarmejo::detail::text_case;
+    
     // The output style of the AliasedKeys.
     static constexpr bevarmejo::detail::text_case out_style_t = 
 #if defined(OUT_STYLE_0)
@@ -79,30 +46,40 @@ public:
 #else
     #error "The output style selected is invalid."
 #endif
+    
     static constexpr std::size_t out_style_v = static_cast<std::size_t>(out_style_t);
 
-    using styles = bevarmejo::detail::text_case;
+    // Count how many alternatives:
+    static constexpr std::size_t n_alternatives = sizeof...(Ns);
+
+private:
+    // We store the values in a tuple of Constexpr Strings of different sizes...
+    // Each ConstexprString is the original key in SentenceCase transformed in
+    // the desired style.
+    using data_type = std::tuple<bevarmejo::detail::ConstexprString<Ns>...>;
 
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member objects --------------------------------*/
 /*----------------------------------------------------------------------------*/
 private:
+    data_type m__alternatives;
     data_type m__values;
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
 /*----------------------------------------------------------------------------*/
+// Helper functions ------------------------------------------------------------
+private:
+
 // (constructor)
 public:
     AliasedKey() = delete;
     constexpr AliasedKey(AliasedKey&&) = default;
     constexpr AliasedKey(const AliasedKey&) = default;
-   // Constructor uses a fold expansion to call make_text_cases(...) for each alt:
-    constexpr AliasedKey(const char (&... alts)[Ns]) 
-        : m__values{ detail::make_text_cases(alts)... }
-    {
-        // optional: static_assert all are "sentence-case" if you want a check
-    }
+    constexpr AliasedKey(const char (&... alts)[Ns]) :
+        m__alternatives{ alts... },
+        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString(alts))... }
+    { }
 
 // (destructor)
 public:
@@ -118,46 +95,43 @@ public:
     // Main value of the AliasedKey in the DEFAULT output style.
     constexpr const char* operator()() const
     {
-        return std::get<out_style_v>(std::get<0>(m__values)).c_str();
+        return std::get<0>(m__values).c_str();
     }
 
     // Get any alternative value of the AliasedKey in the desired style.
     template <bevarmejo::detail::text_case Style, std::size_t AltIdx=0>
-    constexpr const char* as() const
+    constexpr auto as() const
     {
         static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
-        static_assert(static_cast<std::size_t>(Style) < n_styles, "The style index is out of bounds.");
 
-        return std::get<static_cast<std::size_t>(Style)>(std::get<AltIdx>(m__values)).c_str();
+        return bevarmejo::detail::sentence_case_to<Style>(std::get<AltIdx>(m__alternatives));
     }
 
 private:
-    template <std::size_t AbsIdx = out_style_v>
+    template <std::size_t AltIdx>
     constexpr const char* at() const
     {
-        static_assert(AbsIdx < size, "The index is out of bounds.");
-        // Calculate the alternative index and the style index.
-        constexpr std::size_t alt_idx = AbsIdx / n_styles;
-        constexpr std::size_t style_idx = AbsIdx % n_styles;
-        return std::get<style_idx>(std::get<alt_idx>(m__values)).c_str();
+        static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
+
+        return std::get<AltIdx>(m__values).c_str();
     }
 
-    template <std::size_t AbsIdx = 0>
-    const char* at_impl_from(std::size_t abs_idx) const
+    template <std::size_t AltIdx>
+    const char* at_impl_from(std::size_t alt_idx) const
     {
-        static_assert(AbsIdx < size, "The index is out of bounds.");
-        beme_throw_if(abs_idx >= size, std::out_of_range,
+        static_assert(AltIdx < n_alternatives, "The index is out of bounds.");
+        beme_throw_if(alt_idx >= n_alternatives, std::out_of_range,
             "Error accessing the AliasedKey values.",
             "The index is out of bounds.",
-            "Index : ", abs_idx, " | Size : ", size);
+            "Index : ", alt_idx, " | Size : ", n_alternatives);
 
-        if (abs_idx == AbsIdx)
+        if (alt_idx == AltIdx)
         {
-            return at<AbsIdx>();
+            return at<AltIdx>();
         }
-        else if constexpr (AbsIdx + 1 < size)
+        else if constexpr (AltIdx + 1 < n_alternatives)
         {
-            return at_impl_from<AbsIdx + 1>(abs_idx);
+            return at_impl_from<AltIdx + 1>(alt_idx);
         }
         else
         {
@@ -167,20 +141,20 @@ private:
 
 // JSON methods ----------------------------------------------------------------
 private:
-    template <std::size_t AbsIdx = out_style_v>
+    template <std::size_t AltIdx = 0>
     std::size_t find_idx_starting_from(const Json &j) const
     {
-        if (j.contains(at<AbsIdx>()))
+        if (j.contains(at<AltIdx>()))
         {
-            return AbsIdx;
+            return AltIdx;
         }
-        else if constexpr (AbsIdx + 1 < size)
+        else if constexpr (AltIdx + 1 < n_alternatives)
         {
-            return find_idx_starting_from<AbsIdx + 1>(j);
+            return find_idx_starting_from<AltIdx + 1>(j);
         }
         else
         {
-            return size;
+            return n_alternatives;
         }
     }
 
@@ -188,7 +162,7 @@ public:
     // Check if the AliasedKey exists in the json object.
     bool exists_in(const Json &j) const
     {
-        return find_idx_starting_from<0>(j) < size;
+        return find_idx_starting_from<0>(j) < n_alternatives;
     }
 
     // Extract the value of the AliasedKey from the json object.
@@ -196,7 +170,7 @@ public:
     {
         std::size_t idx = find_idx_starting_from<0>(j);
 
-        if (idx < size)
+        if (idx < n_alternatives)
         {
             return at_impl_from<0>(idx);
         }

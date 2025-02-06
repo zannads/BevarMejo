@@ -75,11 +75,33 @@ struct ConstexprString
     }
 
     // Convenient size method:
-    constexpr std::size_t size() const
+    static constexpr std::size_t size()
     {
         return N;
     }
+
+    // Compare ConstexprString with std::string
+    bool operator==(const std::string& str) const { return str == c_str(); }
+    bool operator!=(const std::string& str) const { return str != c_str(); }
+    bool operator<(const std::string& str) const { return c_str() < str; }
+    bool operator<=(const std::string& str) const { return c_str() <= str; }
+    bool operator>(const std::string& str) const { return c_str() > str; }
+    bool operator>=(const std::string& str) const { return c_str() >= str; }
 };
+
+// Non-member comparison operators for ConstexprString and std::string:
+template <std::size_t N>
+bool operator==(const std::string& str, const ConstexprString<N>& cs) { return cs == str; }
+template <std::size_t N>
+bool operator!=(const std::string& str, const ConstexprString<N>& cs) { return cs != str; }
+template <std::size_t N>
+bool operator<(const std::string& str, const ConstexprString<N>& cs) { return str < cs.c_str(); }
+template <std::size_t N>
+bool operator<=(const std::string& str, const ConstexprString<N>& cs) { return str <= cs.c_str(); }
+template <std::size_t N>
+bool operator>(const std::string& str, const ConstexprString<N>& cs) { return str > cs.c_str(); }
+template <std::size_t N>
+bool operator>=(const std::string& str, const ConstexprString<N>& cs) { return str >= cs.c_str(); }
 
 // Helper function to convert a ConstexprString in Sentence Case to Camel Case.
 template <std::size_t N>
@@ -176,6 +198,31 @@ inline constexpr ConstexprString<N> sentence_case_to_snake_case(ConstexprString<
         }
     }
     return out;
+}
+
+template <text_case out_style, std::size_t N>
+inline constexpr ConstexprString<N> sentence_case_to(const ConstexprString<N>& in)
+{
+    if constexpr (out_style == text_case::CamelCase)
+    {
+        return sentence_case_to_camel_case(in);
+    }
+    else if constexpr (out_style == text_case::KebabCase)
+    {
+        return sentence_case_to_kebab_case(in);
+    }
+    else if constexpr (out_style == text_case::PascalCase)
+    {
+        return sentence_case_to_pascal_case(in);
+    }
+    else if constexpr (out_style == text_case::SnakeCase)
+    {
+        return sentence_case_to_snake_case(in);
+    }
+    else
+    {
+        return in;
+    }
 }
 
 } // namespace detail
