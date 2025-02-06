@@ -64,7 +64,7 @@ public:
     using container= std::vector<T>;
     using inherited= QuantitySeriesBase;
 
-    using key_type= time_t;
+	using key_type = bevarmejo::time::time_t;
     using value_type= T;
     using instant_type= std::pair<key_type, T&>;
     using const_instant_type= std::pair<key_type, const T&>;

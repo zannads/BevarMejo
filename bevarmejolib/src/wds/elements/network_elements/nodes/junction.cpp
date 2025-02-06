@@ -116,7 +116,7 @@ void Junction::__retrieve_EN_properties()
     int errorcode= EN_getnumdemands(ph, m__en_index, &n_demands);
     assert(errorcode < 100);
 
-    for (std::size_t i= 1; i <= n_demands; ++i) {
+    for (int i= 1; i <= n_demands; ++i) {
         double base_demand= 0.0;
         errorcode= EN_getbasedemand(ph, m__en_index, i, &base_demand);
         assert(errorcode < 100);

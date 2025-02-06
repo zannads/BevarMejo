@@ -1,6 +1,10 @@
 #pragma once
 
+#include <cassert>
+#include <cstring>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 #include "epanet2_2.h"
 
@@ -30,7 +34,7 @@ private:
         char msg[EN_MAXMSG+1 +7]; // +7 for the "EPANET " prefix
         std::strcpy(msg, "EPANET ");
         EN_geterror(errorcode, msg+7, EN_MAXMSG+1);
-        std::cout << msg << std::endl;
+
         return std::string(msg);
     }
 

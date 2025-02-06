@@ -46,7 +46,7 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     int errorcode = EN_createproject(&ph_);
     assert(errorcode<100);
     
-    errorcode = EN_open(ph_, inp_file.c_str(), "", ""); // with '\0' doesn't work. WHy?
+    errorcode = EN_open(ph_, inp_file.string().c_str(), "", ""); // with '\0' doesn't work. WHy?
     if (errorcode>100){
         EN_deleteproject(ph_);
 
@@ -107,7 +107,7 @@ void WaterDistributionSystem::load_EN_time_settings()
 {
     assert(ph_ != nullptr);
 
-    time_t a_time= 0l;
+    epanet::time_t a_time= 0l;
     int errorcode= EN_gettimeparam(ph_, EN_DURATION, &a_time);
     assert(errorcode < 100);
     m__times.duration__s(a_time);
@@ -129,11 +129,11 @@ void WaterDistributionSystem::load_EN_time_settings()
     assert(pstart >= 0);
     assert(pstep > 0);
     
-    time_t curr_t = pstart;
+    epanet::time_t curr_t = pstart;
     if (curr_t == 0)
         curr_t = pstep; // Because I can't commit to a timeSeries starting at 0
 
-    std::vector<time_t> time_steps;
+    std::vector<epanet::time_t> time_steps;
     while (curr_t <= m__times.duration__s())
     {
         time_steps.push_back(curr_t);

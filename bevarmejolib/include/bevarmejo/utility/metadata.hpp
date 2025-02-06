@@ -1,5 +1,12 @@
 #pragma once 
 
+#include <array>
+#include <cerrno>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <tuple>
 
 namespace bevarmejo
 {
