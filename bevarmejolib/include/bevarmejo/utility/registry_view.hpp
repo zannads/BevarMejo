@@ -113,7 +113,7 @@ class RegistryView final : public RegistryViewCore<T, IsMutable>
 private:
     using self_type = RegistryView<T, M, IsMutable>;
     using core_type = RegistryViewCore<T, IsMutable>;
-	using mode_type = typename SubsetMode_traits<M>;
+	using mode_type = SubsetMode_traits<M>;
     using mutable_type = std::bool_constant<IsMutable>;
 public:
     using key_type = typename core_type::key_type;
