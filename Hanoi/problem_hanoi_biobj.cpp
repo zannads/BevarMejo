@@ -38,7 +38,7 @@ Problem::Problem(const Json& settings, const std::vector<fsys::path>& lookup_pat
     assert(settings != nullptr);
 
     // Add here load of problem specific settings.
-    auto inp_filename = bevarmejo::io::locate_file(fsys::path{settings["WDS"]["inp"]}, lookup_paths);
+    auto inp_filename = bevarmejo::io::locate_file(settings["WDS"]["inp"].get<fsys::path>(), lookup_paths);
 
     m_hanoi= std::make_shared<WDS>(inp_filename);
 
