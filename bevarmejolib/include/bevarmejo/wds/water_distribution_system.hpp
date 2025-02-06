@@ -211,24 +211,24 @@ public:
     // Differently from the standard ones, these can not be noexcept because the 
     // user may pass an invalid name for the id_sequence.
     template <typename T>
-    auto subnetwork(const std::string& id_sequence_name) -> RegistryView<T, RVMode::Include, /*IsMutable = */ true>;
+    auto subnetwork(const std::string& id_sequence_name) -> RegistryView<T, SubsetMode::Include, /*IsMutable = */ true>;
     template <typename T>
-    auto subnetwork(const std::string& id_sequence_name) const -> RegistryView<T, RVMode::Include, /*IsMutable = */ false>;
+    auto subnetwork(const std::string& id_sequence_name) const -> RegistryView<T, SubsetMode::Include, /*IsMutable = */ false>;
 
     template <typename T>
-    auto subnetwork_excluding(const std::string& id_sequence_name) -> RegistryView<T, RVMode::Exclude, /*IsMutable = */ true>;
+    auto subnetwork_excluding(const std::string& id_sequence_name) -> RegistryView<T, SubsetMode::Exclude, /*IsMutable = */ true>;
     template <typename T>
-    auto subnetwork_excluding(const std::string& id_sequence_name) const -> RegistryView<T, RVMode::Exclude, /*IsMutable = */ false>;
+    auto subnetwork_excluding(const std::string& id_sequence_name) const -> RegistryView<T, SubsetMode::Exclude, /*IsMutable = */ false>;
 
     template <typename T>
     auto subnetwork_with_order(const ID& id_sequence_name) -> OutputOrderedRegistryView<T>;
     template <typename T>
     auto subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>;
 
-    template <typename T, typename Mode>
-    auto network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, Mode, /*IsMutable = */ true>;
-    template <typename T, typename Mode>
-    auto network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, Mode, /*IsMutable = */ false>;
+    template <typename T, SubsetMode M>
+    auto network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, M, /*IsMutable = */ true>;
+    template <typename T, SubsetMode M>
+    auto network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, M, /*IsMutable = */ false>;
 
     /*--- System's Network Elements ---*/
     // Common interface for all types of elements:
@@ -523,25 +523,25 @@ template <typename T>
 auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) -> OrderedRegistryView<T, true>
 {
     if constexpr (std::is_same_v<T, Node>)
-        return RegistryView<Node, RVMode::OrderedInclude, true>(_nodes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Node, SubsetMode::OrderedInclude, true>(_nodes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Junction>)
-        return RegistryView<Junction, RVMode::OrderedInclude, true>(_junctions_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Junction, SubsetMode::OrderedInclude, true>(_junctions_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Reservoir>)
-        return RegistryView<Reservoir, RVMode::OrderedInclude, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Reservoir, SubsetMode::OrderedInclude, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Tank>)
-        return RegistryView<Tank, RVMode::OrderedInclude, true>(_tanks_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Tank, SubsetMode::OrderedInclude, true>(_tanks_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Link>)
-        return RegistryView<Link, RVMode::OrderedInclude, true>(_links_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Link, SubsetMode::OrderedInclude, true>(_links_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pipe>)
-        return RegistryView<Pipe, RVMode::OrderedInclude, true>(_pipes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pipe, SubsetMode::OrderedInclude, true>(_pipes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pump>)
-        return RegistryView<Pump, RVMode::OrderedInclude, true>(_pumps_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pump, SubsetMode::OrderedInclude, true>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 
@@ -552,83 +552,83 @@ template <typename T>
 auto WaterDistributionSystem::subnetwork_with_order(const ID& id_sequence_name) const -> InputOrderedRegistryView<T>
 {
     if constexpr (std::is_same_v<T, Node>)
-        return RegistryView<Node, RVMode::OrderedInclude, false>(_nodes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Node, SubsetMode::OrderedInclude, false>(_nodes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Junction>)
-        return RegistryView<Junction, RVMode::OrderedInclude, false>(_junctions_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Junction, SubsetMode::OrderedInclude, false>(_junctions_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Reservoir>)
-        return RegistryView<Reservoir, RVMode::OrderedInclude, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Reservoir, SubsetMode::OrderedInclude, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Tank>)
-        return RegistryView<Tank, RVMode::OrderedInclude, false>(_tanks_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Tank, SubsetMode::OrderedInclude, false>(_tanks_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Link>)
-        return RegistryView<Link, RVMode::OrderedInclude, false>(_links_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Link, SubsetMode::OrderedInclude, false>(_links_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pipe>)
-        return RegistryView<Pipe, RVMode::OrderedInclude, false>(_pipes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pipe, SubsetMode::OrderedInclude, false>(_pipes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pump>)
-        return RegistryView<Pump, RVMode::OrderedInclude, false>(_pumps_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pump, SubsetMode::OrderedInclude, false>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 
             "You are trying to get a subnetwork with an invalid type.");
 }
 
-template <typename T, typename Mode>
-auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, Mode, true>
+template <typename T, SubsetMode M>
+auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) -> RegistryView<T, M, true>
 {
     if constexpr (std::is_same_v<T, Node>)
-        return RegistryView<Node, Mode, true>(_nodes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Node, M, true>(_nodes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Junction>)
-        return RegistryView<Junction, Mode, true>(_junctions_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Junction, M, true>(_junctions_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Reservoir>)
-        return RegistryView<Reservoir, Mode, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Reservoir, M, true>(_reservoirs_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Tank>)
-        return RegistryView<Tank, Mode, true>(_tanks_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Tank, M, true>(_tanks_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Link>)
-        return RegistryView<Link, Mode, true>(_links_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Link, M, true>(_links_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pipe>)
-        return RegistryView<Pipe, Mode, true>(_pipes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pipe, M, true>(_pipes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pump>)
-        return RegistryView<Pump, Mode, true>(_pumps_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pump, M, true>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 
             "You are trying to get a subnetwork with an invalid type.");
 }
 
-template <typename T, typename Mode>
-auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, Mode, false>
+template <typename T, SubsetMode M>
+auto WaterDistributionSystem::network_elements_view(const std::string& id_sequence_name) const -> RegistryView<T, M, false>
 {
     if constexpr (std::is_same_v<T, Node>)
-        return RegistryView<Node, Mode, false>(_nodes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Node, M, false>(_nodes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Junction>)
-        return RegistryView<Junction, Mode, false>(_junctions_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Junction, M, false>(_junctions_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Reservoir>)
-        return RegistryView<Reservoir, Mode, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Reservoir, M, false>(_reservoirs_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Tank>)
-        return RegistryView<Tank, Mode, false>(_tanks_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Tank, M, false>(_tanks_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Link>)
-        return RegistryView<Link, Mode, false>(_links_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Link, M, false>(_links_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pipe>)
-        return RegistryView<Pipe, Mode, false>(_pipes_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pipe, M, false>(_pipes_, m__id_sequences.get(id_sequence_name));
 
     else if constexpr (std::is_same_v<T, Pump>)
-        return RegistryView<Pump, Mode, false>(_pumps_, m__id_sequences.get(id_sequence_name));
+        return RegistryView<Pump, M, false>(_pumps_, m__id_sequences.get(id_sequence_name));
 
     else
         static_assert(std::true_type::value, 

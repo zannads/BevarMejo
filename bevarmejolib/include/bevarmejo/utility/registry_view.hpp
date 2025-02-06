@@ -27,20 +27,16 @@ namespace bevarmejo
 
 // Let's start by defining the behaviour of the view, to allow for template 
 // specialization and the type traits.
-namespace RVMode
+enum class SubsetMode
 {
-    struct Exclude {};
-    struct Include {};
-    struct OrderedInclude {};
-}   // namespace RVMode
+	Exclude,
+	Include,
+	OrderedInclude
+};
 
-template <typename T>
-inline constexpr bool is_registry_view_behaviour_v = std::is_same_v<T, RVMode::Exclude> ||
-                                                     std::is_same_v<T, RVMode::Include> ||
-                                                     std::is_same_v<T, RVMode::OrderedInclude>;
-
-// Tuple of the View Modes
-using ViewModes = std::tuple<RVMode::Exclude, RVMode::Include, RVMode::OrderedInclude>;
+// Helper trait for compile-time checks.
+template <SubsetMode M>
+struct SubsetMode_traits : std::integral_constant<SubsetMode, M> {};
 
 // A view needs a reference to the registry (it doesn't make sense without referring to a registry)
 // and a pointer to a UniqueStringSequence that contains the IDs of the elements to include or exclude
@@ -110,17 +106,15 @@ public:
 
 }; // class RegistryViewCore
 
-template <typename T, typename M,
-          bool IsMutable, 
-          typename = std::enable_if_t<is_registry_view_behaviour_v<M>>>
+template <typename T, SubsetMode M, bool IsMutable>
 class RegistryView final : public RegistryViewCore<T, IsMutable>
 {
 /*------- Member types -------*/
 private:
     using self_type = RegistryView<T, M, IsMutable>;
     using core_type = RegistryViewCore<T, IsMutable>;
-    using mode_type = M;
-    using mutable_type = std::integral_constant<bool, IsMutable>;
+	using mode_type = typename SubsetMode_traits<M>;
+    using mutable_type = std::bool_constant<IsMutable>;
 public:
     using key_type = typename core_type::key_type;
     using mapped_type = typename core_type::mapped_type;
@@ -141,12 +135,12 @@ private:
     class OrderedFilterIterator; // For the OrderedInclude mode
 public:
     using iterator = std::conditional_t<
-        std::is_same_v<mode_type, RVMode::OrderedInclude>,
+        (mode_type::value == SubsetMode::OrderedInclude),
         OrderedFilterIterator<self_type>,
         FilterIterator<self_type>
     >;
     using const_iterator = std::conditional_t<
-        std::is_same_v<mode_type, RVMode::OrderedInclude>,
+        (mode_type::value == SubsetMode::OrderedInclude),
         OrderedFilterIterator<const self_type>,
         FilterIterator<const self_type>
     >;
@@ -223,11 +217,11 @@ public:
         // On the other hand, if we are including no element, the size is 0.
         if (this->p__uss.expired() || this->p__uss.lock()->empty())
         {
-            if constexpr (std::is_same_v<mode_type, RVMode::Exclude>)
+			if constexpr (mode_type::value == SubsetMode::Exclude)
             {
                 return this->m__registry.size();
             }
-            else if constexpr (std::is_same_v<mode_type, RVMode::Include>)
+			else if constexpr (mode_type::value == SubsetMode::Include)
             {
                 return 0;
             }
@@ -286,14 +280,14 @@ private:
             i__reg(0),
             i__uss(0)
         {
-            static_assert(std::is_same_v<mode_type, RVMode::Exclude> || std::is_same_v<mode_type, RVMode::Include>,
+            static_assert(mode_type::value == SubsetMode::Exclude || mode_type::value == SubsetMode::Include,
                 "The FilterIterator can only be used with Exclude or Include modes.");
 
             // If the UniqueStringSequence is non-existent or empty, I got to the end
             // iterator for the include mode, and the required iterator for the exclude mode.
             if (p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
             {
-                if constexpr(std::is_same_v<mode_type, RVMode::Exclude>)
+                if constexpr(mode_type::value == SubsetMode::Exclude)
                 {
                     i__reg = index_reg;
                 }
@@ -312,7 +306,7 @@ private:
             for (; index_reg < p__range->m__registry.size(); ++index_reg)
             {
                 bool condition_target = false;
-                if constexpr (std::is_same_v<mode_type, RVMode::Include>)
+                if constexpr (mode_type::value == SubsetMode::Include)
                 {
                     condition_target = true;
                 }
@@ -364,7 +358,7 @@ private:
             // empty.
             if (p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
             {
-                if constexpr(std::is_same_v<mode_type, RVMode::Exclude>)
+                if constexpr(mode_type::value == SubsetMode::Exclude)
                 {
                     assertm(i__reg < p__range->m__registry.size(), "Impossible to increment the iterator. The index is out of range.");
                     ++i__reg;
@@ -389,7 +383,7 @@ private:
                 bool condition_target = false;
                 // On the other hand, in include mode, we stop when we find the
                 // element in the UniqueStringSequence.
-                if constexpr(std::is_same_v<mode_type, RVMode::Include>)
+                if constexpr(mode_type::value == SubsetMode::Include)
                 {
                     condition_target = true;
                 }
@@ -532,7 +526,7 @@ private:
             i__reg(0),
             i__uss(0)
         {
-            static_assert(std::is_same_v<typename RV::mode_type, RVMode::OrderedInclude>,
+            static_assert(mode_type::value == SubsetMode::OrderedInclude,
                 "This iterator is only for the OrderedInclude mode.");
 
             if(p__range->p__uss.expired() || p__range->p__uss.lock()->empty())
@@ -713,21 +707,21 @@ private:
 
 // Typedefs
 template <typename T, bool IsMutable>
-using ExcludingRegistryView = RegistryView<T, RVMode::Exclude, IsMutable>;
+using ExcludingRegistryView = RegistryView<T, SubsetMode::Exclude, IsMutable>;
 template <typename T>
 using InputExcludingRegistryView = ExcludingRegistryView<T, false>;
 template <typename T>
 using OutputExcludingRegistryView = ExcludingRegistryView<T, true>;
 
 template <typename T, bool IsMutable>
-using IncludingRegistryView = RegistryView<T, RVMode::Include, IsMutable>;
+using IncludingRegistryView = RegistryView<T, SubsetMode::Include, IsMutable>;
 template <typename T>
 using InputIncludingRegistryView = IncludingRegistryView<T, false>;
 template <typename T>
 using OutputIncludingRegistryView = IncludingRegistryView<T, true>;
 
 template <typename T, bool IsMutable>
-using OrderedRegistryView = RegistryView<T, RVMode::OrderedInclude, IsMutable>;
+using OrderedRegistryView = RegistryView<T, SubsetMode::OrderedInclude, IsMutable>;
 template <typename T>
 using InputOrderedRegistryView = OrderedRegistryView<T, false>;
 template <typename T>
@@ -736,43 +730,43 @@ using OutputOrderedRegistryView = OrderedRegistryView<T, true>;
 // Deduction guides
 // By default, if I don't pass a UniqueStringSequence, it is of type exclude with a null pointer (so like accessing the whole registry).
 template <typename T>
-RegistryView(Registry<T>&) -> RegistryView<T, RVMode::Exclude, true>;
+RegistryView(Registry<T>&) -> RegistryView<T, SubsetMode::Exclude, true>;
 
 template <typename T>
-RegistryView(const Registry<T>&) -> RegistryView<T, RVMode::Exclude, false>;
+RegistryView(const Registry<T>&) -> RegistryView<T, SubsetMode::Exclude, false>;
 
 // Factory functions 
 template <typename T, typename U>
-auto make_exc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Exclude, true>
+auto make_exc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::Exclude, true>
 {
-    return RegistryView<T, RVMode::Exclude, true>(registry, std::forward<U>(elements));
+    return RegistryView<T, SubsetMode::Exclude, true>(registry, std::forward<U>(elements));
 }
 template <typename T, typename U>
-auto make_exc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Exclude, false>
+auto make_exc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::Exclude, false>
 {
-    return RegistryView<T, RVMode::Exclude, false>(registry, std::forward<U>(elements));
-}
-
-template <typename T, typename U>
-auto make_inc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Include, true>
-{
-    return RegistryView<T, RVMode::Include, true>(registry, std::forward<U>(elements));
-}
-template <typename T, typename U>
-auto make_inc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::Include, false>
-{
-    return RegistryView<T, RVMode::Include, false>(registry, std::forward<U>(elements));
+    return RegistryView<T, SubsetMode::Exclude, false>(registry, std::forward<U>(elements));
 }
 
 template <typename T, typename U>
-auto make_ord_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::OrderedInclude, true>
+auto make_inc_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::Include, true>
 {
-    return RegistryView<T, RVMode::OrderedInclude, true>(registry, std::forward<U>(elements));
+    return RegistryView<T, SubsetMode::Include, true>(registry, std::forward<U>(elements));
 }
 template <typename T, typename U>
-auto make_ord_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, RVMode::OrderedInclude, false>
+auto make_inc_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::Include, false>
 {
-    return RegistryView<T, RVMode::OrderedInclude, false>(registry, std::forward<U>(elements));
+    return RegistryView<T, SubsetMode::Include, false>(registry, std::forward<U>(elements));
+}
+
+template <typename T, typename U>
+auto make_ord_registry_view(Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::OrderedInclude, true>
+{
+    return RegistryView<T, SubsetMode::OrderedInclude, true>(registry, std::forward<U>(elements));
+}
+template <typename T, typename U>
+auto make_ord_registry_view(const Registry<T>& registry, U&& elements) -> RegistryView<T, SubsetMode::OrderedInclude, false>
+{
+    return RegistryView<T, SubsetMode::OrderedInclude, false>(registry, std::forward<U>(elements));
 }
 
 } // namespace bevarmejo
