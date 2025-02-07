@@ -612,9 +612,9 @@ public:
     iterator erase( const_iterator first, const_iterator last );
 
     // Push back but with a name that makes sense for time series (simpler check than insert because it is always at the end)
-    void commit( time_t time__s, const_reference value )
+    void commit(time_t time__s, const_reference value)
     {
-        commit(time__s, T(value));
+        commit(time__s, std::move(T(value)));
     }
     void commit( time_t time__s, T&& value ) {
         auto pos = m__values.size(); 

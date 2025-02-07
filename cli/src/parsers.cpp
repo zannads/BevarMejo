@@ -135,7 +135,7 @@ bevarmejo::Simulation parse(int argc, char *argv[])
 
         for (const auto& path : paths)
         {
-            fsys::path p{path};
+			auto p = path.get<fsys::path>();
 
             if (fsys::exists(p) && fsys::is_directory(p))
             {

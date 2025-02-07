@@ -247,7 +247,7 @@ void Problem::load_subnets(Json settings, std::vector<fsys::path> lookup_paths) 
 		
 		try
 		{
-			m__anytown->submit_id_sequence(bemeio::locate_file(fsys::path{udeg}, lookup_paths));
+			m__anytown->submit_id_sequence(bemeio::locate_file(udeg.get<fsys::path>(), lookup_paths));
 		}
 		catch (const std::exception& ex) {
 			std::cerr << ex.what();
@@ -1446,7 +1446,7 @@ void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out
 {
 	apply_dv(this->m__anytown, dv);
 
-	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.c_str());
+	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
 	assert(errco <= 100);
 
 	reset_dv(this->m__anytown, dv);
