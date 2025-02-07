@@ -46,11 +46,16 @@ struct ConstexprString
     constexpr ConstexprString() : 
         data { }
     {
-        data.fill('\0');
+        // data.fill('\0'); // method constexpr since C++20
+        for (std::size_t i = 0; i < N; ++i)
+        {
+            data[i] = '\0';
+        }
     }
 
     // Construct from a raw string literal (size includes the '\0'):
-    constexpr ConstexprString(const char (&str)[N])
+    constexpr ConstexprString(const char (&str)[N]) :
+        data { }
     {
         for (std::size_t i = 0; i < N; ++i)
         {

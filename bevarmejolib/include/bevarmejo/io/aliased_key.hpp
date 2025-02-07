@@ -76,10 +76,31 @@ public:
     AliasedKey() = delete;
     constexpr AliasedKey(AliasedKey&&) = default;
     constexpr AliasedKey(const AliasedKey&) = default;
+    // Single char array constructor
+    template <std::size_t N>
+    constexpr AliasedKey(const char (&alt)[N]) :
+        m__alternatives{ bevarmejo::detail::ConstexprString<N>(alt) },
+        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<N>(alt)) }
+    { }
+
+    // Multiple char array constructor
+    // Enabble inserted because otherwie the compiler creates a conflict with the
+    // deduction guide below. It tries to create AliasedKey<> and use this constructor...
+    template <typename std::enable_if_t<(sizeof...(Ns) > 0), int> = 0, std::size_t N, std::size_t... Ms>
+    constexpr AliasedKey(const char (&first)[N], const char (&... rest)[Ms]) :
+        m__alternatives{ bevarmejo::detail::ConstexprString<N>(first), bevarmejo::detail::ConstexprString<Ms>(rest)... },
+        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<N>(first)),
+                   bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<Ms>(rest))... }
+    { }
+
+    // This works on clang but not on the other compilers... It would merge
+    // the two constructors above and require no deduction guide.
+    /*
     constexpr AliasedKey(const char (&... alts)[Ns]) :
         m__alternatives{ alts... },
         m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString(alts))... }
     { }
+    */
 
 // (destructor)
 public:
@@ -182,6 +203,13 @@ public:
         }
     }
 };
+
+// Deduction guide for the AliasedKey class.
+template <std::size_t N>
+AliasedKey(const char (&alt)[N]) -> AliasedKey<N>;
+
+template <std::size_t N, std::size_t... Ms>
+AliasedKey(const char (&first)[N], const char (&... rest)[Ms]) -> AliasedKey<N, Ms...>;
 
 }  // namespace bevarmejo::io
 
