@@ -374,7 +374,7 @@ auto WaterDistributionSystem::submit_id_sequence(const fsys::path& file_path) ->
         "A sequence with the same name already exists.",
         "Name: ", name);
 
-    return *ret_type.iterator.operator->();
+    return *ret_type.it.operator->();
 }
     
 

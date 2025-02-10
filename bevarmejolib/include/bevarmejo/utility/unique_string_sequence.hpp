@@ -35,7 +35,7 @@ public:
 
     struct insert_return_type
     {
-        iterator iterator;
+        iterator it;
         bool inserted;
     };
     struct insert_iter_return_type

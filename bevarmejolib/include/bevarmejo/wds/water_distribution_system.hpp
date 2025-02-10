@@ -691,7 +691,7 @@ template <typename N, typename... Args>
         
     auto insert_in_spec_collection = [this, &id, &irtn](auto& container) -> decltype(auto)
     {
-        auto irs = container.insert(id, std::static_pointer_cast<N>(irtn.iterator.operator->()));
+        auto irs = container.insert(id, std::static_pointer_cast<N>(irtn.it.operator->()));
         if (!irs.inserted)
         {
             _nodes_.erase(id);
@@ -701,7 +701,7 @@ template <typename N, typename... Args>
                 "Element name: ", id);
         }
 
-        return irs.iterator.operator->();
+        return irs.it.operator->();
     };
 
     if constexpr (std::is_same_v<N, Junction>)
@@ -759,20 +759,20 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
         
     // We know the nodes id are correct and exist, so we can connect the link
     // and later insert it in the specific collection.
-    irtn.iterator->from_node(_nodes_.get(from_node_id).get());
-    _nodes_.get(from_node_id)->connect_link(irtn.iterator.operator->().get());
+    irtn.it->from_node(_nodes_.get(from_node_id).get());
+    _nodes_.get(from_node_id)->connect_link(irtn.it.operator->().get());
 
-    irtn.iterator->to_node(_nodes_.get(to_node_it).get());
-    _nodes_.get(to_node_it)->connect_link(irtn.iterator.operator->().get());
+    irtn.it->to_node(_nodes_.get(to_node_it).get());
+    _nodes_.get(to_node_it)->connect_link(irtn.it.operator->().get());
 
     auto insert_in_spec_collection = [this, &id, &from_node_id, &to_node_it, &irtn](auto& container) -> decltype(auto)
     {
-        auto irs = container.insert(id, std::static_pointer_cast<L>(irtn.iterator.operator->()));
+        auto irs = container.insert(id, std::static_pointer_cast<L>(irtn.it.operator->()));
         if (!irs.inserted)
         {
             // Reset all insertions and throw an error.
-            _nodes_.get(from_node_id)->disconnect_link(irtn.iterator.operator->().get());
-            _nodes_.get(to_node_it)->disconnect_link(irtn.iterator.operator->().get());
+            _nodes_.get(from_node_id)->disconnect_link(irtn.it.operator->().get());
+            _nodes_.get(to_node_it)->disconnect_link(irtn.it.operator->().get());
             _links_.erase(id);
 
             beme_throw(std::logic_error,
@@ -781,7 +781,7 @@ auto WaterDistributionSystem::install(const ID& id, const ID& from_node_id, cons
                 "Element name: ", id);
         }
 
-        return irs.iterator.operator->();
+        return irs.it.operator->();
     };
 
     if constexpr (std::is_same_v<L, Pipe>)
@@ -814,7 +814,7 @@ auto WaterDistributionSystem::submit_id_sequence(const ID& id, Args&&... args) -
         "Impossible to insert the element.",
         "A sequence with the same name already exists.", "Name: ", id);
 
-    return *irtn.iterator.operator->();
+    return *irtn.it.operator->();
 }
 
 // removal
