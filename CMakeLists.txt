@@ -1,7 +1,7 @@
-# CMakeList.txt : Top-level CMake project file, do global configuration
+﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.22)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -13,31 +13,17 @@ endif()
 # [MANDATORY] Vcpkg toolchain file
 # ------------------------------------------------------------------------------
 
-#Set the path to the .cmake file in vcpkg that will allow cmake to find information about Pagmo, Boost and all the libraries installed through vcpkg
-#The path to the toolchain file can be set in 3 ways:
-#     1. when preparing cmake run 
-#         `cmake .. --toolchain /path/to/the/file.cmake`        // equivalent to `cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/the/file.cmake`
-#     2. when preparing cmake run
-#         `cmake .. -DVCPKG_ROOT=/path/to/vcpkg`
-#     3. set the enviromental variable VCPKG_ROOT = /path/to/vcpkg // see how to do it base on your OS
-#         `cmake ..` 
-IF(DEFINED ENV{VCPKG_ROOT})
-  set( VCPKG_ROOT "$ENV{VCPKG_ROOT}" CACHE PATH "Path to the rootfolder to vcpkg")
-  message(STATUS "VCPKG_ROOT env found, using ${VCPKG_ROOT}")
-ELSE()
-  set( VCPKG_ROOT "../vcpkg" CACHE PATH "Path to the rootfolder to vcpkg")
-  message(STATUS "VCPKG_ROOT env NOT found, using ${VCPKG_ROOT}")
-ENDIF()
-set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" )    #FILEPATH "Full path to the file Vcpkg"
-set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
-	   CACHE FILEPATH "Vcpkg toolchain file")
+# Set the path to the .cmake file in vcpkg that will allow cmake to find information about Pagmo, Boost and all the libraries installed through vcpkg
+# The path to the toolchain file can be set when preparing cmake run 
+# `cmake .. --toolchain /path/to/the/file.cmake` // equivalent to `cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/the/file.cmake`
+set(CMAKE_TOOLCHAIN_FILE "$${PROJECT_SOURCE_DIR}/../vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "Vcpkg toolchain file")
 
 # ------------------------------------------------------------------------------
 # [OPTIONAL] Set the version of the project
 # ------------------------------------------------------------------------------
 
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION 250100)
+set(CURRENT_VERSION 250200)
 set(FIRST_VERSION 230600)
 if(NOT PROJECT_VERSION)
   math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
@@ -103,114 +89,123 @@ find_package(Pagmo REQUIRED)
 
 # ------------------------------------------------------------------------------
 # Look for an installation of nlohmann json in the system.
-IF(DEFINED ENV{JSON_ROOT})
-  set( JSON_ROOT "$ENV{JSON_ROOT}" CACHE PATH "Path to the rootfolder to JSON")
-  message(STATUS "JSON_ROOT env found, using ${JSON_ROOT}")
-ELSE()
-  set( JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
-  message(STATUS "JSON_ROOT env NOT found, using ${JSON_ROOT}")
-ENDIF()
+message(STATUS "Required nlohmann_json version: 3.2.0")
+set(JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
 # Include in the cmake prefix path 
 list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
 find_package(nlohmann_json 3.2.0 REQUIRED)
+message(STATUS "Detected nlohmann_json version: ${nlohmann_json_VERSION}")
+message(STATUS "nlohmann_json directory: ${nlohmann_json_DIR}")
 
 # ------------------------------------------------------------------------------
 # "Look" for an installation of EPANET in the system.
-#Set the path to the EPANET folder and library
-#The path to the folder can be set in 2 ways:
+# Adjust for the EPANET version.
+# Differently from vcpkg, JSON, and Pagmo libraries that have consistent versioning
+# in their releases and are independent of the BeMe library, EPANET is a library that
+# is being wrapped and is not properly versioned (only major and not frequent).
+# Therefore, we need to make sure that we track the version of EPANET that we are using
+# and that we are wrapping. We will use the date of the commit in the dev branch 
+# of the OWA-EPANET repository as the version of the library ("YYMMDD").
+# At the time of the writing, we are testing the code on EPANET on the dev branch 
+# with the latest update at 21 December 2024.
+set(EPANET_VERSION 241221)
+IF(LIBRARY_VERSION LESS 250200)
+  # Before the update to this version, we were using 240618 (Merge pull request #802).
+  set(EPANET_VERSION 240618)
+
+  # Issue a warning that the version of EPANET is not the latest and it is known
+  # to produce different results because of a bug fix on tanks never draining.
+  # Therefore use this only in the case of reproducibility of the old results.
+  message(WARNING "Using EPANET in a previous version. The results differ from the latest version. Use this only in case you are trying to reproduce old results.\nThis is known to happen after the fix of the tanks never draining issue (pull request #803).")
+ENDIF()
+message(STATUS "Using EPANET version: ${EPANET_VERSION}")
+
+# Set the path to the EPANET folder and library
+# The path to the folder can be set in 2 ways:
 #     1. pass a flag at the first cmake invocation
 #         `cmake .. -DEPANET_ROOT=/path/to/EPANET`
 #     3. set the enviromental variable EPANET_ROOT = /path/to/EPANET // see how to do it base on your OS
-#         `cmake ..` 
-IF(DEFINED ENV{EPANET_ROOT})
-  set( EPANET_ROOT "$ENV{EPANET_ROOT}" CACHE PATH "Path to the rootfolder to EPANET")
-  message(STATUS "EPANET_ROOT env found, using ${EPANET_ROOT}")
-ELSE()
-  set( EPANET_ROOT "${PROJECT_SOURCE_DIR}/../EPANET" CACHE PATH "Path to the rootfolder to EPANET")
-  message(STATUS "EPANET_ROOT env NOT found, using ${EPANET_ROOT}")
-ENDIF()
+#         `cmake ..`
+set( EPANET_ROOT "${PROJECT_SOURCE_DIR}/../EPANET" CACHE PATH "Path to the rootfolder to EPANET")
+message(STATUS "EPANET directory: ${EPANET_ROOT}")
 
-# Include the EPANET library or build it in Debug mode
-IF(CMAKE_BUILD_TYPE MATCHES Debug)
-  set(EPANET_FROM_SOURCE TRUE)
-ELSE()
-  SET(EPANET_FROM_SOURCE FALSE)
-ENDIF()
-
-IF(WIN32)
-  add_library(epanet SHARED IMPORTED )
-  set_target_properties(epanet PROPERTIES
-            IMPORTED_LOCATION "${EPANET_ROOT}/build/bin/Release/epanet2.dll"
-            IMPORTED_IMPLIB "${EPANET_ROOT}/build/lib/Release/epanet2.lib"
-            )
-  target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
-ENDIF(WIN32)
-
-IF(APPLE)
-  # On my Mac, I want to include the epanet library from source to debug it. 
-  IF(EPANET_FROM_SOURCE)
-    message(STATUS "Building EPANET from source")
-    set(EPANET_FILES 
-      "${EPANET_ROOT}/src/enumstxt.h"
-      "${EPANET_ROOT}/src/epanet.c" 
-      "${EPANET_ROOT}/src/epanet2.c" 
-      "${EPANET_ROOT}/src/errors.dat" 
-      "${EPANET_ROOT}/src/funcs.h" 
-      "${EPANET_ROOT}/src/genmmd.c" 
-      "${EPANET_ROOT}/src/hash.c" 
-      "${EPANET_ROOT}/src/hash.h" 
-      "${EPANET_ROOT}/src/hydcoeffs.c" 
-      "${EPANET_ROOT}/src/hydraul.c" 
-      "${EPANET_ROOT}/src/hydsolver.c" 
-      "${EPANET_ROOT}/src/hydstatus.c" 
-      "${EPANET_ROOT}/src/inpfile.c" 
-      "${EPANET_ROOT}/src/input1.c" 
-      "${EPANET_ROOT}/src/input2.c" 
-      "${EPANET_ROOT}/src/input3.c" 
-      "${EPANET_ROOT}/src/mempool.c" 
-      "${EPANET_ROOT}/src/mempool.h" 
-      "${EPANET_ROOT}/src/output.c" 
-      "${EPANET_ROOT}/src/project.c" 
-      "${EPANET_ROOT}/src/quality.c" 
-      "${EPANET_ROOT}/src/qualreact.c" 
-      "${EPANET_ROOT}/src/qualroute.c" 
-      "${EPANET_ROOT}/src/report.c" 
-      "${EPANET_ROOT}/src/rules.c" 
-      "${EPANET_ROOT}/src/smatrix.c" 
-      "${EPANET_ROOT}/src/text.h" 
-      "${EPANET_ROOT}/src/types.h" 
+# In Debug mode we also want to check EPANET as we are wrapping it.
+cmake_dependent_option(EPANET_FROM_SOURCE "Build EPANET from source" ON "CMAKE_BUILD_TYPE MATCHES Debug" OFF)
+message(STATUS "EPANET from source: ${EPANET_FROM_SOURCE}")
+IF(EPANET_FROM_SOURCE)
+  set(EPANET_SRC
+      "${EPANET_ROOT}/src/epanet.c"
+      "${EPANET_ROOT}/src/epanet2.c"
+      "${EPANET_ROOT}/src/genmmd.c"
+      "${EPANET_ROOT}/src/hash.c"
+      "${EPANET_ROOT}/src/hydcoeffs.c"
+      "${EPANET_ROOT}/src/hydraul.c"
+      "${EPANET_ROOT}/src/hydsolver.c"
+      "${EPANET_ROOT}/src/hydstatus.c"
+      "${EPANET_ROOT}/src/inpfile.c"
+      "${EPANET_ROOT}/src/input1.c"
+      "${EPANET_ROOT}/src/input2.c"
+      "${EPANET_ROOT}/src/input3.c"
+      "${EPANET_ROOT}/src/mempool.c"
+      "${EPANET_ROOT}/src/output.c"
+      "${EPANET_ROOT}/src/project.c"
+      "${EPANET_ROOT}/src/quality.c"
+      "${EPANET_ROOT}/src/qualreact.c"
+      "${EPANET_ROOT}/src/qualroute.c"
+      "${EPANET_ROOT}/src/report.c"
+      "${EPANET_ROOT}/src/rules.c"
+      "${EPANET_ROOT}/src/smatrix.c"
       "${EPANET_ROOT}/src/validate.c"
       "${EPANET_ROOT}/src/util/cstr_helper.c"
-      "${EPANET_ROOT}/src/util/cstr_helper.h"
       "${EPANET_ROOT}/src/util/errormanager.c"
-      "${EPANET_ROOT}/src/util/errormanager.h"
       "${EPANET_ROOT}/src/util/filemanager.c"
-      "${EPANET_ROOT}/src/util/filemanager.h"
     )
 
-    add_library(epanet ${EPANET_FILES})
+    IF(EPANET_VERSION GREATER 240712) # Merge pull request #808 (Add leakage)
+      list(APPEND EPANET_SRC
+        "${EPANET_ROOT}/src/leakage.c"
+        "${EPANET_ROOT}/src/flowbalance.c"
+      )
+    ENDIF()
+
+    add_library(epanet ${EPANET_SRC})
 
     target_include_directories(epanet PUBLIC 
                                   "${EPANET_ROOT}/include"
                                   "${EPANET_ROOT}/src"
     )
-  ELSE() # EPANET non from source
-    add_library(epanet SHARED IMPORTED)
-    set_target_properties(epanet PROPERTIES
-              IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib" 
-              )
-    target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
-  ENDIF()
-ENDIF(APPLE)
 
-IF(LINUX)
+ELSE() # NOT EPANET FROM SOURCE
+
+  # Normal behaviour, we are using the library.
   add_library(epanet SHARED IMPORTED)
-  set_target_properties(epanet PROPERTIES
-        IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.so"
-        )
-  target_include_directories(epanet INTERFACE ${EPANET_ROOT}/include ${EPANET_ROOT}/src)
-ENDIF(LINUX)
+  
+  # However, based on the operating system, we need to set the correct path to the library.
+  # This is done through the IMPORTED_LOCATION property of the target.
+  IF (WIN32)
+    set_target_properties(epanet PROPERTIES
+      IMPORTED_LOCATION "${EPANET_ROOT}/build/bin/Release/epanet2.dll"
+      IMPORTED_IMPLIB "${EPANET_ROOT}/build/lib/Release/epanet2.lib"
+    )
+  ENDIF(WIN32)
+  IF(APPLE)
+    set_target_properties(epanet PROPERTIES
+      IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib"
+    )
+  ENDIF(APPLE)
+  IF(LINUX)
+    set_target_properties(epanet PROPERTIES
+      IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.so"
+    )
+  ENDIF(LINUX)
 
+  # Finally, we need to include the directories where the headers are located so
+  # that my library can see them.
+  target_include_directories(epanet INTERFACE "${EPANET_ROOT}/include" "${EPANET_ROOT}/src")
+
+ENDIF()
+
+# ------------------------------------------------------------------------------
 # Include my library
 add_subdirectory("bevarmejolib")
 
