@@ -9,6 +9,10 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+# ------------------------------------------------------------------------------
+# [MANDATORY] Vcpkg toolchain file
+# ------------------------------------------------------------------------------
+
 #Set the path to the .cmake file in vcpkg that will allow cmake to find information about Pagmo, Boost and all the libraries installed through vcpkg
 #The path to the toolchain file can be set in 3 ways:
 #     1. when preparing cmake run 
@@ -28,7 +32,11 @@ set( FULL_TOOLCHAIN_FILENAME "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ) 
 set( CMAKE_TOOLCHAIN_FILE ${FULL_TOOLCHAIN_FILENAME}
 	   CACHE FILEPATH "Vcpkg toolchain file")
 
-# Allow manually specifying an older version during configuration, if not, default to current
+# ------------------------------------------------------------------------------
+# [OPTIONAL] Set the version of the project
+# ------------------------------------------------------------------------------
+
+# Allow manually specifying an older version during configuration, if not, default to current.
 set(CURRENT_VERSION 250100)
 set(FIRST_VERSION 230600)
 if(NOT PROJECT_VERSION)
@@ -53,9 +61,9 @@ if(LIBRARY_VERSION LESS FIRST_VERSION OR LIBRARY_VERSION GREATER CURRENT_VERSION
   message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
 endif()
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # START OF THE MAIN CMAKE FILE
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
@@ -67,9 +75,9 @@ add_definitions(-DLIBRARY_PATCH_VERSION=${PATCH_VERSION})
 
 message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # [OPTIONAL] Set the style for the keys in the output file
-# ---------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Define the list of valid styles.
 set(STYLES "Sentence case" "CamelCase" "kebab-case" "pascalCase" "snake_case")
 
@@ -86,6 +94,28 @@ add_compile_definitions(OUT_STYLE_${STYLE_INDEX})
 
 message(STATUS "BèvarMéjo output files' keys style: ${OUT_STYLE}")
 
+# ------------------------------------------------------------------------------
+# SEARCH FOR THE REQUIRED LIBRARIES
+# ------------------------------------------------------------------------------
+
+# Look for an installation of pagmo in the system.
+find_package(Pagmo REQUIRED)
+
+# ------------------------------------------------------------------------------
+# Look for an installation of nlohmann json in the system.
+IF(DEFINED ENV{JSON_ROOT})
+  set( JSON_ROOT "$ENV{JSON_ROOT}" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env found, using ${JSON_ROOT}")
+ELSE()
+  set( JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
+  message(STATUS "JSON_ROOT env NOT found, using ${JSON_ROOT}")
+ENDIF()
+# Include in the cmake prefix path 
+list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+# ------------------------------------------------------------------------------
+# "Look" for an installation of EPANET in the system.
 #Set the path to the EPANET folder and library
 #The path to the folder can be set in 2 ways:
 #     1. pass a flag at the first cmake invocation
@@ -100,22 +130,13 @@ ELSE()
   message(STATUS "EPANET_ROOT env NOT found, using ${EPANET_ROOT}")
 ENDIF()
 
-# Look for an installation of pagmo in the system.
-find_package(Pagmo REQUIRED)
-
-# Look for an installation of nlohmann json in the system.
-IF(DEFINED ENV{JSON_ROOT})
-  set( JSON_ROOT "$ENV{JSON_ROOT}" CACHE PATH "Path to the rootfolder to JSON")
-  message(STATUS "JSON_ROOT env found, using ${JSON_ROOT}")
+# Include the EPANET library or build it in Debug mode
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+  set(EPANET_FROM_SOURCE TRUE)
 ELSE()
-  set( JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
-  message(STATUS "JSON_ROOT env NOT found, using ${JSON_ROOT}")
+  SET(EPANET_FROM_SOURCE FALSE)
 ENDIF()
-# Include in the cmake prefix path 
-list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
-find_package(nlohmann_json 3.2.0 REQUIRED)
 
-# "Look" for an installation of EPANET in the system.
 IF(WIN32)
   add_library(epanet SHARED IMPORTED )
   set_target_properties(epanet PROPERTIES
@@ -127,12 +148,6 @@ ENDIF(WIN32)
 
 IF(APPLE)
   # On my Mac, I want to include the epanet library from source to debug it. 
-  IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    set(EPANET_FROM_SOURCE TRUE)
-  ELSE()
-    SET(EPANET_FROM_SOURCE FALSE)
-  ENDIF()
-
   IF(EPANET_FROM_SOURCE)
     message(STATUS "Building EPANET from source")
     set(EPANET_FILES 
