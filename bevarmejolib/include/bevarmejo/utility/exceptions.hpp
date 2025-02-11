@@ -94,3 +94,4 @@ struct ExceptionThrower
 
 #define beme_throw_if_EN_warning(errorcode, ...) \
     beme_throw_if(errorcode > 0, bevarmejo::epanet::EN_error, errorcode, __VA_ARGS__)
+
