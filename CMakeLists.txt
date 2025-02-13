@@ -135,7 +135,7 @@ message(STATUS "EPANET from source: ${EPANET_FROM_SOURCE}")
 IF(EPANET_FROM_SOURCE)
   set(EPANET_SRC
       "${EPANET_ROOT}/src/epanet.c"
-      "${EPANET_ROOT}/src/epanet2.c"
+      # "${EPANET_ROOT}/src/epanet2.c"
       "${EPANET_ROOT}/src/genmmd.c"
       "${EPANET_ROOT}/src/hash.c"
       "${EPANET_ROOT}/src/hydcoeffs.c"
@@ -169,6 +169,13 @@ IF(EPANET_FROM_SOURCE)
     ENDIF()
 
     add_library(epanet ${EPANET_SRC})
+
+    # All API functions of the EPANET library are defined with the DLLEXPORT macro.
+    # Since we are building to source and between lines 21 and 38, when on windows, it 
+    # defines the DLLEXPORT macro as __declspec(dllexport) __stdcall or __declspec(dllimport) __stdcall
+    # we need to empty define the macro so that the functions are not exported.
+    # The EPANET_VERSION is also defined but has no effect on the library.
+    target_compile_definitions(epanet PUBLIC "DLLEXPORT=" "EPANET_VERSION=${EPANET_VERSION}")
 
     target_include_directories(epanet PUBLIC 
                                   "${EPANET_ROOT}/include"
