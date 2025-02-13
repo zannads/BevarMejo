@@ -39,11 +39,11 @@ list(GET VERSION_LIST 1 MINOR_VERSION)
 list(GET VERSION_LIST 2 PATCH_VERSION)
 
 # Calculate version as a single integer for easy comparison
-math(EXPR LIBRARY_VERSION 
+math(EXPR BEME_VERSION 
     "${MAJOR_VERSION} * 10000 + ${MINOR_VERSION} * 100 + ${PATCH_VERSION}")
 
 # Check that the project version is a valid version string (in bounds/years, no patch version greater than 99, minor version is a valid month
-if(LIBRARY_VERSION LESS FIRST_VERSION OR LIBRARY_VERSION GREATER CURRENT_VERSION OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
+if(BEME_VERSION LESS FIRST_VERSION OR BEME_VERSION GREATER CURRENT_VERSION OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
   message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
 endif()
 
@@ -54,10 +54,10 @@ endif()
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
 # Add version-specific preprocessor definitions
-add_definitions(-DLIBRARY_VERSION=${LIBRARY_VERSION})
-add_definitions(-DLIBRARY_MAJOR_VERSION=${MAJOR_VERSION})
-add_definitions(-DLIBRARY_MINOR_VERSION=${MINOR_VERSION})
-add_definitions(-DLIBRARY_PATCH_VERSION=${PATCH_VERSION})
+add_definitions(-DBEME_VERSION=${BEME_VERSION})
+add_definitions(-DBEME_MAJOR_VERSION=${MAJOR_VERSION})
+add_definitions(-DBEME_MINOR_VERSION=${MINOR_VERSION})
+add_definitions(-DBEME_PATCH_VERSION=${PATCH_VERSION})
 
 message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 
@@ -109,7 +109,7 @@ message(STATUS "nlohmann_json directory: ${nlohmann_json_DIR}")
 # At the time of the writing, we are testing the code on EPANET on the dev branch 
 # with the latest update at 21 December 2024.
 set(EPANET_VERSION 241221)
-IF(LIBRARY_VERSION LESS 250200)
+IF(BEME_VERSION LESS 250200)
   # Before the update to this version, we were using 240618 (Merge pull request #802).
   set(EPANET_VERSION 240618)
 

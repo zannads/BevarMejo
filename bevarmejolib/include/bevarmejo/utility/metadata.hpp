@@ -14,10 +14,10 @@ namespace bevarmejo
 namespace detail
 {
 
-constexpr unsigned int version = LIBRARY_VERSION;
-constexpr unsigned int version_year = LIBRARY_MAJOR_VERSION;
-constexpr unsigned int version_month = LIBRARY_MINOR_VERSION;
-constexpr unsigned int version_release = LIBRARY_PATCH_VERSION;
+constexpr unsigned int version = BEME_VERSION;
+constexpr unsigned int version_year = BEME_MAJOR_VERSION;
+constexpr unsigned int version_month = BEME_MINOR_VERSION;
+constexpr unsigned int version_release = BEME_PATCH_VERSION;
 
 constexpr std::array<char, 10> version_arr = {
         'v',
@@ -32,7 +32,7 @@ constexpr std::array<char, 10> version_arr = {
         '\0'
     };
 
-#if LIBRARY_VERSION <= 240400
+#if BEME_VERSION < 240401
 constexpr unsigned int min_version = 230600;
 #else
 constexpr unsigned int min_version = 240401;

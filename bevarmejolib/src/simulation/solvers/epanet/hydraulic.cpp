@@ -31,7 +31,7 @@ template <bool ETM>
 bool save_results(const int errorcode, const time_t t, const HydSimSettings& a_settings, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res) noexcept
 {
 
-#if LIBRARY_VERSION <= 240400
+#if BEME_VERSION < 240401
 // If you save only the reporting time steps (as EPANET and wntr do) instead of all hydraulic steps,
 // you may get an incorrect estimate of the energy leaving the system. This happens because EPANET
 // can insert extra time steps in the simulation. When energy is calculated as Flow x Head x TimeStep,
