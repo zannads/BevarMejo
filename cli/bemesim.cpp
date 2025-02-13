@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
        
         for (size_t i = 0; i < simu.fvs.size(); ++i)
         {
-            if ( std::abs(simu.fvs[i] - res[i]) > 1e-8 )
+            if ( std::abs(simu.fvs[i] - res[i]) > std::numeric_limits<double>::epsilon() )
             {
                 bevarmejo::io::stream_out(std::cerr, "Mismatch between the fitness vector provided and the one returned by the problem simulation.\n",
                     std::setprecision(16),
