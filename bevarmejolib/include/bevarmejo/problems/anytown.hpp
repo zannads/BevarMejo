@@ -24,7 +24,9 @@ namespace fsys = std::filesystem;
 #include <pagmo/population.hpp>
 #include <pagmo/island.hpp>
 
-#include "bevarmejo/io/json.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
+#include "bevarmejo/utility/io.hpp"
+namespace bemeio = bevarmejo::io;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/problem/wds_problem.hpp"
@@ -71,22 +73,30 @@ constexpr std::size_t max_n_installable_tanks = 2;
 
 constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
-// Structs for reading data from file.
-struct pipes_alt_costs {
-    double diameter_in;
-    double new_cost;
-    double dup_city;
-    double dup_residential;
-    double clean_city;
-    double clean_residential;        
-}; 
-std::istream& operator >> (std::istream& is, pipes_alt_costs& pac);
+// Structs to hold the costs and their JSON serializers.
+struct exi_pipe_option
+{
+    double diameter__in;
+    double cost_dup_city__per_ft;
+    double cost_dup_resi__per_ft;
+    double cost_clean_city__per_ft;
+    double cost_clean_resi__per_ft;        
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(exi_pipe_option, diameter__in, cost_dup_city__per_ft, cost_dup_resi__per_ft, cost_clean_city__per_ft, cost_clean_resi__per_ft)
 
-struct tanks_costs {
-    double volume_gal;
+struct new_pipe_option
+{
+    double diameter__in;
+    double cost__per_ft;
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(new_pipe_option, diameter__in, cost__per_ft)
+
+struct tank_option
+{
+    double volume__gal;
     double cost;
 };
-std::istream& operator >> (std::istream& is, tanks_costs& tc);
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(tank_option, volume__gal, cost)
 
 std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps);
 
@@ -111,42 +121,42 @@ Json dynamic_params(const bevarmejo::anytown::Problem &prob);
 
 // For the bounds
 namespace fep1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }
 namespace fep2 {
-std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__exis_pipes(InputOrderedRegistryView<WDS::Pipe> exis_pipes, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }  
-std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrderedRegistryView<WDS::Pipe> new_pipes, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__new_pipes(InputOrderedRegistryView<WDS::Pipe> new_pipes, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 std::pair<std::vector<double>, std::vector<double>> bounds__pumps(InputExcludingRegistryView<WDS::Pump> pumps);
 namespace fnt1 {
-std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &np_opts);
 }
 
 // For fitness function:
 //     For apply dv:
 namespace fep1 {
-void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }
 namespace fep2 {
-void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__exis_pipes(WDS& anytown, std::unordered_map<std::string, double> &old_HW_coeffs, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }
-void apply_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+void apply_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 void apply_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
 namespace fnt1 {
-void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs);
+void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option);
 }
 
 //      For cost function:
 namespace fep1 {
-double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }
 namespace fep2 {
-double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts);
 }
-double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 double cost__energy_per_day(const WDS& anytown);
 namespace fnt1 {
-double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tanks_costs> &tanks_costs, const std::vector<bevarmejo::anytown::pipes_alt_costs> &pipes_alt_costs);
+double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 }
 
 //      For reliability (modified) function:
@@ -171,7 +181,7 @@ private:
 
 public:
     Problem() = default;
-    Problem(std::string_view a_formulation, const Json& settings, const std::vector<fsys::path>& lookup_paths);
+    Problem(std::string_view a_formulation, const Json& settings, const bemeio::Paths& lookup_paths);
     Problem(const Problem& other) = default;
     Problem(Problem&& other) noexcept = default;
     Problem& operator=(const Problem& rhs) = default;
@@ -209,8 +219,9 @@ public:
 protected:
     // Anytown specific data
     mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
-    std::vector<bevarmejo::anytown::pipes_alt_costs> m__pipes_alt_costs;
-    std::vector<bevarmejo::anytown::tanks_costs> m__tanks_costs;
+    std::vector<bevarmejo::anytown::exi_pipe_option> m__exi_pipe_options;
+    std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
+    std::vector<bevarmejo::anytown::tank_option> m__tank_options;
     Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
     mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:
@@ -218,9 +229,9 @@ protected:
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
     // For constructor:
-    void load_network(Json settings, std::vector<fsys::path> lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-    void load_subnets(Json settings, std::vector<fsys::path> lookup_paths);
-    void load_other_data(Json settings, std::vector<fsys::path> lookup_paths);
+    void load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
+    void load_subnets(const Json& settings, const bemeio::Paths& lookup_paths);
+    void load_other_data(const Json& settings, const bemeio::Paths& lookup_paths);
 
     // For fitness function:
     double cost(const WDS &anytown, const std::vector<double>& dv) const;

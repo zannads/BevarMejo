@@ -21,8 +21,7 @@ namespace fsys = std::filesystem;
 #include "epanet2_2.h"
 
 #include "bevarmejo/io/streams.hpp"
-
-#include "bevarmejo/.legacy/io.hpp"
+#include "bevarmejo/io/json.hpp"
 
 #include "water_distribution_system.hpp"
 
@@ -352,31 +351,18 @@ auto WaterDistributionSystem::n_pumps() const noexcept -> size_t
 
 // Components
 
-auto WaterDistributionSystem::submit_id_sequence(const fsys::path& file_path) -> IDSequence&
+auto WaterDistributionSystem::submit_id_sequence(const ID& name, const Json& j) -> IDSequence&
 {
-    // We assume the file exist and it's a valid file. Use locate_file() before calling this function.
-    std::ifstream ifs(file_path);
-    beme_throw_if(!ifs.is_open(), std::runtime_error,
-        "Impossible to insert the element(s).",
-        "Error opening the file.",
-        "File: ", file_path);
+    auto names = j.get<std::vector<ID>>();
+    auto ires = m__id_sequences.emplace(name, names);
     
-    // Asssume it works form a JSON or my custom type, I will get a vector of strings.
-
-    const auto [en_object_type, ids, comment] = io::get_egroup_data(ifs);
-
-    auto name = file_path.stem().string();
-
-    auto ret_type = m__id_sequences.emplace(std::move(name), std::move(ids));
-
-    beme_throw_if(!ret_type.inserted, std::invalid_argument,
-        "Impossible to insert the element.",
+    beme_throw_if(!ires.inserted, std::invalid_argument,
+        "Impossible to submit the sequence of names.",
         "A sequence with the same name already exists.",
         "Name: ", name);
 
-    return *ret_type.it.operator->();
+    return *ires.it.operator->();
 }
-    
 
 // Subtractive modifiers
 // Common interface for all types of elements is templated (see hpp file).

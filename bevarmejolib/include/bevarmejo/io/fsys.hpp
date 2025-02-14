@@ -11,10 +11,12 @@ namespace fsys = std::filesystem;
 namespace bevarmejo::io
 {
 
+using Paths = std::vector<fsys::path>;
+
 // Locate a file in a list of paths.
 // Handles both absolute and relative paths.
 template <bool f__log = false>
-inline fsys::path locate_file(const fsys::path &filename, const std::vector<fsys::path> &lookup_paths)
+inline fsys::path locate_file(const fsys::path &filename, const Paths& lookup_paths)
 {
     // If file is already absolute, simply test for validity and return it.
     if (filename.is_absolute())

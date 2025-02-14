@@ -23,8 +23,8 @@ namespace fsys = std::filesystem;
 
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/io/streams.hpp"
 #include "bevarmejo/utility/exceptions.hpp"
+#include "bevarmejo/utility/io.hpp"
 
 #include "bevarmejo/utility/registry.hpp"
 #include "bevarmejo/utility/registry_view.hpp"
@@ -417,6 +417,7 @@ public:
 
     template <typename... Args>
     auto submit_id_sequence(const ID& id, Args&&... args) -> IDSequence&;
+    auto submit_id_sequence(const ID& name, const Json& j) -> IDSequence&;
     auto submit_id_sequence(const fsys::path& file_path) -> IDSequence&;
 
     template <typename... Args>

@@ -19,8 +19,8 @@
 #include "bevarmejo/utility/pagmo/serializers/json/default_objects.hpp"
 
 // Bevarmejo objects that can be serialized
-#include "Anytown/prob_anytown.hpp"
-#include "Hanoi/problem_hanoi_biobj.hpp"
+#include "bevarmejo/problems/anytown.hpp"
+#include "bevarmejo/problems/hanoi.hpp"
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
 

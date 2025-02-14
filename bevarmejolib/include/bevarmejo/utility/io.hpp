@@ -6,7 +6,7 @@
 
 #include "bevarmejo/io/fsys.hpp"
 #include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/aliased_key.hpp"
 #include "bevarmejo/io/labels.hpp"
 #include "bevarmejo/io/streams.hpp"
 

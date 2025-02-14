@@ -15,17 +15,17 @@ namespace fsys = std::filesystem;
 #include "bevarmejo/hydraulic_functions.hpp"
 #include "bevarmejo/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/io/fsys.hpp"
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/utility/io.hpp"
+namespace bemeio = bevarmejo::io;
 
 #include "bevarmejo/wds/utility/epanet/en_help.hpp"
 
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
 
-#include "problem_hanoi_biobj.hpp"
 
-namespace fsys = std::filesystem;
+
+#include "problems/hanoi.hpp"
+
 namespace bevarmejo {
 namespace hanoi {
 namespace fbiobj {
@@ -33,7 +33,7 @@ namespace fbiobj {
 static const std::string name = "bevarmejo::hanoi::fbiobj";
 static const std::string extra_info = "\tFormulation of the Hanoi problem using cost and reliablity.\n";
 
-Problem::Problem(const Json& settings, const std::vector<fsys::path>& lookup_paths)
+Problem::Problem(const Json& settings, const bemeio::Paths& lookup_paths)
 {
     assert(settings != nullptr);
 

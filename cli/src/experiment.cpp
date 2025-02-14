@@ -32,9 +32,6 @@ namespace fsys = std::filesystem;
 
 #include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
-#include "Anytown/prob_anytown.hpp"
-#include "Hanoi/problem_hanoi_biobj.hpp"
-
 #include "experiment.hpp"
 
 namespace bevarmejo {
