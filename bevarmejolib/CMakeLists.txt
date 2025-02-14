@@ -86,14 +86,23 @@ set(BEME_PROBLEM
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
 )
 
+# ==============================
+# BEME PROBLEMS, e.g., Anytown, Hanoi, etc.
+# ==============================
+set(BEME_PROBLEMS
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/hanoi.cpp"
+)
+
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
         ${BEME_IO}
-        ${BEME_PROBLEM}
         ${BEME_UTILS}
         ${BEME_WDS}
         ${BEME_SIMULATION}
         ${BEME_EVALUATION}
+        ${BEME_PROBLEM}
+        ${BEME_PROBLEMS}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
