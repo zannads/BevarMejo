@@ -8,6 +8,8 @@
 #ifndef BEVARMEJOLIB__CONSTANTS_HPP
 #define BEVARMEJOLIB__CONSTANTS_HPP
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <cmath>
 
 namespace bevarmejo {

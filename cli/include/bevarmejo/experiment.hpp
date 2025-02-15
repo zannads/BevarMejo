@@ -17,8 +17,7 @@ namespace fsys = std::filesystem;
 #include <pagmo/archipelago.hpp>
 #include <pagmo/island.hpp>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
+#include "bevarmejo/io/json.hpp"
 
 namespace bevarmejo {
 
@@ -56,11 +55,11 @@ public:
 
     Experiment(const fsys::path &settings_file);
 private:
-    void build(const json_o &jinput);
+    void build(const Json &jinput);
 
-    void build_island(const json_o &config);
+    void build_island(const Json &config);
 
-    void build_islands(const json_o &typconfig, const json_o &specs=json_o{}, const std::size_t rand_starts=1);
+    void build_islands(const Json &typconfig, const Json &specs=Json{}, const std::size_t rand_starts=1);
 
 /*--- Methods ---*/
 public:
@@ -76,7 +75,7 @@ private:
     void prepare_isl_files() const; // Prepare the runtime files for the islands.
     void prepare_exp_file() const; // Prepare the main experiment file.
 
-    void freeze_isl_runtime_data(json_o &jout, const pagmo::island &isl) const; // Freeze the runtime data of the island to the main experiment file.
+    void freeze_isl_runtime_data(Json &jout, const pagmo::island &isl) const; // Freeze the runtime data of the island to the main experiment file.
     void append_isl_runtime_data(const pagmo::island &isl, const fsys::path &isl_filen) const; // Append the runtime data of the island to the main experiment file.
 
     void finalise_isl_files() const; // Move and format the runtime files to the final files.

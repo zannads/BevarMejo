@@ -8,7 +8,7 @@ add_executable(beme-opt "bemeopt.cpp"
 
 set_property(TARGET beme-opt PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(beme-opt PRIVATE bemelib anytown hanoi)
+target_link_libraries(beme-opt PRIVATE bemelib)
 
 target_include_directories(beme-opt PRIVATE
 		"${CMAKE_SOURCE_DIR}"
@@ -24,7 +24,7 @@ add_executable(beme-sim "bemesim.cpp"
 
 set_property(TARGET beme-sim PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(beme-sim PRIVATE bemelib anytown hanoi)
+target_link_libraries(beme-sim PRIVATE bemelib)
 
 target_include_directories(beme-sim PRIVATE
 		"${CMAKE_SOURCE_DIR}"

@@ -7,24 +7,21 @@ namespace fsys = std::filesystem;
 #include <string>
 #include <utility>
 
-#include <nlohmann/json.hpp>
-using json_o = nlohmann::json;
-
 #include <pagmo/problem.hpp>
 
-#include "bevarmejo/bemexcept.hpp"
-#include "bevarmejo/io/fsys_helpers.hpp"
-#include "bevarmejo/io/streams.hpp"
-
+#include "bevarmejo/io/fsys.hpp"
+#include "bevarmejo/io/json.hpp"
 #include "bevarmejo/io/keys/beme.hpp"
 #include "bevarmejo/io/keys/bemeexp.hpp"
 #include "bevarmejo/io/keys/bemeopt.hpp"
 #include "bevarmejo/io/keys/bemesim.hpp"
 
-#include "bevarmejo/utils/string_manip.hpp"
+#include "bevarmejo/io/streams.hpp"
 
-#include "bevarmejo/library_metadata.hpp"
-#include "bevarmejo/factories.hpp"
+#include "bevarmejo/utility/exceptions.hpp"
+#include "bevarmejo/utility/string.hpp"
+#include "bevarmejo/utility/metadata.hpp"
+#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
 
 #include "bevarmejo/cli_settings.hpp"
 #include "bevarmejo/simulation.hpp"
@@ -60,12 +57,12 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 
 namespace opt {
 
-ExperimentSettings  parse(int argc, char* argv[]) {
-    if (argc < 2) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
-            io::log::mex::parse_error,
-            io::log::mex::nearg,
-            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+ExperimentSettings  parse(int argc, char* argv[])
+{
+    beme_throw_if(argc < 2, std::invalid_argument,
+        "Error parsing the command line arguments.",
+        "Not enough arguments.",
+        "Usage: ", argv[0], " <settings_file> [flags]");
 
     ExperimentSettings exp_settings{};
 
@@ -85,13 +82,12 @@ ExperimentSettings  parse(int argc, char* argv[]) {
 
 namespace sim {
 
-bevarmejo::Simulation parse(int argc, char *argv[]) {
-
-    if (argc < 2) 
-        __format_and_throw<std::invalid_argument, bevarmejo::FunctionError>(io::log::nname::sim+io::log::fname::parse,
-            io::log::mex::parse_error,
-            io::log::mex::nearg,
-            io::log::mex::usage_start+std::string(argv[0])+io::log::mex::usage_end);
+bevarmejo::Simulation parse(int argc, char *argv[])
+{
+    beme_throw_if(argc < 2, std::invalid_argument,
+        "Error parsing the command line arguments.",
+        "Not enough arguments.",
+        "Usage: ", argv[0], " <settings_file> [flags]");
     
     Simulation simu;
 
@@ -107,94 +103,87 @@ bevarmejo::Simulation parse(int argc, char *argv[]) {
 
         // 1.2 read it
         std::ifstream file(simu.settings_file);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open simulation settings file: " + simu.settings_file.string());
-        }
-        if (file.peek() == std::ifstream::traits_type::eof()) {
+        beme_throw_if(!file.is_open(), std::runtime_error,
+            "Error parsing the command line arguments.",
+            "Failed to open simulation settings file.",
+            "File: ", simu.settings_file.string());
+
+        if (file.peek() == std::ifstream::traits_type::eof())
+        {
             file.close();
-            throw std::runtime_error("Simulation settings file is empty: " + simu.settings_file.string());
+            beme_throw(std::runtime_error,
+                "Simulation settings file is empty.",
+                "The file is empty.",
+                "File: ", simu.settings_file.string());
         }
 
         std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
 
         // 1.3 parse it
-        json_o j = json_o::parse(file_content);
+        Json j = Json::parse(file_content);
 
         // 1.3.1 Optional keys that may change the behavior of the simulation
-        if(io::key::lookup_paths.exists_in(j)) {
-            json_o paths = io::json::extract(io::key::lookup_paths).from(j);
+        auto paths = j.value(io::key::lookup_paths.as_in(j), Json{});
+        
+        if (paths != nullptr && paths.is_string())
+        {
+            Json jpath = Json::array();
+            jpath.push_back(paths.get<std::string>());
+            paths = std::move(jpath);
+        }
 
-            if (paths != nullptr) {
-                // Paths could be a string or an array of strings. In both case we need to check if they are directories 
+        for (const auto& path : paths)
+        {
+			auto p = path.get<fsys::path>();
 
-                if (paths.is_string()) {
-                    json_o jpath = json_o::array();
-                    jpath.push_back(paths.get<std::string>());
-                    paths = jpath;
-                }
-
-                for (const auto& path : paths) {
-                    fsys::path p{path};
-
-                    if (fsys::exists(p) && fsys::is_directory(p)) {
-                        simu.lookup_paths.push_back(p);
-                    } else {
-                        std::cerr << "Path in the simulation settings file is not a valid directory: " << p.string() << std::endl;
-                    }
-                }
+            if (fsys::exists(p) && fsys::is_directory(p))
+            {
+                simu.lookup_paths.push_back(p);
+            }
+            else
+            {
+                std::cerr << "Path in the simulation settings file is not a valid directory: " << p.string() << std::endl;
             }
         }
 
-        if(io::key::beme_version.exists_in(j)) 
-            VersionManager::user().set(io::json::extract(io::key::beme_version).from(j).get<std::string>());
+        if(io::key::beme_version.exists_in(j))
+        {
+            auto user_v_str = j.at(io::key::beme_version.as_in(j)).get<std::string>();
+            if (!is_valid_version(user_v_str))
+            {
+                io::stream_out(std::cerr,
+                    "The requested version is not valid. To use this version, recompile the library with the -DPROJECT_VERSION=YY.MM.PP flag.\n",
+                    "Requested version: ", user_v_str, "\n",
+                    "Valid versions for this executable: [", min_version_str, ", ", version_str, "].\n");
+                std::abort();
+            }
+        }
 
         // 1.3.2 mandatory keys first: dv, udp
-         auto check_mandatory_field = [](const io::key::Key &key, const json_o &j) {
-            if (key.exists_in(j)) {
-                return;
-            }
-
-            __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::opt+io::log::fname::parse,
-                io::log::mex::parse_error,
-                "Settings file does not contain a mandatory field.",
-                "Missing field : "+key[0]
-            );
-        };
-
         check_mandatory_field(io::key::dv, j);
         check_mandatory_field(io::key::problem, j);
 
-        simu.dvs = io::json::extract(io::key::dv).from(j).get<std::vector<double>>();
-
-        const json_o &jproblem = io::json::extract(io::key::problem).from(j);
-        check_mandatory_field(io::key::name, jproblem);
-        check_mandatory_field(io::key::params, jproblem);
+        simu.dvs = j.at(io::key::dv.as_in(j)).get<std::vector<double>>();;
 
         // 1.5 build the problem
-        simu.p = build_problem(
-            io::json::extract(io::key::name).from(jproblem).get<std::string>(), 
-            io::json::extract(io::key::params).from(jproblem),
-            simu.lookup_paths
-        );
+        Json jproblem = j.at(io::key::problem.as_in(j));
+        jproblem[io::key::lookup_paths()] = simu.lookup_paths;
+        simu.p = jproblem.get<pagmo::problem>();
 
         // 1.6 optional keys that don't change the behavior of the simulation
-        if(io::key::fv.exists_in(j))
-            simu.fvs = io::json::extract(io::key::fv).from(j).get<std::vector<double>>();
-        
-        if(io::key::id.exists_in(j))
-            simu.id = io::json::extract(io::key::id).from(j).get<unsigned long long>();
-        
-        if(io::key::print.exists_in(j)) 
-            simu.extra_message = io::json::extract(io::key::print).from(j).get<std::string>();
+        simu.fvs = j.value(io::key::fv.as_in(j), std::vector<double>{});
 
+        simu.id = j.value(io::key::id.as_in(j), 0ull);
+
+        simu.extra_message = j.value(io::key::print.as_in(j), std::string{});
     }
-    catch (const std::exception& e) {
-        __format_and_throw<std::runtime_error, bevarmejo::FunctionError>(io::log::nname::sim+io::log::fname::parse,
-            io::log::mex::parse_error,
+    catch (const std::exception& e)
+    {
+        beme_throw(std::runtime_error,
             "Failed to parse the simulation settings file.",
-            "File: " + simu.settings_file.string() + "\n" + e.what()
-        ); 
+            e.what(),
+            "File: ", simu.settings_file.string());
     }
 
     // 3. Check the flags
