@@ -7,7 +7,7 @@ namespace bevarmejo::io::key {
 static const AliasedKey beme_version{"Bemelib version"}; // "Bemelib version"
 
 static const AliasedKey problem{"Problem", "UDP"}; // "Problem", "UDP"
-#if BEME_VERSION < 250200
+#if BEME_VERSION < 240601
 static const AliasedKey type{"Type", "Name"}; // "Type", "Name" (backward compatibility)
 #else
 static const AliasedKey type{ "Type" }; // "Type"

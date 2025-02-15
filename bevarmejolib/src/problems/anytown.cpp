@@ -40,14 +40,14 @@ namespace io::log::cname {
 static const std::string anytown_problem = "Problem"; // "Problem"
 } // namespace cname
 
-namespace io::key {
-static const bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
+namespace io::key
+{
+static const bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
+static const bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
 static const bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
 static const bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
 static const bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options"
-static const bemeio::AliasedKey __wds__ {"WDS", "Water Distribution System"}; // "WDS", "Water Distribution System"
-static const bemeio::AliasedKey __udegs__ {"UDEGs", "User Defined Elements Groups"}; // "UDEGs", "User Defined Elements Groups"
-static const bemeio::AliasedKey __inp__ {"inp"}; // "inp"
+static const bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -143,8 +143,6 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 
 	load_network(settings, lookup_paths, fix_inp);
 
-	load_subnets(settings, lookup_paths);
-
 	if (m__formulation != Formulation::opertns_f1) {
 		// Custom made subnetworks for the temporary elements 
 		m__anytown->submit_id_sequence(label::__temp_elems);
@@ -177,36 +175,33 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	}
 }
 
-void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf) {
-	
-	const auto& wds_settings = settings.at(io::key::__wds__.as_in(settings));
-	const auto inp_filename = wds_settings.at(io::key::__inp__.as_in(wds_settings)).get<fsys::path>();
+void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf)
+{
+	assert(settings != nullptr &&
+		io::key::at_inp.exists_in(settings) &&
+		io::key::at_subnets.exists_in(settings)
+	);
+	const auto inp_filename = settings.at(io::key::at_inp.as_in(settings)).get<fsys::path>();
 
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
 	m__anytown = std::make_shared<WDS>(
 		bemeio::locate_file</* log = */true>(inp_filename, lookup_paths), 
 		preprocessf
 	);
-}
+	m__anytown_filename = inp_filename.string();
 
-void Problem::load_subnets(const Json& settings, const bemeio::Paths& lookup_paths) {
-	
-	const auto& wds_settings = settings.at(io::key::__wds__.as_in(settings));
-	const auto& udegs = wds_settings.at(io::key::__udegs__.as_in(wds_settings));
+	// Load the sequences of names for the subnetworks
+	// If is in array of strings it is the name of the files, otherwise it is a json object with the data.
 
-	for (const auto& udeg : udegs) {
-		
-		try
-		{
-			m__anytown->submit_id_sequence(bemeio::locate_file(udeg.get<fsys::path>(), lookup_paths));
-		}
-		catch (const std::exception& ex) {
-			std::cerr << ex.what();
-		}
-		// else skip but log the error 
-		// TODO: log the error in case it fails at later stages
+	auto j_names = Json{}; // Json for the named sequences of names
+	bemeio::expand_if_filepaths(settings.at(io::key::at_subnets.as_in(settings)), lookup_paths, 
+		j_names);
+
+	for (const auto& [seq_name, names_in_seq] : j_names.items())
+	{
+		m__anytown->submit_id_sequence(seq_name, names_in_seq.get<std::vector<std::string>>());
 	}
-	// TODO: assert that all the required subnetworks are present
+	
 }
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
@@ -1437,7 +1432,6 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	// Reset, just in case.
 	j = Json{};
 
-
 	j[io::key::exi_pipe_opts()] = prob.m__exi_pipe_options;
 	j[io::key::new_pipe_opts()] = prob.m__new_pipe_options;
 	j[io::key::tank_opts()] = prob.m__tank_options;
@@ -1456,18 +1450,14 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 		j[io::key::opers()] = pumpgroup_pattern;
 	}
 		
-	j[io::key::__wds__()] = Json{};
-	j[io::key::__wds__()][io::key::__inp__()] = "anytown.inp";
-	j[io::key::__wds__()][io::key::__udegs__()] = Json{
-                        "city_pipes.snt",
-                        "existing_pipes.snt",
-                        "new_pipes.snt",
-                        "new_park.snt",
-                        "possible_tank_locations.snt",
-                        "residential_pipes.snt"
-	};
+	j[io::key::at_inp()] = prob.m__anytown_filename;
+	j[io::key::at_subnets()] = Json{};
+	for (const auto& [seq_name, names_in_seq] : prob.m__anytown->id_sequences())
+	{
+		j[io::key::at_subnets()][seq_name] = names_in_seq;
+	}
 
-	j["extra-info"] = prob.get_extra_info();
+	j["extra_info"] = prob.get_extra_info();
 }
 
 } // namespace anytown

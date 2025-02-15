@@ -34,8 +34,10 @@ constexpr std::array<char, 10> version_arr = {
 
 #if BEME_VERSION < 240401
 constexpr unsigned int min_version = 230600;
-#elif BEME_VERSION < 241200
+#elif BEME_VERSION < 240601
 constexpr unsigned int min_version = 240401;
+#elif BEME_VERSION < 241200
+constexpr unsigned int min_version = 240601;
 #elif BEME_VERSION < 250200
 constexpr unsigned int min_version = 241200;
 #else // BEME_VERSION >= 250200

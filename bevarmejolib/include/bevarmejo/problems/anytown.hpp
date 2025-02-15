@@ -219,6 +219,7 @@ public:
 protected:
     // Anytown specific data
     mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
+    std::string m__anytown_filename;
     std::vector<bevarmejo::anytown::exi_pipe_option> m__exi_pipe_options;
     std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
     std::vector<bevarmejo::anytown::tank_option> m__tank_options;
@@ -230,7 +231,6 @@ protected:
 
     // For constructor:
     void load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
-    void load_subnets(const Json& settings, const bemeio::Paths& lookup_paths);
     void load_other_data(const Json& settings, const bemeio::Paths& lookup_paths);
 
     // For fitness function:
