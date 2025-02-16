@@ -16,7 +16,7 @@ endif()
 # Set the path to the .cmake file in vcpkg that will allow cmake to find information about Pagmo, Boost and all the libraries installed through vcpkg
 # The path to the toolchain file can be set when preparing cmake run 
 # `cmake .. --toolchain /path/to/the/file.cmake` // equivalent to `cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/the/file.cmake`
-set(CMAKE_TOOLCHAIN_FILE "${PROJECT_SOURCE_DIR}/../vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "Vcpkg toolchain file")
+set(CMAKE_TOOLCHAIN_FILE "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "Vcpkg toolchain file")
 
 # ------------------------------------------------------------------------------
 # [OPTIONAL] Set the version of the project
