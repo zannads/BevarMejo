@@ -36,18 +36,23 @@ namespace bemeio = bevarmejo::io;
 namespace bevarmejo {
 namespace anytown {
 
-namespace io::log::cname {
-static const std::string anytown_problem = "Problem"; // "Problem"
-} // namespace cname
-
 namespace io::key
 {
+#if BEME_VERSION < 240601
+static const bemeio::AliasedKey at_inp {"WDS inp"}; // "AT inp"
+static const bemeio::AliasedKey at_subnets {"WDS UDEGs"}; // "AT subnets"
+static const bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
+static const bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
+static const bemeio::AliasedKey tank_opts {"Tank costs"}; // "Tank options"
+static const bemeio::AliasedKey opers {"Operations"}; // "Pump group operations"
+#else
 static const bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
 static const bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
 static const bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
 static const bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
 static const bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options"
 static const bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
+#endif
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -209,9 +214,10 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		settings != nullptr && 
 		io::key::exi_pipe_opts.exists_in(settings) && 
 		io::key::new_pipe_opts.exists_in(settings) &&
-		io::key::tank_opts.exists_in(settings) &&
-		io::key::opers.exists_in(settings)
+		io::key::tank_opts.exists_in(settings)
 	);
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2)
+		assert(io::key::opers.exists_in(settings));
 
 	// If the settings is a string it means it is a filename, otherwise it shuold 
 	// be a json array with the data.
