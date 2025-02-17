@@ -1,15 +1,20 @@
 #pragma once
 
-#include "bevarmejo/io/key.hpp"
+#include "bevarmejo/io/aliased_key.hpp"
 
 namespace bevarmejo::io::key {
 
-static const Key beme_version{"Bemelib version"}; // "Bemelib version"
+static const AliasedKey beme_version{"Bemelib version"}; // "Bemelib version"
 
-static const Key problem{"Problem", "UDP"}; // "Problem", "UDP"
-static const Key name{"Name"}; // "Name"
-static const Key params{"Parameters", "Params"}; // "Parameters"
+static const AliasedKey problem{"Problem", "UDP"}; // "Problem", "UDP"
+#if BEME_VERSION < 240601
+static const AliasedKey type{"Type", "Name"}; // "Type", "Name" (backward compatibility)
+#else
+static const AliasedKey type{ "Type" }; // "Type"
+#endif
+static const AliasedKey name{"Name"}; // "Name"
+static const AliasedKey params{"Parameters", "Params"}; // "Parameters"
 
-static const Key lookup_paths{"Lookup paths", "Paths"}; // "Lookup paths", "Paths"
+static const AliasedKey lookup_paths{"Lookup paths", "Paths"}; // "Lookup paths", "Paths"
 
 }   // namespace bevarmejo::io::key

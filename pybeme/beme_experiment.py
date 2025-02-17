@@ -65,11 +65,9 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     experiment_results['archipelago']['islands'] = island_results   # access by index
     experiment_results['archipelago']['island'] = island_names      # access by name
 
-    # TODO: convert the current-time in each generation to a datetime object
     for island in experiment_results['archipelago']['islands']:
         for generation in island['generations']:
             generation['current-time'] = pd.to_datetime(generation['current-time'])
-
 
     if verbose:
         print(f"Results of experiment {experiment_name} loaded successfully.")

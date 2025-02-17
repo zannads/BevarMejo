@@ -9,6 +9,9 @@ namespace fsys = std::filesystem;
 
 #include <pagmo/problem.hpp>
 
+#include "bevarmejo/io/streams.hpp"
+#include "bevarmejo/problems/anytown.hpp"
+
 namespace bevarmejo {
 
 struct Simulation {
@@ -36,6 +39,34 @@ struct Simulation {
     std::chrono::high_resolution_clock::time_point end;
     // Flag to save the inp file (useful for running the simulations directly from EPANET)
     bool save_inp;
+
+    bool write_files() const
+    {
+        // No need to save anything (everything went well by definition).
+        if (!save_inp)
+            return true;
+
+        bevarmejo::io::stream_out(std::cout, "Thanks for using BeMe-Sim, saving the inp file...\n");
+        try
+        {
+            if ( p.is<bevarmejo::anytown::Problem>() )
+            {
+                p.extract<bevarmejo::anytown::Problem>()->save_solution(dvs, std::to_string(id) + ".inp");
+                return true;
+            }
+            else 
+            {
+                bevarmejo::io::stream_out(std::cerr, "The problem is not supported for saving the inp file.\n");
+                return false;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            bevarmejo::io::stream_out(std::cerr, "An error happend while saving the inp file:\n", e.what(), "\n" );
+            return false;
+        }
+    }
+
 }; // struct Simulation
 
 } // namespace bevarmejo
