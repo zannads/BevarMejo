@@ -63,7 +63,11 @@ struct adl_serializer<pagmo::algorithm>
         auto algo_params = j.value(bevarmejo::io::key::params.as_in(j), Json{});
 
         // Based on the algo_type, I have to build the algorithm
+#if BEME_VERSION < 240601
         if (algo_type == "nsga2") // TODO: transform into a key
+#else
+        if (algo_type == "pagmo::nsga2")
+#endif
         {
             algo = algo_params.get<pagmo::nsga2>();
         }
