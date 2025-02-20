@@ -24,65 +24,8 @@ namespace detail
 {
 
 void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
+void retrieve_results(const int errorcode, const time_t t, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res);
 void release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
-
-// Early termination mode, flag that tells if the simulation should stop on warnings. (Useful to reduce computation time in optimisations).
-template <bool ETM>
-bool save_results(const int errorcode, const time_t t, const HydSimSettings& a_settings, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res) noexcept
-{
-
-#if BEME_VERSION < 240401
-// If you save only the reporting time steps (as EPANET and wntr do) instead of all hydraulic steps,
-// you may get an incorrect estimate of the energy leaving the system. This happens because EPANET
-// can insert extra time steps in the simulation. When energy is calculated as Flow x Head x TimeStep,
-// the TimeStep used is the reporting one, while Flow and Head are values at the beginning of the reported period.
-// The correct calculation should sum (Flow x Head x HydraulicTimeStep) for all intermediate hydraulic time steps.
-// Until v24.04.00, the default behaviour was to save only the reporting time steps.
-    if (t % a_settings.report_resolution() != 0)
-    {
-        return false;
-    }
-#endif
-    
-    // First we need to add the time to the time series of results.
-    // Then I can add the value to all the QuantitySeries linked to that result.
-    a_wds.result_time_series().commit(t);
-
-    if (errorcode <= 100)
-    {
-        res.commit(t, 0);
-    }
-    else
-    {
-        res.commit(t, errorcode);
-    }
-
-    for (auto&& [id, node] : a_wds.nodes())
-    {
-        node.retrieve_EN_results();
-    }
-
-    for (auto&& [id, link] : a_wds.links())
-    {
-        link.retrieve_EN_results();
-    }
-
-    // We are always quitting when there is a memory error.
-    if (errorcode > 100)
-    {
-        return true;
-    }
-
-    if constexpr (ETM)
-    {
-        // In case of warnings (simulation failed), we return early
-        return errorcode > 0;
-    }
-    else // No early termination
-    {
-        return false;
-    }
-}
 
 } // namespace detail
 
@@ -108,16 +51,33 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
     {
         int errorcode = EN_runH(ph, &t);
 
-        bool early_termination = false;
-        // Based onthe settings and the version call the right save_results
-        early_termination = detail::save_results<false>(
-            errorcode, t, a_settings, a_wds, res);
-        
-        if (early_termination)
+#if BEME_VERSION < 240401
+        // If you save only the reporting time steps (as EPANET and wntr do) instead of all hydraulic steps,
+        // you may get an incorrect estimate of the energy leaving the system. This happens because EPANET
+        // can insert extra time steps in the simulation. When energy is calculated as Flow x Head x TimeStep,
+        // the TimeStep used is the reporting one, while Flow and Head are values at the beginning of the reported period.
+        // The correct calculation should sum (Flow x Head x HydraulicTimeStep) for all intermediate hydraulic time steps.
+        // This is correctly done for the ENERGY property in EPANET, but if you compute any metric integrating through time 
+        // a variable of a network element (e.g., the volume of undelivered demand of a node), you will get a wrong estimate.
+        // Until v24.04.00, the default behaviour was to save only the reporting time steps.
+        if (t % a_settings.report_resolution() != 0)
+        {
+#endif
+        // Retrieve_results guarantees that all results were written or none.
+        detail::retrieve_results(errorcode, t, a_wds, res);
+
+        // In early termination mode, a warning is sufficient to stop the simulation.
+        // (This may be useful to save some runtime for very bad solutions.)
+        // Otherwise, the simulation will stop only if a memory error occurs.
+        if (errorcode > (a_settings.should_terminate_early() ? 0 : 100))
         {
             break;
         }
 
+#if BEME_VERSION < 240401
+        }
+#endif
+      
         errorcode = EN_nextH(ph, &delta_t);
         assert(errorcode < 100);
     }
@@ -164,6 +124,29 @@ auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) 
     
     errorcode = EN_initH(ph, 10);
     assert(errorcode <= 100);
+}
+
+void detail::retrieve_results(const int errorcode, const time_t t, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res)
+{
+    // First we need to add the time to the time series of results.
+    // Then I can add the value to all the QuantitySeries linked to that result.
+    a_wds.result_time_series().commit(t);
+
+    res.commit(t, errorcode);
+
+    for (auto&& [id, node] : a_wds.nodes())
+    {
+        node.retrieve_EN_results();
+    }
+
+    for (auto&& [id, link] : a_wds.links())
+    {
+        link.retrieve_EN_results();
+    }
+
+    // TODO: check that all results were actually retrieve, some try catch blocks and noexcept this function.
+
+    return;
 }
 
 auto detail::release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept -> void
