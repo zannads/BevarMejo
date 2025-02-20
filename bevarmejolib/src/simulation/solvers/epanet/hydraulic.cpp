@@ -60,7 +60,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
         // This is correctly done for the ENERGY property in EPANET, but if you compute any metric integrating through time 
         // a variable of a network element (e.g., the volume of undelivered demand of a node), you will get a wrong estimate.
         // Until v24.04.00, the default behaviour was to save only the reporting time steps.
-        if (t % a_settings.report_resolution() != 0)
+        if (t % a_settings.report_resolution() == 0)
         {
 #endif
         // Retrieve_results guarantees that all results were written or none.
