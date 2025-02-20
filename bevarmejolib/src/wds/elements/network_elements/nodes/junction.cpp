@@ -196,10 +196,18 @@ void Junction::__retrieve_EN_results()
 
     // TODO: get also the leakage flow if v 240712
     
-    // If a Junction with a demand is experiencing a negative head with a DDA,
+    // If a Junction with a demand is experiencing a negative pressure with a DDA,
     // the demand was not satisfied and it should go as a demand undelivered.
+    // This is equivalent to check if the warning flag of EPANET is set to 6.
     double outflow = m__outflow.when_t(t);
+#if BEME_VERSION <241100
+    // HOTFIX, a junction must not experience negative pressure, head could be
+    // slighlty above zero, but below the elevation and water would not flow out.
+    // A simple oversight in the code, that may have caused wrong calculations in the past.
     if (ph->hydraul.DemandModel == DDA && outflow > 0 &&  m__head.when_t(t) < 0)
+#else
+    if (ph->hydraul.DemandModel == DDA && outflow > 0 &&  m__head.when_t(t) < m__elevation)
+#endif
     {
         m__demand.commit(t, outflow);
         m__consumption.commit(t, 0);
