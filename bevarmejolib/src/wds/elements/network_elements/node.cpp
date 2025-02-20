@@ -28,6 +28,7 @@ Node::Node(const WaterDistributionSystem& wds, const EN_Name_t& name) :
     m__elevation(0.0),
     m__links(),
     m__head(wds.time_series(label::__RESULTS_TS)),
+    m__outflow(wds.time_series(label::__RESULTS_TS)),
     m__pressure(wds.time_series(label::__RESULTS_TS))
 { }
 
@@ -157,9 +158,9 @@ void Node::__retrieve_EN_properties()
 
 void Node::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void Node::__retrieve_EN_results()
@@ -180,6 +181,19 @@ void Node::__retrieve_EN_results()
     if (ph->parser.Unitsflag == US)
         val *= MperFT;
     m__head.commit(t, val);
+
+    // get_nodevalue(EN_DEMAND) returns the water flowing through the node in or out of the network.
+    // Positive values indicate flow out of the node, negative values indicate flow into the node.
+    // The EN_DEMAND key is used to retrieve the total actual flow through the node.
+    // If it is a source (tank or reservoir) that is it, if it is a junction, it includes, 
+    // the demand, the emitter flow and the leakage flow (from v240712).
+    errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &val);
+    beme_throw_if_EN_error(errorcode,
+        "Impossible to retrieve the results of the node.",
+        "Error originating from the EPANET API while retrieving value: EN_DEMAND",
+        "Node ID: ", m__name);
+
+    m__outflow.commit(t, epanet::convert_flow_to_L_per_s(ph, val));
 
     errorcode = EN_getnodevalue(ph, m__en_index, EN_PRESSURE, &val);
     beme_throw_if_EN_error(errorcode,

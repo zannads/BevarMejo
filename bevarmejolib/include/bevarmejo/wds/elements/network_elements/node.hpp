@@ -41,6 +41,7 @@ public:
     using Link_ptr = const Link*;
     using ConnectedLinks = std::unordered_set<Link_ptr>;
     using HeadSeries = aux::QuantitySeries<double>;
+    using FlowSeries = aux::QuantitySeries<double>;
     using PressureSeries = aux::QuantitySeries<double>;
 private:
     friend class WaterDistributionSystem;
@@ -56,7 +57,9 @@ protected:
 
     // === Results ===
     HeadSeries m__head;
-    PressureSeries m__pressure;
+    FlowSeries m__outflow; // Flow through the node (positive when outflow)
+    // Results with cached values (they are computed only the first time they are requested)
+    PressureSeries m__pressure; // Cached valued for the pressure at the node
     
 /*------- Member functions -------*/
 // (constructor)

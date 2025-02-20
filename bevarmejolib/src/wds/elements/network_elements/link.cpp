@@ -108,9 +108,9 @@ void Link::__retrieve_EN_properties()
 
 void Link::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void Link::__retrieve_EN_results()
