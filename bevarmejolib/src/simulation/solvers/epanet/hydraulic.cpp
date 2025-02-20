@@ -141,6 +141,19 @@ auto is_successful(const HydSimResults& a_result) noexcept -> bool
     return true;
 }
 
+auto is_successful_with_warnings(const HydSimResults& a_result) noexcept -> bool
+{
+    for (const auto& [t, v] : a_result)
+    {
+        if (v > 100)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept -> void
 {
     auto ph = a_wds.ph();
