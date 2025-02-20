@@ -184,6 +184,7 @@ void Junction::__retrieve_EN_results()
         "Impossible to retrieve the properties of the junction.",
         "Error originating from the EPANET API while retrieving value: EN_DEMANDDEFICIT",
         "Junction ID: ", m__name);
+    undeliv = epanet::convert_flow_to_L_per_s(ph, undeliv);
 
     double emitter_flow = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_EMITTERFLOW, &emitter_flow);
@@ -191,6 +192,7 @@ void Junction::__retrieve_EN_results()
         "Impossible to retrieve the properties of the junction.",
         "Error originating from the EPANET API while retrieving value: EN_EMITTERFLOW",
         "Junction ID: ", m__name);
+    emitter_flow = epanet::convert_flow_to_L_per_s(ph, emitter_flow);
 
     // TODO: get also the leakage flow if v 240712
     
