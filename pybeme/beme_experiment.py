@@ -98,7 +98,7 @@ def load_experiments(experiment_folder: str, verbose=False) -> dict:
     else:
         # We are in a folder of folders
         for folder in os.listdir(experiment_folder):
-            if os.path.isdir(folder):
+            if os.path.isdir(os.path.join(experiment_folder, folder)):
                 if verbose:
                     print(f"Loading experiments in folder {folder}...")
                     print(" ")
