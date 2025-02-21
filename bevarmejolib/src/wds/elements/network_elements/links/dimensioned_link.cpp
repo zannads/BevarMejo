@@ -111,9 +111,9 @@ void DimensionedLink::__retrieve_EN_properties()
 
 void DimensionedLink::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void DimensionedLink::__retrieve_EN_results()

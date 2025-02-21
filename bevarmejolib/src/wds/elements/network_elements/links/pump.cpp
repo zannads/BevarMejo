@@ -156,9 +156,9 @@ void Pump::__retrieve_EN_properties()
 
 void Pump::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void Pump::__retrieve_EN_results()

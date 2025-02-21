@@ -48,5 +48,6 @@ using HydSimResults = bevarmejo::wds::aux::QuantitySeries<int>;
 HydSimResults solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const bevarmejo::sim::solvers::epanet::HydSimSettings& a_settings);
 
 bool is_successful(const HydSimResults& a_results) noexcept;
+bool is_successful_with_warnings(const HydSimResults& a_results) noexcept;
 
 } // namespace bevarmejo::sim::solvers::epanet
