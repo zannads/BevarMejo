@@ -171,9 +171,17 @@ void Experiment::build(const Json &jinput)
     // Final lookup path is always the current directory.
     m__lookup_paths.push_back(fsys::current_path());
 
-    // as of now name is a mandatory field
-    check_mandatory_field(io::key::name, jinput);
-    m__name = jinput.at(io::key::name.as_in(jinput)).get<std::string>();
+    // If the name is present, good, use it, otherwise, use the name of the file.
+    // stripping it of the prefix and the extension.
+    if (io::key::name.exists_in(jinput))
+    {
+        m__name = jinput.at(io::key::name.as_in(jinput)).get<std::string>();
+    }
+    else
+    {
+        m__name = m__settings_file.stem().string();
+        m__name = m__name.substr(m__name.find_first_not_of(io::other::pre__beme_opt+io::other::sep__beme_filenames));
+    }
 
     auto typconfig = jinput.value(io::key::typconfig.as_in(jinput), Json{});
     auto specs = jinput.value(io::key::specs.as_in(jinput), Json{});
