@@ -53,9 +53,9 @@ void Source::clear_results()
 
 void Source::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void Source::__retrieve_EN_results()

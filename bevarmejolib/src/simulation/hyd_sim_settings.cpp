@@ -22,6 +22,11 @@ time_t HydSimSettings::resolution() const noexcept
     return resolution__s;
 }
 
+bool HydSimSettings::should_terminate_early() const noexcept
+{
+    return f__early_termination;
+}
+
 /*--- Modifiers ---*/
 void HydSimSettings::start_time(time_t a_start_time)
 {
@@ -51,6 +56,16 @@ void HydSimSettings::resolution(time_t a_resolution)
         "Resolution: ", a_resolution);
 
     resolution__s = a_resolution;
+}
+
+void HydSimSettings::enable_early_termination()
+{
+    f__early_termination = true;
+}
+
+void HydSimSettings::disable_early_termination()
+{
+    f__early_termination = false;
 }
 
 } // namespace bevarmejo::sim

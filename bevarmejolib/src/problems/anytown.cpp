@@ -358,7 +358,7 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 
 	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
 
-	if (!sim::solvers::epanet::is_successful(results))
+	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
 		reset_dv(m__anytown, dvs);

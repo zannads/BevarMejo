@@ -165,9 +165,9 @@ void Junction::__retrieve_EN_properties()
 
 void Junction::retrieve_EN_results()
 {
-    this->__retrieve_EN_results();
-
     inherited::retrieve_EN_results();
+
+    this->__retrieve_EN_results();
 }
 
 void Junction::__retrieve_EN_results()
@@ -178,23 +178,13 @@ void Junction::__retrieve_EN_results()
     auto ph = m__wds.ph();
     auto t = m__wds.current_result_time();
 
-    // get_nodevalue(EN_DEMAND) returns the water flowing in/out of the junction.
-    // This is the sum of the demands of the junction and the emitter flow.
-    // The pure node demand (the sum of the demands of the junction) is stored 
-    // in DemandFlow. (See epanet.c get_nodvalue(EN_DEMAND) for more details).
-    double consumed = 0.0;
-    int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMAND, &consumed);
-    beme_throw_if_EN_error(errorcode,
-        "Impossible to retrieve the properties of the junction.",
-        "Error originating from the EPANET API while retrieving value: EN_DEMAND",
-        "Junction ID: ", m__name);
-    
     double undeliv = 0.0;
-    errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMANDDEFICIT, &undeliv);
+    int errorcode = EN_getnodevalue(ph, m__en_index, EN_DEMANDDEFICIT, &undeliv);
     beme_throw_if_EN_error(errorcode,
         "Impossible to retrieve the properties of the junction.",
         "Error originating from the EPANET API while retrieving value: EN_DEMANDDEFICIT",
         "Junction ID: ", m__name);
+    undeliv = epanet::convert_flow_to_L_per_s(ph, undeliv);
 
     double emitter_flow = 0.0;
     errorcode = EN_getnodevalue(ph, m__en_index, EN_EMITTERFLOW, &emitter_flow);
@@ -202,28 +192,33 @@ void Junction::__retrieve_EN_results()
         "Impossible to retrieve the properties of the junction.",
         "Error originating from the EPANET API while retrieving value: EN_EMITTERFLOW",
         "Junction ID: ", m__name);
-    
-    // If a Junction with a demand is experiencing a negative head with a DDA,
-    // the demand was not satisfied and it should go as a demand undelivered.
-    // I have not uploaded the head of the junction yet because it is a node property.
-    // Therefore I simply check if the head at that index is negative.
+    emitter_flow = epanet::convert_flow_to_L_per_s(ph, emitter_flow);
 
-    if (consumed > 0 && ph->hydraul.DemandModel == DDA && ph->hydraul.NodeHead[m__en_index] < 0)
+    // TODO: get also the leakage flow if v 240712
+    
+    // If a Junction with a demand is experiencing a negative pressure with a DDA,
+    // the demand was not satisfied and it should go as a demand undelivered.
+    // This is equivalent to check if the warning flag of EPANET is set to 6.
+    double outflow = m__outflow.when_t(t);
+#if BEME_VERSION <241100
+    // HOTFIX, a junction must not experience negative pressure, head could be
+    // slighlty above zero, but below the elevation and water would not flow out.
+    // A simple oversight in the code, that may have caused wrong calculations in the past.
+    if (ph->hydraul.DemandModel == DDA && outflow > 0 &&  m__head.when_t(t) < 0)
+#else
+    if (ph->hydraul.DemandModel == DDA && outflow > 0 &&  m__head.when_t(t) < m__elevation)
+#endif
     {
-        m__demand.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));
-        m__consumption.commit(t, epanet::convert_flow_to_L_per_s(ph, 0));
-        m__undelivered_demand.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));       
+        m__demand.commit(t, outflow);
+        m__consumption.commit(t, 0);
+        m__undelivered_demand.commit(t, outflow);
     }
     else
     {
-        m__demand.commit(t, epanet::convert_flow_to_L_per_s(ph, (consumed - emitter_flow)));
-        m__consumption.commit(t, epanet::convert_flow_to_L_per_s(ph, consumed));
-        m__undelivered_demand.commit(t, epanet::convert_flow_to_L_per_s(ph, undeliv));    
+        m__demand.commit(t, outflow - emitter_flow);
+        m__consumption.commit(t, outflow);
+        m__undelivered_demand.commit(t, undeliv);
     }
-    
-    
 }
-
-
 
 } // namespace bevarmejo::wds
