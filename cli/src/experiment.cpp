@@ -328,25 +328,28 @@ void Experiment::run() {
     finalise_exp_file();
 }
 
-fsys::path Experiment::output_folder() const {
+fsys::path Experiment::output_folder() const
+{
     return m__root_folder/io::other::dir__beme_out;
 }
 
-fsys::path Experiment::exp_filename() const {
+fsys::path Experiment::exp_filename() const
+{
     std::string temp = (
         io::other::pre__beme_exp+
         io::other::sep__beme_filenames+
         m__name+
-        io::other::ext__beme_exp+io::other::ext__json
+        io::other::ext__json
     );
     
     return output_folder()/temp;
 }
 
-fsys::path Experiment::isl_filename(std::size_t island_idx, bool runtime) const {
-    std::string suffix = runtime ? io::other::ext__beme_rnt_isl+io::other::ext__jsonl : io::other::ext__beme_isl+io::other::ext__json;
+fsys::path Experiment::isl_filename(std::size_t island_idx, bool runtime) const
+{
+    std::string suffix = runtime ? io::other::ext__jsonl : io::other::ext__json;
     std::string temp = (
-        io::other::pre__beme_exp+
+        io::other::pre__beme_isl+
         io::other::sep__beme_filenames+
         m__name+
         io::other::sep__beme_filenames+
