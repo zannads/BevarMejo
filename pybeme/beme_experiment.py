@@ -4,7 +4,7 @@ import re
 
 import pandas as pd
 
-def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
+def load_experiment(experiment_namefile: str, verbose=False) -> dict:
     """
     Load the results of an experiment from a json file.
     """
@@ -12,25 +12,11 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     if not os.path.exists(experiment_namefile):
         raise FileNotFoundError(f"File {experiment_namefile} does not exist.")
 
-    # Before version 2024.10.0:
-    """
-    # The name of the experiment is included in the name of the file between the
-    # name prefix (bemeopt__) and the name suffix (__exp). You can find it 
-    # between the first '__' and the last '__' in the name of the file. 
-    # First need to remove the path and the extension of the file.
-    """
-    # After version 2024.10.0:
-    """
-    # The name of the experiment is included after the name prefix (bemeexp__) and
-    # before the name suffix (.exp), which comes before the extension of the file.
-    # The experiment folder is one level outside the full file path.
-    """
-    if os.path.basename(experiment_namefile).startswith("bemeopt__"):
-        experiment_name = re.match(r"bemeopt__(.*)__exp", os.path.basename(experiment_namefile)).group(1)
-    else : # assume bemeexp__
-        experiment_name = re.match(r"bemeexp__(.*)\.exp", os.path.basename(experiment_namefile)).group(1)
-    
-    # Experiment folder is one level outside the full file path
+    # The name of the experiment is included after the name prefix (bemeexp__) and
+    # before the extension of the file.
+    # The experiment folder is outside the output folder, so I need to go two levels up.
+
+    experiment_name = re.match(r"bemeexp__(.*)", os.path.basename(experiment_namefile)).group(1)
     experiment_folder = os.path.dirname(os.path.dirname(experiment_namefile))
 
     if verbose:
@@ -48,14 +34,13 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     island_results = [ ]
     island_names = { }
     for island_relpath in experiment_results['archipelago']['islands']:
-        # Island name is after the prefix and after the experiment name
-        island_name = os.path.splitext(os.path.basename(island_relpath))[0]
-        island_name = island_name.replace("opt__", "").split("__")[-1]
-        # if island_relpath is absolute path, just use it, otherwise join it with experiment_folder and output
-        if not os.path.isabs(island_relpath):
-            island_relpath = os.path.join(experiment_folder, 'output', island_relpath)
+        # The island name is what remains after removing the prefix, the experiment
+        # name and before the extensions.
+        island_name = os.path.splitext(os.path.basename(island_relpath))[0].split('__')[2]
+        
+        island_path = os.path.join(experiment_folder, 'output', island_relpath)
 
-        with open( island_relpath, 'r') as file:
+        with open( island_path, 'r') as file:
             island_results.append( json.load(file) )
         island_names[island_name] = island_results[-1] # reference to the same object
 
@@ -67,7 +52,7 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
 
     for island in experiment_results['archipelago']['islands']:
         for generation in island['generations']:
-            generation['current-time'] = pd.to_datetime(generation['current-time'])
+            generation['current_time'] = pd.to_datetime(generation['current_time'])
 
     if verbose:
         print(f"Results of experiment {experiment_name} loaded successfully.")
@@ -81,6 +66,46 @@ def load_experiment_results(experiment_namefile: str, verbose=False) -> dict:
     experiment_results['folder'] = experiment_folder
 
     return experiment_results
+
+def load_experiments(experiment_folder: str, verbose=False) -> dict:
+    """
+    Load all the experiments in a folder.
+    Multi-experiments folder is supported look into folders.
+    """
+    # If the folder is non existing or non a directory, raise an error
+    if not os.path.exists(experiment_folder) or not os.path.isdir(experiment_folder):
+        raise FileNotFoundError(f"Folder {experiment_folder} does not exist.")
+    
+    experiments = { }
+    # If the folder is an experiment folder (so contains the input data, the
+    # optimisation settings file and the output folder), collect all the experiments
+    # files in the output folder and run the load_experiment function on each of them.
+    # Otherwise, if the folder contains instead multiple experiment folders, run
+    # recursively this function on each of them and append the results to the dict.
+
+    if 'output' in os.listdir(experiment_folder):
+        # list the experiment files (bemexp__*.json) in the output folder
+        experiment_files = [f for f in os.listdir(os.path.join(experiment_folder, 'output')) if f.startswith('bemeexp__') and f.endswith('.json')]
+        
+        if verbose:
+            print(f"Loading {len(experiment_files)} experiments in folder {experiment_folder}...")
+            print(" ")
+
+        for experiment_file in experiment_files:
+            experiment_namefile = os.path.join(experiment_folder, 'output', experiment_file)
+            experiment = load_experiment(experiment_namefile, verbose)
+            experiments[experiment['name']] = experiment
+    else:
+        # We are in a folder of folders
+        for folder in os.listdir(experiment_folder):
+            if os.path.isdir(folder):
+                if verbose:
+                    print(f"Loading experiments in folder {folder}...")
+                    print(" ")
+
+                experiments.update(load_experiments(os.path.join(experiment_folder, folder), verbose))
+
+    return experiments
 
 def extract_dataframe(experiment_results: dict) -> pd.DataFrame:
     """
@@ -107,7 +132,7 @@ def extract_dataframe(experiment_results: dict) -> pd.DataFrame:
         # Iterate over each generation
         for generation in island_results['generations']:
             # Extract the fitness vector for each individual in the generation
-            fitness_vectors = [individual['fitness-vector'] for individual in generation['individuals']]
+            fitness_vectors = [individual['fitness_vector'] for individual in generation['individuals']]
             
             # Create a dataframe for the generation with fitness vectors as columns
             generation_df = pd.DataFrame(fitness_vectors)
@@ -173,41 +198,32 @@ def save_simulation_settings(exp, individual_coord, save_in_folder =".tmp") -> s
 
     individual = extract_individual_from_coordinates(exp, individual_coord)
     individual_island = exp['archipelago']['islands'][individual_coord.island_idx]
-    bemelib_version = "v24.10.0"
-    if 'bemelib-version' in exp['software']:
-        bemelib_version = exp['software']['bemelib-version']
+    bemelib_version = "v25.02.0"
+    if 'bemelib_version' in exp['software']:
+        bemelib_version = exp['software']['bemelib_version']
     
     # Based on the island of the individual, the UDP settings could be slightly different.
     # For example, different islands may have been run with different water demand profiles.
-    # So I extract the UDP settings from the island file. If this is empty, or 
-    # the version is before 24.10.0, I use the UDP settings from the optimisation settings file.
-    if bemelib_version < "v24.10.0" or 'problem' not in individual_island:
-        # Open the optimisation settings file 
-        with open(os.path.expanduser(os.path.join(exp['folder'], 'bemeopt__settings.json')), 'r') as file:
-            opt_sett = json.load(file)
-        udp_sett = opt_sett['Typical configuration']['UDP']
-    else:
-        udp_sett = individual_island['problem']
+    # So I extract the UDP settings from the island file.
+    udp_sett = individual_island['problem']
 
     simu_sett= {
-        "decision-vector": individual['decision-vector'],
-        "fitness-vector": individual['fitness-vector'],
+        "decision_vector": individual['decision_vector'],
+        "fitness_vector": individual['fitness_vector'],
         "id": individual['id'],
         "print": "",
-        "bemelib-version": bemelib_version,
-        "UDP": udp_sett,
-        "lookup-paths": [
+        "bemelib_version": bemelib_version,
+        "problem": udp_sett,
+        "lookup_paths": [
             os.path.expanduser(exp['folder'])
         ]
     }    
     id = simu_sett['id']
-    with open(f'{save_in_folder}/bemesim__{id}__settings.json', 'w') as file:
+    with open(f'{save_in_folder}/bemesim__{id}.json', 'w') as file:
         json.dump(simu_sett, file)
 
     return id
 
 if __name__ == "__main__":
-    if len(os.sys.argv) > 1:
-        load_experiment_results(os.sys.argv[1], verbose=True)
-    else:
-        print("To load the results of an experiment, pass an experiment file as an argument to the script.")
+    # TODO: Add a command line interface to load the experiments and extract the dataframes
+    pass
