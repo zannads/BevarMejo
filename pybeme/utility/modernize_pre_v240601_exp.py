@@ -1,5 +1,8 @@
-import os
 import json
+import os
+import sys
+
+from refactor_json_keys_case import recursive_refactor, kebab_case_to_snake_case
 
 if __name__ == '__main__':
     """
@@ -18,11 +21,11 @@ if __name__ == '__main__':
 
     - Finally, the experiment files' keys are changed to kebab case.
     """
-    if len(os.sys.argv) < 2:
-        print("To convert the configuration files and the results files of an experiment, pass an experiment folder as an argument to the script.")
-        os.sys.exit(1)
+    if len(sys.argv) < 2:
+        print("Usage: python modernize_pre_v240601_exp.py <experiment_directory>")
+        sys.exit(1)
 
-    exp_folder = os.sys.argv[1]
+    exp_folder = sys.argv[1]
     exp_name = exp_folder.split('/')[-1]
 
     # Create a copy folder with the name: exp_folder + "-modern"
@@ -30,7 +33,7 @@ if __name__ == '__main__':
     if not os.path.exists(modern_folder):
         os.makedirs(modern_folder)
     else:
-        print("The modern folder already exists. Please remove it or choose a different name.")
+        print(f"Folder {modern_folder} already exists. Please remove it before running this script. Exiting...")
         os.sys.exit(1)
 
     # Load the experiment file (name bemeopt__settings.json)
@@ -164,38 +167,79 @@ if __name__ == '__main__':
     output_folder = os.path.join(modern_folder, 'output')
     os.makedirs(output_folder)
 
-    # copy the **__exp file
-    os.system(f"cp {os.path.join(exp_folder, 'output', exp_name+'__exp.json')} {output_folder}")
+    # copy the **__exp file with the new name 'bemexp__${name}.json'
+    new_exp_name = exp_name.replace('bemeopt__', 'bemeexp__')+".json"
+    os.system(f"cp {os.path.join(exp_folder, 'output', exp_name+'__exp.json')} {output_folder}/{new_exp_name}")
     
-    # for each island file in the output folder (it does not end with __exp.json)
-    # open it, and in the 'problem' key, put the ['Typical configuration']['UDP'] json object from the settings file
-    # dump it with indent 4 in the output folder
+    # Open it so that we can modify the name of the islands and the keys
+    # Keys will be converted from kebab-case to snake_case, but since they differ
+    # only for multi word keys, only these keys will be changed.
+    with open(os.path.join(output_folder, new_exp_name), 'r') as file:
+        exp = json.load(file)
 
-    for name in os.listdir(os.path.join(exp_folder, 'output')):
-        print(name)
-        if os.path.isfile(os.path.join(exp_folder, 'output', name)) and not name.endswith('__exp.json') and not name.endswith('.DS_Store'):
-            with open(os.path.join(exp_folder, 'output', name), 'r') as file:
-                island = json.load(file)
+    for i, isl_relpath in enumerate(exp['archipelago']['islands']):
+        print(isl_relpath)
 
-            # I should simply do: 
-            # island['problem'] = settings_file['Typical configuration']['UDP']
-            #
-            # However, I need to convert the keys to kebab case.
-            island['problem'] = {
-                'name': settings_file['Typical configuration']['UDP']['Name'],
-                'parameters': {
-                    'wds-inp': settings_file['Typical configuration']['UDP']['Parameters']['WDS inp'],
-                    'wds-udegs': settings_file['Typical configuration']['UDP']['Parameters']['WDS UDEGs'],
-                    'existing-pipe-options': settings_file['Typical configuration']['UDP']['Parameters']['Existing pipe options'],
-                    'new-pipe-options': settings_file['Typical configuration']['UDP']['Parameters']['New pipe options'],
-                    'tank-costs': settings_file['Typical configuration']['UDP']['Parameters']['Tank costs']
-                }
+        with open(os.path.join(exp_folder, 'output', isl_relpath), 'r') as file:
+            island = json.load(file)
+
+        # Only for algorithm: remove extra-info and add its content to parameters
+        # rename NSGA_II to nsga2
+        island['algorithm']['name'] = "nsga2"
+        ef = island['algorithm'].pop('extra-info', {})
+        # split the extra-info string in the parameters, use the \n as separator
+        # then each subtoken (should be Generations: number and Verboisty: number) should be split by ':'
+        # and the first token should be the key (in snkae_case and the second the value)
+        for token in ef.split('\n')[0:2]:
+            key, value = token.split(':')
+            island['algorithm']['parameters'][key.strip().replace(' ', '_').lower()] = int(value.strip())
+
+        # For algorithm, island, replacement-policy and selection-policy
+        # name -> type
+        # ['name'] -> "pagmo::snake_case_name"
+        def fix_containers_name(container):
+            container['type'] = f"pagmo::{container.pop('name').replace(' ', '_').lower()}"
+            return container
+        cs = ['algorithm', 'island', 'replacement-policy', 'selection-policy']
+        for c in cs:
+            island[c] = fix_containers_name(island[c])
+
+        # Generations, algorithm, island, replacement-policy, selection-policy
+        # should recursively refactor the keys to snake_case
+        cs = ['generations', 'algorithm', 'island', 'replacement-policy', 'selection-policy']
+        for c in cs:
+            island[c.replace('-', '_')] = recursive_refactor(island.pop(c), kebab_case_to_snake_case)
+
+        # Finally, override the problem in the island with the problem in the settings file
+        island['problem'] = {
+            'type': settings_file['Typical configuration']['UDP']['Name'],
+            'parameters': {
+                'wds_inp': settings_file['Typical configuration']['UDP']['Parameters']['WDS inp'],
+                'wds_udegs': settings_file['Typical configuration']['UDP']['Parameters']['WDS UDEGs'],
+                'existing_pipe_options': settings_file['Typical configuration']['UDP']['Parameters']['Existing pipe options'],
+                'new_pipe_options': settings_file['Typical configuration']['UDP']['Parameters']['New pipe options'],
+                'tank_costs': settings_file['Typical configuration']['UDP']['Parameters']['Tank costs']
             }
-            if 'Operations' in settings_file['Typical configuration']['UDP']['Parameters']:
-                island['problem']['parameters']['operations'] = settings_file['Typical configuration']['UDP']['Parameters']['Operations']
+        }
+        if 'Operations' in settings_file['Typical configuration']['UDP']['Parameters']:
+            island['problem']['parameters']['operations'] = settings_file['Typical configuration']['UDP']['Parameters']['Operations']
 
-            with open(os.path.join(output_folder, name), 'w') as file:
-                json.dump(island, file, indent=4)
+        # Some other keys may need to be fixed. But I will change them as I encounter them.
+
+        # Reorder the keys in the alpahbetical order like the c++ library wold do
+        new_relpathname = isl_relpath.replace('opt', 'isl')
+        with open(os.path.join(output_folder, new_relpathname), 'w') as file:
+            json.dump(island, file, indent=4, sort_keys=True)
+
+        exp['archipelago']['islands'][i] = new_relpathname
+
+    # Convert also all the other keys in the experiment file to snake_case
+    exp['archipelago']['topology'] = {'type': "pagmo::unconnected"}
+    exp['software']['bemelib_version'] = exp['software'].pop('bemelib-version')
+
+    # Save the modified experiment file in the output folder
+    with open(os.path.join(output_folder, new_exp_name), 'w') as file:
+        json.dump(exp, file, indent=4)
 
     print("The experiment files have been successfully converted to the new format.")
     print(f"See the new folder: {modern_folder}")
