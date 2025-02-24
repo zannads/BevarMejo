@@ -108,6 +108,18 @@ bool operator>(const std::string& str, const ConstexprString<N>& cs) { return st
 template <std::size_t N>
 bool operator>=(const std::string& str, const ConstexprString<N>& cs) { return str >= cs.c_str(); }
 
+// Helper to convert characters to lowercase as in tolower().
+inline constexpr char to_lower(char c)
+{
+    return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c;
+}
+
+// Helper to convert characters to uppercase as in toupper().
+inline constexpr char to_upper(char c)
+{
+    return (c >= 'a' && c <= 'z') ? static_cast<char>(c - ('a' - 'A')) : c;
+}
+
 // Helper function to convert a ConstexprString in Sentence Case to Camel Case.
 template <std::size_t N>
 inline constexpr ConstexprString<N> sentence_case_to_camel_case(ConstexprString<N> in)
@@ -134,12 +146,12 @@ inline constexpr ConstexprString<N> sentence_case_to_camel_case(ConstexprString<
         if (capitalize_next)
         {
             // See toupper() for why we need the two static_casts.
-            out[write_pos++] = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+            out[write_pos++] = to_upper(c);
             capitalize_next = false;
         }
         else
         {
-            out[write_pos++] = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            out[write_pos++] = to_lower(c);
         }
     }
 
@@ -173,7 +185,7 @@ inline constexpr ConstexprString<N> sentence_case_to_kebab_case(ConstexprString<
         }
         else
         {
-            out[write_pos++] = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+            out[write_pos++] = to_lower(c);
         }
     }
 
@@ -186,7 +198,7 @@ template <std::size_t N>
 inline constexpr ConstexprString<N> sentence_case_to_pascal_case(ConstexprString<N> in)
 {
     auto out = sentence_case_to_camel_case(in);
-    out[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(out[0])));
+    out[0] = to_upper(out[0]);
     return out;
 }
 
