@@ -46,14 +46,48 @@ constexpr bevarmejo::detail::text_case out_style_t =
 template <std::size_t N>
 inline constexpr auto make_text_cases(bevarmejo::detail::ConstexprString<N> key_Sc) -> std::array<bevarmejo::detail::ConstexprString<N>, bevarmejo::detail::n_text_cases>
 {
-    return std::array<bevarmejo::detail::ConstexprString<N>, bevarmejo::detail::n_text_cases>
+    // The cases are written in the following order to minimze search time:
+    // 1. The output style.
+    // 2. The rest of the styles in order.
+    std::array<bevarmejo::detail::ConstexprString<N>, bevarmejo::detail::n_text_cases> cases;
+
+    cases[0] = bevarmejo::detail::sentence_case_to<bevarmejo::io::detail::out_style_t>(key_Sc);
+
+    for (std::size_t i = 1, c=0; c < bevarmejo::detail::n_text_cases; ++c)
     {
-        key_Sc,
-        bevarmejo::detail::sentence_case_to_camel_case(key_Sc),
-        bevarmejo::detail::sentence_case_to_kebab_case(key_Sc),
-        bevarmejo::detail::sentence_case_to_pascal_case(key_Sc),
-        bevarmejo::detail::sentence_case_to_snake_case(key_Sc)
-    };
+        auto tc = static_cast<bevarmejo::detail::text_case>(c);
+        if (tc == bevarmejo::io::detail::out_style_t)
+        {
+            continue;
+        }
+        else if (tc == bevarmejo::detail::text_case::SentenceCase)
+        {
+            cases[i] = key_Sc;
+            ++i;
+        }
+        else if (tc == bevarmejo::detail::text_case::CamelCase)
+        {
+            cases[i] = bevarmejo::detail::sentence_case_to_camel_case(key_Sc);
+            ++i;
+        }
+        else if (tc == bevarmejo::detail::text_case::KebabCase)
+        {
+            cases[i] = bevarmejo::detail::sentence_case_to_kebab_case(key_Sc);
+            ++i;
+        }
+        else if (tc == bevarmejo::detail::text_case::PascalCase)
+        {
+            cases[i] = bevarmejo::detail::sentence_case_to_pascal_case(key_Sc);
+            ++i;
+        }
+        else // if (tc == bevarmejo::detail::text_case::SnakeCase)
+        {
+            cases[i] = bevarmejo::detail::sentence_case_to_snake_case(key_Sc);
+            ++i;
+        }
+    }
+    
+    return cases;
 }
     
 } // namespace detail
