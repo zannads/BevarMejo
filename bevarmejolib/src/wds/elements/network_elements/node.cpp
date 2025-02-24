@@ -97,6 +97,7 @@ void Node::clear_results()
     inherited::clear_results();
 
     m__head.clear();
+    m__outflow.clear();
     m__pressure.clear();
 }
 

@@ -39,19 +39,19 @@ namespace anytown {
 namespace io::key
 {
 #if BEME_VERSION < 240601
-static const bemeio::AliasedKey at_inp {"WDS inp"}; // "AT inp"
-static const bemeio::AliasedKey at_subnets {"WDS UDEGs"}; // "AT subnets"
-static const bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
-static const bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
-static const bemeio::AliasedKey tank_opts {"Tank costs"}; // "Tank options"
-static const bemeio::AliasedKey opers {"Operations"}; // "Pump group operations"
+static constexpr bemeio::AliasedKey at_inp {"WDS inp"}; // "AT inp"
+static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs"}; // "AT subnets"
+static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
+static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
+static constexpr bemeio::AliasedKey tank_opts {"Tank costs"}; // "Tank options"
+static constexpr bemeio::AliasedKey opers {"Operations"}; // "Pump group operations"
 #else
-static const bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
-static const bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
-static const bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
-static const bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
-static const bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options"
-static const bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
+static constexpr bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
+static constexpr bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
+static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
+static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
+static constexpr bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options"
+static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 #endif
 } // namespace key
 // Values for the allowed formulations in the json file.

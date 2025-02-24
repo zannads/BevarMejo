@@ -120,16 +120,17 @@ IF(BEME_VERSION LESS 250200)
 ENDIF()
 message(STATUS "Using EPANET version: ${EPANET_VERSION}")
 
-# Set the path to the EPANET folder and library
-# The path to the folder can be set in 2 ways:
-#     1. pass a flag at the first cmake invocation
-#         `cmake .. -DEPANET_ROOT=/path/to/EPANET`
-#     3. set the enviromental variable EPANET_ROOT = /path/to/EPANET // see how to do it base on your OS
-#         `cmake ..`
+# Some of my code also chanes slighlty based on the version of EPANET, for example,
+# before 240712 (merge pull request #808) the leakage was not implemented so it should 
+# not appear in the code.
+add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
+
+# Set the path to the EPANET library with the flag '-DEPANET_ROOT=/path/to/EPANET'
+# Cached variable.
 set( EPANET_ROOT "${PROJECT_SOURCE_DIR}/../EPANET" CACHE PATH "Path to the rootfolder to EPANET")
 message(STATUS "EPANET directory: ${EPANET_ROOT}")
 
-# In Debug mode we also want to check EPANET as we are wrapping it.
+# In Debug mode, we want to wrap EPANET to debug errors and to have a better understanding.
 cmake_dependent_option(EPANET_FROM_SOURCE "Build EPANET from source" ON "CMAKE_BUILD_TYPE MATCHES Debug" OFF)
 message(STATUS "EPANET from source: ${EPANET_FROM_SOURCE}")
 IF(EPANET_FROM_SOURCE)
@@ -188,21 +189,38 @@ ELSE() # NOT EPANET FROM SOURCE
   add_library(epanet SHARED IMPORTED)
   
   # However, based on the operating system, we need to set the correct path to the library.
-  # This is done through the IMPORTED_LOCATION property of the target.
+  # We also need to adjust for the EPANET version. We require that EPANET is 
+  # built in builds/VERSION_YY.VERSION_MM.VERSION_DD folder for previous versions
+  # and in build for the latest version.
+  set(EPANET_BUILD_DIR "${EPANET_ROOT}/build")
+  IF(BEME_VERSION LESS 250200)
+    math(EXPR MAJOR_VERSION "${EPANET_VERSION} / 10000")
+    math(EXPR MINOR_VERSION "(${EPANET_VERSION} % 10000) / 100")
+    math(EXPR PATCH_VERSION "${EPANET_VERSION} % 100")
+    set(EPANET_BUILD_DIR "${EPANET_ROOT}/builds/${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+    # string(REGEX REPLACE "([0-9][0-9])([0-9][0-9])([0-9][0-9])" "${EPANET_ROOT}/builds/\\1.\\2.\\3" EPANET_BUILD_DIR ${EPANET_VERSION})
+    message(STATUS "EPANET build directory: ${EPANET_BUILD_DIR}")
+  ENDIF()
+
+  # When using Visual Studio on Windows, cmake is a multi-configuration generator.
+  # We need to set the path for Release configuration. On Unix, makefiles are usually
+  # used, so it is a single configuration to the folder.
+
+  # To expose the library to the system we define the IMPORTED_LOCATION property to the target.
   IF (WIN32)
     set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_ROOT}/build/bin/Release/epanet2.dll"
-      IMPORTED_IMPLIB "${EPANET_ROOT}/build/lib/Release/epanet2.lib"
+      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/bin/Release/epanet2.dll"
+      IMPORTED_IMPLIB   "${EPANET_BUILD_DIR}/lib/Release/epanet2.lib"
     )
   ENDIF(WIN32)
   IF(APPLE)
     set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.dylib"
+      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.dylib"
     )
   ENDIF(APPLE)
   IF(LINUX)
     set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_ROOT}/build/lib/libepanet2.so"
+      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.so"
     )
   ENDIF(LINUX)
 
