@@ -17,12 +17,12 @@
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::AliasedKey cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
-static const bevarmejo::io::AliasedKey eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
-static const bevarmejo::io::AliasedKey m{"Mutation probability", "m"}; // "Mutation probability", "m"
-static const bevarmejo::io::AliasedKey eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
-static const bevarmejo::io::AliasedKey seed{"Seed"}; // "Seed"
-static const bevarmejo::io::AliasedKey verbosity{"Verbosity"}; // "Verbosity"
+static constexpr bevarmejo::io::AliasedKey cr{"Crossover probability", "cr"}; // "Crossover probability", "cr"
+static constexpr bevarmejo::io::AliasedKey eta_c{"Distribution index for crossover", "eta_c"}; // "Distribution index for crossover", "eta_c"
+static constexpr bevarmejo::io::AliasedKey m{"Mutation probability", "m"}; // "Mutation probability", "m"
+static constexpr bevarmejo::io::AliasedKey eta_m{"Distribution index for mutation", "eta_m"}; // "Distribution index for mutation", "eta_m"
+static constexpr bevarmejo::io::AliasedKey seed{"Seed"}; // "Seed"
+static constexpr bevarmejo::io::AliasedKey verbosity{"Verbosity"}; // "Verbosity"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN

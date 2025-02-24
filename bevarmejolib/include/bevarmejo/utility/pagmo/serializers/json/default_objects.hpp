@@ -20,9 +20,9 @@
 
 namespace bevarmejo::io::key::detail
 {
-static const bevarmejo::io::AliasedKey pool_flag{"Using pool"}; // "Using pool"
-static const bevarmejo::io::AliasedKey abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
-static const bevarmejo::io::AliasedKey frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
+static constexpr bevarmejo::io::AliasedKey pool_flag{"Using pool"}; // "Using pool"
+static constexpr bevarmejo::io::AliasedKey abs_mig_rate{"Absolute migration rate"}; // "Absolute migration rate"
+static constexpr bevarmejo::io::AliasedKey frac_mig_rate{"Fractional migration rate"}; // "Fractional migration rate"
 } // namespace bevarmejo::io::key::detail
 
 NLOHMANN_JSON_NAMESPACE_BEGIN

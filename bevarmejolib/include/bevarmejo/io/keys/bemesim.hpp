@@ -4,6 +4,6 @@
 
 namespace bevarmejo::io::key {
 
-static const AliasedKey print{"Print"}; // "Print"
+static constexpr bevarmejo::io::AliasedKey print{"Print"}; // "Print"
 
 }   // namespace bevarmejo::io::key
