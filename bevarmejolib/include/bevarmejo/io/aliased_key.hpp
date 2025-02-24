@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cctype>
 #include <tuple>
 #include <utility>
@@ -22,17 +23,11 @@ namespace bevarmejo::io
  * The Key is saved in Sentence case and using the magic of constexpr functions
  * the key is transformed in the desired style at compile time.
 */
-template <std::size_t... Ns>
-class AliasedKey final
+
+namespace detail
 {
-/*----------------------------------------------------------------------------*/
-/*---------------------------- Member types ----------------------------------*/
-/*----------------------------------------------------------------------------*/
-public:
-    using styles = bevarmejo::detail::text_case;
-    
-    // The output style of the AliasedKeys.
-    static constexpr bevarmejo::detail::text_case out_style_t = 
+// The output style of the AliasedKeys.
+constexpr bevarmejo::detail::text_case out_style_t = 
 #if defined(OUT_STYLE_0)
         bevarmejo::detail::text_case::SentenceCase;
 #elif defined(OUT_STYLE_1)
@@ -46,23 +41,55 @@ public:
 #else
     #error "The output style selected is invalid."
 #endif
-    
-    static constexpr std::size_t out_style_v = static_cast<std::size_t>(out_style_t);
 
+// Helper function to create the array of all possible cases for a Key.
+template <std::size_t N>
+inline constexpr auto make_text_cases(bevarmejo::detail::ConstexprString<N> key_Sc) -> std::array<bevarmejo::detail::ConstexprString<N>, bevarmejo::detail::n_text_cases>
+{
+    return std::array<bevarmejo::detail::ConstexprString<N>, bevarmejo::detail::n_text_cases>
+    {
+        key_Sc,
+        bevarmejo::detail::sentence_case_to_camel_case(key_Sc),
+        bevarmejo::detail::sentence_case_to_kebab_case(key_Sc),
+        bevarmejo::detail::sentence_case_to_pascal_case(key_Sc),
+        bevarmejo::detail::sentence_case_to_snake_case(key_Sc)
+    };
+}
+    
+} // namespace detail
+
+
+template <std::size_t... Ns>
+class AliasedKey final
+{
+/*----------------------------------------------------------------------------*/
+/*---------------------------- Member types ----------------------------------*/
+/*----------------------------------------------------------------------------*/
+public:
+    using styles = bevarmejo::detail::text_case;
+    
+    // The output style of the AliasedKeys.
+    static constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::io::detail::out_style_t;
+private:
+    // The output style of the AliasedKeys as a size_t.
+    static constexpr std::size_t out_style_v = static_cast<std::size_t>(out_style_t);
+public:
     // Count how many alternatives:
     static constexpr std::size_t n_alternatives = sizeof...(Ns);
+private:
+    // Count the size of the elements:
+    static constexpr std::size_t size = n_alternatives * bevarmejo::detail::n_text_cases;
 
 private:
-    // We store the values in a tuple of Constexpr Strings of different sizes...
-    // Each ConstexprString is the original key in SentenceCase transformed in
-    // the desired style.
-    using data_type = std::tuple<bevarmejo::detail::ConstexprString<Ns>...>;
+    // We store the values in a tuple of arrays with 5 Constexpr Strings.
+    // Each array contains the ConstexprString in all the possible styles.
+    using data_type = std::tuple<
+        std::array<bevarmejo::detail::ConstexprString<Ns>, bevarmejo::detail::n_text_cases>...>;
 
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member objects --------------------------------*/
 /*----------------------------------------------------------------------------*/
 private:
-    data_type m__alternatives;
     data_type m__values;
 
 /*----------------------------------------------------------------------------*/
@@ -78,29 +105,19 @@ public:
     constexpr AliasedKey(const AliasedKey&) = default;
     // Single char array constructor
     template <std::size_t N>
-    constexpr AliasedKey(const char (&alt)[N]) :
-        m__alternatives{ bevarmejo::detail::ConstexprString<N>(alt) },
-        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<N>(alt)) }
+    constexpr AliasedKey(const char (&key)[N]) :
+        m__values{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(key))}
     { }
 
-    // Multiple char array constructor
-    // Enabble inserted because otherwie the compiler creates a conflict with the
-    // deduction guide below. It tries to create AliasedKey<> and use this constructor...
+    // Two char array constructor
     template <typename std::enable_if_t<(sizeof...(Ns) > 0), int> = 0, std::size_t N, std::size_t... Ms>
     constexpr AliasedKey(const char (&first)[N], const char (&... rest)[Ms]) :
-        m__alternatives{ bevarmejo::detail::ConstexprString<N>(first), bevarmejo::detail::ConstexprString<Ms>(rest)... },
-        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<N>(first)),
-                   bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString<Ms>(rest))... }
+        m__values{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(first)),
+                  bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<Ms>(rest))...}
     { }
 
-    // This works on clang but not on the other compilers... It would merge
-    // the two constructors above and require no deduction guide.
-    /*
-    constexpr AliasedKey(const char (&... alts)[Ns]) :
-        m__alternatives{ alts... },
-        m__values{ bevarmejo::detail::sentence_case_to<out_style_t>(bevarmejo::detail::ConstexprString(alts))... }
-    { }
-    */
+    // I don't need more than two because no key has more than two alternatives for now.
+    // This saves us the complexity of implementing a variadiac constexpr constructor.
 
 // (destructor)
 public:
@@ -116,43 +133,49 @@ public:
     // Main value of the AliasedKey in the DEFAULT output style.
     constexpr const char* operator()() const
     {
-        return std::get<0>(m__values).c_str();
+        return std::get<0>(m__values)[out_style_v].c_str();
     }
 
     // Get any alternative value of the AliasedKey in the desired style.
     template <bevarmejo::detail::text_case Style, std::size_t AltIdx=0>
-    constexpr auto as() const
+    constexpr const char* as() const
     {
         static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
 
-        return bevarmejo::detail::sentence_case_to<Style>(std::get<AltIdx>(m__alternatives));
+        return std::get<AltIdx>(m__values)[static_cast<std::size_t>(Style)].c_str();
     }
 
 private:
-    template <std::size_t AltIdx>
+    template <std::size_t AltIdx=0>
     constexpr const char* at() const
     {
-        static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
+        static_assert(AltIdx < size, "The index is out of bounds.");
 
-        return std::get<AltIdx>(m__values).c_str();
+        constexpr std::size_t alt = AltIdx / bevarmejo::detail::n_text_cases;
+        constexpr std::size_t style = AltIdx % bevarmejo::detail::n_text_cases;
+
+        return std::get<alt>(m__values)[style].c_str();
     }
 
-    template <std::size_t AltIdx>
-    const char* at_impl_from(std::size_t alt_idx) const
+    template <std::size_t AltIdx=0>
+    const char* at(std::size_t alt_idx) const
     {
-        static_assert(AltIdx < n_alternatives, "The index is out of bounds.");
-        beme_throw_if(alt_idx >= n_alternatives, std::out_of_range,
+        static_assert(AltIdx < size, "The index is out of bounds.");
+        beme_throw_if(alt_idx >= size, std::out_of_range,
             "Error accessing the AliasedKey values.",
             "The index is out of bounds.",
-            "Index : ", alt_idx, " | Size : ", n_alternatives);
+            "Index : ", alt_idx, " | Size : ", size);
 
         if (alt_idx == AltIdx)
         {
-            return at<AltIdx>();
+            constexpr std::size_t alt = AltIdx / bevarmejo::detail::n_text_cases;
+            constexpr std::size_t style = AltIdx % bevarmejo::detail::n_text_cases;
+
+            return std::get<alt>(m__values)[style].c_str();
         }
-        else if constexpr (AltIdx + 1 < n_alternatives)
+        else if constexpr (AltIdx + 1 < size)
         {
-            return at_impl_from<AltIdx + 1>(alt_idx);
+            return at<AltIdx + 1>(alt_idx);
         }
         else
         {
@@ -163,19 +186,19 @@ private:
 // JSON methods ----------------------------------------------------------------
 private:
     template <std::size_t AltIdx = 0>
-    std::size_t find_idx_starting_from(const Json &j) const
+    std::size_t find_idx(const Json &j) const
     {
         if (j.contains(at<AltIdx>()))
         {
             return AltIdx;
         }
-        else if constexpr (AltIdx + 1 < n_alternatives)
+        else if constexpr (AltIdx + 1 < size)
         {
-            return find_idx_starting_from<AltIdx + 1>(j);
+            return find_idx<AltIdx + 1>(j);
         }
         else
         {
-            return n_alternatives;
+            return size;
         }
     }
 
@@ -183,17 +206,17 @@ public:
     // Check if the AliasedKey exists in the json object.
     bool exists_in(const Json &j) const
     {
-        return find_idx_starting_from<0>(j) < n_alternatives;
+        return find_idx(j) < size;
     }
 
     // Extract the value of the AliasedKey from the json object.
     const char* as_in(const Json &j) const
     {
-        std::size_t idx = find_idx_starting_from<0>(j);
+        std::size_t idx = find_idx(j);
 
-        if (idx < n_alternatives)
+        if (idx < size)
         {
-            return at_impl_from<0>(idx);
+            return at(idx);
         }
         else
         {
@@ -206,7 +229,7 @@ public:
 
 // Deduction guide for the AliasedKey class.
 template <std::size_t N>
-AliasedKey(const char (&alt)[N]) -> AliasedKey<N>;
+AliasedKey(const char (&key)[N]) -> AliasedKey<N>;
 
 template <std::size_t N, std::size_t... Ms>
 AliasedKey(const char (&first)[N], const char (&... rest)[Ms]) -> AliasedKey<N, Ms...>;
