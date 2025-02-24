@@ -27,17 +27,16 @@ namespace bevarmejo::io
 namespace detail
 {
 // The output style of the AliasedKeys.
-constexpr bevarmejo::detail::text_case out_style_t = 
 #if defined(OUT_STYLE_0)
-        bevarmejo::detail::text_case::SentenceCase;
+constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::detail::text_case::SentenceCase;
 #elif defined(OUT_STYLE_1)
-        bevarmejo::detail::text_case::CamelCase;
+constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::detail::text_case::CamelCase;
 #elif defined(OUT_STYLE_2)
-        bevarmejo::detail::text_case::KebabCase;
+constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::detail::text_case::KebabCase;
 #elif defined(OUT_STYLE_3)
-        bevarmejo::detail::text_case::PascalCase;
+constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::detail::text_case::PascalCase;
 #elif defined(OUT_STYLE_4)
-        bevarmejo::detail::text_case::SnakeCase;
+constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::detail::text_case::SnakeCase;
 #else
     #error "The output style selected is invalid."
 #endif
@@ -171,45 +170,45 @@ public:
     }
 
     // Get any alternative value of the AliasedKey in the desired style.
-    template <bevarmejo::detail::text_case Style, std::size_t AltIdx=0>
+    template <bevarmejo::detail::text_case Style, std::size_t Idx=0>
     constexpr const char* as() const
     {
-        static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
+        static_assert(Idx < n_alternatives, "The alternative index is out of bounds.");
 
-        return std::get<AltIdx>(m__values)[static_cast<std::size_t>(Style)].c_str();
+        return std::get<Idx>(m__values)[static_cast<std::size_t>(Style)].c_str();
     }
 
 private:
-    template <std::size_t AltIdx=0>
+    template <std::size_t Idx=0>
     constexpr const char* at() const
     {
-        static_assert(AltIdx < size, "The index is out of bounds.");
+        static_assert(Idx < size, "The index is out of bounds.");
 
-        constexpr std::size_t alt = AltIdx / bevarmejo::detail::n_text_cases;
-        constexpr std::size_t style = AltIdx % bevarmejo::detail::n_text_cases;
+        constexpr std::size_t alt = Idx / bevarmejo::detail::n_text_cases;
+        constexpr std::size_t style = Idx % bevarmejo::detail::n_text_cases;
 
         return std::get<alt>(m__values)[style].c_str();
     }
 
-    template <std::size_t AltIdx=0>
-    const char* at(std::size_t alt_idx) const
+    template <std::size_t Idx=0>
+    const char* at(std::size_t idx) const
     {
-        static_assert(AltIdx < size, "The index is out of bounds.");
-        beme_throw_if(alt_idx >= size, std::out_of_range,
+        static_assert(Idx < size, "The index is out of bounds.");
+        beme_throw_if(idx >= size, std::out_of_range,
             "Error accessing the AliasedKey values.",
             "The index is out of bounds.",
-            "Index : ", alt_idx, " | Size : ", size);
+            "Index : ", idx, " | Size : ", size);
 
-        if (alt_idx == AltIdx)
+        if (idx == Idx)
         {
-            constexpr std::size_t alt = AltIdx / bevarmejo::detail::n_text_cases;
-            constexpr std::size_t style = AltIdx % bevarmejo::detail::n_text_cases;
+            constexpr std::size_t alt = Idx / bevarmejo::detail::n_text_cases;
+            constexpr std::size_t style = Idx % bevarmejo::detail::n_text_cases;
 
             return std::get<alt>(m__values)[style].c_str();
         }
-        else if constexpr (AltIdx + 1 < size)
+        else if constexpr (Idx + 1 < size)
         {
-            return at<AltIdx + 1>(alt_idx);
+            return at<Idx + 1>(idx);
         }
         else
         {
@@ -219,16 +218,16 @@ private:
 
 // JSON methods ----------------------------------------------------------------
 private:
-    template <std::size_t AltIdx = 0>
+    template <std::size_t Idx = 0>
     std::size_t find_idx(const Json &j) const
     {
-        if (j.contains(at<AltIdx>()))
+        if (j.contains(at<Idx>()))
         {
-            return AltIdx;
+            return Idx;
         }
-        else if constexpr (AltIdx + 1 < size)
+        else if constexpr (Idx + 1 < size)
         {
-            return find_idx<AltIdx + 1>(j);
+            return find_idx<Idx + 1>(j);
         }
         else
         {
