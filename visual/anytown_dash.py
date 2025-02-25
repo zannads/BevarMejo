@@ -1,8 +1,10 @@
 # Anytown dashboard to visualize the results of the optimization and perform simulations
+# Run this script from the root directory of the project and provide a folder with the experiments as first argument
+# Example: python visual/anytown_dash.py experiments_dir
+# Export the root directory of the project to PYTHONPATH to be able to import the pybeme package
+# Command: export PYTHONPATH=$PYTHONPATH:/Users/zannads/repos/BevarMejo
 import os
-os.chdir(os.path.dirname(os.path.abspath(__file__)))
 import sys
-sys.path.append('..')
 from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
@@ -19,7 +21,7 @@ import subprocess
 import warnings
 warnings.filterwarnings('ignore')
 
-from pybeme.beme_experiment import load_experiment, load_experiments, save_simulation_settings, list_all_final_individuals, extract_individual_from_coordinates
+from pybeme.beme_experiment import load_experiments, save_simulation_settings, list_all_final_individuals, extract_individual_from_coordinates
 from pybeme.reference_set import naive_pareto_front
 
 import wntr
@@ -58,7 +60,8 @@ def create_dashboard_layout(experiments_names):
         dcc.Graph(id='simresults')
     ])
 
-def setup_callbacks(app, experiments, beme_folder):
+def setup_callbacks(app, experiments):
+    beme_dir =  os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # The root folder of the project is outside the visual folder
     colors = px.colors.qualitative.Dark2
 
     @app.callback(
@@ -134,14 +137,14 @@ def setup_callbacks(app, experiments, beme_folder):
         save_simulation_settings(experiments[expname], final_indv_coord)
         
         # run the simulation of beme to save the inp file from shell
-        command=f'../builds/VSCode/Debug/cli/beme-sim .tmp/bemesim__{individual_id}.json --saveinp'
+        command=f'{beme_dir}/builds/VSCode/Debug/cli/beme-sim {beme_dir}/.tmp/bemesim__{individual_id}.json --saveinp'
         simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
         print("Standard Output:\n", simre.stdout)
         print("Standard Error:\n", simre.stderr)
 
-        subprocess.run('mv *.inp .tmp/', shell=True, check=True)
+        subprocess.run(f'mv {beme_dir}/*.inp {beme_dir}./tmp/', shell=True, check=True)
     
-        net = wntr.epanet.io.WaterNetworkModel(f'.tmp/{individual_id}.inp')
+        net = wntr.epanet.io.WaterNetworkModel(f'{beme_dir}/.tmp/{individual_id}.inp')
         #net.options.time.hydraulic_timestep = 1*60*60
         #net.options.time.report_timestep = 60*60
         net.options.time.report_timestep = net.options.time.hydraulic_timestep
@@ -220,9 +223,6 @@ def main():
     # Get experiments directory from first argument
     experiments_dir = sys.argv[1]
     
-    # Set working directory
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    
     # Load experiments
     experiments = load_experiments(experiments_dir, verbose=True)
     if not experiments:
@@ -230,8 +230,8 @@ def main():
         sys.exit(1)
 
     # Initialize and configure the dashboard
-    app = initialize_app(list(experiments.keys()))
-    setup_callbacks(app, experiments, "../")  # Using default beme folder
+    app = initialize_app(sorted(list(experiments.keys())))
+    setup_callbacks(app, experiments)
     
     # Run the server
     app.run(debug=True, port=8050)  # Using default port and debug settings
