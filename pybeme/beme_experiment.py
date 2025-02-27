@@ -2,70 +2,267 @@ import os
 import json
 import re
 
+import numpy as np
 import pandas as pd
 
-def load_experiment(experiment_namefile: str, verbose=False) -> dict:
-    """
-    Load the results of an experiment from a json file.
-    """
-    # Check if the file exists
-    if not os.path.exists(experiment_namefile):
-        raise FileNotFoundError(f"File {experiment_namefile} does not exist.")
+from pybeme.simulator import Simulator
 
-    # The name of the experiment is included after the name prefix (bemeexp__) and
-    # before the extension of the file.
-    # The experiment folder is outside the output folder, so I need to go two levels up.
+# An experiment is a dictionary with the keys as in the JSON output files.
+# However, we add some cached information to speed up the access to the data.
+# For example, the fitness vector as a pandas dataframe.
+class Experiment:
+    def __init__(self, experiment_namefile: str, verbose=False):
+        self.experiment_namefile = experiment_namefile
+        self.data = self.__load_experiment(experiment_namefile, verbose) # JSON with the complete information
 
-    experiment_name = re.match(r"bemeexp__(.*)", os.path.basename(experiment_namefile)).group(1)
-    experiment_folder = os.path.dirname(os.path.dirname(experiment_namefile))
+        # Cached data
+        self.__generations = None # Multi-index Pandas Series with the reported generations.
+        self.__timestamps = None # Multi-index Pandas Series with the timestamps of the reported generations.
+        self.__fevals = None # Multi-index Pandas Series with the number of function evaluations of the reported generations.
+        self.__fvs = None # Multi-index Pandas DataFrame with the fitness vectors of the individuals.
+        self.__dvs = None # Multi-index Pandas DataFrame with the decision vectors of the individuals.
+        self.__ids = None # Multi-index Pandas Series with the ids of the individuals.
 
-    if verbose:
-        print(f"Loading results of experiment {experiment_name} from file {experiment_namefile}...")
-
-    # Now in the island key there is a list of filenames, each one containing the results
-    # of the experiment for a different island. We load the results of each island and store
-    # them in the dictionary.
-    with open(experiment_namefile, 'r') as file:
-        experiment_results = json.load(file)
-
-    if verbose:
-        print(f"Starting to load results of {len(experiment_results['archipelago']['islands'])} islands...")
-
-    island_results = [ ]
-    island_names = { }
-    for island_relpath in experiment_results['archipelago']['islands']:
-        # The island name is what remains after removing the prefix, the experiment
-        # name and before the extensions.
-        island_name = os.path.splitext(os.path.basename(island_relpath))[0].split('__')[2]
+    @property
+    def name(self) -> str:
+        return self.data['name']
+    
+    @property
+    def folder(self) -> str:
+        return self.data['folder']
+    
+    @property
+    def beme_version(self) -> str:
+        if 'software' in self.data and 'bemelib_version' in self.data['software']:
+            return self.data['software']['bemelib_version']
         
-        island_path = os.path.join(experiment_folder, 'output', island_relpath)
+        return "v25.02.0"
 
-        with open( island_path, 'r') as file:
-            island_results.append( json.load(file) )
-        island_names[island_name] = island_results[-1] # reference to the same object
+    @property
+    def islands(self) -> dict:
+        return self.data['archipelago']['islands']
+    
+    def island(self, island_name: str) -> dict:
+        return self.data['archipelago']['islands'][island_name]
+    
+    @property
+    def generations(self) -> pd.Series:
+        if self.__generations is None:
+            # Cache the generations in a multi-index pandas series.
+            # Index: island, generation_index
+            # Values: generation (absolute number, i.e., algorithm.parameters.generations * generation_index)
+
+            index_list = []
+            value_list = []
+            
+            for island_name, island in self.islands.items():
+                report_generation = island['algorithm']['parameters']['generations']
+                for generation_index, _ in enumerate(island['generations']):
+                    index_list.append((island_name, generation_index))
+                    value_list.append(report_generation * generation_index)
+
+            # Convert to MultiIndex Series
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation_index'])
+            self.__generations = pd.Series(value_list, index=multi_index, name='generation', dtype='int')
+
+        return self.__generations
+    
+    @property
+    def timestamps(self) -> pd.Series:
+        if self.__timestamps is None:
+            # Cache the timestamps in a multi-index pandas series.
+            # Index: island, generation 
+            # Values: timestamp of the generation ('current_time' field)
+
+            # Collect data
+            index_list = []
+            values = []
+
+            for island_name, island in self.islands.items():
+                for generation_index, generation in enumerate(island['generations']):
+                    index_list.append((island_name, generation_index))
+                    values.append(generation['current_time'])
+            
+            # Convert to MultiIndex Series
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation'])
+            self.__timestamps = pd.Series(values, index=multi_index, dtype='datetime64[ns]', name='current_time')
+
+        return self.__timestamps
+    
+    @property
+    def fitness_evaluations(self) -> pd.Series:
+        if self.__fevals is None:
+            # Cache the fitness evaluations in a multi-index pandas series.
+            # Index: island, generation
+            # Values: number of fitness evaluations of the generation
+
+            index_list = []
+            values = []
+
+            for island_name, island in self.islands.items():
+                for generation_index, generation in enumerate(island['generations']):
+                    index_list.append((island_name, generation_index))
+                    values.append(generation['fitness_evaluations'])
+            
+            # Convert to MultiIndex Series
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation'])
+            self.__fevals = pd.Series(values, index=multi_index, name='fitness_evaluations', dtype='int')
+
+        return self.__fevals
+    
+    @property
+    def fitness_vectors(self) -> pd.DataFrame:
+        if self.__fvs is None:
+            # Cache the fitness vectors in a multi-index pandas dataframe.
+            # Index: island, generation, individual
+            # Columns: fitness vector components
+
+            index_list = []
+            values = []
+
+            for island_name, island in self.islands.items():
+                for generation_index, generation in enumerate(island['generations']):
+                    gen_value = self.generations[(island_name, generation_index)]
+                    for individual_index, individual in enumerate(generation['individuals']):
+                        index_list.append((island_name, gen_value, individual_index))
+                        values.append(individual['fitness_vector'])
+
+            # Convert to MultiIndex DataFrame
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation', 'individual'])
+            self.__fvs = pd.DataFrame(values, index=multi_index, columns=[f'fitness_value_{i+1}' for i in range(len(values[0]))])
+
+        return self.__fvs
+    
+    @property
+    def decision_vectors(self) -> pd.DataFrame:
+        if self.__dvs is None:
+            # Cache the decision vectors in a multi-index pandas dataframe.
+            # Index: island, generation, individual
+            # Columns: decision vector components
+
+            index_list = []
+            values = []
+
+            for island_name, island in self.islands.items():
+                for generation_index, generation in enumerate(island['generations']):
+                    gen_value = self.generations[(island_name, generation_index)]
+                    for individual_index, individual in enumerate(generation['individuals']):
+                        index_list.append((island_name, gen_value, individual_index))
+                        values.append(individual['decision_vector'])
+
+            # Convert to MultiIndex DataFrame
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation', 'individual'])
+            self.__dvs = pd.DataFrame(values, index=multi_index, columns=[f'decision_variable_{i+1}' for i in range(len(values[0]))])
+
+        return self.__dvs
+    
+    @property
+    def ids(self) -> pd.Series:
+        if self.__ids is None:
+            # Cache the ids in a multi-index pandas series.
+            # Index: island, generation, individual
+            # Values: id of the individual
+
+            index_list = []
+            values = []
+
+            for island_name, island in self.islands.items():
+                for generation_index, generation in enumerate(island['generations']):
+                    for individual_index, individual in enumerate(generation['individuals']):
+                        index_list.append((island_name, generation_index, individual_index))
+                        values.append(individual['id'])
+            
+            # Convert to MultiIndex Series
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation', 'individual'])
+            self.__ids = pd.Series(values, index=multi_index, name='id', dtype='int')
+
+        return self.__ids
+    
+    def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
+        if generation_index is None:
+            # Find the generation index from the generations series
+            generation_index = np.argmax(self.generations.to_numpy() == generation)
+
+        return self.islands[island_name]['generations'][generation_index]['individuals'][individual_index]
+    
+    def simulator(self, individual_coord: tuple) -> Simulator:
+        
+        # You must extract the problem from the island of the individual, because
+        # each island can potentially have a different problem (or same problem with different settings).
+        individual = self.individual(island_name=individual_coord[0],
+                                     generation=individual_coord[1],
+                                     individual_index=individual_coord[2])
+        individual_udp = self.island(individual_coord[0])['problem']
+
+        return Simulator(
+            decision_vector= individual['decision_vector'],
+            problem= individual_udp,
+            # Optional arguments
+            fitness_vector= individual['fitness_vector'],
+            id= individual['id'],
+            print_message= "",
+            bemelib_version= self.beme_version,
+            lookup_paths= [os.path.expanduser(self.folder)]
+        )
+
+    def __load_experiment(self, experiment_namefile: str, verbose=False) -> dict:
+        """
+        Load the results of an experiment from a json file.
+        """
+        # Check if the file exists
+        if not os.path.exists(experiment_namefile):
+            raise FileNotFoundError(f"File {experiment_namefile} does not exist.")
+
+        # The name of the experiment is included after the name prefix (bemeexp__) and
+        # before the extension of the file.
+        # The experiment folder is outside the output folder, so I need to go two levels up.
+
+        experiment_name = re.match(r"bemeexp__(.*)", os.path.basename(experiment_namefile)).group(1)
+        experiment_folder = os.path.dirname(os.path.dirname(experiment_namefile))
 
         if verbose:
-            print(f"Results of island {island_relpath} loaded successfully.")
+            print(f"Loading results of experiment {experiment_name} from file {experiment_namefile}...")
 
-    experiment_results['archipelago']['islands'] = island_results   # access by index
-    experiment_results['archipelago']['island'] = island_names      # access by name
+        # Now in the island key there is a list of filenames, each one containing the results
+        # of the experiment for a different island. We load the results of each island and store
+        # them in the dictionary.
+        with open(experiment_namefile, 'r') as file:
+            experiment_results = json.load(file)
 
-    for island in experiment_results['archipelago']['islands']:
-        for generation in island['generations']:
-            generation['current_time'] = pd.to_datetime(generation['current_time'])
+        if verbose:
+            print(f"Starting to load results of {len(experiment_results['archipelago']['islands'])} islands...")
 
-    if verbose:
-        print(f"Results of experiment {experiment_name} loaded successfully.")
+        islands = { }
+        for island_relpath in experiment_results['archipelago']['islands']:
+            # The island name is what remains after removing the prefix, the experiment
+            # name and before the extensions.
+            island_name = os.path.splitext(os.path.basename(island_relpath))[0].split('__')[-1]
 
-    experiment_results['name'] = experiment_name
-    # However I have a relative path to were I am runnign the script, so I need to join it before saving it
-    experiment_folder = os.path.realpath(experiment_folder)
-    if experiment_folder.startswith(os.path.expanduser("~")):
-        experiment_folder = experiment_folder.replace(os.path.expanduser("~"), "~", 1)
+            with open( os.path.join(experiment_folder, 'output', island_relpath), 'r') as file:
+                islands[island_name] = json.load(file)
 
-    experiment_results['folder'] = experiment_folder
+            if verbose:
+                print(f"Results of island {island_relpath} loaded successfully.")
 
-    return experiment_results
+        experiment_results['archipelago']['islands'] = islands   
+
+        # Convert the current_time field to a datetime object
+        for island_name, island in experiment_results['archipelago']['islands'].items():
+            for generation in island['generations']:
+                generation['current_time'] = pd.to_datetime(generation['current_time'])
+
+        if verbose:
+            print(f"Results of experiment {experiment_name} loaded successfully.")
+
+        experiment_results['name'] = experiment_name
+        # However I have a relative path to were I am runnign the script, so I need to join it before saving it
+        experiment_folder = os.path.realpath(experiment_folder)
+        if experiment_folder.startswith(os.path.expanduser("~")):
+            experiment_folder = experiment_folder.replace(os.path.expanduser("~"), "~", 1)
+
+        experiment_results['folder'] = experiment_folder
+
+        return experiment_results
 
 def load_experiments(experiment_folder: str, verbose=False) -> dict:
     """
@@ -93,8 +290,15 @@ def load_experiments(experiment_folder: str, verbose=False) -> dict:
 
         for experiment_file in experiment_files:
             experiment_namefile = os.path.join(experiment_folder, 'output', experiment_file)
-            experiment = load_experiment(experiment_namefile, verbose)
-            experiments[experiment['name']] = experiment
+            experiment = Experiment(experiment_namefile, verbose) # Load the experiment
+            experiments[experiment.name] = experiment
+
+            print(experiment.fitness_vectors)
+            print(experiment.fitness_vectors.shape)
+            print(experiment.fitness_vectors.columns)
+            print(experiment.fitness_vectors.index)
+            print(experiment.fitness_vectors.dtypes)
+            print(experiment.fitness_vectors.groupby(['island', 'generation']).last().to_numpy())
     else:
         # We are in a folder of folders
         for folder in os.listdir(experiment_folder):
@@ -106,123 +310,6 @@ def load_experiments(experiment_folder: str, verbose=False) -> dict:
                 experiments.update(load_experiments(os.path.join(experiment_folder, folder), verbose))
 
     return experiments
-
-def extract_dataframe(experiment_results: dict) -> pd.DataFrame:
-    """
-    Extract the results of an experiment in the form of a multiindex pandas dataframe.
-    """
-
-    # the index is made by: island, generation (fitness-vector/population), individual
-    # the columns are the fitness values
-    
-    # Extract the island names
-    island_names = list(experiment_results['archipelago']['island'].keys())
-    
-    # Initialize an empty list to store the dataframes for each island
-    island_dataframes = []
-    
-    # Iterate over each island
-    for island_name in island_names:
-        # Extract the island results
-        island_results = experiment_results['archipelago']['island'][island_name]
-        
-        # Initialize an empty list to store the data for each generation
-        generation_data = []
-        
-        # Iterate over each generation
-        for generation in island_results['generations']:
-            # Extract the fitness vector for each individual in the generation
-            fitness_vectors = [individual['fitness_vector'] for individual in generation['individuals']]
-            
-            # Create a dataframe for the generation with fitness vectors as columns
-            generation_df = pd.DataFrame(fitness_vectors)
-            
-            # Set the column names as the fitness vector components
-            generation_df.columns = [f'component_{i+1}' for i in range(len(fitness_vectors[0]))]
-            
-            # Add the generation dataframe to the list
-            generation_data.append(generation_df)
-        
-        # Concatenate all the generation dataframes into a single dataframe for the island
-        island_df = pd.concat(generation_data, keys=range(len(generation_data)), names=['generation'])
-        
-        # Add the island dataframe to the list
-        island_dataframes.append(island_df)
-    
-    # Concatenate all the island dataframes into a single dataframe
-    return pd.concat(island_dataframes, keys=island_names, names=['island'])
-
-class IndividualCoordinates:
-    def __init__(self, island_idx, generation_idx, individual_idx):
-        self.island_idx = island_idx
-        self.generation_idx = generation_idx
-        self.individual_idx = individual_idx
-
-# Extract the individual information from the experiment results dictionary
-def extract_individual_from_coordinates(experiment_results: dict, ind_coord: IndividualCoordinates) -> dict:
-    """
-    Extract the information of an individual from the results of an experiment.
-
-    Inputs:
-    - experiment_results: dictionary with the results of the experiment
-    - individual_idx: coordinates of the individual in the experiment results
-
-    Outputs:
-    - individual: dictionary with the information of the individual
-    """    
-    return experiment_results['archipelago']['islands'][ind_coord.island_idx]['generations'][ind_coord.generation_idx]['individuals'][ind_coord.individual_idx]
-
-def list_all_final_individuals(experiment_results: dict, coordinate=True) -> list:
-    """
-    List the coordinates of all the final individuals in the experiment results.
-    """
-    inds = []
-    for island_idx, island in enumerate(experiment_results['archipelago']['islands']):
-        for ind_idx, _ in enumerate(island['generations'][-1]['individuals']):
-            if coordinate:
-                inds.append(IndividualCoordinates(island_idx, -1, ind_idx))
-            else:
-                inds.append(experiment_results['archipelago']['islands'][island_idx]['generations'][-1]['individuals'][ind_idx])
-    return inds
-
-# Create a Simulation Settings file for beme-sim
-def save_simulation_settings(exp, individual_coord, save_in_folder =".tmp") -> str:
-    # I need to create a file with:
-    # - the individual dv
-    # - the individual fv (optional)
-    # - the individual id (optional)
-    # - print message (optional)
-    # - version of bemelib used (optional)
-    # - user defined problem settings
-    # - lookup paths (optional)
-
-    individual = extract_individual_from_coordinates(exp, individual_coord)
-    individual_island = exp['archipelago']['islands'][individual_coord.island_idx]
-    bemelib_version = "v25.02.0"
-    if 'bemelib_version' in exp['software']:
-        bemelib_version = exp['software']['bemelib_version']
-    
-    # Based on the island of the individual, the UDP settings could be slightly different.
-    # For example, different islands may have been run with different water demand profiles.
-    # So I extract the UDP settings from the island file.
-    udp_sett = individual_island['problem']
-
-    simu_sett= {
-        "decision_vector": individual['decision_vector'],
-        "fitness_vector": individual['fitness_vector'],
-        "id": individual['id'],
-        "print": "",
-        "bemelib_version": bemelib_version,
-        "problem": udp_sett,
-        "lookup_paths": [
-            os.path.expanduser(exp['folder'])
-        ]
-    }    
-    id = simu_sett['id']
-    with open(f'{save_in_folder}/bemesim__{id}.json', 'w') as file:
-        json.dump(simu_sett, file)
-
-    return id
 
 if __name__ == "__main__":
     # TODO: Add a command line interface to load the experiments and extract the dataframes
