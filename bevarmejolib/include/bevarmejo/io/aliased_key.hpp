@@ -100,30 +100,26 @@ class AliasedKey final
 /*----------------------------------------------------------------------------*/
 public:
     using styles = bevarmejo::detail::text_case;
-    
-    // The output style of the AliasedKeys.
-    static constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::io::detail::out_style_t;
-private:
-    // The output style of the AliasedKeys as a size_t.
-    static constexpr std::size_t out_style_v = static_cast<std::size_t>(out_style_t);
-public:
-    // Count how many alternatives:
-    static constexpr std::size_t n_alternatives = sizeof...(Ns);
-private:
-    // Count the size of the elements:
-    static constexpr std::size_t size = n_alternatives * bevarmejo::detail::n_text_cases;
-
 private:
     // We store the values in a tuple of arrays with 5 Constexpr Strings.
     // Each array contains the ConstexprString in all the possible styles.
-    using data_type = std::tuple<
+    using elems_container = std::tuple<
         std::array<bevarmejo::detail::ConstexprString<Ns>, bevarmejo::detail::n_text_cases>...>;
 
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member objects --------------------------------*/
 /*----------------------------------------------------------------------------*/
+public:
+    // The output style of the AliasedKeys. Static because is shared between all AliasedKeys.
+    static constexpr bevarmejo::detail::text_case out_style_t = bevarmejo::io::detail::out_style_t;
+    // The number of alternatives for this AliasedKey. Static because is shared between all AliasedKeys with the same number of alternatives and it needs to be known at compile time.
+    static constexpr std::size_t n_alternatives = sizeof...(Ns);
 private:
-    data_type m__values;
+    // All the alternatives of this AliasedKey in all the possible styles.
+    elems_container m__elems;
+private:
+    // The number of elements in this AliasedKey.
+    static constexpr std::size_t size = n_alternatives * bevarmejo::detail::n_text_cases;
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
@@ -139,13 +135,13 @@ public:
     // Single char array constructor
     template <std::size_t N>
     constexpr AliasedKey(const char (&key)[N]) :
-        m__values{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(key))}
+        m__elems{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(key))}
     { }
 
     // Two char array constructor
     template <typename std::enable_if_t<(sizeof...(Ns) > 0), int> = 0, std::size_t N, std::size_t... Ms>
     constexpr AliasedKey(const char (&first)[N], const char (&... rest)[Ms]) :
-        m__values{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(first)),
+        m__elems{bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<N>(first)),
                   bevarmejo::io::detail::make_text_cases(bevarmejo::detail::ConstexprString<Ms>(rest))...}
     { }
 
@@ -166,16 +162,19 @@ public:
     // Main value of the AliasedKey in the DEFAULT output style.
     constexpr const char* operator()() const
     {
-        return std::get<0>(m__values)[out_style_v].c_str();
+        return std::get<0>(m__elems)[0].c_str();
     }
 
     // Get any alternative value of the AliasedKey in the desired style.
-    template <bevarmejo::detail::text_case Style, std::size_t Idx=0>
+    template <bevarmejo::detail::text_case Style, std::size_t AltIdx=0>
     constexpr const char* as() const
     {
-        static_assert(Idx < n_alternatives, "The alternative index is out of bounds.");
+        static_assert(AltIdx < n_alternatives, "The alternative index is out of bounds.");
 
-        return std::get<Idx>(m__values)[static_cast<std::size_t>(Style)].c_str();
+        // If it is the output style, the value is in the position of the array.
+        // However, if it is not the output style and it was before the output style, it got shifted back by one position.
+        constexpr auto req_style_idx = (Style == out_style_t) ? 0 : (Style < out_style_t) ? (static_cast<std::size_t>(Style)+1ul) : static_cast<std::size_t>(Style); 
+        return std::get<AltIdx>(m__elems)[req_style_idx].c_str();
     }
 
 private:
@@ -187,7 +186,7 @@ private:
         constexpr std::size_t alt = Idx / bevarmejo::detail::n_text_cases;
         constexpr std::size_t style = Idx % bevarmejo::detail::n_text_cases;
 
-        return std::get<alt>(m__values)[style].c_str();
+        return std::get<alt>(m__elems)[style].c_str();
     }
 
     template <std::size_t Idx=0>
@@ -204,7 +203,7 @@ private:
             constexpr std::size_t alt = Idx / bevarmejo::detail::n_text_cases;
             constexpr std::size_t style = Idx % bevarmejo::detail::n_text_cases;
 
-            return std::get<alt>(m__values)[style].c_str();
+            return std::get<alt>(m__elems)[style].c_str();
         }
         else if constexpr (Idx + 1 < size)
         {

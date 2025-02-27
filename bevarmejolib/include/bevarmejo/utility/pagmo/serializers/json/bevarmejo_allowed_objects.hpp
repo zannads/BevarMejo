@@ -89,6 +89,9 @@ struct adl_serializer<pagmo::nsga2>
 
     static void from_json(const Json &j, pagmo::nsga2 &algo)
     {
+#if BEME_VERSION < 240601
+// Before version 24.6.1, the default parameters were according to the optimal values
+// for the Hanoi network as found in the literature (https://doi.org/10.3390/w11050971).
         unsigned int gen = j.value(bevarmejo::io::key::generations.as_in(j), 1u);
         double cr = j.value(bevarmejo::io::key::detail::cr.as_in(j), 0.9);
         double eta_c = j.value(bevarmejo::io::key::detail::eta_c.as_in(j), 15.);
@@ -96,6 +99,16 @@ struct adl_serializer<pagmo::nsga2>
         double eta_m = j.value(bevarmejo::io::key::detail::eta_m.as_in(j), 7.);
         unsigned int seed = j.value(bevarmejo::io::key::detail::seed.as_in(j), pagmo::random_device::next());
         unsigned int verb = j.value(bevarmejo::io::key::detail::verbosity.as_in(j), 0u);
+#else
+// The correct default behaviour is to use the default values implemented in the pagmo::nsga2.
+        unsigned int gen = j.value(bevarmejo::io::key::generations.as_in(j), 1u);
+        double cr = j.value(bevarmejo::io::key::detail::cr.as_in(j), 0.95);
+        double eta_c = j.value(bevarmejo::io::key::detail::eta_c.as_in(j), 10.);
+        double m = j.value(bevarmejo::io::key::detail::m.as_in(j), 0.01);
+        double eta_m = j.value(bevarmejo::io::key::detail::eta_m.as_in(j), 50.);
+        unsigned int seed = j.value(bevarmejo::io::key::detail::seed.as_in(j), pagmo::random_device::next());
+        unsigned int verb = j.value(bevarmejo::io::key::detail::verbosity.as_in(j), 0u);
+#endif
 
         algo = pagmo::nsga2(gen, cr, eta_c, m, eta_m, seed);
         algo.set_verbosity(verb);
