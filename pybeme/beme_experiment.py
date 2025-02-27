@@ -4,53 +4,7 @@ import re
 
 import pandas as pd
 
-def get_release_version(problem_version):
-    """
-    Given a problem version (as int or string), returns the appropriate release version
-    based on the version compatibility ranges.
-    
-    Args:
-        problem_version: The version number of the problem file, either as int (e.g., 250200) 
-                        or string (e.g., 'v25.02.0')
-        
-    Returns:
-        str: The release version that can run this problem in format 'release/XX.XX.XX'
-    """
-    # Convert string version to integer if needed
-    if isinstance(problem_version, str) and problem_version.startswith('v'):
-        # Remove 'v' prefix and split by dots
-        version_parts = problem_version[1:].split('.')
-        
-        # Convert to integer format (YYMMDD)
-        major = int(version_parts[0]) * 10000
-        minor = int(version_parts[1]) * 100
-        patch = int(version_parts[2])
-        int_version = major + minor + patch
-    else:
-        int_version = problem_version
-    
-    # Determine the compatible release version using integer comparison
-    if int_version < 230600:
-        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
-    elif int_version < 240600:
-        result_version = 240400
-    elif int_version < 241100:
-        result_version = 240600
-    elif int_version < 241200:
-        result_version = 241100
-    elif int_version < 250200:
-        result_version = 241200
-    elif int_version <= 250200: # Latest version
-        result_version = 250200
-    else:
-        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
-        
-    # Convert integer version to formatted string
-    major = result_version // 10000
-    minor = (result_version % 10000) // 100
-    patch = result_version % 100
-    
-    return f"releases/{major}.{minor}.{patch}"
+from simulator import Simulator
 
 # An experiment is a dictionary with the keys as in the JSON output files.
 # However, we add some cached information to speed up the access to the data.
@@ -224,7 +178,25 @@ class Experiment:
         return self.__ids
     
     def individual(self, island_name: str, generation_index: int, individual_index: int) -> dict:
-        return self.islands[island_name]['generations'][generation_index]['individuals'][individual_index]  
+        return self.islands[island_name]['generations'][generation_index]['individuals'][individual_index]
+    
+    def simulator(self, individual_coord: tuple) -> Simulator:
+        
+        # You must extract the problem from the island of the individual, because
+        # each island can potentially have a different problem (or same problem with different settings).
+        individual = self.individual(individual_coord[0], individual_coord[1], individual_coord[2])
+        individual_udp = self.island(individual_coord[0])['problem']
+
+        return Simulator(
+            decision_vector= individual['decision_vector'],
+            problem= individual_udp,
+
+            fitness_vector= individual['fitness_vector'],
+            id= individual['id'],
+            print_message= "",
+            bemelib_version= self.beme_version,
+            lookup_paths= [os.path.expanduser(self.folder)]
+        )
 
     def __load_experiment(self, experiment_namefile: str, verbose=False) -> dict:
         """
@@ -284,41 +256,6 @@ class Experiment:
         experiment_results['folder'] = experiment_folder
 
         return experiment_results
-
-    def save_simulation_settings_file(self, individual_coord: tuple, save_in_folder: str =".tmp") -> str:
-        # I need to create a file with:
-        # - the individual dv
-        # - the individual fv (optional)
-        # - the individual id (optional)
-        # - print message (optional)
-        # - version of bemelib used (optional)
-        # - user defined problem settings
-        # - lookup paths (optional)
-
-        individual = self.individual(individual_coord[0], individual_coord[1], individual_coord[2])
-
-        # Based on the island of the individual, the UDP settings could be slightly different.
-        # For example, different islands may have been run with different water demand profiles.
-        # So I extract the UDP settings from the island file.
-        udp_sett = self.island(individual_coord[0])['problem']
-
-        simu_sett= {
-            "decision_vector": individual['decision_vector'],
-            "fitness_vector": individual['fitness_vector'],
-            "id": individual['id'],
-            "print": "",
-            "bemelib_version": self.beme_version,
-            "problem": udp_sett,
-            "lookup_paths": [
-                os.path.expanduser(self.folder)
-            ]
-        }    
-        id = simu_sett['id']
-        full_path = os.path.join(save_in_folder, f'bemesim__{id}.json')
-        with open(f'{full_path}', 'w') as file:
-            json.dump(simu_sett, file)
-
-        return full_path
 
 def load_experiments(experiment_folder: str, verbose=False) -> dict:
     """
