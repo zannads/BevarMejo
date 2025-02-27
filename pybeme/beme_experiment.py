@@ -298,12 +298,6 @@ def load_experiments(experiment_folder: str, verbose=False) -> dict:
             experiment = Experiment(experiment_namefile, verbose) # Load the experiment
             experiments[experiment.name] = experiment
 
-            print(experiment.fitness_vectors)
-            print(experiment.fitness_vectors.shape)
-            print(experiment.fitness_vectors.columns)
-            print(experiment.fitness_vectors.index)
-            print(experiment.fitness_vectors.dtypes)
-            print(experiment.fitness_vectors.groupby(['island', 'generation']).last().to_numpy())
     else:
         # We are in a folder of folders
         for folder in os.listdir(experiment_folder):
