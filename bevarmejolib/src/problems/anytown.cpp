@@ -1463,6 +1463,9 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 		j[io::key::at_subnets()][seq_name] = names_in_seq;
 	}
 
+	// Remove the temporary elements
+	j[io::key::at_subnets()].erase(label::__temp_elems);
+
 	j["extra_info"] = prob.get_extra_info();
 }
 
