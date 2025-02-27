@@ -103,7 +103,7 @@ def setup_callbacks(app, experiments):
         
         for e, expname, in enumerate(exps):
             # Extract the fitness vector for all final individuals across all islands
-            final_fvs = experiments[expname].fitness_vectors.groupby(['island', 'individual']).last().to_numpy()
+            final_fvs = experiments[expname].final_fitness_vectors.to_numpy()
 
             # I want full color the best pareto front of each solution and a lighter color for the rest, which are still pareto fronts but for the individual islands
             # Also, I need to make transparent solutions in the best pareto front but that are not feasible (i.e. reliability index < 0)
@@ -135,8 +135,10 @@ def setup_callbacks(app, experiments):
             os.makedirs(tmp_dir)
 
         # Extract the coordinates of the final individual, simulate, get the wntr objects and plot the results
-        final_indv_coord = experiments[expname].fitness_vectors.index[final_individuals_idx]
-        print(final_indv_coord)
+        final_indv_coord = experiments[expname].final_fitness_vectors.index[final_individuals_idx]
+        final_indv_coord = (final_indv_coord[0], # island name
+                            experiments[expname].generations[final_indv_coord[0]].to_numpy()[-1], # last generation of the island
+                            final_indv_coord[1]) # individual index
 
         net = experiments[expname].simulator(final_indv_coord).wntr_networks()[0]
         
@@ -178,7 +180,11 @@ def setup_callbacks(app, experiments):
         fig_pattern.update_yaxes(title='Multipliers', range=[0, 3.1], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey')   
 
         fig_res=subplots.make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, subplot_titles=('Pressure [m]', 'Flow [m3/s]'))
-        nodes=['41', '42', 'T0', 'T1']
+        nodes=['41', '42', 'T0', 'T1'
+               # '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 
+               # '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
+               # '21', '22'
+               ]
         sim_res=sim.run_sim()
         t=np.array(sim_res.node['head'].index).reshape(-1, 1)
         tt=np.hstack([t,t+net.options.time.hydraulic_timestep]).flatten()
@@ -191,11 +197,11 @@ def setup_callbacks(app, experiments):
             qq=np.hstack([q,q]).flatten()
             fig_res.add_trace(go.Scatter(
                 x=t.flatten(), y=h.flatten(), mode='lines', name=node, showlegend=True, legendgroup=node,
-                line=dict(color=colors[n])
+                line=dict(color=colors[n % len(colors)])
             ), row=1, col=1)
             fig_res.add_trace(go.Scatter(
                 x=tt, y=qq, mode='lines', name=node+'(q)', showlegend=False, legendgroup=node,
-                line=dict(color=colors[n])
+                line=dict(color=colors[n % len(colors)])
             ), row=2, col=1)
 
         fig_res.update_xaxes(title='Time [h]', range=[0, 24*3600], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', tickvals=np.array(np.arange(0,24*3600,5*3600)), ticktext=tlab, row=2, col=1)
