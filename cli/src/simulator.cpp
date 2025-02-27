@@ -177,6 +177,11 @@ void Simulator::save_inp(bool save_inp)
     m__save_inp = save_inp;
 }
 
+void Simulator::save_res(bool save_res)
+{
+    m__save_res = save_res;
+}
+
 Simulator Simulator::parse(int argc, char *argv[])
 {
     beme_throw_if(argc < 2, std::invalid_argument,
@@ -194,9 +199,13 @@ Simulator Simulator::parse(int argc, char *argv[])
 
     // 3. Check the flags
     // 3.1 save inp file
-    for (int i = 2; i < argc; ++i) {
-        if (std::string(argv[i]) == "--saveinp") {
+    for (int i = 2; i < argc; ++i){
+        auto arg = std::string(argv[i]);
+        if (arg == "--saveinp") {
             simulator.save_inp(true);
+        }
+        else if (arg == "--savefv") {
+            simulator.save_res(true);
         }
     }
     // TODO: check the other flags, and transform this in something assigning tasks.
@@ -252,6 +261,21 @@ void Simulator::post_run_tasks()
 
                 success = false;
             }
+        }
+    }
+
+    if (m__save_res)
+    {
+        Json jres = m__res;
+        std::ofstream res_file(std::to_string(m__id)+".fv.json");
+        if (res_file.is_open())
+        {
+            res_file << jres.dump();
+            res_file.close();
+        }
+        else
+        {
+            bevarmejo::io::stream_out(std::cerr, "Failed to open the result file for writing.\n");
         }
     }
 

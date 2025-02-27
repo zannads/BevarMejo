@@ -60,6 +60,7 @@ private:
 // (flags) temporary callable methods will be added from the input parser.
     // Flag to save the inp file (useful for running the simulations directly from EPANET)
     bool m__save_inp;
+    bool m__save_res;
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
@@ -83,6 +84,7 @@ public:
 // Element access
 public:
     void save_inp(bool save_inp);
+    void save_res(bool save_res);
 
 public:
     static Simulator parse(int argc, char* argv[]);
