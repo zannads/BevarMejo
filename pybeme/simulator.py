@@ -35,15 +35,17 @@ def get_release_version(problem_version):
     # Determine the compatible release version using integer comparison
     if int_version < 230600:
         raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
-    elif int_version < 240600:
+    elif int_version < 240401:
         result_version = 240400
-    elif int_version < 241100:
+    elif int_version < 240601:
         result_version = 240600
+    elif int_version < 241100:
+        result_version = 241000
     elif int_version < 241200:
         result_version = 241100
     elif int_version < 250200:
         result_version = 241200
-    elif int_version <= 250200: # Latest version
+    elif int_version == 250200: # Latest version
         result_version = 250200
     else:
         raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
