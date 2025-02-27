@@ -21,7 +21,7 @@ import subprocess
 import warnings
 warnings.filterwarnings('ignore')
 
-from pybeme.beme_experiment import load_experiments, save_simulation_settings, list_all_final_individuals, extract_individual_from_coordinates
+from pybeme.beme_experiment import load_experiments
 from pybeme.reference_set import naive_pareto_front
 
 import wntr
@@ -103,17 +103,14 @@ def setup_callbacks(app, experiments):
         
         for e, expname, in enumerate(exps):
             # Extract the fitness vector for all final individuals across all islands
-            final_individuals = list_all_final_individuals(experiments[expname], coordinate=False)
-            # for each island in islands and individual in individual extract the fitness-vector and put it in a numpy array
-            fitness = np.array([ind['fitness_vector'] for ind in final_individuals])
+            final_fvs = experiments[expname].fitness_vectors.groupby(['island', 'individual']).last().to_numpy()
 
-            #fitness.append([9.97392e+06, -0.200667])
             # I want full color the best pareto front of each solution and a lighter color for the rest, which are still pareto fronts but for the individual islands
             # Also, I need to make transparent solutions in the best pareto front but that are not feasible (i.e. reliability index < 0)
-            pf = naive_pareto_front(fitness, f__indexes=True)
-            pf = pf[fitness[pf,1] <= -0.1] # only feasible solutions (I should do a simulation but this will do)
+            pf = naive_pareto_front(final_fvs, f__indexes=True)
+            pf = pf[final_fvs[pf,1] <= -0.1] # only feasible solutions (I should do a simulation but this will do)
             
-            fig.add_trace(go.Scatter(x=fitness[pf,0], y=-fitness[pf,1], mode='markers', marker=dict(size=12, symbol='circle', color=colors[e]),  
+            fig.add_trace(go.Scatter(x=final_fvs[pf,0], y=-final_fvs[pf,1], mode='markers', marker=dict(size=12, symbol='circle', color=colors[e]),  
                                     showlegend=True, name=expname,
                                     customdata=np.array(pf, dtype=str),
                                     hovertemplate='Cost: %{x:2.2f} <br> Reliability Index: %{y:.2f} <extra>%{customdata}</extra>'
@@ -132,21 +129,17 @@ def setup_callbacks(app, experiments):
         if (expname == None) or (final_individuals_idx == None):
             return "", go.Figure(), go.Figure()
 
-        final_indv_coord = list_all_final_individuals(experiments[expname], coordinate=True)[final_individuals_idx]
-        individual_id = extract_individual_from_coordinates(experiments[expname], final_indv_coord)['id']
-        save_simulation_settings(experiments[expname], final_indv_coord)
-        
-        # run the simulation of beme to save the inp file from shell
-        command=f'{beme_dir}/builds/VSCode/Debug/cli/beme-sim {beme_dir}/.tmp/bemesim__{individual_id}.json --saveinp'
-        simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
-        print("Standard Output:\n", simre.stdout)
-        print("Standard Error:\n", simre.stderr)
+        # Create a temporary directory to save the simulation settings and its results
+        tmp_dir = f'{beme_dir}/.tmp'
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
 
-        subprocess.run(f'mv {beme_dir}/*.inp {beme_dir}./tmp/', shell=True, check=True)
-    
-        net = wntr.epanet.io.WaterNetworkModel(f'{beme_dir}/.tmp/{individual_id}.inp')
-        #net.options.time.hydraulic_timestep = 1*60*60
-        #net.options.time.report_timestep = 60*60
+        # Extract the coordinates of the final individual, simulate, get the wntr objects and plot the results
+        final_indv_coord = experiments[expname].fitness_vectors.index[final_individuals_idx]
+        print(final_indv_coord)
+
+        net = experiments[expname].simulator(final_indv_coord).wntr_networks()[0]
+        
         net.options.time.report_timestep = net.options.time.hydraulic_timestep
         net.options.hydraulic.demand_model = 'PDD'
         sim = wntr.sim.EpanetSimulator(net)
