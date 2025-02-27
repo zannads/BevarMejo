@@ -1,10 +1,3 @@
-//
-//  experiment.cpp
-//  bemelib_classes
-//
-//  Created by Dennis Zanutto on 06/07/23.
-//
-
 #include <chrono>
 #include <iomanip>
 #include <iostream>
@@ -71,8 +64,18 @@ Experiment::Experiment(const fsys::path &settings_file) :
 
     std::ifstream file(settings_file);
     beme_throw_if(!file.is_open(), std::runtime_error,
+        "Failed to create the experiment.",
         "Failed to open settings file.",
         io::other::settings_file + settings_file.string());
+
+    if (file.peek() == std::ifstream::traits_type::eof())
+    {
+        file.close();
+        beme_throw(std::runtime_error,
+            "Failed to create the experiment.",
+            "The settings file is empty.",
+            io::other::settings_file + settings_file.string());
+    }
 
     std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
     file.close();
@@ -88,7 +91,7 @@ Experiment::Experiment(const fsys::path &settings_file) :
         catch (const std::exception& e)
         {
             beme_throw(std::runtime_error,
-                "Impossible to create the experiment.",
+                "Failed to create the experiment.",
                 "Failed to parse settings file as JSON.",
                 e.what(),
                 io::other::settings_file + settings_file.string());
@@ -302,6 +305,32 @@ void Experiment::build_islands(const Json &typconfig, const Json &specs, const s
     }
 }
 
+Experiment Experiment::parse(int argc, char* argv[])
+{
+    beme_throw_if(argc < 2, std::invalid_argument,
+        "Error parsing the command line arguments.",
+        "Not enough arguments.",
+        "Usage: beme-opt <settings_file> [flags]");
+
+
+    // Add the cwd to the lookup path for the settings file as it may be a rel path
+    std::vector<fsys::path> lookup_paths;
+    lookup_paths.push_back(fsys::current_path());
+
+    auto settings_file = bevarmejo::io::locate_file(fsys::path{argv[1]}, lookup_paths);
+
+    // TODO: parse all the flags and set the values in the exp_settings
+
+    // TODO: parse all the key value pairs that are passed as experiment flags
+
+    return Experiment(settings_file);
+}
+
+void Experiment::pre_run_tasks()
+{
+    return;
+}
+
 void Experiment::run() {
 
     // This is where the magic happens, for now I deal with only one island, but
@@ -334,6 +363,11 @@ void Experiment::run() {
 
     // Then, finalise the experiment file and delete the runtime files.
     finalise_exp_file();
+}
+
+void Experiment::post_run_tasks()
+{
+    return;
 }
 
 fsys::path Experiment::output_folder() const
