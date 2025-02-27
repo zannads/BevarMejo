@@ -2,9 +2,10 @@ import os
 import json
 import re
 
+import numpy as np
 import pandas as pd
 
-from simulator import Simulator
+from pybeme.simulator import Simulator
 
 # An experiment is a dictionary with the keys as in the JSON output files.
 # However, we add some cached information to speed up the access to the data.
@@ -177,20 +178,26 @@ class Experiment:
 
         return self.__ids
     
-    def individual(self, island_name: str, generation_index: int, individual_index: int) -> dict:
+    def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
+        if generation_index is None:
+            # Find the generation index from the generations series
+            generation_index = np.argmax(self.generations.to_numpy() == generation)
+
         return self.islands[island_name]['generations'][generation_index]['individuals'][individual_index]
     
     def simulator(self, individual_coord: tuple) -> Simulator:
         
         # You must extract the problem from the island of the individual, because
         # each island can potentially have a different problem (or same problem with different settings).
-        individual = self.individual(individual_coord[0], individual_coord[1], individual_coord[2])
+        individual = self.individual(island_name=individual_coord[0],
+                                     generation=individual_coord[1],
+                                     individual_index=individual_coord[2])
         individual_udp = self.island(individual_coord[0])['problem']
 
         return Simulator(
             decision_vector= individual['decision_vector'],
             problem= individual_udp,
-
+            # Optional arguments
             fitness_vector= individual['fitness_vector'],
             id= individual['id'],
             print_message= "",
