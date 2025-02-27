@@ -94,7 +94,7 @@ class Simulator:
 
         return full_path
     
-    def run(self, cli_flags: str = "") -> 
+    def run(self, cli_flags: str = "") -> np.array:
         # Run the c++ simulator from command line
         
         # Save the data to a file that the cli will read
@@ -118,9 +118,9 @@ class Simulator:
         print(simre.returncode)
 
         # Upload the resulting fitness vector and delete the temporary file
-        with open(f"{self.data["id"]}.fv.json", 'r') as file:
+        with open(f"{self.data['id']}.fv.json", 'r') as file:
             fv = json.load(file)
-        os.remove(f"{self.data["id"]}.fv.json")
+        os.remove(f"{self.data['id']}.fv.json")
 
         self.result = np.array(fv)
         return fv
@@ -133,8 +133,7 @@ class Simulator:
 
         self.run("--saveinp")
 
-        
-        inp_files = [f for f in os.listdir() if f.startswith(f"{self.data["id"]}") and f.endswith(".inp")]
+        inp_files = [f for f in os.listdir() if f.startswith(f"{self.data['id']}") and f.endswith(".inp")]
 
         networks = []
         for inp_file in inp_files:
