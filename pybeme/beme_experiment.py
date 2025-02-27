@@ -178,6 +178,11 @@ class Experiment:
 
         return self.__ids
     
+    @property
+    def final_fitness_vectors(self) -> pd.DataFrame:
+        # Return the fitness vector of the last population of each island
+        return self.fitness_vectors.groupby(['island', 'individual']).last()
+
     def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
         if generation_index is None:
             # Find the generation index from the generations series
