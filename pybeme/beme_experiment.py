@@ -4,6 +4,54 @@ import re
 
 import pandas as pd
 
+def get_release_version(problem_version):
+    """
+    Given a problem version (as int or string), returns the appropriate release version
+    based on the version compatibility ranges.
+    
+    Args:
+        problem_version: The version number of the problem file, either as int (e.g., 250200) 
+                        or string (e.g., 'v25.02.0')
+        
+    Returns:
+        str: The release version that can run this problem in format 'release/XX.XX.XX'
+    """
+    # Convert string version to integer if needed
+    if isinstance(problem_version, str) and problem_version.startswith('v'):
+        # Remove 'v' prefix and split by dots
+        version_parts = problem_version[1:].split('.')
+        
+        # Convert to integer format (YYMMDD)
+        major = int(version_parts[0]) * 10000
+        minor = int(version_parts[1]) * 100
+        patch = int(version_parts[2])
+        int_version = major + minor + patch
+    else:
+        int_version = problem_version
+    
+    # Determine the compatible release version using integer comparison
+    if int_version < 230600:
+        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
+    elif int_version < 240600:
+        result_version = 240400
+    elif int_version < 241100:
+        result_version = 240600
+    elif int_version < 241200:
+        result_version = 241100
+    elif int_version < 250200:
+        result_version = 241200
+    elif int_version <= 250200: # Latest version
+        result_version = 250200
+    else:
+        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
+        
+    # Convert integer version to formatted string
+    major = result_version // 10000
+    minor = (result_version % 10000) // 100
+    patch = result_version % 100
+    
+    return f"releases/{major}.{minor}.{patch}"
+
 def load_experiment(experiment_namefile: str, verbose=False) -> dict:
     """
     Load the results of an experiment from a json file.
