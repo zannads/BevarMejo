@@ -5,7 +5,17 @@ import sys
 
 import numpy as np
 
-import wntr
+try:
+    import wntr
+    wntr_available = True
+except ImportError:
+    wntr_available = False
+
+try:
+    from epyt import epanet
+    epyt_available = True
+except ImportError:
+    epyt_available = False
 
 def get_release_version(problem_version):
     """
@@ -56,6 +66,25 @@ def get_release_version(problem_version):
     patch = result_version % 100
     
     return f"releases/{major}.{minor}.{patch}"
+
+def get_beme_required_exact_en_version(problem_version:str) -> tuple:
+    # Convert string version to integer if needed
+    if isinstance(problem_version, str) and problem_version.startswith('v'):
+        # Remove 'v' prefix and split by dots
+        version_parts = problem_version[1:].split('.')
+        
+        # Convert to integer format (YYMMDD)
+        major = int(version_parts[0]) * 10000
+        minor = int(version_parts[1]) * 100
+        patch = int(version_parts[2])
+        int_version = major + minor + patch
+    else:
+        int_version = problem_version
+
+    if int_version < 250200:
+        return (24,6,18)
+    else:
+        return (24,12,21)
 
 class Simulator:
     # I need to create a dict with:
@@ -126,24 +155,60 @@ class Simulator:
 
         self.result = np.array(fv)
         return fv
-
-    def wntr_networks(self) -> list:
-        # Return the water network models
-        # Run with the saveinp flag
-        # List the inp files with the id in the name
-        # Load them one on one and return a list of wntr.epanet.io.WaterNetworkModel objects
-
+    
+    def save_inps(self, directory: str = ".tmp") -> list:
+        # Save the network models to inp files
+        
+        # Run the simulator with the saveinp flag
         self.run("--saveinp")
 
+        # List the inp files with the id in the name
         inp_files = [f for f in os.listdir() if f.startswith(f"{self.data['id']}") and f.endswith(".inp")]
 
-        networks = []
-        for inp_file in inp_files:
-            wn = wntr.network.WaterNetworkModel(inp_file)
-            networks.append(wn)
-            os.remove(inp_file)
+        # Move the inp files to the specified directory
+        for i, inp_file in enumerate(inp_files):
+            os.rename(inp_file, os.path.join(directory, inp_file))
+            inp_files[i] = os.path.join(directory, inp_file)
 
-        self.networks = networks
+        return inp_files
 
-        return self.networks
+    if wntr_available:
+        def wntr_networks(self) -> list:
+            # Return the water network models
+            # Run with the saveinp flag
+            # List the inp files with the id in the name
+            # Load them one on one and return a list of wntr.epanet.io.WaterNetworkModel objects
+
+            inp_files = self.save_inps()
+            
+            networks = []
+            for inp_file in inp_files:
+                wnet = wntr.network.WaterNetworkModel(inp_file)
+                networks.append(wnet)
+                os.remove(inp_file)
+
+            self.networks = networks
+
+            return self.networks
         
+    if epyt_available:
+        def epanet_networks(self) -> list:
+            # Return the water network models
+            # Run with the saveinp flag
+            # List the inp files
+
+            inp_files = self.save_inps()
+
+            beme_en_version=get_beme_required_exact_en_version(self.data["bemelib_version"])
+
+            networks = []
+            for inp_file in inp_files:
+                enet = epanet(inp_file, version=2.3, ph=True, loadfile=True,
+                              customlib=os.path.join(os.path.expanduser("~"), "repos", "zannadsEPANET", "builds", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}","lib", "libepanet2.dylib"),
+                              display_msg=True, display_warnings=True)
+                networks.append(enet)
+                os.remove(inp_file)
+
+            self.networks = networks
+
+            return self.networks
