@@ -18,13 +18,14 @@ import base64
 from io import BytesIO
 import subprocess
 
+import pygmo as pg
+from epyt import epanet
+
 import warnings
 warnings.filterwarnings('ignore')
 
 from pybeme.beme_experiment import load_experiments
-from pybeme.reference_set import naive_pareto_front
 
-import wntr
 
 def create_dashboard_layout(experiments_names):
     return html.Div([
@@ -56,7 +57,6 @@ def create_dashboard_layout(experiments_names):
         html.Div([
             html.Img(id='network', src='')
         ]),
-        dcc.Graph(id='pattern'),
         dcc.Graph(id='simresults')
     ])
 
@@ -107,7 +107,7 @@ def setup_callbacks(app, experiments):
 
             # I want full color the best pareto front of each solution and a lighter color for the rest, which are still pareto fronts but for the individual islands
             # Also, I need to make transparent solutions in the best pareto front but that are not feasible (i.e. reliability index < 0)
-            pf = naive_pareto_front(final_fvs, f__indexes=True)
+            pf = pg.non_dominated_front_2d(final_fvs)
             pf = pf[final_fvs[pf,1] <= -0.1] # only feasible solutions (I should do a simulation but this will do)
             
             fig.add_trace(go.Scatter(x=final_fvs[pf,0], y=-final_fvs[pf,1], mode='markers', marker=dict(size=12, symbol='circle', color=colors[e]),  
@@ -120,14 +120,13 @@ def setup_callbacks(app, experiments):
 
     @app.callback(
         Output(component_id='network', component_property='src'),
-        Output('pattern', 'figure'),
         Output('simresults', 'figure'),
         Input('simproblem', 'value'),
         Input('simsolutionidx', 'value')
     )
     def update_sim(expname, final_individuals_idx):
         if (expname == None) or (final_individuals_idx == None):
-            return "", go.Figure(), go.Figure()
+            return "", go.Figure()
 
         # Create a temporary directory to save the simulation settings and its results
         tmp_dir = f'{beme_dir}/.tmp'
@@ -140,14 +139,10 @@ def setup_callbacks(app, experiments):
                             experiments[expname].generations[final_indv_coord[0]].to_numpy()[-1], # last generation of the island
                             final_indv_coord[1]) # individual index
 
-        net = experiments[expname].simulator(final_indv_coord).wntr_networks()[0]
+        net = experiments[expname].simulator(final_indv_coord).epanet_networks()[0]
         
-        net.options.time.report_timestep = net.options.time.hydraulic_timestep
-        net.options.hydraulic.demand_model = 'PDD'
-        sim = wntr.sim.EpanetSimulator(net)
         # How to render it on dash?? https://plotly.com/blog/dash-matplotlib/
-        fig_net_matplotlib=plt.figure()
-        net_matplotlib_axes=wntr.graphics.plot_network(net, title='Network', node_labels=True, link_labels=True, ax=fig_net_matplotlib.gca())
+        fig_net_matplotlib=net.plot(title='Network', nodesID=True, linksID=True)
         buf=BytesIO()
         fig_net_matplotlib.savefig(buf, format='png')
         # fig_net_matplotlib.savefig('.tmp/network.png', format='png')
@@ -156,58 +151,81 @@ def setup_callbacks(app, experiments):
         fig_data = base64.b64encode(buf.read()).decode("ascii").replace("\n", "")
         fig_bar_matplotlib = f'data:image/png;base64,{fig_data}'
 
-        # Plot the patterns 
-        fig_pattern = go.Figure()
-        cumpattern=np.zeros(24)
-        for _, pump in net.pumps():
-            pattern = net.get_pattern(pump.speed_pattern_name)
-            cumpattern+=pattern.multipliers[0:24]
+        # Prepare the plot for the results
+        fig_res=subplots.make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1, subplot_titles=('Patterns', 'Pressure [m]', 'Flow [m3/s]'))
 
-        t=np.array(np.arange(0, 24, 1)).reshape(-1, 1)
-        t=np.hstack([t,t+1]).flatten()
-        d=np.array(net.get_pattern(net.pattern_name_list[0]).multipliers).reshape(-1, 1)
-        d=np.hstack([d,d]).flatten()
-        p=cumpattern.reshape(-1, 1)
-        p=np.hstack([p,p]).flatten()
+        # Run the simulation
+        hres = net.getComputedHydraulicTimeSeries()
 
-        fig_pattern.add_trace(go.Scatter(x=t, y=d, name='Demand Pattern',
+        # Extract and setup the time.
+        time=np.array(hres.Time)
+        
+
+        h_ts = net.getTimeHydraulicStep()
+        p_ts = net.getTimePatternStep()
+
+        # First plot: patterns
+        patterns = net.getPattern()
+        cumpattern=np.zeros(patterns.shape[1])
+        for i in range(net.getLinkPumpCount()):
+            pattern_idx = net.getLinkPumpPatternIndex(i)-1
+            cumpattern+=patterns[pattern_idx, :]
+        
+        p=np.zeros(len(time))
+        d=np.zeros(len(time))
+        demand_pattern_idx = 0
+        for i, t in enumerate(time):
+            time_idx_in_pattern = t // p_ts % patterns.shape[1]
+            p[i]= cumpattern[ time_idx_in_pattern ]
+            d[i]= patterns[ demand_pattern_idx, time_idx_in_pattern]
+
+        # Repeat the values to plot the steps
+        tt=time.reshape(-1, 1)
+        tt=np.hstack([tt[0:-1],tt[1:]]).flatten()
+        p = np.repeat(p, 2)
+        d = np.repeat(d, 2) 
+
+        fig_res.add_trace(go.Scatter(x=tt, y=d, name='Demand Pattern',
                                         mode='lines', line=dict(color='blue'),
-                                        hovertemplate='Time: %{(x/3600+18)/24:.2f} <br> D-M: %{y:.2f}'))
-        fig_pattern.add_trace(go.Scatter(x=t, y=p, name='# Pumps running',
-                                        mode='lines',  line=dict(color='red')))
-        tlab=['18:00', '23:00', '04:00', '09:00', '14:00']
-        fig_pattern.update_xaxes(title='Time of the day [h]', range=[0, 24], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', tickvals=np.array(np.arange(0,24,5)), ticktext=tlab)
-        fig_pattern.update_yaxes(title='Multipliers', range=[0, 3.1], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey')   
-
-        fig_res=subplots.make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, subplot_titles=('Pressure [m]', 'Flow [m3/s]'))
-        nodes=['41', '42', 'T0', 'T1'
+                                        # hovertemplate='Time: %{(x/3600+18)/24:.2f} <br> D-M: %{y:.2f}'),
+        ), row=1, col=1)
+        fig_res.add_trace(go.Scatter(x=tt, y=p, name='# Pumps running',
+                                        mode='lines',  line=dict(color='red')),
+                                        row=1, col=1)
+        
+        # Second and third plots: pressure and flow
+        nodes2plot=['41', '42', 'T0', 'T1'
                # '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 
                # '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
                # '21', '22'
                ]
-        sim_res=sim.run_sim()
-        t=np.array(sim_res.node['head'].index).reshape(-1, 1)
-        tt=np.hstack([t,t+net.options.time.hydraulic_timestep]).flatten()
-        for n, node in enumerate(nodes):
-            if node not in sim_res.node['head'].columns:
+        
+        hres.disp()
+        
+        net_nodes = net.getNodeNameID()
+        for n, node2plot in enumerate(nodes2plot):
+            if node2plot not in net_nodes:
                 continue
-            h=np.array(sim_res.node['head'][node]).reshape(-1, 1)
-            hh=np.hstack([h,h]).flatten()
-            q=np.array(sim_res.node['demand'][node]).reshape(-1, 1)
+            
+            h=np.array(hres.Head[:, net_nodes.index(node2plot)])
+            q=np.array(hres.Demand[:, net_nodes.index(node2plot)]).reshape(-1, 1)
             qq=np.hstack([q,q]).flatten()
             fig_res.add_trace(go.Scatter(
-                x=t.flatten(), y=h.flatten(), mode='lines', name=node, showlegend=True, legendgroup=node,
-                line=dict(color=colors[n % len(colors)])
-            ), row=1, col=1)
-            fig_res.add_trace(go.Scatter(
-                x=tt, y=qq, mode='lines', name=node+'(q)', showlegend=False, legendgroup=node,
+                x=time, y=h, mode='lines', name=node2plot, showlegend=True, legendgroup=node2plot,
                 line=dict(color=colors[n % len(colors)])
             ), row=2, col=1)
+            fig_res.add_trace(go.Scatter(
+                x=tt, y=qq, mode='lines', name=node2plot+'(q)', showlegend=False, legendgroup=node2plot,
+                line=dict(color=colors[n % len(colors)])
+            ), row=3, col=1)
 
-        fig_res.update_xaxes(title='Time [h]', range=[0, 24*3600], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', tickvals=np.array(np.arange(0,24*3600,5*3600)), ticktext=tlab, row=2, col=1)
-        fig_res.update_yaxes(title='Pressure [m]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=1, col=1)
-        fig_res.update_yaxes(title='Flow [m3/s]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=2, col=1)
-        return fig_bar_matplotlib, fig_pattern, fig_res
+        tlab=['18:00', '23:00', '04:00', '09:00', '14:00']
+        fig_res.update_xaxes(title='Time [h]', range=[0, 24*3600], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', tickvals=np.array(np.arange(0,24*3600,5*3600)), ticktext=tlab, row=3, col=1)
+        fig_res.update_yaxes(title='Multipliers', range=[0, 3.1], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=1, col=1)   
+        fig_res.update_yaxes(title='Pressure [m]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=2, col=1)
+        fig_res.update_yaxes(title='Flow [m3/s]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=3, col=1)
+        return fig_bar_matplotlib, fig_res
+        
 
 def initialize_app(experiments_names):
     app = Dash('Anytown Dashboard')
@@ -223,7 +241,7 @@ def main():
     experiments_dir = sys.argv[1]
     
     # Load experiments
-    experiments = load_experiments(experiments_dir, verbose=True)
+    experiments = load_experiments(experiments_dir, verbose=False)
     if not experiments:
         print("No experiments found!")
         sys.exit(1)
