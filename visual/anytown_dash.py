@@ -39,7 +39,7 @@ def create_dashboard_layout(experiments_names):
                 inline=True
             )
         ]),
-        dcc.Graph(id='pareto-f'),
+        dcc.Graph(id='pareto-f', style={'height': '900px'}),
         html.Div([
             html.H2("Simulation of the solution", style={'text-align': 'center'}),
             dcc.Dropdown(
@@ -57,7 +57,7 @@ def create_dashboard_layout(experiments_names):
         html.Div([
             html.Img(id='network', src='')
         ]),
-        dcc.Graph(id='simresults')
+        dcc.Graph(id='simresults', style={'height': '1000px'})
     ])
 
 def setup_callbacks(app, experiments):
@@ -199,16 +199,13 @@ def setup_callbacks(app, experiments):
                # '11', '12', '13', '14', '15', '16', '17', '18', '19', '20',
                # '21', '22'
                ]
-        
-        hres.disp()
-        
         net_nodes = net.getNodeNameID()
         for n, node2plot in enumerate(nodes2plot):
             if node2plot not in net_nodes:
                 continue
             
-            h=np.array(hres.Head[:, net_nodes.index(node2plot)])
-            q=np.array(hres.Demand[:, net_nodes.index(node2plot)]).reshape(-1, 1)
+            h=np.array(hres.Head[:, net_nodes.index(node2plot)])*0.3048
+            q=np.array(hres.Demand[:, net_nodes.index(node2plot)]).reshape(-1, 1)*0.06309019640344
             qq=np.hstack([q,q]).flatten()
             fig_res.add_trace(go.Scatter(
                 x=time, y=h, mode='lines', name=node2plot, showlegend=True, legendgroup=node2plot,
@@ -222,8 +219,9 @@ def setup_callbacks(app, experiments):
         tlab=['18:00', '23:00', '04:00', '09:00', '14:00']
         fig_res.update_xaxes(title='Time [h]', range=[0, 24*3600], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', tickvals=np.array(np.arange(0,24*3600,5*3600)), ticktext=tlab, row=3, col=1)
         fig_res.update_yaxes(title='Multipliers', range=[0, 3.1], showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=1, col=1)   
-        fig_res.update_yaxes(title='Pressure [m]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=2, col=1)
-        fig_res.update_yaxes(title='Flow [m3/s]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=3, col=1)
+        fig_res.update_yaxes(title='Head [m]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=2, col=1)
+        fig_res.update_yaxes(title='Flow [L/s]', showline=True, showgrid=True, linewidth=1, linecolor='grey', zerolinecolor='black', gridcolor='lightgrey', row=3, col=1)
+        
         return fig_bar_matplotlib, fig_res
         
 
