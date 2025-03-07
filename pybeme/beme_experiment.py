@@ -222,7 +222,7 @@ class Experiment:
         # before the extension of the file.
         # The experiment folder is outside the output folder, so I need to go two levels up.
 
-        experiment_name = re.match(r"bemeexp__(.*)", os.path.basename(experiment_namefile)).group(1)
+        experiment_name = re.match(r"bemeexp__(.*)\..*", os.path.basename(experiment_namefile)).group(1)
         experiment_folder = os.path.dirname(os.path.dirname(experiment_namefile))
 
         if verbose:
