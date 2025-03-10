@@ -24,8 +24,7 @@ from epyt import epanet
 import warnings
 warnings.filterwarnings('ignore')
 
-from pybeme.beme_experiment import load_experiments
-
+import pybeme
 
 def create_dashboard_layout(experiments_names):
     return html.Div([
@@ -239,7 +238,7 @@ def main():
     experiments_dir = sys.argv[1]
     
     # Load experiments
-    experiments = load_experiments(experiments_dir, verbose=False)
+    experiments = pybeme.load_experiments(experiments_dir, verbose=False)
     if not experiments:
         print("No experiments found!")
         sys.exit(1)
