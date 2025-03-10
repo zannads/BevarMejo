@@ -55,8 +55,18 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 Simulator::Simulator(const fsys::path& settings_file) :
     m__settings_file(settings_file),
     m__root_folder(settings_file.parent_path()),
-    m__lookup_paths({settings_file.parent_path(), fsys::current_path()})
-
+    m__lookup_paths({settings_file.parent_path(), fsys::current_path()}),
+    m__dvs({}),
+    m__p(),
+    m__fvs({}),
+    m__id(0ull),
+    m__extra_message(""),
+    m__version(version_str),
+    m__res({}),
+    m__start_time(),
+    m__end_time(),
+    m__save_inp(false),
+    m__save_res(false)
 {
     // Check the extension, and based on that open the file, parse it based on
     // the file structure (JSON, YAML, XML, etc). 
