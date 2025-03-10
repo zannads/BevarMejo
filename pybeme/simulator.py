@@ -118,6 +118,9 @@ class Simulator:
         }
         
     def save(self, directory: str = ".tmp") -> str:
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
         
         full_path = os.path.join(directory, f'bemesim__{self.data["id"]}.json')
         with open(f'{full_path}', 'w') as file:
