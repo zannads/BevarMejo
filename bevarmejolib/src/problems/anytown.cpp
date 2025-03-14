@@ -4,6 +4,7 @@
 //
 //  Created by Dennis Zanutto on 11/07/23.
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -28,8 +29,8 @@ namespace bemeio = bevarmejo::io;
 #include "bevarmejo/hydraulic_functions.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
-
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
+#include "bevarmejo/problem/wds_problem.hpp"
 
 #include "problems/anytown.hpp"
 
@@ -62,6 +63,8 @@ static const std::string opertns_f1 = "operations::f1";
 static const std::string twoph_f1 = "twophases::f1";
 static const std::string rehab_f2 = "rehab::f2";
 static const std::string mixed_f2 = "mixed::f2";
+static const std::string rehab_f3 = "rehab::f3";
+static const std::string mixed_f3 = "mixed::f3";
 } // namespace io::value
 
 // Extra information for the formulations.
@@ -72,6 +75,8 @@ static const std::string opertns_f1_exinfo = "Anytown Operations-only problem. P
 static const std::string twoph_f1_exinfo = "Anytown Rehabilitation Formulation 1\nPipes as in Farmani, Tanks as in Vamvakeridou-Lyroudia but discrete, operations optimized internally)\n";
 static const std::string rehab_f2_exinfo =  "Anytown Rehabilitation Formulation 2\nOperations from input, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
 static const std::string mixed_f2_exinfo =  "Anytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
+static const std::string rehab_f3_exinfo =  "Anytown Rehabilitation Formulation 3\nOperations from input, pipes as single dv, Tanks as before, of reliability formulation 2\n";
+static const std::string mixed_f3_exinfo =  "Anytown Mixed Formulation 3\nOperations as dv, pipes as single dv, Tanks as before, of reliability formulation 2\n";
 }
 
 std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) {
@@ -125,6 +130,16 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	{
 		m__formulation = Formulation::mixed_f2;
 		m__extra_info = io::other::mixed_f2_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f3)
+	{
+		m__formulation = Formulation::rehab_f3;
+		m__extra_info = io::other::rehab_f3_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f3)
+	{
+		m__formulation = Formulation::mixed_f3;
+		m__extra_info = io::other::mixed_f3_exinfo;
 	}
 	else
 	{
@@ -216,7 +231,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		io::key::new_pipe_opts.exists_in(settings) &&
 		io::key::tank_opts.exists_in(settings)
 	);
-	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2)
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3)
 		assert(io::key::opers.exists_in(settings));
 
 	// If the settings is a string it means it is a filename, otherwise it shuold 
@@ -239,7 +254,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		
 	m__tank_options = j_tanks.get<std::vector<anytown::tank_option>>();
 
-	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2)
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3)
 	{
 		// Need to se the operations for the rehabilitation problems
 		auto j_oper = Json{}; // Json for the operations
@@ -296,8 +311,12 @@ std::vector<double>::size_type Problem::get_nix() const {
 	case Formulation::opertns_f1:
 		return 24ul;
 	case Formulation::rehab_f2:
+		[[fallthrough]];
+	case Formulation::rehab_f3:
 		return 45ul;
 	case Formulation::mixed_f2:
+		[[fallthrough]];
+	case Formulation::mixed_f3:
 		return 69ul;
 	default:
 		return 0ul;
@@ -367,11 +386,36 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	}
 
 	// Compute OF on res. 
-	std::vector<double> fitv= {
-		cost(*m__anytown, dvs), // cost is positive when money is going out, like in this case
-		of__reliability(*m__anytown) // Special modification of the reliability function
-	};
+	std::vector<double> fitv(get_nobj(), 0.0);
+
+	// First objective is always cost for all formulations.
+	fitv[0] = cost(*m__anytown, dvs);
 	
+	// Second objective is the of__reliability, based on the formulation
+	switch (m__formulation)
+	{
+	case Formulation::rehab_f1:
+		[[fallthrough]];
+	case Formulation::mixed_f1:
+		[[fallthrough]];
+	case Formulation::opertns_f1:
+		[[fallthrough]];
+	case Formulation::twoph_f1:
+		[[fallthrough]];
+	case Formulation::rehab_f2:
+		[[fallthrough]];
+	case Formulation::mixed_f2:
+		fitv[1] = fr1::of__reliability(*m__anytown);
+		break;
+	case Formulation::rehab_f3:
+		[[fallthrough]];
+	case Formulation::mixed_f3:
+		fitv[1] = fr2::of__reliability(*m__anytown, results);
+		break;
+	default:
+		break;
+	}
+
 	reset_dv(m__anytown, dvs);
 	return fitv;
 }
@@ -438,14 +482,20 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 		apply_dv__pumps(*anytown, dvs);
 		return;
 	}
-	case Formulation::rehab_f2: {
+	case Formulation::rehab_f2:
+		[[fallthrough]];
+	case Formulation::rehab_f3:
+	{
 		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
 		// No pumps apply
 		fnt1::apply_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()), m__tank_options);
 		return;
 	}
-	case Formulation::mixed_f2: {
+	case Formulation::mixed_f2:
+		[[fallthrough]];
+	case Formulation::mixed_f3:
+	{
 		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
 		apply_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
@@ -484,13 +534,19 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+100, dvs.end()), m__tank_options, m__new_pipe_options);
 		break;
 	}
-	case Formulation::rehab_f2: {
+	case Formulation::rehab_f2:
+		[[fallthrough]];
+	case Formulation::rehab_f3:
+	{
 		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
 		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+41, dvs.end()), m__tank_options, m__new_pipe_options);
 		break;
 	}
-	case Formulation::mixed_f2: {
+	case Formulation::mixed_f2:
+		[[fallthrough]];
+	case Formulation::mixed_f3:
+	{
 		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
 		capital_cost += fnt1::cost__tanks(anytown, std::vector(dvs.begin()+65, dvs.end()), m__tank_options, m__new_pipe_options);
@@ -507,7 +563,7 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	return -bevarmejo::net_present_value(capital_cost, discount_rate, -yearly_energy_cost, amortization_years);
 }
 
-double of__reliability(const WDS &anytown) {
+double fr1::of__reliability(const WDS &anytown) {
 
 	double value = 0.0;
 
@@ -573,6 +629,52 @@ double of__reliability(const WDS &anytown) {
 	return value;
 }
 
+double fr2::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res)
+{
+	double value = 0.0;
+	/*
+	 * The reliability index will display a hierarchy for the constraints and the objectives.
+	 * Since it has to be minimized, we start from the highest priority constraint (highest objective value) and go down.
+	 * - from 2 to 1, the main constraint on mathematical solution validity. We are using EPANET that returns a warning
+	 *  when the equations are solved but the solution is not valid. This is the first thing to check.
+	 * - from 1 to 0, the normalized pressure deficit averaged across the nodes, integrated though time.
+	 *   We want to fully satisify this before moving to the reliablity index because the Ir depends on a min pressure constraint.
+	 * - from 0 to -1, the reliability index. This can be reduced by multipling by unsatisfied soft constraints.
+	 */
+
+	// Get the share of un-solved steps in the hydraulic simulation
+	int n_steps = res.size();
+	const int n_correct_steps = std::count(res.values().begin(), res.values().end(), 0);
+
+	if ( n_correct_steps <  n_steps )
+	{
+		return 1.0 + (n_steps - n_correct_steps) / (double)n_steps; 
+	}
+
+	// All steps are solved, now check the pressure deficit
+
+	// Get the cumulative deficit of all junctions
+	const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+	value = normdeficit_daily.integrate_forward();
+
+	if ( value > 0. )
+	{
+		// Return the average normalized deficit
+		return normdeficit_daily.back().first != 0 ? value / normdeficit_daily.back().first : value;
+	}
+	
+
+	// All constraints are satisfied, now check the reliability index
+	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT);
+	value = ir_daily.integrate_forward();
+
+	value = ir_daily.back().first != 0 ? value / ir_daily.back().first : value;
+
+	// Here you could add other constraint between 0 and 1 and use them ro reduce the reliability index
+
+	return -value; // I want to maximize the reliability index
+}
+
 void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
 	// Do the opposite operations of apply_dv 
 	anytown->cache_indices();
@@ -604,14 +706,20 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 		// No need to reset the pumps as they are overwritten
 		return;
 	}
-	case Formulation::rehab_f2: {
+	case Formulation::rehab_f2:
+		[[fallthrough]];
+	case Formulation::rehab_f3:
+	{
 		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
 		// No pumps reset
 		fnt1::reset_dv__tanks(*anytown, std::vector(dvs.begin()+41, dvs.end()));
 		return;
 	}
-	case Formulation::mixed_f2: {
+	case Formulation::mixed_f2:
+		[[fallthrough]];
+	case Formulation::mixed_f3:
+	{
 		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
 		reset_dv__pumps(*anytown, std::vector(dvs.begin()+41, dvs.begin()+65));
