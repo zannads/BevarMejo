@@ -356,7 +356,7 @@ private:
 
             return {m__qs->time_series().at(m__index), m__qs->values()[m__index]};
         }
-        pointer operator->() const { __temp__= **this; return &__temp__; }
+        // pointer operator->() const { __temp__= **this; return &__temp__; }
         value_type operator[](difference_type n) const { return *(*this + n); }
 
         Iterator& operator++() { 
@@ -419,7 +419,7 @@ private:
     template <typename TS>
     class ReverseIterator {
     public:
-        using iterator_category= std::random_access_iterator_tag;
+        using iterator_category= std::bidirectional_iterator_tag;
         using value_type = typename std::conditional<
             std::is_const<TS>::value,
             typename TS::const_instant_type,
@@ -696,6 +696,20 @@ public:
 
     // Upper_bound_pos, returns the array position to the first time that is greater than the given time
     size_type upper_bound_pos( time_t time__s ) const { return m__time_series.upper_bound_pos(time__s); }
+
+
+/*--- Operations ---*/
+public:
+    // Forward integration of the values
+    T integrate_forward(T init = T()) const
+    {
+        T result= std::move(init);
+        for (auto curr= begin(), next = begin()+1; next != end(); ++curr, ++next)
+        {
+            result += (*curr).second * ((*next).first - (*curr).first);
+        }
+        return result;
+    }
 };
 
 using QuantitiesMap= std::unordered_map<std::string, std::unique_ptr<QuantitySeriesBase>>;
