@@ -64,9 +64,7 @@ Simulator::Simulator(const fsys::path& settings_file) :
     m__version(version_str),
     m__res({}),
     m__start_time(),
-    m__end_time(),
-    m__save_inp(false),
-    m__save_res(false)
+    m__end_time()
 {
     // Check the extension, and based on that open the file, parse it based on
     // the file structure (JSON, YAML, XML, etc). 
@@ -182,14 +180,62 @@ Simulator::Simulator(const fsys::path& settings_file) :
     }
 }
 
-void Simulator::save_inp(bool save_inp)
+/*----------------------------------------------------------------------------*/
+/*-------------------------------- Tasks -------------------------------------*/
+/*----------------------------------------------------------------------------*/
+void print_hello_msg(Simulator & simr);
+
+void print_results_msg(Simulator & simr);
+
+void check_correctness(Simulator & simr);
+
+void save_results(Simulator & simr);
+
+void save_inp(Simulator & simr);
+
+/*----------------------------------------------------------------------------*/
+/*--------------------------- Member functions -------------------------------*/
+/*----------------------------------------------------------------------------*/
+
+// Element access
+const std::vector<double>& Simulator::decision_variables() const
 {
-    m__save_inp = save_inp;
+    return m__dvs;
 }
 
-void Simulator::save_res(bool save_res)
+const pagmo::problem& Simulator::problem() const
 {
-    m__save_res = save_res;
+    return m__p;
+}
+
+const std::vector<double>& Simulator::expected_fitness_vector() const
+{
+    return m__fvs;
+}
+
+unsigned long long Simulator::id() const
+{
+    return m__id;
+}
+
+const std::string& Simulator::extra_message() const
+{
+    return m__extra_message;
+}
+
+const std::vector<double>& Simulator::resulting_fitness_vector() const
+{
+    return m__res;
+}
+
+const std::chrono::high_resolution_clock::time_point& Simulator::start_time() const
+{
+    return m__start_time;
+}
+
+const std::chrono::high_resolution_clock::time_point& Simulator::end_time() const
+{
+    return m__end_time;
 }
 
 Simulator Simulator::parse(int argc, char *argv[])
@@ -207,25 +253,50 @@ Simulator Simulator::parse(int argc, char *argv[])
 
     auto simulator = Simulator(settings_file);
 
+    // Add default tasks
+    simulator.m__pre_run_tasks.emplace_back("Print hello message", print_hello_msg, "");
+
+    simulator.m__post_run_tasks.emplace_back("Print results message", print_results_msg, "");
+    
+    if (!simulator.expected_fitness_vector().empty())
+    {
+        simulator.m__post_run_tasks.emplace_back("Check correctness", check_correctness, "");
+    }
+
     // 3. Check the flags
     // 3.1 save inp file
-    for (int i = 2; i < argc; ++i){
+    for (int i = 2; i < argc; ++i)
+    {
         auto arg = std::string(argv[i]);
-        if (arg == "--saveinp") {
-            simulator.save_inp(true);
+        if (arg == "--saveinp")
+        {
+            simulator.m__post_run_tasks.emplace_back("Save inp file", save_inp, "");
         }
-        else if (arg == "--savefv") {
-            simulator.save_res(true);
+        else if (arg == "--savefv")
+        {
+            simulator.m__post_run_tasks.emplace_back("Save results", save_results, "");
         }
     }
-    // TODO: check the other flags, and transform this in something assigning tasks.
 
     return std::move(simulator);
 }
 
 void Simulator::pre_run_tasks()
 {
-    return;
+    for (const auto& task : m__pre_run_tasks)
+    {
+        try
+        {
+            std::get<1>(task)(*this);
+        }
+        catch(const std::exception& e)
+        {
+            bevarmejo::io::stream_out(std::cerr,
+                "An error happend while executing a pre-run task:\n",
+                "Task: ", std::get<0>(task), "\n",
+                e.what(), "\n");
+        }
+    }
 }
 
 void Simulator::run()
@@ -247,73 +318,184 @@ void Simulator::run()
 
 void Simulator::post_run_tasks()
 {
-    bevarmejo::io::stream_out(std::cout, 
-        "Element with ID ", m__id,
-        " evaluated with Fitness vector : ", m__res,
-        " in ", std::chrono::duration_cast<std::chrono::milliseconds>(m__end_time - m__start_time).count(), " ms\n");
-
-    if (!m__extra_message.empty())
-        bevarmejo::io::stream_out(std::cout, m__extra_message, "\n");
-
-    bool success = true;
-    if (!m__fvs.empty() && m__fvs.size() == m__res.size())
+    for (const auto& task : m__post_run_tasks)
     {
-       
-        for (size_t i = 0; i < m__fvs.size(); ++i)
+        try
         {
-            if ( std::abs(m__fvs[i] - m__res[i]) > std::numeric_limits<double>::epsilon() )
-            {
-                bevarmejo::io::stream_out(std::cerr, "Mismatch between the fitness vector provided and the one returned by the problem simulation.\n",
-                    std::setprecision(16),
-                    "Index: ", i, "\n",
-                    "Expected: ", m__fvs[i], "\n",
-                    "Returned: ", m__res[i], "\n");
+            std::get<1>(task)(*this);
+        }
+        catch(const std::exception& e)
+        {
+            bevarmejo::io::stream_out(std::cerr,
+                "An error happend while executing a post-run task:\n",
+                "Task: ", std::get<0>(task), "\n",
+                e.what(), "\n");
+        }
+    }
+}
 
-                success = false;
+/*----------------------------------------------------------------------------*/
+/*-------------------------------- Tasks -------------------------------------*/
+/*----------------------------------------------------------------------------*/
+void print_hello_msg(Simulator & simr)
+{
+    bevarmejo::io::stream_out(std::cout,
+        "\nThanks for using BeMe-Sim!\n\n");
+}
+
+void print_results_msg(Simulator & simr)
+{
+    if ( simr.id() != 0 )
+    {
+        bevarmejo::io::stream_out(std::cout,
+            "Element with ID: ", simr.id(), " evaluated.\n");
+    }
+    else
+    {
+        bevarmejo::io::stream_out(std::cout,
+            "Unnamed element evaluated.\n");
+    }
+
+    bevarmejo::io::stream_out(std::cout,
+        "\tFitness vector: ", simr.resulting_fitness_vector(), "\n",
+        "\tElapsed time: ", std::chrono::duration_cast<std::chrono::milliseconds>(simr.end_time() - simr.start_time()).count(), " ms\n");
+
+    if (!simr.extra_message().empty())
+    {
+        bevarmejo::io::stream_out(std::cout,
+            "\n\t", simr.extra_message(), "\n");
+    }
+}
+
+void check_correctness(Simulator & simr)
+{
+    assert(!simr.expected_fitness_vector().empty()); // This function should be added and used only if a fitness vector is provided.
+
+    // lambda to pretty print the fitness vectors.
+    // Expected output:
+    // Expected   |  Result
+    // 1.2345     |  1.2345
+    // 1.2345     |        
+
+    auto pretty_print_header = []() -> std::string
+    {
+        std::ostringstream msg;
+        std::string expected_header = "Expected";
+        std::string result_header = "Result";
+        size_t expected_padding = (17 - expected_header.length()) / 2;
+        size_t result_padding = (17 - result_header.length()) / 2;
+
+        msg << std::setw(expected_padding + expected_header.length()) << std::right << expected_header;
+        msg << std::setw(17 - expected_header.length() - expected_padding) << " ";
+        msg << " | ";
+        msg << std::setw(result_padding + result_header.length()) << std::right << result_header;
+        msg << std::setw(17 - result_header.length() - result_padding) << " ";
+        msg << "\n";
+        return msg.str();
+    };
+
+    auto pretty_print_fvs = [pretty_print_header](const std::vector<double>& expected, const std::vector<double>& result) -> std::string
+    {
+        size_t max_size = std::max(expected.size(), result.size());
+    
+        std::ostringstream msg;
+        bevarmejo::io::stream_out(msg, pretty_print_header());
+        for (size_t i = 0; i < max_size; ++i) {
+            msg << std::fixed << std::setprecision(16);
+            if (i < expected.size()) {
+                msg << std::setw(17) << expected[i];
+            } else {
+                msg << std::setw(17) << " "; // 16 digits + space
             }
+            msg << " | ";
+            if (i < result.size()) {
+                msg << std::setw(17) << result[i];
+            } else {
+                msg << std::setw(17) << " "; // 16 digits + space
+            }
+            msg << "\n";
+        }
+        return msg.str();
+    };
+
+    // Check that the sizes match, otherwise it means that the results are not for the same problem.
+    beme_throw_if(simr.expected_fitness_vector().size() != simr.resulting_fitness_vector().size(), std::runtime_error,
+        "Simulations results don't match the expected fitness vector.",
+        "The size of the fitness vector provided and the one returned by the simulation are different.",
+        "Expected size: ", simr.expected_fitness_vector().size(),
+        "Returned size: ", simr.resulting_fitness_vector().size(),
+        "\nContent:\n", pretty_print_fvs(simr.expected_fitness_vector(), simr.resulting_fitness_vector())
+    );
+    
+    std::vector<std::size_t> mismatch_indices;
+    for (std::size_t i = 0; i < simr.expected_fitness_vector().size(); ++i)
+    {
+        if (std::abs(simr.expected_fitness_vector()[i] - simr.resulting_fitness_vector()[i]) > std::numeric_limits<double>::epsilon())
+        {
+            mismatch_indices.push_back(i);
         }
     }
 
-    if (m__save_res)
+    if (!mismatch_indices.empty())
     {
-        Json jres = m__res;
-        std::ofstream res_file(std::to_string(m__id)+".fv.json");
-        if (res_file.is_open())
-        {
-            res_file << jres.dump();
-            res_file.close();
-        }
-        else
-        {
-            bevarmejo::io::stream_out(std::cerr, "Failed to open the result file for writing.\n");
-        }
-    }
+        // Prepare a cool message to show the differences.
+        // Style:
+        // Expected   |  Result
+        // * 1.2345   |  1.2456
+        //   1.2345   |  1.2345
+        std::ostringstream msg;
+        bevarmejo::io::stream_out(msg, "  ", pretty_print_header());
 
-    // No need to save anything (everything went well by definition).
-    if (!m__save_inp)
-        return;
+        for (std::size_t i = 0; i < simr.expected_fitness_vector().size(); ++i)
+        {
+            msg << std::fixed << std::setprecision(16);
+            if (std::find(mismatch_indices.begin(), mismatch_indices.end(), i) != mismatch_indices.end())
+            {
+                msg << "* " << std::setw(17) << simr.expected_fitness_vector()[i];
+            }
+            else
+            {
+                msg << "  " << std::setw(17) << simr.expected_fitness_vector()[i];
+            }
 
-    bevarmejo::io::stream_out(std::cout, "Thanks for using BeMe-Sim, saving the inp file...\n");
-    try
-    {
-        if ( m__p.is<bevarmejo::anytown::Problem>() )
-        {
-            m__p.extract<bevarmejo::anytown::Problem>()->save_solution(m__dvs, std::to_string(m__id) + ".inp");
-            return;
+            msg << " | " << std::setw(17) << simr.resulting_fitness_vector()[i] << "\n";
         }
-        else 
-        {
-            beme_throw(std::runtime_error,
-                "Impossible to save the inp file.",
-                "The problem is not of the type anytown::Problem.",
-                "Problem type: ", m__p.get_name());
-        }
+
+        beme_throw(std::runtime_error,
+            "Simulations results don't match the expected fitness vector.",
+            "One or more fitness values are different.",
+            "Content:\n", msg.str());
     }
-    catch (const std::exception& e)
-    {
-        bevarmejo::io::stream_out(std::cerr, "An error happend while saving the inp file:\n", e.what(), "\n" );
-        return;
-    }
+}
+
+void save_results(Simulator &simr)
+{
+    Json jres = simr.resulting_fitness_vector();
+    std::ofstream res_file(std::to_string(simr.id())+".fv.json");
+
+    beme_throw_if(!res_file.is_open(), std::runtime_error,
+        "Failed to open the result file for writing.",
+        "The file could not be opened.",
+        "File: ", std::to_string(simr.id()) + ".fv.json");
+
+    res_file << jres.dump();
+    res_file.close();
+
+    bevarmejo::io::stream_out(std::cout,
+        "Results saved in: ", fsys::current_path().string()+std::to_string(simr.id()) + ".fv.json\n");
+}
+
+void save_inp(Simulator &simr)
+{
+    beme_throw_if( !simr.problem().is<bevarmejo::anytown::Problem>(), std::runtime_error,
+        "Impossible to save the inp file.",
+        "The problem is not of the type anytown::Problem.",
+        "Problem type: ", simr.problem().get_name());
+
+    simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
+
+    bevarmejo::io::stream_out(std::cout,
+        "EPANET inp file saved in: ", fsys::current_path().string()+std::to_string(simr.id()) + ".inp\n");
 }
 
 } // namespace bevarmejo
