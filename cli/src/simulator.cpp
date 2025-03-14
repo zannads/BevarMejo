@@ -427,17 +427,33 @@ void check_correctness(Simulator & simr)
         "\nContent:\n", pretty_print_fvs(simr.expected_fitness_vector(), simr.resulting_fitness_vector())
     );
     
-    std::vector<std::size_t> mismatch_indices;
+    double tolerance = 1e-7;
+    std::vector<std::size_t> mismatch_status(simr.expected_fitness_vector().size(), 0);
     for (std::size_t i = 0; i < simr.expected_fitness_vector().size(); ++i)
     {
-        if (std::abs(simr.expected_fitness_vector()[i] - simr.resulting_fitness_vector()[i]) > std::numeric_limits<double>::epsilon())
+        // Return 0, 1, or 2 to represent the extent of the mismatch.
+        // 0: no mismatch
+        // 1: weak mismatch
+        // 2: strong mismatch
+        auto get_status_code = [tolerance](double expected, double result) -> std::size_t
         {
-            mismatch_indices.push_back(i);
-        }
+            if (expected == result)
+                return 0;
+            
+            if (expected == 0.0)
+                return (std::abs(result) < tolerance) ? 1 : 2;
+
+            return std::abs(expected - result) < std::abs(expected) * tolerance ? 1 : 2;
+        };
+
+        mismatch_status[i] = get_status_code(simr.expected_fitness_vector()[i], simr.resulting_fitness_vector()[i]);
     }
 
-    if (!mismatch_indices.empty())
+    // If there is at least a non zero value in the mismatch_status vector, it means that there are differences and we will print out something.
+    // The error is thrown at the end of the function only if there is a strong mismatch (condition 2).
+    if ( std::any_of(mismatch_status.begin(), mismatch_status.end(), [](std::size_t s) { return s==1 || s==2;} ) )
     {
+        bool need_throw = false;
         // Prepare a cool message to show the differences.
         // Style:
         // Expected   |  Result
@@ -449,19 +465,24 @@ void check_correctness(Simulator & simr)
         for (std::size_t i = 0; i < simr.expected_fitness_vector().size(); ++i)
         {
             msg << std::fixed << std::setprecision(16);
-            if (std::find(mismatch_indices.begin(), mismatch_indices.end(), i) != mismatch_indices.end())
+            if (mismatch_status[i] == 0)
             {
-                msg << "* " << std::setw(17) << simr.expected_fitness_vector()[i];
+                msg << "  ";
+            }
+            else if (mismatch_status[i] == 1)
+            {
+                msg << "~ ";
             }
             else
             {
-                msg << "  " << std::setw(17) << simr.expected_fitness_vector()[i];
+                msg << "* ";
+                need_throw = true;
             }
 
-            msg << " | " << std::setw(17) << simr.resulting_fitness_vector()[i] << "\n";
+            msg << std::setw(17) << simr.expected_fitness_vector()[i] << " | " << std::setw(17) << simr.resulting_fitness_vector()[i] << "\n";
         }
 
-        beme_throw(std::runtime_error,
+        beme_throw_if(need_throw, std::runtime_error,
             "Simulations results don't match the expected fitness vector.",
             "One or more fitness values are different.",
             "Content:\n", msg.str());
@@ -482,7 +503,7 @@ void save_results(Simulator &simr)
     res_file.close();
 
     bevarmejo::io::stream_out(std::cout,
-        "Results saved in: ", fsys::current_path().string()+std::to_string(simr.id()) + ".fv.json\n");
+        "Results saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".fv.json\n")).string());
 }
 
 void save_inp(Simulator &simr)
@@ -495,7 +516,7 @@ void save_inp(Simulator &simr)
     simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
 
     bevarmejo::io::stream_out(std::cout,
-        "EPANET inp file saved in: ", fsys::current_path().string()+std::to_string(simr.id()) + ".inp\n");
+        "EPANET '.inp' file saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".inp\n")).string());
 }
 
 } // namespace bevarmejo
