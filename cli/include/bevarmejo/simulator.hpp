@@ -3,6 +3,7 @@
 #include <chrono>
 #include <filesystem>
 namespace fsys = std::filesystem;
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -17,6 +18,9 @@ class Simulator final
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member types ----------------------------------*/
 /*----------------------------------------------------------------------------*/
+private:
+    using Task = std::tuple<std::string, std::function<void(Simulator&)>, std::string>; // A Task wraps a task name, a callable, and a description of the task for logging purposes.
+    using Tasks = std::vector<Task>; // A collection of tasks.
 
 /*----------------------------------------------------------------------------*/
 /*---------------------------- Member objects --------------------------------*/
@@ -57,10 +61,10 @@ private:
     // Ending time of the simulation
     std::chrono::high_resolution_clock::time_point m__end_time;
 
-// (flags) temporary callable methods will be added from the input parser.
-    // Flag to save the inp file (useful for running the simulations directly from EPANET)
-    bool m__save_inp;
-    bool m__save_res;
+// (tasks) callable methods to be added from the input parser.
+private:
+    Tasks m__pre_run_tasks;
+    Tasks m__post_run_tasks;
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
@@ -83,8 +87,21 @@ public:
 
 // Element access
 public:
-    void save_inp(bool save_inp);
-    void save_res(bool save_res);
+    const std::vector<double>& decision_variables() const;
+    
+    const pagmo::problem& problem() const;
+
+    const std::vector<double>& expected_fitness_vector() const;
+
+    unsigned long long id() const;
+
+    const std::string& extra_message() const;
+
+    const std::vector<double>& resulting_fitness_vector() const;
+
+    const std::chrono::high_resolution_clock::time_point& start_time() const;
+
+    const std::chrono::high_resolution_clock::time_point& end_time() const;
 
 public:
     static Simulator parse(int argc, char* argv[]);
