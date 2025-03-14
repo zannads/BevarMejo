@@ -1399,6 +1399,10 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::rehab_f2:
 			[[fallthrough]];
 		case Formulation::mixed_f2:
+			[[fallthrough]];
+		case Formulation::rehab_f3:
+			[[fallthrough]];
+		case Formulation::mixed_f3:
 			append_bounds(fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__exi_pipe_options);
 			break;
 		default:
@@ -1417,6 +1421,8 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::opertns_f1:
 			[[fallthrough]];
 		case Formulation::mixed_f2:
+			[[fallthrough]];
+		case Formulation::mixed_f3:
 			append_bounds(bounds__pumps, std::as_const(*m__anytown).pumps());
 			break;
 		default:
