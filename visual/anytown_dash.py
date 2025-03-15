@@ -107,7 +107,8 @@ def setup_callbacks(app, experiments):
             # I want full color the best pareto front of each solution and a lighter color for the rest, which are still pareto fronts but for the individual islands
             # Also, I need to make transparent solutions in the best pareto front but that are not feasible (i.e. reliability index < 0)
             pf = pg.non_dominated_front_2d(final_fvs)
-            pf = pf[final_fvs[pf,1] <= -0.1] # only feasible solutions (I should do a simulation but this will do)
+            
+            # pf = pf[final_fvs[pf,1] <= -0.1] # only feasible solutions (I should do a simulation but this will do)
             
             fig.add_trace(go.Scatter(x=final_fvs[pf,0], y=-final_fvs[pf,1], mode='markers', marker=dict(size=12, symbol='circle', color=colors[e]),  
                                     showlegend=True, name=expname,
