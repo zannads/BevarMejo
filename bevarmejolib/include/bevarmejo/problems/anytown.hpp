@@ -29,6 +29,7 @@ namespace fsys = std::filesystem;
 namespace bemeio = bevarmejo::io;
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
+#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
 #include "bevarmejo/problem/wds_problem.hpp"
 
 namespace bevarmejo {
@@ -110,7 +111,9 @@ enum class Formulation {
     opertns_f1,
     twoph_f1,
     rehab_f2,
-    mixed_f2
+    mixed_f2,
+    rehab_f3,
+    mixed_f3
 }; // enum class Formulation
 
 // For the json serializer
@@ -160,7 +163,12 @@ double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std
 }
 
 //      For reliability (modified) function:
+namespace fr1 {
 double of__reliability(const WDS& anytown);
+}
+namespace fr2 {
+double of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res);
+}
 
 //     For reset dv:
 namespace fep1 {
