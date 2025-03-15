@@ -1556,7 +1556,8 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	j[io::key::new_pipe_opts()] = prob.m__new_pipe_options;
 	j[io::key::tank_opts()] = prob.m__tank_options;
 
-	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
+	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2 || prob.m__formulation == Formulation::rehab_f3)
+	{
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
 		for (const auto& [id, pump] : prob.m__anytown->pumps()) {
