@@ -17,6 +17,8 @@ try:
 except ImportError:
     epyt_available = False
 
+import pybeme.utility.formulations_conversions as fc
+
 def get_release_version(problem_version):
     """
     Given a problem version (as int or string), returns the appropriate release version
@@ -213,3 +215,7 @@ class Simulator:
             self.networks = networks
 
             return self.networks
+        
+    def convert_to_formulation(self, formulation: int) -> "Simulator":
+        
+        fc.from_fx_to_fy(self, formulation)
