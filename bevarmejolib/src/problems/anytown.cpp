@@ -40,12 +40,12 @@ namespace anytown {
 namespace io::key
 {
 #if BEME_VERSION < 240601
-static constexpr bemeio::AliasedKey at_inp {"WDS inp"}; // "AT inp"
-static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs"}; // "AT subnets"
+static constexpr bemeio::AliasedKey at_inp {"WDS inp", "AT inp"}; // "AT inp"
+static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs", "AT subnets"}; // "AT subnets"
 static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
 static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
-static constexpr bemeio::AliasedKey tank_opts {"Tank costs"}; // "Tank options"
-static constexpr bemeio::AliasedKey opers {"Operations"}; // "Pump group operations"
+static constexpr bemeio::AliasedKey tank_opts {"Tank costs", "Tank options"}; // "Tank options"
+static constexpr bemeio::AliasedKey opers {"Operations", "Pump group operations"}; // "Pump group operations"
 #else
 static constexpr bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
 static constexpr bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
