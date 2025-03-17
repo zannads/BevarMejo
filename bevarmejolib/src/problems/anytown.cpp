@@ -40,12 +40,12 @@ namespace anytown {
 namespace io::key
 {
 #if BEME_VERSION < 240601
-static constexpr bemeio::AliasedKey at_inp {"WDS inp"}; // "AT inp"
-static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs"}; // "AT subnets"
+static constexpr bemeio::AliasedKey at_inp {"WDS inp", "AT inp"}; // "AT inp"
+static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs", "AT subnets"}; // "AT subnets"
 static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
 static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
-static constexpr bemeio::AliasedKey tank_opts {"Tank costs"}; // "Tank options"
-static constexpr bemeio::AliasedKey opers {"Operations"}; // "Pump group operations"
+static constexpr bemeio::AliasedKey tank_opts {"Tank costs", "Tank options"}; // "Tank options"
+static constexpr bemeio::AliasedKey opers {"Operations", "Pump group operations"}; // "Pump group operations"
 #else
 static constexpr bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
 static constexpr bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
@@ -1556,7 +1556,8 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	j[io::key::new_pipe_opts()] = prob.m__new_pipe_options;
 	j[io::key::tank_opts()] = prob.m__tank_options;
 
-	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2) {
+	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2 || prob.m__formulation == Formulation::rehab_f3)
+	{
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
 		for (const auto& [id, pump] : prob.m__anytown->pumps()) {

@@ -26,7 +26,12 @@ if __name__ == '__main__':
         sys.exit(1)
 
     exp_folder = sys.argv[1]
-    exp_name = exp_folder.split('/')[-1]
+    exp_name = '__'.join(exp_folder.split('/')[-1].split('__')[1:])
+
+    if len(sys.argv) > 2 and sys.argv[2] == '--rename' and len(sys.argv) > 3:
+        modern_exp_name = sys.argv[3]
+    else:
+        modern_exp_name = exp_name
 
     # Create a copy folder with the name: exp_folder + "-modern"
     modern_folder = exp_folder + "-modern"
@@ -153,8 +158,11 @@ if __name__ == '__main__':
     # Add the random starts key (number of files in the output folder minus 1 for the main experiment file)
     settings_file['Random starts'] = (len([name for name in os.listdir(os.path.join(exp_folder, 'output')) if os.path.isfile(os.path.join(exp_folder, 'output', name)) and not name.endswith('.DS_Store')]) - 1)
 
+    # Remove the name of the problem from the settings file as it will be in the filenames
+    settings_file.pop('Name', None)
+
     # Save the modified JSON in the copy folder with the new name 'bemeopt__exp_name'
-    with open(os.path.join(modern_folder, exp_name+'.json'), 'w') as file:
+    with open(os.path.join(modern_folder, f'bemeopt__{modern_exp_name}.json'), 'w') as file:
         json.dump(settings_file, file, indent=4)
 
     # Copy in the folder the only file that the configuration file depends on, the 'WDS inp' file.
@@ -164,17 +172,17 @@ if __name__ == '__main__':
     # Now for each file in the output folder, I will change the problem in the json object of the islands.
 
     # make the output directory 
-    output_folder = os.path.join(modern_folder, 'output')
-    os.makedirs(output_folder)
+    modern_output_folder = os.path.join(modern_folder, 'output')
+    os.makedirs(modern_output_folder)
 
     # copy the **__exp file with the new name 'bemexp__${name}.json'
-    new_exp_name = exp_name.replace('bemeopt__', 'bemeexp__')+".json"
-    os.system(f"cp {os.path.join(exp_folder, 'output', exp_name+'__exp.json')} {output_folder}/{new_exp_name}")
+    modern_bemexp_name = f'bemeexp__{modern_exp_name}.json'
+    os.system(f"cp {os.path.join(exp_folder, 'output', 'bemeopt__'+exp_name+'__exp.json')} {modern_output_folder}/{modern_bemexp_name}")
     
     # Open it so that we can modify the name of the islands and the keys
     # Keys will be converted from kebab-case to snake_case, but since they differ
     # only for multi word keys, only these keys will be changed.
-    with open(os.path.join(output_folder, new_exp_name), 'r') as file:
+    with open(os.path.join(modern_output_folder, modern_bemexp_name), 'r') as file:
         exp = json.load(file)
 
     for i, isl_relpath in enumerate(exp['archipelago']['islands']):
@@ -214,31 +222,32 @@ if __name__ == '__main__':
         island['problem'] = {
             'type': settings_file['Typical configuration']['UDP']['Name'],
             'parameters': {
-                'wds_inp': settings_file['Typical configuration']['UDP']['Parameters']['WDS inp'],
-                'wds_udegs': settings_file['Typical configuration']['UDP']['Parameters']['WDS UDEGs'],
+                'at_inp': settings_file['Typical configuration']['UDP']['Parameters']['WDS inp'],
+                'at_subnets': settings_file['Typical configuration']['UDP']['Parameters']['WDS UDEGs'],
                 'existing_pipe_options': settings_file['Typical configuration']['UDP']['Parameters']['Existing pipe options'],
                 'new_pipe_options': settings_file['Typical configuration']['UDP']['Parameters']['New pipe options'],
-                'tank_costs': settings_file['Typical configuration']['UDP']['Parameters']['Tank costs']
+                'tank_options': settings_file['Typical configuration']['UDP']['Parameters']['Tank costs']
             }
         }
         if 'Operations' in settings_file['Typical configuration']['UDP']['Parameters']:
-            island['problem']['parameters']['operations'] = settings_file['Typical configuration']['UDP']['Parameters']['Operations']
+            island['problem']['parameters']['pump_group_operations'] = settings_file['Typical configuration']['UDP']['Parameters']['Operations']
 
         # Some other keys may need to be fixed. But I will change them as I encounter them.
 
         # Reorder the keys in the alpahbetical order like the c++ library wold do
-        new_relpathname = isl_relpath.replace('opt', 'isl')
-        with open(os.path.join(output_folder, new_relpathname), 'w') as file:
+        modern_isl_relpath = isl_relpath.replace('opt', 'isl')
+        modern_isl_relpath = modern_isl_relpath.replace(exp_name, modern_exp_name)
+        with open(os.path.join(modern_output_folder, modern_isl_relpath), 'w') as file:
             json.dump(island, file, indent=4, sort_keys=True)
 
-        exp['archipelago']['islands'][i] = new_relpathname
+        exp['archipelago']['islands'][i] = modern_isl_relpath
 
     # Convert also all the other keys in the experiment file to snake_case
     exp['archipelago']['topology'] = {'type': "pagmo::unconnected"}
     exp['software']['bemelib_version'] = exp['software'].pop('bemelib-version')
 
     # Save the modified experiment file in the output folder
-    with open(os.path.join(output_folder, new_exp_name), 'w') as file:
+    with open(os.path.join(modern_output_folder, modern_bemexp_name), 'w') as file:
         json.dump(exp, file, indent=4)
 
     print("The experiment files have been successfully converted to the new format.")

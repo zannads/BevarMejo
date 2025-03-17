@@ -17,6 +17,8 @@ try:
 except ImportError:
     epyt_available = False
 
+import pybeme.utility.formulations_conversions as fc
+
 def get_release_version(problem_version):
     """
     Given a problem version (as int or string), returns the appropriate release version
@@ -46,24 +48,22 @@ def get_release_version(problem_version):
     if int_version < 230600:
         raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
     elif int_version < 240401:
-        result_version = 240400
+        release_v = 240400
     elif int_version < 240601:
-        result_version = 240600
+        release_v = 240600
     elif int_version < 241100:
-        result_version = 241000
+        release_v = 241000
     elif int_version < 241200:
-        result_version = 241100
+        release_v = 241100
     elif int_version < 250200:
-        result_version = 241200
-    elif int_version == 250200: # Latest version
-        result_version = 250200
+        release_v = 241200
     else:
-        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
+        return "releases/latest"
         
     # Convert integer version to formatted string
-    major = result_version // 10000
-    minor = (result_version % 10000) // 100
-    patch = result_version % 100
+    major = release_v // 10000
+    minor = (release_v % 10000) // 100
+    patch = release_v % 100
     
     return f"releases/{major}.{minor}.{patch}"
 
@@ -215,3 +215,7 @@ class Simulator:
             self.networks = networks
 
             return self.networks
+        
+    def convert_to_formulation(self, formulation: int) -> "Simulator":
+        
+        fc.from_fx_to_fy(self, formulation)
