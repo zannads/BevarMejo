@@ -1,3 +1,4 @@
+import copy
 import os 
 import json
 import re
@@ -199,7 +200,7 @@ class Experiment:
                                      individual_index=individual_coord[2])
         individual_udp = self.island(individual_coord[0])['problem']
 
-        return Simulator(
+        simr = Simulator(
             decision_vector= individual['decision_vector'],
             problem= individual_udp,
             # Optional arguments
@@ -209,6 +210,7 @@ class Experiment:
             bemelib_version= self.beme_version,
             lookup_paths= [os.path.expanduser(self.folder)]
         )
+        return copy.deepcopy(simr)
 
     def __load_experiment(self, experiment_namefile: str, verbose=False) -> dict:
         """
