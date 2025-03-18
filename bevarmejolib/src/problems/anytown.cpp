@@ -40,12 +40,12 @@ namespace anytown {
 namespace io::key
 {
 #if BEME_VERSION < 240601
-static constexpr bemeio::AliasedKey at_inp {"WDS inp", "AT inp"}; // "AT inp"
-static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs", "AT subnets"}; // "AT subnets"
+static constexpr bemeio::AliasedKey at_inp {"WDS inp", "AT inp"}; // "WDS inp", "AT inp"
+static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs", "AT subnets"}; // "WDS UDEGs", "AT subnets"
 static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
 static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New pipe options"
-static constexpr bemeio::AliasedKey tank_opts {"Tank costs", "Tank options"}; // "Tank options"
-static constexpr bemeio::AliasedKey opers {"Operations", "Pump group operations"}; // "Pump group operations"
+static constexpr bemeio::AliasedKey tank_opts {"Tank costs", "Tank options"}; // "Tank costs", "Tank options"
+static constexpr bemeio::AliasedKey opers {"Operations", "Pump group operations"}; // "Operations", "Pump group operations"
 #else
 static constexpr bemeio::AliasedKey at_inp {"AT inp"}; // "AT inp"
 static constexpr bemeio::AliasedKey at_subnets {"AT subnets"}; // "AT subnets"
@@ -54,6 +54,7 @@ static constexpr bemeio::AliasedKey new_pipe_opts {"New pipe options"}; // "New 
 static constexpr bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options"
 static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 #endif
+static constexpr bemeio::AliasedKey max_vel{"Pipe max velocity"}; // "Pipe max velocity"
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -297,6 +298,9 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 			// but I can avoid as it is not used yet
 		}
 	}
+
+	// Optional value that is only used in the reliability function from formulations 4:
+	m__max_velocity__m_per_s = settings.value(io::key::max_vel.as_in(settings), 2.0); // 2 m/s
 }
 
 // ------------------- Pagmo functions ------------------- //
@@ -1654,6 +1658,11 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	j[io::key::at_subnets()].erase(label::__temp_elems);
 
 	j["extra_info"] = prob.get_extra_info();
+
+	if (prob.m__formulation == Formulation::rehab_f4 || prob.m__formulation == Formulation::mixed_f4)
+	{
+		j[io::key::max_vel()] = prob.m__max_velocity__m_per_s;
+	}
 }
 
 } // namespace anytown
