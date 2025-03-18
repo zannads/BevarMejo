@@ -88,7 +88,7 @@ public:
     void wall_coeff(const double a_wall_coeff) { m__wall_coeff.value(a_wall_coeff); }
 
     // === Results ===
-    const VelocitySeries& velocity() const;
+    const VelocitySeries& velocity() const { return m__velocity; }
 
 /*------- Capacity -------*/
 public:

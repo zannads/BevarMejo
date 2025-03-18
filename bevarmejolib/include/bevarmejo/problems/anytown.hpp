@@ -113,7 +113,9 @@ enum class Formulation {
     rehab_f2,
     mixed_f2,
     rehab_f3,
-    mixed_f3
+    mixed_f3,
+    rehab_f4,
+    mixed_f4
 }; // enum class Formulation
 
 // For the json serializer
@@ -168,6 +170,9 @@ double of__reliability(const WDS& anytown);
 }
 namespace fr2 {
 double of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res);
+}
+namespace fr3 {
+double of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res, double max_velocity__m_per_s);
 }
 
 //     For reset dv:
@@ -231,7 +236,8 @@ protected:
     std::vector<bevarmejo::anytown::exi_pipe_option> m__exi_pipe_options;
     std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
     std::vector<bevarmejo::anytown::tank_option> m__tank_options;
-    Formulation m__formulation; // Track the problem formulation (affect the dvs for now)
+    Formulation m__formulation; // Track the problem formulation
+    double m__max_velocity__m_per_s; // Maximum velocity for the reliability function
     mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:
     pagmo::algorithm m_algo;
