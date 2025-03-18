@@ -113,7 +113,9 @@ enum class Formulation {
     rehab_f2,
     mixed_f2,
     rehab_f3,
-    mixed_f3
+    mixed_f3,
+    rehab_f4,
+    mixed_f4
 }; // enum class Formulation
 
 // For the json serializer
@@ -168,6 +170,9 @@ double of__reliability(const WDS& anytown);
 }
 namespace fr2 {
 double of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res);
+}
+namespace fr3 {
+double of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults &res, double max_velocity__m_per_s);
 }
 
 //     For reset dv:

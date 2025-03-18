@@ -65,6 +65,8 @@ static const std::string rehab_f2 = "rehab::f2";
 static const std::string mixed_f2 = "mixed::f2";
 static const std::string rehab_f3 = "rehab::f3";
 static const std::string mixed_f3 = "mixed::f3";
+static const std::string rehab_f4 = "rehab::f4";
+static const std::string mixed_f4 = "mixed::f4";
 } // namespace io::value
 
 // Extra information for the formulations.
@@ -77,6 +79,8 @@ static const std::string rehab_f2_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f2_exinfo =  "Anytown Mixed Formulation 2\nOperations as dv, pipes as single dv, Tanks as in Vamvakeridou-Lyroudia (but discrete)\n";
 static const std::string rehab_f3_exinfo =  "Anytown Rehabilitation Formulation 3\nOperations from input, pipes as single dv, Tanks as before, of reliability formulation 2\n";
 static const std::string mixed_f3_exinfo =  "Anytown Mixed Formulation 3\nOperations as dv, pipes as single dv, Tanks as before, of reliability formulation 2\n";
+static const std::string rehab_f4_exinfo =  "Anytown Rehabilitation Formulation 4\nOperations from input, pipes as single dv, Tanks as before, of reliability formulation 3 (velocities)\n";
+static const std::string mixed_f4_exinfo =  "Anytown Mixed Formulation 4\nOperations as dv, pipes as single dv, Tanks as before, of reliability formulation 3 (velocities)\n";
 }
 
 std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) {
@@ -140,6 +144,16 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	{
 		m__formulation = Formulation::mixed_f3;
 		m__extra_info = io::other::mixed_f3_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f4)
+	{
+		m__formulation = Formulation::rehab_f4;
+		m__extra_info = io::other::rehab_f4_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f4)
+	{
+		m__formulation = Formulation::mixed_f4;
+		m__extra_info = io::other::mixed_f4_exinfo;
 	}
 	else
 	{
@@ -254,7 +268,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		
 	m__tank_options = j_tanks.get<std::vector<anytown::tank_option>>();
 
-	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3)
+	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3 || m__formulation == Formulation::rehab_f4)
 	{
 		// Need to se the operations for the rehabilitation problems
 		auto j_oper = Json{}; // Json for the operations
@@ -313,10 +327,14 @@ std::vector<double>::size_type Problem::get_nix() const {
 	case Formulation::rehab_f2:
 		[[fallthrough]];
 	case Formulation::rehab_f3:
+		[[fallthrough]];
+	case Formulation::rehab_f4:
 		return 45ul;
 	case Formulation::mixed_f2:
 		[[fallthrough]];
 	case Formulation::mixed_f3:
+		[[fallthrough]];
+	case Formulation::mixed_f4:
 		return 69ul;
 	default:
 		return 0ul;
@@ -412,6 +430,11 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	case Formulation::mixed_f3:
 		fitv[1] = fr2::of__reliability(*m__anytown, results);
 		break;
+	case Formulation::rehab_f4:
+		[[fallthrough]];
+	case Formulation::mixed_f4:
+		fitv[1] = fr3::of__reliability(*m__anytown, results, 2.0); // Max velocity: 2 m/s 
+		break;
 	default:
 		break;
 	}
@@ -485,6 +508,8 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	case Formulation::rehab_f2:
 		[[fallthrough]];
 	case Formulation::rehab_f3:
+		[[fallthrough]];
+	case Formulation::rehab_f4:
 	{
 		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
@@ -495,6 +520,8 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	case Formulation::mixed_f2:
 		[[fallthrough]];
 	case Formulation::mixed_f3:
+		[[fallthrough]];
+	case Formulation::mixed_f4:
 	{
 		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		apply_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
@@ -537,6 +564,8 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	case Formulation::rehab_f2:
 		[[fallthrough]];
 	case Formulation::rehab_f3:
+		[[fallthrough]];
+	case Formulation::rehab_f4:
 	{
 		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
@@ -546,6 +575,8 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	case Formulation::mixed_f2:
 		[[fallthrough]];
 	case Formulation::mixed_f3:
+		[[fallthrough]];
+	case Formulation::mixed_f4:
 	{
 		capital_cost += fep2::cost__exis_pipes(anytown, std::vector(dvs.begin(), dvs.begin()+35), m__exi_pipe_options);
 		capital_cost += cost__new_pipes(anytown, std::vector(dvs.begin()+35, dvs.begin()+41), m__new_pipe_options);
@@ -671,8 +702,39 @@ double fr2::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::e
 	value = ir_daily.back().first != 0 ? value / ir_daily.back().first : value;
 
 	// Here you could add other constraint between 0 and 1 and use them ro reduce the reliability index
+	// Or wrap this function in a new one that does this for you.
 
 	return -value; // I want to maximize the reliability index
+}
+
+double fr3::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults& res, double max_velocity__m_per_s)
+{
+	double value = fr2::of__reliability(anytown, res);
+
+	// In case the other constraints (feasibility and min pressure) are not satisfied (value > 0.0)
+	// I just forward the result out and save computation time.
+	if (value >= 0.0)
+	{
+		return value;
+	}
+
+	// If we are here is because all timesteps are mathematically solved and the pressure deficit is zero.
+	// We have calculated the reliability index, so we simply check the maximum velocity constraint.
+
+	// The constraint is ALL PIPES NO MORE THAN 2 m/s CRISP
+	double observed_max_velocity = 0.0;
+	for (const auto& [id, pipe] : anytown.pipes())
+	{
+		for (const auto& vel : pipe.velocity().values())
+		{
+			if (vel > observed_max_velocity)
+			{
+				observed_max_velocity = vel;
+			}
+		}
+	}
+
+	 return (observed_max_velocity > max_velocity__m_per_s) ? value : 0.0;
 }
 
 void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
@@ -709,6 +771,8 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	case Formulation::rehab_f2:
 		[[fallthrough]];
 	case Formulation::rehab_f3:
+		[[fallthrough]];
+	case Formulation::rehab_f4:
 	{
 		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
@@ -719,6 +783,8 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	case Formulation::mixed_f2:
 		[[fallthrough]];
 	case Formulation::mixed_f3:
+		[[fallthrough]];
+	case Formulation::mixed_f4:
 	{
 		fep2::reset_dv__exis_pipes(*anytown, std::vector(dvs.begin(), dvs.begin()+35), __old_HW_coeffs);
 		reset_dv__new_pipes(*anytown, std::vector(dvs.begin()+35, dvs.begin()+41));
@@ -1403,6 +1469,10 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::rehab_f3:
 			[[fallthrough]];
 		case Formulation::mixed_f3:
+			[[fallthrough]];
+		case Formulation::rehab_f4:
+			[[fallthrough]];
+		case Formulation::mixed_f4:
 			append_bounds(fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__exi_pipe_options);
 			break;
 		default:
@@ -1423,6 +1493,8 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		case Formulation::mixed_f2:
 			[[fallthrough]];
 		case Formulation::mixed_f3:
+			[[fallthrough]];
+		case Formulation::mixed_f4:
 			append_bounds(bounds__pumps, std::as_const(*m__anytown).pumps());
 			break;
 		default:
@@ -1556,7 +1628,7 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	j[io::key::new_pipe_opts()] = prob.m__new_pipe_options;
 	j[io::key::tank_opts()] = prob.m__tank_options;
 
-	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2 || prob.m__formulation == Formulation::rehab_f3)
+	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2 || prob.m__formulation == Formulation::rehab_f3 || prob.m__formulation == Formulation::rehab_f4)
 	{
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
