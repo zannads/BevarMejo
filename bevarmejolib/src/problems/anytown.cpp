@@ -437,7 +437,7 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	case Formulation::rehab_f4:
 		[[fallthrough]];
 	case Formulation::mixed_f4:
-		fitv[1] = fr3::of__reliability(*m__anytown, results, 2.0); // Max velocity: 2 m/s 
+		fitv[1] = fr3::of__reliability(*m__anytown, results, m__max_velocity__m_per_s);
 		break;
 	default:
 		break;
