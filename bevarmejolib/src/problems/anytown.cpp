@@ -738,7 +738,7 @@ double fr3::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::e
 		}
 	}
 
-	 return (observed_max_velocity > max_velocity__m_per_s) ? value : 0.0;
+	 return (observed_max_velocity <= max_velocity__m_per_s) ? value : 0.0;
 }
 
 void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
