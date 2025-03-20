@@ -713,19 +713,26 @@ double fr2::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::e
 
 double fr3::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::epanet::HydSimResults& res, double max_velocity__m_per_s)
 {
+	// With this formulation, we have one additional constraint to include with
+	// respect to the fr2::of__reliability. This is the maximum velocity constraint.
+
+	// We need to return the average of the constraint violations if there are any.
+	// If there are no constraint violations, we return the reliability index.
+
+	// We re use the reliability index from the previous formulation.
+	// This is between 2 and 1 for unfeasible solutions.
+	// This is between 1 and 0 for solutions that do not satisfy the pressure constraint.
+	// This is between 0 and -1 for solutions that satisfy the pressure constraint (the value is the rel index).
 	double value = fr2::of__reliability(anytown, res);
 
-	// In case the other constraints (feasibility and min pressure) are not satisfied (value > 0.0)
-	// I just forward the result out and save computation time.
-	if (value >= 0.0)
+	// If value >= 1.0, it's an unfeasible solution, we just forward it. 
+	if (value >= 1.0)
 	{
 		return value;
 	}
 
-	// If we are here is because all timesteps are mathematically solved and the pressure deficit is zero.
-	// We have calculated the reliability index, so we simply check the maximum velocity constraint.
+	// The solution is mathematically feasible, so we compute the maximum velocity constraint violation.
 
-	// The constraint is ALL PIPES NO MORE THAN 2 m/s CRISP
 	double observed_max_velocity = 0.0;
 	for (const auto& [id, pipe] : anytown.pipes())
 	{
@@ -737,8 +744,15 @@ double fr3::of__reliability(const WDS& anytown, const bevarmejo::sim::solvers::e
 			}
 		}
 	}
+	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ? 0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
+	
+	// We extract the pressure violation and todini's rel index from the value
+	double pressure_violation = (value > 0.0) ? value : 0.0;
+	double ir = (value <= 0.0) ? value : 0.0; // unneccessary, but here for better readability of return value
 
-	 return (observed_max_velocity > max_velocity__m_per_s) ? value : 0.0;
+	double total_violation = (pressure_violation + velocity_violation) / 2.0;
+
+	return (total_violation > 0.0) ? total_violation : ir;
 }
 
 void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const {
