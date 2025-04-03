@@ -109,16 +109,25 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	if (a_formulation_str == io::value::rehab_f1)
 	{
 		m__formulation = Formulation::rehab_f1;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__extra_info = io::other::rehab_f1_exinfo;
 	}
 	else if (a_formulation_str == io::value::mixed_f1)
 	{
 		m__formulation = Formulation::mixed_f1;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__extra_info = io::other::mixed_f1_exinfo;
 	}
 	else if (a_formulation_str == io::value::opertns_f1)
 	{
 		m__formulation = Formulation::opertns_f1;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__extra_info = io::other::opertns_f1_exinfo;
 	}
 	else if (a_formulation_str == io::value::twoph_f1)
@@ -129,31 +138,49 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f2)
 	{
 		m__formulation = Formulation::rehab_f2;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__extra_info = io::other::rehab_f2_exinfo;
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f2)
 	{
 		m__formulation = Formulation::mixed_f2;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__extra_info = io::other::mixed_f2_exinfo;
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f3)
 	{
 		m__formulation = Formulation::rehab_f3;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__extra_info = io::other::rehab_f3_exinfo;
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f3)
 	{
 		m__formulation = Formulation::mixed_f3;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__extra_info = io::other::mixed_f3_exinfo;
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f4)
 	{
 		m__formulation = Formulation::rehab_f4;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
 		m__extra_info = io::other::rehab_f4_exinfo;
 	}
 	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f4)
 	{
 		m__formulation = Formulation::mixed_f4;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::Simple;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
 		m__extra_info = io::other::mixed_f4_exinfo;
 	}
 	else
@@ -414,35 +441,21 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	fitv[0] = cost(*m__anytown, dvs);
 	
 	// Second objective is the of__reliability, based on the formulation
-	switch (m__formulation)
+	switch (m__reliability_obj_func_formulation)
 	{
-	case Formulation::rehab_f1:
-		[[fallthrough]];
-	case Formulation::mixed_f1:
-		[[fallthrough]];
-	case Formulation::opertns_f1:
-		[[fallthrough]];
-	case Formulation::twoph_f1:
-		[[fallthrough]];
-	case Formulation::rehab_f2:
-		[[fallthrough]];
-	case Formulation::mixed_f2:
+	case ReliabilityObjectiveFunctionFormulation::Base:
 		fitv[1] = fr1::of__reliability(*m__anytown);
 		break;
-	case Formulation::rehab_f3:
-		[[fallthrough]];
-	case Formulation::mixed_f3:
+	case ReliabilityObjectiveFunctionFormulation::Hierarchical:
 		fitv[1] = fr2::of__reliability(*m__anytown, results);
 		break;
-	case Formulation::rehab_f4:
-		[[fallthrough]];
-	case Formulation::mixed_f4:
+	case ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity:
 		fitv[1] = fr3::of__reliability(*m__anytown, results, m__max_velocity__m_per_s);
 		break;
 	default:
 		break;
 	}
-
+	
 	reset_dv(m__anytown, dvs);
 	return fitv;
 }

@@ -115,8 +115,29 @@ enum class Formulation {
     rehab_f3,
     mixed_f3,
     rehab_f4,
-    mixed_f4
+    mixed_f4,
+    rehab_f5,
+    mixed_f5
 }; // enum class Formulation
+
+enum class ExistingPipesFormulation
+{
+    Farmani,
+    Combined
+}; // enum class ExistingPipesFormulation
+
+enum class NewTanksFormulation
+{
+    Simple,
+    Farmani
+}; // enum class NewTanksFormulation
+
+enum class ReliabilityObjectiveFunctionFormulation
+{
+    Base,
+    Hierarchical,
+    HierarchicalWithMaxVelocity
+}; // enum class ReliabilityObjectiveFunctionFormulation
 
 // For the json serializer
 namespace io::json::detail {
@@ -136,6 +157,9 @@ std::pair<std::vector<double>, std::vector<double>> bounds__pumps(InputExcluding
 namespace fnt1 {
 std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &np_opts);
 }
+namespace fnt2 {
+std::pair<std::vector<double>, std::vector<double>> bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &np_opts);
+}
 
 // For fitness function:
 //     For apply dv:
@@ -150,6 +174,9 @@ void apply_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
 namespace fnt1 {
 void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option);
 }
+namespace fnt2 {
+void apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
+}
 
 //      For cost function:
 namespace fep1 {
@@ -161,6 +188,9 @@ double cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, cons
 double cost__new_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 double cost__energy_per_day(const WDS& anytown);
 namespace fnt1 {
+double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
+}
+namespace fnt2 {
 double cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option, const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts);
 }
 
@@ -185,6 +215,9 @@ void reset_dv__exis_pipes(WDS& anytown, const std::vector<double>& dvs, const st
 void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs);
 void reset_dv__pumps(WDS& anytown, const std::vector<double>& dvs);
 namespace fnt1 {
+void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
+}
+namespace fnt2 {
 void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 }
 
@@ -237,6 +270,11 @@ protected:
     std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
     std::vector<bevarmejo::anytown::tank_option> m__tank_options;
     Formulation m__formulation; // Track the problem formulation
+    ExistingPipesFormulation m__exi_pipes_formulation;
+    NewTanksFormulation m__new_tanks_formulation;
+    ReliabilityObjectiveFunctionFormulation m__reliability_obj_func_formulation;
+    bool m__has_operations;
+
     double m__max_velocity__m_per_s; // Maximum velocity for the reliability function
     mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:
