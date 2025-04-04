@@ -273,6 +273,7 @@ protected:
     ExistingPipesFormulation m__exi_pipes_formulation;
     NewTanksFormulation m__new_tanks_formulation;
     ReliabilityObjectiveFunctionFormulation m__reliability_obj_func_formulation;
+    bool m__has_design;
     bool m__has_operations;
 
     double m__max_velocity__m_per_s; // Maximum velocity for the reliability function
