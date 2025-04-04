@@ -517,6 +517,12 @@ void Problem::apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
 		fnt1::apply_dv__tanks(*anytown, extract_next(4), m__tank_options);
+		i += 4;
+	}
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		fnt2::apply_dv__tanks(*anytown, extract_next(12), m__tank_options, m__new_pipe_options);
+		i += 12;
 	}
 
 	/*
@@ -594,6 +600,12 @@ double Problem::cost(const WDS &anytown,  const std::vector<double> &dvs) const 
 	if (m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
 		capital_cost += fnt1::cost__tanks(anytown, extract_next(4), m__tank_options, m__new_pipe_options);
+		i += 4;
+	}
+	if (m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		capital_cost += fnt2::cost__tanks(anytown, extract_next(12), m__tank_options, m__new_pipe_options);
+		i += 12;
 	}
 		
 	double energy_cost_per_day = cost__energy_per_day(anytown);
@@ -792,6 +804,12 @@ void Problem::reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anyto
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
 		fnt1::reset_dv__tanks(*anytown, extract_next(4));
+		i += 4;
+	}
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		fnt2::reset_dv__tanks(*anytown, extract_next(12));
+		i += 12;
 	}
 }
 
@@ -1115,6 +1133,16 @@ void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const s
 	}
 }
 
+auto fnt2::apply_dv__tanks(
+	WDS& anytown,
+	const std::vector<double>& dvs,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> void
+{
+	return;
+}
+
 // -------------------   cost   ------------------- //
 double fep1::cost__exis_pipes(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs)
 {
@@ -1282,6 +1310,15 @@ double fnt1::cost__tanks(const WDS& anytown, const std::vector<double> &dvs, con
 	return capital_cost;
 }
 
+auto fnt2::cost__tanks(
+	const WDS& anytown,
+	const std::vector<double>& dvs,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> double
+{
+	return 0.0;
+}
 // ------------------- of__reliability ------------------- //
 
 // ------------------- reset_dv ------------------- //
@@ -1435,6 +1472,14 @@ void fnt1::reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs)
 	return;
 }
 
+auto fnt2::reset_dv__tanks(
+	WDS& anytown,
+	const std::vector<double>& dvs
+) -> void
+{
+	return;
+}
+
 // ------------------- 1st level ------------------- //
 // -------------------   Bounds  ------------------- //
 std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
@@ -1470,7 +1515,12 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
 		append_bounds(fnt1::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options);
-	}	
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		append_bounds(fnt2::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options, m__new_pipe_options);
+	}
 
 	return {std::move(lb), std::move(ub)};
 }
@@ -1573,6 +1623,21 @@ std::pair<std::vector<double>, std::vector<double>> fnt1::bounds__tanks(InputOrd
 	return std::make_pair(lb, ub);
 }
 
+auto fnt2::bounds__tanks(
+	InputOrderedRegistryView<WDS::Junction> tank_locs,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options
+) -> std::pair<std::vector<double>, std::vector<double>>
+{
+	// TODO
+	assert(tank_locs.size() == 17);
+	assert(tank_options.size() == 5);
+	assert(new_pipe_options.size() == 10);
+
+	auto n_dvs = 6*bevarmejo::anytown::max_n_installable_tanks;
+
+	return std::make_pair(std::vector(n_dvs, 0.0), std::vector(n_dvs, 1.0));
+}
 
 // ------------------- 1st level ------------------- //
 // -------------------   Save  ------------------- //
