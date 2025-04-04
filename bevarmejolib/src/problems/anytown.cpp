@@ -394,31 +394,37 @@ std::vector<double>::size_type Problem::get_nic() const {
 }
 
 std::vector<double>::size_type Problem::get_nix() const {
-	switch (m__formulation)
+	std::size_t s = 0;
+	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
 	{
-	case Formulation::rehab_f1:
-		[[fallthrough]];
-	case Formulation::twoph_f1:
-		return 80ul;
-	case Formulation::mixed_f1:
-		return 104ul;
-	case Formulation::opertns_f1:
-		return 24ul;
-	case Formulation::rehab_f2:
-		[[fallthrough]];
-	case Formulation::rehab_f3:
-		[[fallthrough]];
-	case Formulation::rehab_f4:
-		return 45ul;
-	case Formulation::mixed_f2:
-		[[fallthrough]];
-	case Formulation::mixed_f3:
-		[[fallthrough]];
-	case Formulation::mixed_f4:
-		return 69ul;
-	default:
-		return 0ul;
+		s += 70;
 	}
+	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
+	{
+		s += 35;
+	}
+	
+	if (m__has_design)
+	{
+		s += 6;
+	}
+
+	if (m__has_operations)
+	{
+		s += 24;
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
+	{
+		s += 4;
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		s += 12;
+	}
+
+	return s;
 }
 
 // ------------------- 1st level ------------------- //
