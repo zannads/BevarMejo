@@ -239,6 +239,9 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	}
 	m__name = bemeio::log::nname::beme_l+nname+std::string(a_formulation_str);
 
+	// We have "configured" the formulations for the various parts, we can pass this info to the adapter
+	m__dv_adapter.reconfigure(this->get_continuous_dvs_mask());
+
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
@@ -393,7 +396,14 @@ std::vector<double>::size_type Problem::get_nic() const {
 	return 0ul;
 }
 
-std::vector<double>::size_type Problem::get_nix() const {
+std::vector<double>::size_type Problem::get_nix() const
+{
+	auto mask = get_continuous_dvs_mask();
+	return std::count(mask.begin(), mask.end(), false);
+}
+
+std::vector<bool> Problem::get_continuous_dvs_mask() const
+{
 	std::size_t s = 0;
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
 	{
@@ -424,11 +434,55 @@ std::vector<double>::size_type Problem::get_nix() const {
 		s += 12;
 	}
 
-	return s;
+	// Mask indicating which decision variable is continuous and hwihc one is discrete
+	// Used by the PagmoDecisionVectorAdapter to rearrange them.
+	// we put all true by default because in pagmo by default nix is 0 and they are all considered continuous dvs 
+	auto mask = std::vector<bool>(s, true);
+
+	s = 0;
+	auto make_next_n_discrete_and_advance = [&mask, &s](std::size_t n) {
+		auto end = (mask.begin()+s+n) < mask.end() ? mask.begin()+s+n : mask.end();
+		for (auto it = mask.begin()+s; it < end; ++it, ++s)
+			*it = false;
+	};
+	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
+	{
+		make_next_n_discrete_and_advance(70);	
+	}
+	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
+	{
+		make_next_n_discrete_and_advance(35);
+	}
+	
+	if (m__has_design)
+	{
+		make_next_n_discrete_and_advance(6);
+	}
+
+	if (m__has_operations)
+	{
+		make_next_n_discrete_and_advance(24);
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
+	{
+		make_next_n_discrete_and_advance(4);
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	{
+		s += 12;
+	}
+
+	return mask;
 }
 
 // ------------------- 1st level ------------------- //
-std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
+std::vector<double> Problem::fitness(const std::vector<double>& pagmo_dv) const
+{
+	// First thing first reconvert back from the pagmo ordering to the beme one
+	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+
 	// things to do 
 	// 1. EPS 
 	//   [x]   apply dvs to the network
@@ -460,7 +514,7 @@ std::vector<double> Problem::fitness(const std::vector<double>& dvs) const {
 	//auto anytown_temp = m__anytown->clone(); 
 	// in the future this will be a perfect copy and I will be able to call 
 	// everything in a new thread and then simply discard it.
-	
+
 	apply_dv(m__anytown, dvs);
 
 	sim::solvers::epanet::HydSimSettings settings;
@@ -1552,7 +1606,8 @@ std::pair<std::vector<double>, std::vector<double>> Problem::get_bounds() const
 		append_bounds(fnt2::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options, m__new_pipe_options);
 	}
 
-	return {std::move(lb), std::move(ub)};
+	// We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
+	return {m__dv_adapter.from_beme_to_pagmo(lb), m__dv_adapter.from_beme_to_pagmo(ub)};
 }
 
 // ------------------- 2nd level ------------------- //
