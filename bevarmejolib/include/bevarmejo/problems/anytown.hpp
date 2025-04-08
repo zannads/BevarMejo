@@ -199,7 +199,7 @@ void reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs);
 namespace fnt2
 {
 auto bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options) -> std::pair<std::vector<double>, std::vector<double>>;
-auto apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> void;
+auto apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> void;
 auto cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> double;
 auto reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) -> void;
 }

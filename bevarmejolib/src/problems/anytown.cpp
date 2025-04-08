@@ -618,7 +618,7 @@ auto Problem::apply_dv(
 	}
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
 	{
-		fnt2::apply_dv__tanks(*anytown, extract_next(12), m__tank_options, m__new_pipe_options);
+		fnt2::apply_dv__tanks(*anytown, extract_next(12), m__new_pipe_options);
 		i += 12;
 	}
 
