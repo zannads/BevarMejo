@@ -72,6 +72,17 @@ constexpr double riser_length_ft = 101.0;
 // "Constants" representing the actions we can do on the network.
 constexpr std::size_t max_n_installable_tanks = 2;
 
+namespace farmani_et_al_2005
+{
+constexpr double tank_hmax_ub__m = 250*MperFT; // new tank maximum hydraulic head level upper boundary for optimisation
+constexpr double tank_hmax_lb__m = 200*MperFT; // same but lower boundary
+constexpr double tank_hmin_ub__m = 240*MperFT;
+constexpr double tank_hmin_lb__m = 180*MperFT;
+constexpr double tank_diam_ub__m = 100*MperFT; // new tank's diameter upper boundary for optimization
+constexpr double tank_diam_lb__m = 25*MperFT; // new tank's diameter lower boundary for optimization
+constexpr double tank_safetyl_ub__m = 25*MperFT; // new tank's safety level upper boundary for optimization
+constexpr double tank_safetyl_lb__m = 0*MperFT; // new tank's safety level lower boundary for optimization
+}
 constexpr double _nonexisting_pipe_diam_ft = 0.0001;
 
 // Structs to hold the costs and their JSON serializers.
