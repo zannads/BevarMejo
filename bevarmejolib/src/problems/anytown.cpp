@@ -1943,7 +1943,6 @@ auto fnt2::bounds__tanks(
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options
 ) -> std::pair<std::vector<double>, std::vector<double>>
 {
-	// TODO
 	assert(tank_locs.size() == 17);
 	assert(tank_options.size() == 5);
 	assert(new_pipe_options.size() == 10);
@@ -1973,7 +1972,7 @@ auto fnt2::bounds__tanks(
 		ub[3+j] = farmani_et_al_2005::tank_hmax_ub__m;
 		// min elev 
 		lb[4+j] = farmani_et_al_2005::tank_hmin_lb__m;
-		ub[4+j] = farmani_et_al_2005::tank_hmax_ub__m;
+		ub[4+j] = farmani_et_al_2005::tank_hmin_ub__m;
 		// safety level
 		lb[5+j] = farmani_et_al_2005::tank_safetyl_lb__m;
 		ub[5+j] = farmani_et_al_2005::tank_safetyl_ub__m;
