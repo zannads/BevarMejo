@@ -1281,7 +1281,7 @@ auto fnt2::apply_dv__tanks(
 	// 6. (continuous) bottom of the tank [Elevtion = 5. - 6.] 
 	// We do it twice because we can install 2
 
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
 
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
@@ -1585,7 +1585,7 @@ auto fnt2::cost__tanks(
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
 	assert(tank_options.size()>2); // otherwise I can't make the interpolation
 	assert(new_pipes_options.size() > 1);
 
@@ -1818,7 +1818,7 @@ auto fnt2::reset_dv__tanks(
 	const std::vector<double>& dvs
 ) -> void
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
 
 	auto& temp_elems = anytown.id_sequence(label::__temp_elems);
 	for (std::size_t i = max_n_installable_tanks; i; --i)
