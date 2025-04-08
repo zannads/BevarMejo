@@ -1691,7 +1691,26 @@ auto fnt2::reset_dv__tanks(
 	const std::vector<double>& dvs
 ) -> void
 {
-	return;
+	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+
+	auto& temp_elems = anytown.id_sequence(label::__temp_elems);
+	for (std::size_t i = max_n_installable_tanks; i; --i)
+	{
+		auto new_tank_id = std::string("T")+std::to_string(i-1);
+		auto riser_id = std::string("Ris_")+std::to_string(i-1);
+
+		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
+		{
+			// remove the new tank and the the riser is automatically deleted 
+			int errorcode = EN_deletenode(anytown.ph_, anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+
+			temp_elems.erase(new_tank_id);
+			temp_elems.erase(riser_id);
+			anytown.remove_tank(new_tank_id); // also removing the links too
+			anytown.cache_indices();
+		}
+	}
 }
 
 // ------------------- 1st level ------------------- //
