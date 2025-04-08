@@ -1177,7 +1177,7 @@ auto fnt1::apply_dv__tanks(
 
 		// I should create a new tank at that position and with that volume
 		double tank_volume_gal = tank_option.at(tank_vol_option).volume__gal;
-		double tank_volume_m3 = tank_volume_gal * 0.00378541;
+		double tank_volume_m3 = tank_volume_gal * bevarmejo::k__m3_per_gal;
 		
 		auto new_tank_id = std::string("T")+std::to_string(i);
 		auto& new_tank = anytown.insert_tank(new_tank_id);
