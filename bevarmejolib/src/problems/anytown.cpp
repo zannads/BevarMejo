@@ -1733,8 +1733,37 @@ auto fnt2::bounds__tanks(
 	assert(new_pipe_options.size() == 10);
 
 	auto n_dvs = 6*bevarmejo::anytown::max_n_installable_tanks;
+	double n_tpl = tank_locs.size(); // number of tanks possible locations
+	double n_rpd = new_pipe_options.size(); // number of risers possible diameters
+	
+	std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, 0.0);
+	
+	// The order is (see apply_dv) 
+	for (auto i = 0; i < max_n_installable_tanks; ++i)
+	{
+		auto j = i*6;
+		// riser possible diameters + do nothing option
+		lb[0+j] = 0.0;
+		ub[0+j] = n_rpd;
+		// Tanks location index
+		lb[1+j] = 0.0;
+		ub[1+j] = n_tpl-1;
+		// diameter
+		lb[2+j] = farmani_et_al_2005::tank_diam_lb__m;
+		ub[2+j] = farmani_et_al_2005::tank_diam_ub__m;
+		// overflow elev
+		lb[3+j] = farmani_et_al_2005::tank_hmax_lb__m;
+		ub[3+j] = farmani_et_al_2005::tank_hmax_ub__m;
+		// min elev 
+		lb[4+j] = farmani_et_al_2005::tank_hmin_lb__m;
+		ub[4+j] = farmani_et_al_2005::tank_hmax_ub__m;
+		// safety level
+		lb[5+j] = farmani_et_al_2005::tank_safetyl_lb__m;
+		ub[5+j] = farmani_et_al_2005::tank_safetyl_ub__m;
+	}
 
-	return std::make_pair(std::vector(n_dvs, 0.0), std::vector(n_dvs, 1.0));
+	return std::make_pair(std::move(lb), std::move(ub));
 }
 
 // ------------------- 1st level ------------------- //
