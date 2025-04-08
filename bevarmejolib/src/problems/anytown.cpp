@@ -88,7 +88,11 @@ static const std::string rehab_f5_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f5_exinfo =  "Anytown Mixed Formulation 5\nOperations as dv, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
 }
 
-std::vector<std::vector<double>> decompose_pumpgroup_pattern(std::vector<double> pg_pattern, const std::size_t n_pumps) {
+auto decompose_pumpgroup_pattern(
+	std::vector<double> pg_pattern,
+	const std::size_t n_pumps
+) -> std::vector<std::vector<double>>
+{
 	// I want a copy of the decision variables because every time I put a 
 	// pattern to 1 I want to remove it from the vector.
 	std::size_t n_periods = pg_pattern.size();
@@ -384,25 +388,28 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 // ------------------- Pagmo functions ------------------- //
 // For now, all formulations have a fixed number of objectives, constraints, but different number of variables
-std::vector<double>::size_type Problem::get_nobj() const {
+auto Problem::get_nobj() const -> std::vector<double>::size_type
+{
 	return 2ul; 
 }
 
-std::vector<double>::size_type Problem::get_nec() const {
+auto Problem::get_nec() const -> std::vector<double>::size_type
+{
 	return 0ul;
 }
 
-std::vector<double>::size_type Problem::get_nic() const {
+auto Problem::get_nic() const -> std::vector<double>::size_type
+{
 	return 0ul;
 }
 
-std::vector<double>::size_type Problem::get_nix() const
+auto Problem::get_nix() const -> std::vector<double>::size_type
 {
 	auto mask = get_continuous_dvs_mask();
 	return std::count(mask.begin(), mask.end(), false);
 }
 
-std::vector<bool> Problem::get_continuous_dvs_mask() const
+auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 {
 	std::size_t s = 0;
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
@@ -478,7 +485,9 @@ std::vector<bool> Problem::get_continuous_dvs_mask() const
 }
 
 // ------------------- 1st level ------------------- //
-std::vector<double> Problem::fitness(const std::vector<double>& pagmo_dv) const
+auto Problem::fitness(
+	const std::vector<double>& pagmo_dv
+) const -> std::vector<double>
 {
 	// First thing first reconvert back from the pagmo ordering to the beme one
 	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
@@ -1101,7 +1110,11 @@ void apply_dv__pumps(WDS& anyt_wds, const std::vector<double>& dvs)
 	}
 }
 
-void fnt1::apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_option)
+auto fnt1::apply_dv__tanks(
+	WDS& anytown,
+	const std::vector<double>& dvs,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_option
+) -> void
 {
 	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
 
