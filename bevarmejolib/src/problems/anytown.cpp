@@ -1585,7 +1585,68 @@ auto fnt2::cost__tanks(
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double
 {
-	return 0.0;
+	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
+	assert(tank_options.size()>2); // otherwise I can't make the interpolation
+	assert(new_pipes_options.size() > 1);
+
+	// Simply look for the installed tanks and figure out how much they cost
+
+	double capital_cost = 0.0;
+	auto& temp_elems = anytown.id_sequence(label::__temp_elems);
+
+	for (std::size_t i = bevarmejo::anytown::max_n_installable_tanks; i; --i)
+	{
+		auto t = i-1;
+		auto new_tank_id = std::string("T")+std::to_string(t);
+		auto riser_id = std::string("Ris_")+std::to_string(t);
+
+		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
+		{
+			// To compute the cost I need the volume of the tank and the diameter of the riser.
+			// Then, I use this to get the cost out of tank options and new_pipe_options
+			double vol__gal = anytown.tank(new_tank_id).max_volume().value() / bevarmejo::k__m3_per_gal;
+
+			// I need to interpolate it on the tank_options...
+			// I should make sure it is in crescent order by volume
+			// Extrapolate using boundary slopes for values outside the range.
+			// Use linear interpolation between nearest two points.
+
+			auto interp = [](const tank_option& a, const tank_option& b, double vol__gal) {
+				double delta_vol = b.volume__gal - a.volume__gal;
+				if (delta_vol == 0.0) return (a.cost + b.cost) / 2.0; // avoid div-by-zero
+				double t = (vol__gal - a.volume__gal) / delta_vol;
+				return a.cost + t * (b.cost - a.cost);
+			};
+
+			if (vol__gal < tank_options.front().volume__gal)
+			{
+				capital_cost += interp(tank_options[0], tank_options[1], vol__gal);
+			}
+			else if (vol__gal > tank_options.back().volume__gal)
+			{
+				auto last = tank_options.size() - 1;
+				capital_cost += interp(tank_options[last-1], tank_options[last], vol__gal);
+			}
+			else
+			{
+				auto it = std::lower_bound(
+					tank_options.begin(), tank_options.end(), vol__gal,
+					[](const tank_option& t, double v) {
+						return t.volume__gal < v;
+					});
+			
+				capital_cost += interp(*(it - 1), *it, vol__gal);
+			}
+			
+			// The riser diameter is defined by the first decison variable (once you removed the do-nothing option)
+			std::size_t pos = 0 + t*6;
+			auto riser_diam_option_idx = dvs[pos]-1;
+
+			capital_cost += new_pipes_options.at(riser_diam_option_idx).cost__per_ft*bevarmejo::anytown::riser_length_ft;
+		}
+	}
+
+	return capital_cost;
 }
 // ------------------- of__reliability ------------------- //
 
