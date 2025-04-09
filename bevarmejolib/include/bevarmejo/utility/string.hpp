@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "bevarmejo/utility/exceptions.hpp"
+#include "bevarmejo/io/streams.hpp"
 
 namespace bevarmejo
 {
@@ -20,6 +21,14 @@ inline std::string now_as_str()
     char buffer[100];
     std::strftime(buffer, sizeof(buffer), "%c", std::localtime(&currtime));
     return std::string(buffer);
+}
+
+template <typename... Args>
+inline std::string stringify(Args&&... args)
+{
+    std::ostringstream oss;
+    bevarmejo::io::stream_out(oss, args...);
+    return oss.str();
 }
 
 namespace detail
