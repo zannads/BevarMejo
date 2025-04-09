@@ -1199,7 +1199,7 @@ auto fnt1::apply_dv__tanks(
 		
 		// We assume d = h for a cilindrical tank, thus V = \pi d^2 /4 * h = \pi d^3 / 4
 		// given that this is a fixed value we could actually have it as a parameter to reduce computational expenses. 
-		double diam_m = std::pow(tank_volume_m3*4/k__pi, 1.0/3); // TODO: fix based on whatever ratio I want
+		double diam_m = std::pow(tank_volume_m3*4.0/k__pi, 1.0/3.0); // TODO: fix based on whatever ratio I want
 		new_tank.diameter(diam_m);
 		double max_lev = diam_m;
 		new_tank.max_level(max_lev);
@@ -1326,7 +1326,7 @@ auto fnt2::apply_dv__tanks(
 		new_tank.elevation(tank_hmin__m-tank_safetyl__m);
 		new_tank.initial_level(tank_safetyl__m);
 		new_tank.min_level(tank_safetyl__m);
-		double min_vol = k__pi*tank_diam__m*tank_diam__m/4*new_tank.min_level().value();
+		double min_vol = k__pi*tank_diam__m*tank_diam__m/4.0*new_tank.min_level().value();
 		new_tank.min_volume(min_vol);
 		new_tank.x_coord(junction.x_coord());
 		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length_ft);
