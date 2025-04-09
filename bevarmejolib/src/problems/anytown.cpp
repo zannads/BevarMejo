@@ -329,7 +329,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		io::key::new_pipe_opts.exists_in(settings) &&
 		io::key::tank_opts.exists_in(settings)
 	);
-	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3)
+	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
 		assert(io::key::opers.exists_in(settings));
 
 	// If the settings is a string it means it is a filename, otherwise it shuold 
@@ -352,7 +352,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		
 	m__tank_options = j_tanks.get<std::vector<anytown::tank_option>>();
 
-	if (m__formulation == Formulation::rehab_f1 || m__formulation == Formulation::rehab_f2 || m__formulation == Formulation::rehab_f3 || m__formulation == Formulation::rehab_f4)
+	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
 	{
 		// Need to se the operations for the rehabilitation problems
 		auto j_oper = Json{}; // Json for the operations
