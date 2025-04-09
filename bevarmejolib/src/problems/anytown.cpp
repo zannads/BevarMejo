@@ -478,7 +478,10 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
 	{
-		s += 12;
+		make_next_n_discrete_and_advance(2); // For riser diameter and tank location of first choice
+		s += 4; // For tank diam, hmax, hmin, safety level of first choice
+		make_next_n_discrete_and_advance(2); // Same but second choice
+		s += 4;
 	}
 
 	return mask;
