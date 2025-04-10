@@ -51,6 +51,32 @@ auto Tank::make_from_EN_for(const WaterDistributionSystem& wds, const EN_Name_t&
 
 /*------- Operators -------*/
 
+auto Tank::volume(
+    double a_level
+) const -> aux::QuantitySeries<double>
+{
+    beme_throw_if(
+        a_level < m__min_level.value() || a_level > m__max_level.value(),
+        std::out_of_range,
+        "Can not compute the tank volume.",
+        "The level is out of range.",
+        "Level: ", std::to_string(a_level),
+        "Min level: ", std::to_string(m__min_level.value()),
+        "Max level: ", std::to_string(m__max_level.value())
+    );
+
+    if (m__volume_curve)
+        assertm(false, "Volume curve not implemented yet");
+    
+    // Else, let's use the cylindrical tank assumption.
+    // as in EPANET; the min_level is not related to the min volume...
+    auto delta_l = a_level - m__min_level.value();
+    auto area = m__diameter.value() * m__diameter.value() / 4.0 * k__pi;
+    
+    return aux::QuantitySeries<double>(m__wds.time_series(label::__CONSTANT_TS),
+        delta_l*area + m__min_volume.value());
+}
+
 /*------- Element access -------*/
 const char* Tank::type_name() const
 {
