@@ -2047,14 +2047,16 @@ auto fnt2::bounds__tanks(
 
 // ------------------- 1st level ------------------- //
 // -------------------   Save  ------------------- //
-void Problem::save_solution(const std::vector<double>& dv, const fsys::path& out_file) const
+void Problem::save_solution(const std::vector<double>& pagmo_dv, const fsys::path& out_file) const
 {
-	apply_dv(this->m__anytown, dv);
+	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+
+	apply_dv(this->m__anytown, dvs);
 
 	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
 	assert(errco <= 100);
 
-	reset_dv(this->m__anytown, dv);
+	reset_dv(this->m__anytown, dvs);
 }
 
 void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
@@ -2066,7 +2068,7 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	j[io::key::new_pipe_opts()] = prob.m__new_pipe_options;
 	j[io::key::tank_opts()] = prob.m__tank_options;
 
-	if (prob.m__formulation == Formulation::rehab_f1 || prob.m__formulation == Formulation::rehab_f2 || prob.m__formulation == Formulation::rehab_f3 || prob.m__formulation == Formulation::rehab_f4)
+	if (!prob.m__has_operations && prob.m__formulation != Formulation::twoph_f1)
 	{
 		// I need to merge the pumping patterns
 		std::vector<double> pumpgroup_pattern(24, 0.0);
@@ -2093,7 +2095,7 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 
 	j["extra_info"] = prob.get_extra_info();
 
-	if (prob.m__formulation == Formulation::rehab_f4 || prob.m__formulation == Formulation::mixed_f4)
+	if (prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity)
 	{
 		j[io::key::max_vel()] = prob.m__max_velocity__m_per_s;
 	}
