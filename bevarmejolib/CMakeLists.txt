@@ -82,6 +82,7 @@ set(BEME_EVALUATION
 # PROBLEM
 # ==============================
 set(BEME_PROBLEM
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/decision_variable.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
 )
