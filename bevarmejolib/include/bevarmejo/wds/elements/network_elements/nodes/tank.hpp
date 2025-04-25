@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "bevarmejo/constants.hpp"
+
 #include "bevarmejo/wds/utility/quantity_series.hpp"
 #include "bevarmejo/wds/elements/curves.hpp"
 
@@ -118,7 +120,11 @@ public:
 
     // === Read-Only Properties === //Will become a method one day
     const aux::QuantitySeries<double>& initial_volume() const { return m__initial_volume; }
-    const aux::QuantitySeries<double>& max_volume() const { return m__max_volume; }
+    aux::QuantitySeries<double> volume(double a_level) const;
+    aux::QuantitySeries<double> max_volume() const
+    {
+        return volume(m__max_level.value());
+    }
 
     // === Results ===
     const aux::QuantitySeries<double>& level() const { return m__level; }

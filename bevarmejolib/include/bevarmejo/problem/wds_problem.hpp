@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "bevarmejo/problem/decision_variable.hpp"
+
 namespace bevarmejo {
 
 class WDSProblem {
@@ -9,6 +11,9 @@ class WDSProblem {
 protected:
     std::string m__name;
     std::string m__extra_info;
+
+    // Decision Variables Adapter
+    PagmoDecisionVectorAdapter m__dv_adapter;
 
 public:
     WDSProblem();

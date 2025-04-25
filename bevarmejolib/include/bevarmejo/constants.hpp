@@ -23,5 +23,7 @@ constexpr int k__sec_per_hour = 3600;
 
 constexpr double k__pi = M_PI;
 
+constexpr double k__m3_per_gal = 0.00378541;
+
 } // namespace bevamejo
 #endif // BEVARMEJOLIB__CONSTANTS_HPP

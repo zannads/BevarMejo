@@ -23,9 +23,9 @@ set(CMAKE_TOOLCHAIN_FILE "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FIL
 # ------------------------------------------------------------------------------
 
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION 250200)
+set(CURRENT_VERSION 250401)
 set(FIRST_VERSION 230600)
-if(NOT PROJECT_VERSION)
+if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
   math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
   math(EXPR MINOR_VERSION "(${CURRENT_VERSION} % 10000) / 100")
   math(EXPR PATCH_VERSION "${CURRENT_VERSION} % 100")
