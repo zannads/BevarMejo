@@ -101,9 +101,18 @@ private:
     friend void to_json(Json &j, const Problem &prob);
     friend void from_json(const Json &j, Problem &prob);
 }; // class Problem
-
     
 } // namespace anytown_systol25
+
+namespace anytown::fnt3
+{
+auto bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options) -> std::pair<std::vector<double>, std::vector<double>>;
+auto apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> void;
+auto cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> double;
+auto reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) -> void;
+} // namespace anytown::fnt3
+
+
 } // namespace bevarmejo
 
 #endif // PROBLEMS__ANYTOWN_SYSTOL25_HPP

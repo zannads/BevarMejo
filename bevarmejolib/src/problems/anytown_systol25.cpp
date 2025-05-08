@@ -534,4 +534,247 @@ auto to_json(Json& j, const bevarmejo::anytown_systol25::Problem& prob) -> void
 // [ ] fnt3 (bounds, apply, cost, reset)
 
 } // namespace anytown_systol25
+
+auto anytown::fnt3::bounds__tanks(
+    InputOrderedRegistryView<WDS::Junction> tank_locs,
+    const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+    const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options
+) -> std::pair<std::vector<double>, std::vector<double>>
+{
+    std::size_t n_dvs = 6*bevarmejo::anytown::max_n_installable_tanks;
+    std::vector<double> lb(n_dvs, 0.0);
+	std::vector<double> ub(n_dvs, 0.0);
+
+    // The order is (see apply_dv) 
+	for (auto i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		auto j = i*4;
+		// Tanks location index + do nothing option
+		lb[0+j] = 0.0;
+		ub[0+j] = bevarmejo::anytown_systol25::pos_tank_loc__el_names.size() +1;
+		// Tanks volume index
+		lb[1+j] = 0.0;
+		ub[1+j] = tank_options.size();
+		// Riser diameter index
+		lb[2+j] = 0;
+		ub[2+j] = new_pipe_options.size();
+		// Heigh-to-diameter ratio
+		lb[3+j] = 1;
+		ub[3+j] = 1.5;
+	}
+
+	return std::make_pair(std::move(lb), std::move(ub));
+}
+
+auto anytown::fnt3::apply_dv__tanks(
+	WDS& a_anytown_sys,
+	const std::vector<double>& dvs,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> void
+{
+	// We assume:
+	// a. a cylindrical tank: Area = d^2/4*pi
+	// b. operational levels fixed
+	// c. riser length fixed -> tank elevation = junction elevation + riser_length
+	// d. safety volume = (min oper level - tank elevation ) * Area
+	// Therefore the tanks specifications are:
+	// 1. (discrete) Location: index of the tank location with check that one is not installed there yet. Also do nothing option to turn off the tank
+	// 2. (discrete) Volume: index of the tank volume options
+	// 3. (discrete) Riser Diameter: index for the pipe options indicating the riser diameter
+	// 4. (discrete) Height-to-Diameter ratio
+
+	assert(dvs.size() == 4*bevarmejo::anytown::max_n_installable_tanks);
+
+	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
+	std::unordered_set<std::size_t> already_installed_tanks;
+
+	auto curr_dv = dvs.begin();
+	for (std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		std::size_t tank_loc_dv = *curr_dv++;
+		std::size_t tank_vol_opt_idx = *curr_dv++;
+		std::size_t riser_diam_opt_idx = *curr_dv++;
+		double h2d_ratio = *curr_dv++;
+
+        // This tells you if and where you would like to insall the tank
+		bool install_tank = (tank_loc_dv != 0 );
+        std::size_t tank_loc_shift = install_tank ? tank_loc_dv-1 : bevarmejo::anytown_systol25::pos_tank_loc__el_names.size();
+        // However, you need to adjust for already installed tanks
+        install_tank = install_tank && (already_installed_tanks.find(tank_loc_shift) == already_installed_tanks.end());
+
+        if (!install_tank)
+		{
+#ifdef DEBUGSIM
+			bemeio::stream_out(std::cout, "No action for tank T"+std::to_string(i)+".\n");
+#endif
+			continue;
+		}
+
+		// If we are here, we need to install the tank and now we know all the specifications
+        // or at least we could calculate them.
+        
+        // Elevation is completely defined from the elevation of the node/hunction where it is installed
+        // plus the fixed riser length
+        auto&& [junction_id, junction] = *(a_anytown_sys.subnetwork_with_order<WDS::Junction>(bevarmejo::anytown_systol25::pos_tank_loc__subnet_name).begin() + tank_loc_shift);
+        double elev__m = junction.elevation() + bevarmejo::anytown::riser_length_ft*MperFT;
+
+        // The volume is selected from the dvs and together with the ratio we can
+        // calculate the diameter and height.
+		double vol__m3 = tank_options.at(tank_vol_opt_idx).volume__gal* bevarmejo::k__m3_per_gal;
+        // We assume h = a*d for a cilindrical tank, thus V = \pi d^2 /4 * h =  \pi d^3 /4 * a
+		double diam__m = std::pow(vol__m3*4.0/k__pi/h2d_ratio, 1.0/3.0);
+        double height__m = h2d_ratio * diam__m;
+        double top_lev__m = elev__m+height__m;
+
+        // Operational levels are fixed by the water utility. However, we need to
+        // make sure that they are between the physical levels of the tank.
+        double min_ope_lev__m = bevarmejo::anytown::min_w_level_tank_ft*MperFT;
+        double max_ope_lev__m = bevarmejo::anytown::max_w_level_tank_ft*MperFT;
+
+        // Fix ope levels to make sure that they are both not above the top_level
+        if (min_ope_lev__m >= top_lev__m)
+        {
+            min_ope_lev__m = elev__m + height__m*0.2857142857; // Where the 0.28... is the ratio in the original tanks...
+            max_ope_lev__m = top_lev__m;
+        }
+        else if (max_ope_lev__m > top_lev__m )
+        {
+            max_ope_lev__m = top_lev__m;
+        }
+        
+		auto new_tank_id = std::string("T")+std::to_string(i);
+		auto& new_tank = a_anytown_sys.insert_tank(new_tank_id);
+
+        new_tank.elevation(elev__m);
+        new_tank.diameter(diam__m);
+        new_tank.min_volume(k__pi*diam__m*diam__m/4.0*min_ope_lev__m);
+
+        new_tank.min_level(min_ope_lev__m);
+        new_tank.max_level(max_ope_lev__m);
+        new_tank.initial_level(min_ope_lev__m);
+        
+        new_tank.x_coord(junction.x_coord());
+		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length_ft);
+
+        // do it again in EPANET
+        int new_tank_idx = 0; 
+		int errco = EN_addnode(a_anytown_sys.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_settankdata(a_anytown_sys.ph_, new_tank_idx, 
+			new_tank.elevation()/MperFT, 
+			new_tank.min_level().value()/MperFT, 
+			new_tank.min_level().value()/MperFT, 
+			new_tank.max_level().value()/MperFT, 
+			new_tank.diameter().value()/MperFT, 
+			new_tank.min_volume().value()/M3perFT3, 
+			"");
+		assert(errco <= 100);
+        
+        // The riser has a well defined length, but the diameter is a dv.
+		auto riser_id = std::string("Ris_")+std::to_string(i);
+
+		auto& riser = a_anytown_sys.install_pipe(riser_id, junction_id, new_tank_id);
+		
+		double riser_diam__mm = new_pipes_options.at(riser_diam_opt_idx).diameter__in*MperFT/12*1000;
+		riser.diameter(riser_diam__mm);
+		riser.length(bevarmejo::anytown::riser_length_ft*MperFT);
+		riser.roughness(bevarmejo::anytown::coeff_HW_new);
+
+		// do it again in EPANET
+		int riser_idx = 0;
+		errco = EN_addlink(a_anytown_sys.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		assert(errco <= 100);
+
+		errco = EN_setpipedata(a_anytown_sys.ph_, riser_idx,
+			bevarmejo::anytown::riser_length_ft,
+			new_pipes_options.at(riser_diam_opt_idx).diameter__in,
+			bevarmejo::anytown::coeff_HW_new,
+			0.0
+		);
+		assert(errco <= 100);
+
+		a_anytown_sys.cache_indices();
+		assert(riser.EN_index() != 0 && riser.EN_index() == riser_idx);
+
+		// add them to the "TBR" net and the already installed tanks
+		a_anytown_sys.id_sequence(label::__temp_elems).push_back(new_tank_id);
+		a_anytown_sys.id_sequence(label::__temp_elems).push_back(riser_id);
+		already_installed_tanks.insert(tank_loc_shift);
+#ifdef DEBUGSIM
+		bemeio::stream_out(std::cout, "Installed tank at node ", junction_id, 
+		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
+		" Elev ", new_tank.elevation(),
+		" Min level ", new_tank.min_level().value(),
+		" Max lev ", new_tank.max_level().value(),
+		" Diam ", diam_m, "\n");
+#endif
+    }
+}
+
+auto anytown::fnt3::cost__tanks(
+    const WDS& anytown,
+    const std::vector<double>& dvs,
+    const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+    const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> double
+{
+    assert(dvs.size() == 4*bevarmejo::anytown::max_n_installable_tanks);
+
+    double capital_cost = 0.0;
+	std::unordered_set<std::size_t> already_installed_tanks;
+
+	auto curr_dv = dvs.begin();
+	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		std::size_t tank_loc_dv = *curr_dv++;
+		std::size_t tank_vol_opt_idx = *curr_dv++;
+		std::size_t riser_diam_opt_idx = *curr_dv++;
+		double h2d_ratio = *curr_dv++;
+
+		if (tank_loc_dv == 0 || (i > 0 && already_installed_tanks.count(tank_loc_dv) != 0))
+		{
+			continue;
+		}
+
+		// I don't care where I place it, the cost is always dependent on the volume [dv+1]
+		// In this version I can only choose the specific volume from the table and not intermediate values.
+		// I also need to account for the cost of the riser pipe
+		capital_cost += tank_options.at(tank_vol_opt_idx).cost;
+		
+		capital_cost += new_pipes_options.at(riser_diam_opt_idx).cost__per_ft*bevarmejo::anytown::riser_length_ft;
+
+		already_installed_tanks.insert(tank_loc_dv);
+	}
+	return capital_cost;
+}
+
+auto anytown::fnt3::reset_dv__tanks(
+    WDS& a_anytown_sys,
+    const std::vector<double>& dvs
+) -> void
+{
+    assert(dvs.size() == 4*bevarmejo::anytown::max_n_installable_tanks);
+
+    auto& temp_elems = a_anytown_sys.id_sequence(label::__temp_elems);
+	for (std::size_t i = max_n_installable_tanks; i; --i)
+	{
+		auto new_tank_id = std::string("T")+std::to_string(i-1);
+		auto riser_id = std::string("Ris_")+std::to_string(i-1);
+
+		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
+		{
+			// remove the new tank and the the riser is automatically deleted 
+			int errorcode = EN_deletenode(a_anytown_sys.ph_, a_anytown_sys.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+
+			temp_elems.erase(new_tank_id);
+			temp_elems.erase(riser_id);
+			a_anytown_sys.remove_tank(new_tank_id); // also removing the links too
+			a_anytown_sys.cache_indices();
+		}
+	}
+}
+
 } // namespace bevarmejo
