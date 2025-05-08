@@ -93,6 +93,7 @@ set(BEME_PROBLEM
 set(BEME_PROBLEMS
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/hanoi.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown_systol25.cpp"
 )
 
 add_library(bemelib 

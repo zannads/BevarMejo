@@ -20,6 +20,7 @@ constexpr double water_specific_weight_N_per_m3 = water_density_kg_per_m3 * grav
 
 constexpr int k__days_ina_year = 365;
 constexpr int k__sec_per_hour = 3600;
+constexpr int k__hours_per_day = 24;
 
 constexpr double k__pi = M_PI;
 
