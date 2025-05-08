@@ -21,6 +21,7 @@
 // Bevarmejo objects that can be serialized
 #include "bevarmejo/problems/anytown.hpp"
 #include "bevarmejo/problems/hanoi.hpp"
+#include "bevarmejo/problems/anytown_systol25.hpp"
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
 
@@ -137,6 +138,11 @@ struct adl_serializer<pagmo::problem>
             j[bevarmejo::io::key::type()] = prob.get_name();
             j[bevarmejo::io::key::params()] = *prob.extract<bevarmejo::anytown::Problem>();
         }
+        else if ( prob.is<bevarmejo::anytown_systol25::Problem>() )
+        {
+            j[bevarmejo::io::key::type()] = prob.get_name();
+            j[bevarmejo::io::key::params()] = *prob.extract<bevarmejo::anytown_systol25::Problem>();
+        }
         else
         {
             beme_throw(std::runtime_error,
@@ -174,6 +180,12 @@ struct adl_serializer<pagmo::problem>
         {
             // bevarmejo::anytown:: has 20 characters
             prob = pagmo::problem{ bevarmejo::anytown::Problem(std::string_view(prob_type).substr(20), prob_params, lookup_paths) };
+        }
+        /* if starts with bevarmejo::anytown_systol25, pass also a string view starting from after the second::*/ 
+        else if (prob_type.find("bevarmejo::anytown_systol25") == 0)
+        {
+            // bevarmejo::anytown_systol25:: has 29 characters
+            prob = pagmo::problem{ bevarmejo::anytown::Problem(std::string_view(prob_type).substr(29), prob_params, lookup_paths) };
         }
         else
         {
