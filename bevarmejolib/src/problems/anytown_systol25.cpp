@@ -334,15 +334,15 @@ auto Problem::fitness(
     switch (m__formulation)
     {
     case Formulation::hr:
-        fitv[1] = hydraulic_reliability_perspective();
+        fitv[1] = -hydraulic_reliability_perspective();  // I want to maximize the reliability index
         break;
 
     case Formulation::mr:
-        fitv[1] = mechanical_reliability_perspective();
+        fitv[1] = -mechanical_reliability_perspective();
         break;
 
     case Formulation::fr:
-        fitv[1] = firefighting_reliability_perspective();
+        fitv[1] = -firefighting_reliability_perspective();
         break;
     
     default:
@@ -444,10 +444,13 @@ auto Problem::hydraulic_reliability_perspective() const -> double
 {
     assertm(m__formulation == Formulation::hr, "This functions should be run only for the hr formulation");
 
-    beme_throw(std::runtime_error, "Error",
-        "The function is not implemented yet");
+    // All constraints are satisfied, now check the reliability index
+	const auto ir_daily = resilience_index_from_min_pressure(*m__anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT);
+	auto value = ir_daily.integrate_forward();
 
-    return 0.0;
+	value = ir_daily.back().first != 0 ? value / ir_daily.back().first : value;
+
+    return value;
 }
 
 auto Problem::mechanical_reliability_perspective() const -> double
