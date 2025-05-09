@@ -92,6 +92,11 @@ static const std::vector<double> pump_group_operations{
 
 static constexpr double max_velocity__m_per_s = 1.5;
 
+constexpr double h2d_ratio__min = 0.9;
+constexpr double h2d_ratio__max = 1.5;
+constexpr double hd2_ratio__step = 0.1;
+constexpr int h2d_ratio__steps = (h2d_ratio__max-h2d_ratio__min)/hd2_ratio__step;
+
 Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const bemeio::Paths& lookup_paths)
 {
     if (a_ud_formulation == io::formulation_name::hr)
@@ -557,9 +562,6 @@ auto to_json(Json& j, const bevarmejo::anytown_systol25::Problem& prob) -> void
 	j["extra_info"] = prob.get_extra_info();
 }
 
-// TODO:
-// [ ] fnt3 (bounds, apply, cost, reset)
-
 } // namespace anytown_systol25
 
 auto anytown::fnt3::bounds__tanks(
@@ -578,16 +580,16 @@ auto anytown::fnt3::bounds__tanks(
 		auto j = i*4;
 		// Tanks location index + do nothing option
 		lb[0+j] = 0.0;
-		ub[0+j] = bevarmejo::anytown_systol25::pos_tank_loc__el_names.size() +1;
+		ub[0+j] = bevarmejo::anytown_systol25::pos_tank_loc__el_names.size();
 		// Tanks volume index
 		lb[1+j] = 0.0;
-		ub[1+j] = tank_options.size();
+		ub[1+j] = tank_options.size()-1;
 		// Riser diameter index
 		lb[2+j] = 0;
-		ub[2+j] = new_pipe_options.size();
-		// Heigh-to-diameter ratio
-		lb[3+j] = 1;
-		ub[3+j] = 1.5;
+		ub[2+j] = new_pipe_options.size()-1;
+		// Heigh-to-diameter ratio index
+		lb[3+j] = 0;
+		ub[3+j] = anytown_systol25::h2d_ratio__steps;
 	}
 
 	return std::make_pair(std::move(lb), std::move(ub));
@@ -622,7 +624,7 @@ auto anytown::fnt3::apply_dv__tanks(
 		std::size_t tank_loc_dv = *curr_dv++;
 		std::size_t tank_vol_opt_idx = *curr_dv++;
 		std::size_t riser_diam_opt_idx = *curr_dv++;
-		double h2d_ratio = *curr_dv++;
+		std::size_t h2d_ratio_opt_idx = *curr_dv++;
 
         // This tells you if and where you would like to insall the tank
 		bool install_tank = (tank_loc_dv != 0 );
@@ -650,6 +652,9 @@ auto anytown::fnt3::apply_dv__tanks(
         // calculate the diameter and height.
 		double vol__m3 = tank_options.at(tank_vol_opt_idx).volume__gal* bevarmejo::k__m3_per_gal;
         // We assume h = a*d for a cilindrical tank, thus V = \pi d^2 /4 * h =  \pi d^3 /4 * a
+        // a is the height-to-diameter ratio
+        double h2d_ratio = anytown_systol25::h2d_ratio__min + h2d_ratio_opt_idx*anytown_systol25::hd2_ratio__step;
+
 		double diam__m = std::pow(vol__m3*4.0/k__pi/h2d_ratio, 1.0/3.0);
         double height__m = h2d_ratio * diam__m;
         double top_lev__m = elev__m+height__m;
