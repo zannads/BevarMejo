@@ -503,6 +503,33 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
     }       
 }
 
+auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<double>>
+{
+    std::vector<double> lb;
+	std::vector<double> ub;
+
+	const auto append_bounds= [&lb, &ub](auto&& bounds_func, auto&&... args) {
+		auto [lower, upper] = bounds_func(std::forward<decltype(args)>(args)...);
+		lb.insert(lb.end(), lower.begin(), lower.end());
+		ub.insert(ub.end(), upper.begin(), upper.end());
+	};
+
+    append_bounds(bevarmejo::anytown::fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name), exi_pipe_options);
+
+    append_bounds(bevarmejo::anytown::bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name), new_pipe_options);
+
+    append_bounds(bevarmejo::anytown::fnt3::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name), tank_options, new_pipe_options);
+
+     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
+    if (m__formulation == Formulation::hr)
+    {
+        append_bounds(bevarmejo::anytown::bounds__pumps, std::as_const(*m__anytown).pumps());
+    }
+
+    // We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
+	return {m__dv_adapter.from_beme_to_pagmo(lb), m__dv_adapter.from_beme_to_pagmo(ub)};
+}
+
 auto Problem::save_solution(
     const std::vector<double>& pagmo_dv,
     const fsys::path& out_file
