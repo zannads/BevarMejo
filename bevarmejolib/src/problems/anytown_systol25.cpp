@@ -772,30 +772,28 @@ auto anytown::fnt3::cost__tanks(
 {
     assert(dvs.size() == 4*bevarmejo::anytown::max_n_installable_tanks);
 
+    // The cost of installing a tank is independent of the location and needs to
+    // take into account only two aspects: its volume and the riser cost.
+    // I count the cost of the tank even if it was not installed, so that solutions
+    // with a double tank or a ill tank (which don't install the tank in apply_dv
+    // for hydraulic motivation) are more expensive than their same counterpart 
+    // where the tank is not installed because the OA doesn't want to.
+    
     double capital_cost = 0.0;
-	std::unordered_set<std::size_t> already_installed_tanks;
-
+	
 	auto curr_dv = dvs.begin();
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t tank_loc_dv = *curr_dv++;
 		std::size_t tank_vol_opt_idx = *curr_dv++;
 		std::size_t riser_diam_opt_idx = *curr_dv++;
-		double h2d_ratio = *curr_dv++;
+		auto h2d_ratio = *curr_dv++;
 
-		if (tank_loc_dv == 0 || (i > 0 && already_installed_tanks.count(tank_loc_dv) != 0))
-		{
-			continue;
-		}
+		if (tank_loc_dv == 0) { continue; }
 
-		// I don't care where I place it, the cost is always dependent on the volume [dv+1]
-		// In this version I can only choose the specific volume from the table and not intermediate values.
-		// I also need to account for the cost of the riser pipe
 		capital_cost += tank_options.at(tank_vol_opt_idx).cost;
 		
 		capital_cost += new_pipes_options.at(riser_diam_opt_idx).cost__per_ft*bevarmejo::anytown::riser_length_ft;
-
-		already_installed_tanks.insert(tank_loc_dv);
 	}
 	return capital_cost;
 }
