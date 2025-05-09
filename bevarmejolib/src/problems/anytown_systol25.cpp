@@ -633,14 +633,32 @@ auto anytown::fnt3::apply_dv__tanks(
         double max_ope_lev__m = bevarmejo::anytown::max_w_level_tank_ft*MperFT;
 
         // Fix ope levels to make sure that they are both not above the top_level
-        if (min_ope_lev__m >= top_lev__m)
+
+        // approach 1: tank doesn't match the operational levels, so we discard it.
+        // approach 2: that tank operational levels for this tank are adjusted.
+        bool strict_ope_levels = true;
+
+        if (strict_ope_levels)
         {
-            min_ope_lev__m = elev__m + height__m*0.2857142857; // Where the 0.28... is the ratio in the original tanks...
-            max_ope_lev__m = top_lev__m;
+            if ((min_ope_lev__m >= top_lev__m || max_ope_lev__m > top_lev__m))
+            {
+#ifdef DEBUGSIM
+			bemeio::stream_out(std::cout, "No action for tank T"+std::to_string(i)+" because out of operational levels boundaries.\n");
+#endif
+			continue;
+            }
         }
-        else if (max_ope_lev__m > top_lev__m )
+        else
         {
-            max_ope_lev__m = top_lev__m;
+            if (min_ope_lev__m >= top_lev__m)
+            {
+                min_ope_lev__m = elev__m + height__m*0.2857142857; // Where the 0.28... is the ratio in the original tanks...
+                max_ope_lev__m = top_lev__m;
+            }
+            else if (max_ope_lev__m > top_lev__m )
+            {
+                max_ope_lev__m = top_lev__m;
+            }
         }
         
 		auto new_tank_id = std::string("T")+std::to_string(i);
