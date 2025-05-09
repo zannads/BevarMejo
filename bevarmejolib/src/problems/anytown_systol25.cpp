@@ -568,7 +568,7 @@ auto anytown::fnt3::bounds__tanks(
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options
 ) -> std::pair<std::vector<double>, std::vector<double>>
 {
-    std::size_t n_dvs = 6*bevarmejo::anytown::max_n_installable_tanks;
+    std::size_t n_dvs = 4*bevarmejo::anytown::max_n_installable_tanks;
     std::vector<double> lb(n_dvs, 0.0);
 	std::vector<double> ub(n_dvs, 0.0);
 
