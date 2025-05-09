@@ -661,8 +661,8 @@ auto anytown::fnt3::apply_dv__tanks(
 
         // Operational levels are fixed by the water utility. However, we need to
         // make sure that they are between the physical levels of the tank.
-        double min_ope_lev__m = bevarmejo::anytown::min_w_level_tank_ft*MperFT;
-        double max_ope_lev__m = bevarmejo::anytown::max_w_level_tank_ft*MperFT;
+        double min_ope_lev__m = bevarmejo::anytown::min_w_level_tank_ft*MperFT; // Min ope level in absolute m from the ground
+        double max_ope_lev__m = bevarmejo::anytown::max_w_level_tank_ft*MperFT; // Max ope level in absolute m from the ground
 
         // Fix ope levels to make sure that they are both not above the top_level
 
@@ -700,9 +700,9 @@ auto anytown::fnt3::apply_dv__tanks(
         new_tank.diameter(diam__m);
         new_tank.min_volume(k__pi*diam__m*diam__m/4.0*min_ope_lev__m);
 
-        new_tank.min_level(min_ope_lev__m);
-        new_tank.max_level(max_ope_lev__m);
-        new_tank.initial_level(min_ope_lev__m);
+        new_tank.min_level(min_ope_lev__m-elev__m);
+        new_tank.max_level(max_ope_lev__m-elev__m);
+        new_tank.initial_level(min_ope_lev__m-elev__m);
         
         new_tank.x_coord(junction.x_coord());
 		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length_ft);
