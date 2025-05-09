@@ -176,16 +176,16 @@ struct adl_serializer<pagmo::problem>
             prob = pagmo::problem{ bevarmejo::hanoi::fbiobj::Problem(prob_params, lookup_paths) };
         }
         /* if starts with bevarmejo::anytown, pass also a string view starting from after the second::*/ 
-        else if (prob_type.find("bevarmejo::anytown") == 0)
+        else if (prob_type.find("bevarmejo::anytown::") == 0)
         {
             // bevarmejo::anytown:: has 20 characters
             prob = pagmo::problem{ bevarmejo::anytown::Problem(std::string_view(prob_type).substr(20), prob_params, lookup_paths) };
         }
         /* if starts with bevarmejo::anytown_systol25, pass also a string view starting from after the second::*/ 
-        else if (prob_type.find("bevarmejo::anytown_systol25") == 0)
+        else if (prob_type.find("bevarmejo::anytown_systol25::") == 0)
         {
             // bevarmejo::anytown_systol25:: has 29 characters
-            prob = pagmo::problem{ bevarmejo::anytown::Problem(std::string_view(prob_type).substr(29), prob_params, lookup_paths) };
+            prob = pagmo::problem{ bevarmejo::anytown_systol25::Problem(std::string_view(prob_type).substr(29), prob_params, lookup_paths) };
         }
         else
         {
