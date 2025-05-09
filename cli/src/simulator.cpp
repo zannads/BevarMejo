@@ -508,13 +508,23 @@ void save_results(Simulator &simr)
 
 void save_inp(Simulator &simr)
 {
-    beme_throw_if( !simr.problem().is<bevarmejo::anytown::Problem>(), std::runtime_error,
+    if (simr.problem().is<bevarmejo::anytown::Problem>())
+    {
+        simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
+    }
+    else if (simr.problem().is<bevarmejo::anytown_systol25::Problem>())
+    {
+        simr.problem().extract<bevarmejo::anytown_systol25::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
+    }
+    else
+    {
+        beme_throw_if( !simr.problem().is<bevarmejo::anytown::Problem>(), std::runtime_error,
         "Impossible to save the inp file.",
         "The problem is not of the type anytown::Problem.",
         "Problem type: ", simr.problem().get_name());
 
-    simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
-
+    }
+    
     bevarmejo::io::stream_out(std::cout,
         "EPANET '.inp' file saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".inp\n")).string());
 }
