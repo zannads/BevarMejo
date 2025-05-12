@@ -60,7 +60,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
 
     auto res = HydSimResults(a_wds.result_time_series());
 
-    detail::prepare_internal_solver(a_wds);
+    detail::prepare_internal_solver(a_wds, a_settings);
 
     // Run the simulation
     time_t t = 0; // current time
@@ -133,12 +133,28 @@ auto is_successful_with_warnings(const HydSimResults& a_result) noexcept -> bool
     return true;
 }
 
-auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept -> void
+auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSettings& a_settings) noexcept -> void
 {
     auto ph = a_wds.ph();
     assert(ph != nullptr);
+
+    // Let's set the options...
+    int errorcode = EN_settimeparam(ph, EN_DURATION, a_settings.horizon());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_HYDSTEP, a_settings.resolution());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_STARTTIME, a_settings.start_time());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_REPORTSTEP, a_settings.report_resolution());
+    assert(errorcode <= 100);
+
+    errorcode = EN_setoption(ph, EN_DEMANDMULT, a_settings.demand_multiplier());
+    assert(errorcode <= 100);
     
-    int errorcode = EN_openH(ph);
+    errorcode = EN_openH(ph);
     assert(errorcode <= 100);
     
     errorcode = EN_initH(ph, 10);

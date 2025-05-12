@@ -71,17 +71,21 @@ public:
     void save_solution(const std::vector<double>& dvs, const fsys::path& out_file) const;
 
 protected:
-    // Anytown specific data
-    std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
-    std::string m__anytown_filename;
-
-    std::vector<bevarmejo::anytown::exi_pipe_option> m__exi_pipe_options;
-    std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
-    std::vector<bevarmejo::anytown::tank_option> m__tank_options;
     Formulation m__formulation; // Track the problem formulation
 
+    // All problems formulation:
+    std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
+    std::string m__anytown_filename;
+        
     mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
 
+    sim::solvers::epanet::HydSimSettings m__eps_settings; // Settings for the main 24-hour EPS simulation
+    
+    // Mechanical reliability formulation
+    sim::solvers::epanet::HydSimSettings m__mrsim__settings; // Settings for the mechanical reliability simulation
+
+protected:
+    // Methods 
     // For fitness function:
     auto cost(const std::vector<double>& dv) const -> double;
 

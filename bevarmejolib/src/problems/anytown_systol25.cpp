@@ -97,7 +97,8 @@ constexpr double h2d_ratio__max = 1.5;
 constexpr double hd2_ratio__step = 0.1;
 constexpr int h2d_ratio__steps = (h2d_ratio__max-h2d_ratio__min)/hd2_ratio__step;
 
-Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const bemeio::Paths& lookup_paths)
+Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const bemeio::Paths& lookup_paths) :
+    __old_HW_coeffs()
 {
     if (a_ud_formulation == io::formulation_name::hr)
     {
@@ -180,6 +181,31 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
         assert(errorcode <= 100);
     }
 
+    // Prepare the simulation settings.
+	long h_step = 0;
+    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long horizon = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
+    assert(errorcode < 100);
+
+	m__eps_settings.resolution(h_step).horizon(horizon);
+
+    long r_step = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+
+    m__eps_settings.report_resolution(r_step).demand_multiplier(1.0);
+
+    // The mechanical reliability simulations is a instantaneous simulation
+    // with 1.3 times the average demand. The anytown file starts at 18:00
+    // with demand 1, thus we do a simulation with horizon 0.
+    m__mrsim__settings.demand_multiplier(1.3)
+        .report_resolution(r_step)
+        .resolution(h_step)
+        .horizon(0);
+    
+
     // Now remains to decide what to do for the FireFlow case here...
 }
 
@@ -242,23 +268,7 @@ auto Problem::fitness(
 
     apply_dv(dvs);
 
-	sim::solvers::epanet::HydSimSettings settings;
-
-	long h_step = 0;
-    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
-    assert(errorcode < 100);
-    long r_step = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
-    assert(errorcode < 100);
-    long horizon = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
-    assert(errorcode < 100);
-
-	settings.resolution(h_step);
-	settings.report_resolution(r_step);
-	settings.horizon(horizon);
-
-	const auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
+	const auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
