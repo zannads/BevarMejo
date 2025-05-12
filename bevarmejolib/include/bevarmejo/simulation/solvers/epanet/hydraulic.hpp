@@ -16,7 +16,9 @@ public:
 
 /*------- Member objects -------*/
 private:
-    time_t report_resolution__s = 0l;  // Step of the reporting in EPANET
+    time_t m__report_resolution__s = 0l;  // Step of the reporting in EPANET
+
+    double m__demand_multiplier = 1.; // Global water demand multiplier (applied when preparing the matrices to solve).
 
 /*------- Member functions -------*/
 // (constructor)
@@ -36,11 +38,15 @@ public:
 
 /*--- Element access ---*/
 public:
-    time_t report_resolution() const noexcept;
+    auto report_resolution() const noexcept -> time_t;
+
+    auto demand_multiplier() const noexcept -> double;
 
 /*--- Modifiers ---*/
 public:
-    void report_resolution(time_t a_resolution);
+    auto report_resolution(time_t a_resolution) -> HydSimSettings&;
+
+    auto demand_multiplier(double a_multiplier) -> HydSimSettings&;
 
 }; // class HydSimSettings
 

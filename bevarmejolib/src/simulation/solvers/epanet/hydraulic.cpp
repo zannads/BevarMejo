@@ -4,26 +4,45 @@
 namespace bevarmejo::sim::solvers::epanet
 {
 
-time_t HydSimSettings::report_resolution() const noexcept
+auto HydSimSettings::report_resolution() const noexcept -> time_t
 {
-    return report_resolution__s;
+    return m__report_resolution__s;
 }
 
-void HydSimSettings::report_resolution(time_t a_resolution)
+auto HydSimSettings::demand_multiplier() const noexcept -> double
+{
+    return m__demand_multiplier;
+}
+
+auto HydSimSettings::report_resolution(time_t a_resolution) -> HydSimSettings&
 {
     beme_throw_if(a_resolution <= 0, std::invalid_argument,
         "Impossible to set the resolution of the reporting.",
         "The resolution must be a positive number.",
         "Resolution: ", a_resolution);
 
-    report_resolution__s = a_resolution;
+    m__report_resolution__s = a_resolution;
+
+    return *this;
+}
+
+auto HydSimSettings::demand_multiplier(double a_multiplier) -> HydSimSettings&
+{
+    beme_throw_if(a_multiplier < 0.0, std::invalid_argument,
+        "Impossible to set the global water demand multiplier.",
+        "The multiplier must be a non-negative number.",
+        "Multiplier: ", a_multiplier);
+
+    m__demand_multiplier = a_multiplier;
+
+    return *this;
 }
 
 // Forward declaration of the internal functions
 namespace detail
 {
 
-void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
+void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSettings& a_settings) noexcept;
 void retrieve_results(const int errorcode, const time_t t, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res);
 void release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 
