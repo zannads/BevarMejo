@@ -78,7 +78,7 @@ public:
     const StatusSeries& initial_status() const;
 
     // === Results ===
-    const FlowSeries& flow() const;
+    const FlowSeries& flow() const noexcept;
 
 /*------- Capacity -------*/
 public:
