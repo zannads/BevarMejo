@@ -11,6 +11,7 @@ namespace bemeio = bevarmejo::io;
 #include "bevarmejo/constants.hpp"
 #include "bevarmejo/econometric_functions.hpp"
 #include "bevarmejo/hydraulic_functions.hpp"
+#include "bevarmejo/evaluation/metrics/hydraulic_functions.hpp"
 
 #include "bevarmejo/wds/water_distribution_system.hpp"
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
@@ -467,10 +468,26 @@ auto Problem::mechanical_reliability_perspective() const -> double
 {
     assertm(m__formulation == Formulation::mr, "This functions should be run only for the mr formulation");
 
-    beme_throw(std::runtime_error, "Error",
-        "The function is not implemented yet");
+    // We do the mr simulation, get the results and calculate the mechanical reliability estimator
+    
+    const auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__mrsim__settings);
+    
+    // If it fails hard (> 100) or can't satisfy the pressures for some reasons (> 0)
+    // We return minimum reliability (0.0)
+    if (!sim::solvers::epanet::is_successful(results))
+	{
+        return 0.0;
+    }
 
-    return 0.0;
+    // If it worked, we simply calculate and return the mre..
+
+    auto mre = eval::metrics::PaezFilion::mechanical_reliability_estimator(*m__anytown);
+
+    auto value = mre.integrate_forward();
+
+	value = mre.back().first != 0 ? value / mre.back().first : value;
+
+    return value;
 }
 
 auto Problem::firefighting_reliability_perspective() const -> double
