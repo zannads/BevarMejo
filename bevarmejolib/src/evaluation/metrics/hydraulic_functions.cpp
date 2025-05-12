@@ -98,7 +98,8 @@ auto PaezFilion::mechanical_reliability_estimator(const WDS &a_wds) -> wds::aux:
     for (const auto t : a_wds.result_time_series())
     {
         std::size_t i = 0;
-        for (auto it = a_wds.pipes().begin(); it < a_wds.pipes().end(); ++i, ++it)
+        auto pipes = a_wds.pipes();
+        for (auto it = pipes.begin(); it <pipes.end(); ++i, ++it)
         {
             flows[i] = it->flow().when_t(t);
         }
