@@ -86,8 +86,8 @@ static const std::vector<bevarmejo::anytown::tank_option> tank_options{
 static const std::vector<double> pump_group_operations{
     3, 2, 2, 2, 2, 2,
     2, 2, 2, 2, 2, 2,
-    2, 2, 3, 3, 3, 3,
-    3, 3, 3, 3, 3, 3
+    2, 3, 3, 3, 3, 3,
+    3, 3, 3, 3, 3, 2
 };
 
 static constexpr double max_velocity__m_per_s = 1.5;
