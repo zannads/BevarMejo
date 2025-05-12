@@ -121,22 +121,17 @@ void Junction::__retrieve_EN_properties()
         errorcode= EN_getbasedemand(ph, m__en_index, i, &base_demand);
         assert(errorcode < 100);
 
-        int pattern_index= 0;
-        errorcode= EN_getdemandpattern(ph, m__en_index, i, &pattern_index);
-        assert(errorcode < 100);
-
-        char __pattern_id[EN_MAXID+1];
-        errorcode= EN_getpatternid(ph, pattern_index, __pattern_id);
-        assert(errorcode < 100);
-        std::string pattern_id(__pattern_id);
-
         char __demand_category[EN_MAXID+1];
         errorcode= EN_getdemandname(ph, m__en_index, i, __demand_category);
         assert(errorcode < 100);
         std::string demand_category(__demand_category);
 
-        // Pattern id can be "" if the demand is constant
-        if (pattern_id.empty())
+        int pattern_index= 0;
+        errorcode= EN_getdemandpattern(ph, m__en_index, i, &pattern_index);
+        assert(errorcode < 100);
+
+        // EPANET uses index == 0 to signal no pattern, i.e., constant demand
+        if (pattern_index == 0)
         {   
             aux::QuantitySeries<double> cdemand(m__wds.time_series(label::__CONSTANT_TS));
             cdemand.commit(0l, base_demand);
@@ -145,6 +140,11 @@ void Junction::__retrieve_EN_properties()
         }
         else // It's a pattern demand
         {   
+            char __pattern_id[EN_MAXID+1];
+            errorcode= EN_getpatternid(ph, pattern_index, __pattern_id);
+            assert(errorcode < 100);
+            std::string pattern_id(__pattern_id);
+
             aux::QuantitySeries<double> pdemand(m__wds.time_series(label::__EN_PATTERN_TS));
 
             const auto& pattern = m__wds.pattern(pattern_id);

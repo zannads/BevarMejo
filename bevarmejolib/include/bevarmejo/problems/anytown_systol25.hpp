@@ -84,6 +84,12 @@ protected:
     // Mechanical reliability formulation
     sim::solvers::epanet::HydSimSettings m__mrsim__settings; // Settings for the mechanical reliability simulation
 
+    // Firefighting reliability formulation
+    std::shared_ptr<bevarmejo::WaterDistributionSystem> m__ff_anytown; // Anytown network to simulate the fire flows...
+    std::string m__ff_anytown_filename;
+
+    sim::solvers::epanet::HydSimSettings m__ffsim_settings; // Settings to simulate the fireflows
+
 protected:
     // Methods 
     // For fitness function:

@@ -35,6 +35,7 @@ static const std::string fr = "fire_rel";
 namespace io::key
 {
 static constexpr bemeio::AliasedKey at_eps_inp {"Anytown eps inp"}; // "Anytown eps inp"
+static constexpr bemeio::AliasedKey at_ff_inp {"Anytown fireflow inp"}; // "Anytown fireflow inp"
 }
 
 static const std::string hr__exinfo = "Hydraulic Reliability and Operational Efficiency Perspective";
@@ -97,6 +98,40 @@ constexpr double h2d_ratio__min = 0.9;
 constexpr double h2d_ratio__max = 1.5;
 constexpr double hd2_ratio__step = 0.1;
 constexpr int h2d_ratio__steps = (h2d_ratio__max-h2d_ratio__min)/hd2_ratio__step;
+
+// From the original work:
+// The fire flow required is 500 gpm (0.0316 m3/s) at all nodes except for:
+// (1) 2,500 gpm (0.158 m3/s) at node 90 (19 in the file);
+// (2) 1,500 gpm (0.0946 m3/s) at nodes 75, 115, and 55 (5,6,7 in the new file);
+// and (3) 1,000 gpm (0.0631 m3/s) at nodes 120 and 160 (11 and 17 in the new file).
+// Define the struct for junction fire flow data
+struct JunctionFireFlow {
+    std::string_view junction_name;
+    double flow__gpm;
+    double flow__m3ps;
+    double flow__lps;
+};
+constexpr std::array<JunctionFireFlow, 19> fireflow_test_values{{
+{"1", 500.0, 0.0316, 31.6},
+{"2", 500.0, 0.0316, 31.6},
+{"3", 500.0, 0.0316, 31.6},
+{"4", 500.0, 0.0316, 31.6},
+{"5", 1500.0, 0.0946, 94.6}, // Node 75 (1,500 gpm)
+{"6", 1500.0, 0.0946, 94.6}, // Node 115 (1,500 gpm)
+{"7", 1500.0, 0.0946, 94.6}, // Node 55 (1,500 gpm)
+{"8", 500.0, 0.0316, 31.6},
+{"9", 500.0, 0.0316, 31.6},
+{"10", 500.0, 0.0316, 31.6},
+{"11", 1000.0, 0.0631, 63.1}, // Node 120 (1,000 gpm)
+{"12", 500.0, 0.0316, 31.6},
+{"13", 500.0, 0.0316, 31.6},
+{"14", 500.0, 0.0316, 31.6},
+{"15", 500.0, 0.0316, 31.6},
+{"16", 500.0, 0.0316, 31.6},
+{"17", 1000.0, 0.0631, 63.1}, // Node 160 (1,000 gpm)
+{"18", 500.0, 0.0316, 31.6},
+{"19", 2500.0, 0.158, 158.0}  // Node 90 (2,500 gpm)
+}};
 
 Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const bemeio::Paths& lookup_paths) :
     __old_HW_coeffs()
@@ -206,8 +241,52 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
         .resolution(h_step)
         .horizon(0);
     
+    if (m__formulation == Formulation::fr)
+    {
+        // Upload the second network and do more or less the same actions
+        assert(settings != nullptr && 
+            io::key::at_ff_inp.exists_in(settings)
+        );
+        const auto inp_filename = settings.at(io::key::at_ff_inp.as_in(settings)).get<fsys::path>();
 
-    // Now remains to decide what to do for the FireFlow case here...
+        // Use "locate_file" to find the inp file in the paths.
+        // EPANET does not load correctly the a curve so we need to fix it "manually" here.
+        m__ff_anytown = std::make_shared<WDS>(
+            bemeio::locate_file</*log = */true>(inp_filename, lookup_paths),
+            [](EN_Project ph) {
+                // change curve ID 2 to a pump curve
+                assert(ph != nullptr);
+                std::string curve_id = "2";
+                int curve_idx = 0;
+                int errorcode = EN_getcurveindex(ph, curve_id.c_str(), &curve_idx);
+                assert(errorcode <= 100);
+        
+                errorcode = EN_setcurvetype(ph, curve_idx, EN_PUMP_CURVE);
+                assert(errorcode <= 100);
+            }
+        );
+
+        // The EPANET object was correctly created so the filepath was correct
+        m__ff_anytown_filename = inp_filename.string();
+
+        // Add the standard subnetworks necessary for this problem and one for temporary elements.
+        m__ff_anytown->submit_id_sequence(city_pipes__subnet_name, city_pipes__el_names);
+        m__ff_anytown->submit_id_sequence(exis_pipes__subnet_name, exis_pipes__el_names);
+        m__ff_anytown->submit_id_sequence(new_pipes__subnet_name, new_pipes__el_names);
+        m__ff_anytown->submit_id_sequence(pos_tank_loc__subnet_name, pos_tank_loc__el_names);
+        m__ff_anytown->submit_id_sequence(label::__temp_elems);
+
+        errorcode = EN_gettimeparam(m__ff_anytown->ph(), EN_HYDSTEP, &h_step);
+        assert(errorcode < 100);
+        errorcode = EN_gettimeparam(m__ff_anytown->ph(), EN_DURATION, &horizon);
+        assert(errorcode < 100);
+        errorcode = EN_gettimeparam(m__ff_anytown->ph(), EN_REPORTSTEP, &r_step);
+        assert(errorcode < 100);
+
+        m__ffsim_settings.report_resolution(r_step)
+            .resolution(h_step)
+            .horizon(horizon);
+    }
 }
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths)
@@ -405,6 +484,58 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
         i += k__hours_per_day;
     }
 
+    // In the firefighting case I have to apply the dvs also to the network used to simulate the fire events
+    if (m__formulation == Formulation::fr)
+    {
+        m__ff_anytown->cache_indices();
+        i = 0;
+        bevarmejo::anytown::fep2::apply_dv__exis_pipes(
+            *m__ff_anytown,
+            __old_HW_coeffs,
+            extract_next(exis_pipes__el_names.size()),
+            exi_pipe_options
+        );
+        i += exis_pipes__el_names.size();
+        
+        bevarmejo::anytown::apply_dv__new_pipes(
+            *m__ff_anytown,
+            extract_next(new_pipes__el_names.size()),
+            new_pipe_options
+        );
+        i += new_pipes__el_names.size();
+
+        bevarmejo::anytown::fnt3::apply_dv__tanks(
+            *m__ff_anytown,
+            extract_next(bevarmejo::anytown::max_n_installable_tanks*4), // 8
+            tank_options,
+            new_pipe_options
+        );
+        i += bevarmejo::anytown::max_n_installable_tanks*4;
+
+        // However, for the tanks, the min level must be moved to 0 so that we can simulate the fireflow events...
+        // For each tank in the temp elements, set the min level to 0 and then the min volume
+        // (EN doesn't change that automatically because it consider them independent)
+        m__ff_anytown->cache_indices();
+        auto& temp_elems = m__ff_anytown->id_sequence(label::__temp_elems);
+        for (std::size_t i = anytown::max_n_installable_tanks; i; --i)
+        {
+            auto new_tank_id = std::string("T")+std::to_string(i-1);
+
+            if (temp_elems.contains(new_tank_id))
+            {
+                auto& tank = m__ff_anytown->tank(new_tank_id);
+                int errorcode = EN_setnodevalue(m__ff_anytown->ph(), tank.EN_index(), EN_MINLEVEL, 0.0);
+                assert(errorcode <= 100);
+
+                errorcode = EN_setnodevalue(m__ff_anytown->ph(), tank.EN_index(), EN_MINVOLUME, 0.0);
+                assert(errorcode <= 100);
+
+                tank.min_level(0.0);
+                tank.min_volume(0.0);
+            }
+        }
+    }
+
 }
 
 auto Problem::cost(const std::vector<double>& dvs) const -> double
@@ -537,7 +668,32 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
             extract_next(k__hours_per_day)
         );
         i += k__hours_per_day;
-    }       
+    }
+
+    if (m__formulation == Formulation::fr)
+    {
+        m__ff_anytown->cache_indices();
+        i = 0.0;
+
+        bevarmejo::anytown::fep2::reset_dv__exis_pipes(
+            *m__ff_anytown,
+            extract_next(exis_pipes__el_names.size()),
+            __old_HW_coeffs
+        );
+        i += exis_pipes__el_names.size();
+        
+        bevarmejo::anytown::reset_dv__new_pipes(
+            *m__ff_anytown,
+            extract_next(new_pipes__el_names.size())
+        );
+        i += new_pipes__el_names.size();
+
+        bevarmejo::anytown::fnt3::reset_dv__tanks(
+            *m__ff_anytown,
+            extract_next(bevarmejo::anytown::max_n_installable_tanks*4)
+        );
+        i += bevarmejo::anytown::max_n_installable_tanks*4;
+    }
 }
 
 auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<double>>
