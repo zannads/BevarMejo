@@ -483,11 +483,13 @@ auto Problem::mechanical_reliability_perspective() const -> double
 
     auto mre = eval::metrics::PaezFilion::mechanical_reliability_estimator(*m__anytown);
 
-    auto value = mre.integrate_forward();
-
-	value = mre.back().first != 0 ? value / mre.back().first : value;
-
-    return value;
+    // if only one value, simply return that
+    if (mre.back().first == 0)
+    {
+        return mre.value();
+    }
+    
+    return mre.integrate_forward()/ mre.back().first;
 }
 
 auto Problem::firefighting_reliability_perspective() const -> double
