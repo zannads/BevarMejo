@@ -36,7 +36,39 @@ auto HeadDeficiency::operator()(const wds::Junction& a_junction) const -> wds::a
     return deficiency;
 }
 
-auto bevarmejo::eval::metrics::PaezFilion::mechanical_reliability_estimator(const WDS &a_wds) -> wds::aux::QuantitySeries<double>
+auto total_water_demand(const WDS& a_wds) -> wds::aux::QuantitySeries<double>
+{
+    wds::aux::QuantitySeries<double> tot(a_wds.result_time_series());
+    for (const auto t : a_wds.result_time_series())
+    {
+        auto junctions = a_wds.junctions();
+        tot.commit(t,
+            std::accumulate(junctions.begin(), junctions.end(),
+            0.0,
+            [t](double c, auto j) { return std::move(c) + j.value.demand().when_t(t); })
+        );
+    }
+
+    return tot;
+}
+
+auto total_water_consumption(const WDS& a_wds) -> wds::aux::QuantitySeries<double>
+{
+    wds::aux::QuantitySeries<double> tot(a_wds.result_time_series());
+    for (const auto t : a_wds.result_time_series())
+    {
+        auto junctions = a_wds.junctions();
+        tot.commit(t,
+            std::accumulate(junctions.begin(), junctions.end(),
+            0.0,
+            [t](double c, auto j) { return std::move(c) + j.value.consumption().when_t(t); })
+        );
+    }
+
+    return tot;
+}
+
+auto PaezFilion::mechanical_reliability_estimator(const WDS &a_wds) -> wds::aux::QuantitySeries<double>
 {
     // Quite simple function, we extract the 4 parameters that are required:
     // availability and flow in pipes, total demand and actual total consumption
