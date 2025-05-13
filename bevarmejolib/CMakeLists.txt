@@ -68,6 +68,7 @@ set(BEME_WDS
 set(BEME_SIMULATION
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/hyd_sim_settings.cpp"
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/hydraulic.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/water_demand_modelling.cpp"
 )
 
 # ==============================
