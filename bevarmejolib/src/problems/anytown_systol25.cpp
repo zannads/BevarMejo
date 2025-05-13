@@ -634,6 +634,7 @@ auto Problem::firefighting_reliability_perspective() const -> double
     // Therefore for each scenario, we calculate the aggregated values of supply, integrate over time.
     // We are assuming equal probability for each scenario as Anytown doesn't provide this
     // data.
+    constexpr double pi = 1.0/fireflow_test_values.size();
     // Because of these assumptions, we can calculate it in real time...
     // Let's note that if a simulation fails, we regard the entire simulation as failed to not make the EA exploit weird behaviours that could emerge.
     double ff_rel = 0.0;
@@ -672,7 +673,7 @@ auto Problem::firefighting_reliability_perspective() const -> double
             auto total_d = eval::metrics::total_water_demand(*m__ff_anytown);
             auto total_c= eval::metrics::total_water_consumption(*m__ff_anytown);
 
-            ff_rel += total_c.integrate_forward()/total_d.integrate_forward();
+            ff_rel += pi*total_c.integrate_forward()/total_d.integrate_forward();
         }
 
         // 4. -------------------
