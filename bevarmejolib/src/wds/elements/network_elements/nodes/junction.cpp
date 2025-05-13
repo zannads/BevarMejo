@@ -199,7 +199,18 @@ void Junction::__retrieve_EN_results()
         "Junction ID: ", m__name);
     emitter_flow = epanet::convert_flow_to_L_per_s(ph, emitter_flow);
 
-    // TODO: get also the leakage flow if v 240712
+#if BEME_VERSION >= 250200
+    // After v25.02.00 we started using a new EPANET version (Commit at 2024/07/12).
+    // This new version allows to retireve a couple more info from the API.
+    // Mainly the leakage and the ...
+    double leakage_flow = 0.0;
+    errorcode = EN_getnodevalue(ph, m__en_index, EN_LEAKAGEFLOW, &leakage_flow);
+    beme_throw_if_EN_error(errorcode,
+        "Impossible to retrieve the properties of the junction.",
+        "Error originating from the EPANET API while retrieving value: EN_LEAKAGEFLOW",
+        "Junction ID: ", m__name);
+    leakage_flow = epanet::convert_flow_to_L_per_s(ph, leakage_flow);
+#endif
     
     // If a Junction with a demand is experiencing a negative pressure with a DDA,
     // the demand was not satisfied and it should go as a demand undelivered.
@@ -220,9 +231,13 @@ void Junction::__retrieve_EN_results()
     }
     else
     {
-        m__demand.commit(t, outflow - emitter_flow);
-        m__consumption.commit(t, outflow);
+#if BEME_VERSION >= 250200
+        m__consumption.commit(t, outflow - emitter_flow - leakage_flow);
+#else
+        m__consumption.commit(t, outflow - emitter_flow);
+#endif
         m__undelivered_demand.commit(t, undeliv);
+        m__demand.commit(t, m__consumption.when_t(t) + m__undelivered_demand.when_t(t));
     }
 }
 
