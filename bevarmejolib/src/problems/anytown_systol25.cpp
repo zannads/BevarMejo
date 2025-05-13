@@ -886,7 +886,7 @@ auto anytown::fnt3::apply_dv__tanks(
 
         new_tank.elevation(elev__m);
         new_tank.diameter(diam__m);
-        new_tank.min_volume(k__pi*diam__m*diam__m/4.0*min_ope_lev__m);
+        new_tank.min_volume(k__pi*diam__m*diam__m/4.0*(min_ope_lev__m-elev__m));
 
         new_tank.min_level(min_ope_lev__m-elev__m);
         new_tank.max_level(max_ope_lev__m-elev__m);
