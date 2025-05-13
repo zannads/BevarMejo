@@ -1,5 +1,8 @@
 #include <memory>
 
+#include "epanet2_2.h"
+#include "types.h"
+
 #include "bevarmejo/utility/exceptions.hpp"
 
 #include "bevarmejo/simulation/hyd_sim_settings.hpp"
@@ -98,21 +101,36 @@ auto HydSimSettings::apply_water_demand_model(EN_Project a_ph) const -> void
     {
         int errorcode = EN_setdemandmodel(a_ph, EN_DDA, 0.0, 0.0, 0.0);
         assert(errorcode <= 100);
+        return;
     }
-    else
+    
+    // otherwise we are using PDA
+    assert(dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get()) != nullptr);
+    auto pda = dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get());
+
+    // If the units are US, pressures must be in PSI
+    if (a_ph->parser.Unitsflag == US)
     {
-        assert(dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get()) != nullptr);
-        
-        auto pda = dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get());
-        
         int errorcode = EN_setdemandmodel(
             a_ph, EN_DDA,
-            pda->minimum_pressure__m(),
-            pda->required_pressure__m(),
+            pda->minimum_pressure__m()/MperFT*PSIperFT,
+            pda->required_pressure__m()/MperFT*PSIperFT,
             pda->pressure_exponent()
         );
         assert(errorcode <= 100);
+        return;
     }
+    
+    // otherwise it's in SI
+    int errorcode = EN_setdemandmodel(
+        a_ph, EN_DDA,
+        pda->minimum_pressure__m(),
+        pda->required_pressure__m(),
+        pda->pressure_exponent()
+    );
+    assert(errorcode <= 100);
+    return;
+
 }
 
 // Forward declaration of the internal functions
