@@ -231,12 +231,12 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
     errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
     assert(errorcode < 100);
 
-    m__eps_settings.report_resolution(r_step).demand_multiplier(1.0);
+    m__eps_settings.report_resolution(r_step);
 
     // The mechanical reliability simulations is a instantaneous simulation
     // with 1.3 times the average demand. The anytown file starts at 18:00
     // with demand 1, thus we do a simulation with horizon 0.
-    m__mrsim__settings.demand_multiplier(1.3)
+    m__mrsim__settings.demand_multiplier(bevarmejo::anytown::peak_flow_multiplier)
         .report_resolution(r_step)
         .resolution(h_step)
         .horizon(0);
@@ -283,7 +283,10 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
         errorcode = EN_gettimeparam(m__ff_anytown->ph(), EN_REPORTSTEP, &r_step);
         assert(errorcode < 100);
 
+        // We don't put the 1.3 multiplier because we expect the inp file to have done that already.
+        // Otherwise, we would need to add the fireflow divided by 1.3.
         m__ffsim_settings.report_resolution(r_step)
+            .pressure_driven_analysis(0.0, anytown::min_pressure_fireflow_psi/PSIperFT*MperFT, 0.5)
             .resolution(h_step)
             .horizon(horizon);
     }
