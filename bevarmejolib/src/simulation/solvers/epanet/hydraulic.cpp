@@ -1,8 +1,39 @@
+#include <memory>
+
+#include "bevarmejo/utility/exceptions.hpp"
+
 #include "bevarmejo/simulation/hyd_sim_settings.hpp"
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
 
 namespace bevarmejo::sim::solvers::epanet
 {
+
+/*------- Member functions -------*/
+// (constructor)
+HydSimSettings::HydSimSettings() :
+    inherited(),
+    m__report_resolution__s(resolution() > horizon() ? resolution() : horizon()),
+    m__wdm(std::make_unique<DemandDrivenAnalysis>()),
+    m__demand_multiplier(1.0)
+{ }
+
+HydSimSettings::HydSimSettings(const HydSimSettings& other) :
+    inherited(other),
+    m__report_resolution__s(other.m__report_resolution__s),
+    m__wdm(other.m__wdm ? other.m__wdm->clone() : nullptr),
+    m__demand_multiplier(other.m__demand_multiplier)
+{ }
+
+HydSimSettings& HydSimSettings::operator=(const HydSimSettings& other)
+{
+    if (this != &other) {
+        inherited::operator=(other);
+        m__report_resolution__s = other.m__report_resolution__s;
+        m__wdm = other.m__wdm ? other.m__wdm->clone() : nullptr;
+        m__demand_multiplier = other.m__demand_multiplier;
+    }
+    return *this;
+}
 
 auto HydSimSettings::report_resolution() const noexcept -> time_t
 {
@@ -22,6 +53,28 @@ auto HydSimSettings::report_resolution(time_t a_resolution) -> HydSimSettings&
         "Resolution: ", a_resolution);
 
     m__report_resolution__s = a_resolution;
+
+    return *this;
+}
+
+auto HydSimSettings::use_demand_driven_analysis() -> HydSimSettings&
+{
+    m__wdm = std::make_unique<DemandDrivenAnalysis>();
+
+    return *this;
+}
+
+auto HydSimSettings::use_pressure_driven_analysis(
+    const double a_minimum_pressure__m,
+    const double a_required_pressure__m,
+    const double a_pressure_exponent
+) -> HydSimSettings&
+{
+    m__wdm = std::make_unique<PressureDrivenAnalysis>(
+        a_minimum_pressure__m,
+        a_required_pressure__m,
+        a_pressure_exponent
+    );
 
     return *this;
 }

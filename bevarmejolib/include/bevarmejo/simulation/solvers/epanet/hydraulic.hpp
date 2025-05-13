@@ -18,15 +18,17 @@ public:
 
 /*------- Member objects -------*/
 private:
-    time_t m__report_resolution__s = 0l;  // Step of the reporting in EPANET
+    time_t m__report_resolution__s;  // Step of the reporting in EPANET
+
+    std::unique_ptr<WaterDemandModel> m__wdm; // Water Demand Model object (DDA or PDA).
 
     double m__demand_multiplier = 1.; // Global water demand multiplier (applied when preparing the matrices to solve).
 
 /*------- Member functions -------*/
 // (constructor)
 public:
-    HydSimSettings() = default;
-    HydSimSettings(const HydSimSettings&) = default;
+    HydSimSettings();
+    HydSimSettings(const HydSimSettings&);
     HydSimSettings(HydSimSettings&&) noexcept = default;
 
 // (destructor)
@@ -35,7 +37,7 @@ public:
 
 // operator=
 public:
-    HydSimSettings& operator=(const HydSimSettings&) = default;
+    HydSimSettings& operator=(const HydSimSettings&);
     HydSimSettings& operator=(HydSimSettings&&) noexcept = default;
 
 /*--- Element access ---*/
@@ -47,6 +49,13 @@ public:
 /*--- Modifiers ---*/
 public:
     auto report_resolution(time_t a_resolution) -> HydSimSettings&;
+
+    auto use_demand_driven_analysis() -> HydSimSettings&;
+    auto use_pressure_driven_analysis(
+        const double a_minimum_pressure__m,
+        const double a_required_pressure__m,
+        const double a_pressure_exponent
+    ) -> HydSimSettings&;
 
     auto demand_multiplier(double a_multiplier) -> HydSimSettings&;
 
