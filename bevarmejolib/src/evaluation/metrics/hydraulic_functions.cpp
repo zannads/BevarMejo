@@ -1,3 +1,4 @@
+#include <cmath>
 #include <numeric>
 #include <vector>
 
@@ -130,7 +131,7 @@ auto PaezFilion::mechanical_reliability_estimator_impl(
     double mre = p0;
     for (auto i = 0; i < availability_pipes.size(); ++i)
     {
-        mre += p0*(1-availability_pipes[i])/availability_pipes[i]*(total_consumption-flow_pipes[i])/total_demand;
+        mre += p0*(1.0-availability_pipes[i])/availability_pipes[i]*(total_consumption-std::abs(flow_pipes[i]))/total_demand;
     }
 
     return mre;
