@@ -630,10 +630,63 @@ auto Problem::firefighting_reliability_perspective() const -> double
 {
     assertm(m__formulation == Formulation::fr, "This functions should be run only for the fr formulation");
 
-    beme_throw(std::runtime_error, "Error",
-        "The function is not implemented yet");
+    // We calculate the firefighting reliability as the expected value of the ratio of supply over demand.
+    // Therefore for each scenario, we calculate the aggregated values of supply, integrate over time.
+    // We are assuming equal probability for each scenario as Anytown doesn't provide this
+    // data.
+    // Because of these assumptions, we can calculate it in real time...
+    // Let's note that if a simulation fails, we regard the entire simulation as failed to not make the EA exploit weird behaviours that could emerge.
+    double ff_rel = 0.0;
+    
+    for (const auto& ff_test : fireflow_test_values)
+    {
+        // 1. Apply the additional demand;
+        // 2. simulate;
+        // 3. extract the values of total supply and demand, add the contribution to the reliability;
+        // 4. remove the additional demand.
 
-    return 0.0;
+        // Let's find where to apply it. We also assume that every Anytown node has 1 demand only (let's check to make sure we don't mess it up).
+        // This will also help us in removing the demand after the simulation.
+        auto ph = m__ff_anytown->ph();
+        auto& junc = m__ff_anytown->junction(std::string(ff_test.junction_name));
+        assert(junc.demands().size() == 1);
+        assert([&]() -> bool {
+            int n_demands = 0;
+            int errorcode = EN_getnumdemands(ph, junc.EN_index(), &n_demands);
+            return errorcode == 0 && n_demands == 1;  // Success code AND exactly one demand
+        }());
+
+        // Add a constand demand equal to the required fire flow.
+        // I don't have the interface to add the demand to my class yet.
+        int errorcode = EN_adddemand(ph, junc.EN_index(),
+            ff_test.flow__gpm, "", "beme_fireflow");
+
+        // 2. --------------------
+        const auto results = sim::solvers::epanet::solve_hydraulics(*m__ff_anytown, m__ffsim_settings);
+
+        // 3. --------------------
+        // Extract the values, but only if it was actually fully feasible. Otherwise, highest penalty (aka + 0, aka do nothing)
+        // It should not happen because it is PDA, but anyway...
+        if (sim::solvers::epanet::is_successful(results))
+        {
+            auto total_d = eval::metrics::total_water_demand(*m__ff_anytown);
+            auto total_c= eval::metrics::total_water_consumption(*m__ff_anytown);
+
+            ff_rel += total_c.integrate_forward()/total_d.integrate_forward();
+        }
+
+        // 4. -------------------
+        // We just make sure in debug mode that it always adds it as the second one...
+        assert([&]() -> bool {
+            int dem_idx = 0;
+            int errorcode = EN_getdemandindex(ph, junc.EN_index(), "beme_fireflow", &dem_idx);
+            return errorcode == 0 && dem_idx == 2;
+        }());
+        errorcode = EN_deletedemand(ph, junc.EN_index(), 2);
+        assert(errorcode <= 100);
+    }
+
+    return ff_rel;
 }
 
 auto Problem::reset_dv(const std::vector<double>& dvs) const -> void

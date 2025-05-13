@@ -55,6 +55,11 @@ unsigned int Junction::type_code() const
     return self_traits::code;
 }
 
+auto Junction::demands() const noexcept -> const Demands&
+{
+    return m__demands;
+}
+
 // === Read-only properties ===
 bool Junction::has_demand() const
 {
