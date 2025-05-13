@@ -57,14 +57,14 @@ auto HydSimSettings::report_resolution(time_t a_resolution) -> HydSimSettings&
     return *this;
 }
 
-auto HydSimSettings::use_demand_driven_analysis() -> HydSimSettings&
+auto HydSimSettings::demand_driven_analysis() -> HydSimSettings&
 {
     m__wdm = std::make_unique<DemandDrivenAnalysis>();
 
     return *this;
 }
 
-auto HydSimSettings::use_pressure_driven_analysis(
+auto HydSimSettings::pressure_driven_analysis(
     const double a_minimum_pressure__m,
     const double a_required_pressure__m,
     const double a_pressure_exponent
@@ -89,6 +89,30 @@ auto HydSimSettings::demand_multiplier(double a_multiplier) -> HydSimSettings&
     m__demand_multiplier = a_multiplier;
 
     return *this;
+}
+
+auto HydSimSettings::apply_water_demand_model(EN_Project a_ph) const -> void
+{
+    // If uses DDA
+    if (dynamic_cast<const DemandDrivenAnalysis*>(m__wdm.get()) != nullptr)
+    {
+        int errorcode = EN_setdemandmodel(a_ph, EN_DDA, 0.0, 0.0, 0.0);
+        assert(errorcode <= 100);
+    }
+    else
+    {
+        assert(dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get()) != nullptr);
+        
+        auto pda = dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get());
+        
+        int errorcode = EN_setdemandmodel(
+            a_ph, EN_DDA,
+            pda->minimum_pressure__m(),
+            pda->required_pressure__m(),
+            pda->pressure_exponent()
+        );
+        assert(errorcode <= 100);
+    }
 }
 
 // Forward declaration of the internal functions
@@ -203,6 +227,8 @@ auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds, 
 
     errorcode = EN_settimeparam(ph, EN_REPORTSTEP, a_settings.report_resolution());
     assert(errorcode <= 100);
+
+    a_settings.apply_water_demand_model(ph);
 
     errorcode = EN_setoption(ph, EN_DEMANDMULT, a_settings.demand_multiplier());
     assert(errorcode <= 100);

@@ -50,14 +50,18 @@ public:
 public:
     auto report_resolution(time_t a_resolution) -> HydSimSettings&;
 
-    auto use_demand_driven_analysis() -> HydSimSettings&;
-    auto use_pressure_driven_analysis(
+    auto demand_driven_analysis() -> HydSimSettings&;
+    auto pressure_driven_analysis(
         const double a_minimum_pressure__m,
         const double a_required_pressure__m,
         const double a_pressure_exponent
     ) -> HydSimSettings&;
 
     auto demand_multiplier(double a_multiplier) -> HydSimSettings&;
+
+/*--- Methods ---*/
+public:
+    auto apply_water_demand_model(EN_Project a_ph) const -> void;
 
 }; // class HydSimSettings
 
