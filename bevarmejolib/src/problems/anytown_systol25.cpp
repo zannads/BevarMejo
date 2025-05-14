@@ -804,6 +804,11 @@ auto to_json(Json& j, const bevarmejo::anytown_systol25::Problem& prob) -> void
 		
 	j[io::key::at_eps_inp()] = prob.m__anytown_filename;
 
+    if (prob.m__formulation == Formulation::fr)
+    {
+        j[io::key::at_ff_inp()] = prob.m__ff_anytown_filename;
+    }
+
 	j["extra_info"] = prob.get_extra_info();
 }
 
