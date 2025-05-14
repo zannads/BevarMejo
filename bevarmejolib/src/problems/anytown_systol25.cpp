@@ -36,6 +36,7 @@ namespace io::key
 {
 static constexpr bemeio::AliasedKey at_eps_inp {"Anytown eps inp"}; // "Anytown eps inp"
 static constexpr bemeio::AliasedKey at_ff_inp {"Anytown fireflow inp"}; // "Anytown fireflow inp"
+static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 }
 
 static const std::string hr__exinfo = "Hydraulic Reliability and Operational Efficiency Perspective";
@@ -200,23 +201,6 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
     m__anytown->submit_id_sequence(pos_tank_loc__subnet_name, pos_tank_loc__el_names);
     m__anytown->submit_id_sequence(label::__temp_elems);
 
-    // Set up the operations if it doesn't need to optimize them.
-    assert(m__anytown->n_pumps() == 3);
-    for (int i = 0; i < 3; ++i) {
-        // no need to go through the pumps, I know the pattern ID
-        int pattern_idx = 0;
-        int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
-        assert(errorcode <= 100);
-
-        std::vector<double> temp(k__hours_per_day, 0.0);
-        for (int j = 0; j < k__hours_per_day; ++j) {
-            temp[j] = pump_group_operations[j] > i ? 1.0 : 0.0;
-        }
-
-        errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
-        assert(errorcode <= 100);
-    }
-
     // Prepare the simulation settings.
 	long h_step = 0;
     int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
@@ -294,7 +278,42 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths)
 {
-    // For now nothing to do here...
+    if (m__formulation == Formulation::hr)
+    {
+        return; // No need in hydraulic reliability
+    }
+
+    // By default we use the ones I set in this file
+    auto operations = pump_group_operations;
+
+    // If it is there, let's override
+    if (io::key::opers.exists_in(settings))
+    {
+        auto j_oper = Json{}; // Json for the operations
+        bemeio::expand_if_filepath(settings.at(io::key::opers.as_in(settings)), lookup_paths, 
+            j_oper);
+
+        operations = j_oper.get<std::vector<double>>();
+    }
+        
+    assert(operations.size() == 24);
+
+    // Set up the operations if it doesn't need to optimize them.
+    assert(m__anytown->n_pumps() == 3);
+    for (int i = 0; i < 3; ++i) {
+        // no need to go through the pumps, I know the pattern ID
+        int pattern_idx = 0;
+        int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+        assert(errorcode <= 100);
+
+        std::vector<double> temp(k__hours_per_day, 0.0);
+        for (int j = 0; j < k__hours_per_day; ++j) {
+            temp[j] = operations[j] > i ? 1.0 : 0.0;
+        }
+
+        errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+        assert(errorcode <= 100);
+    }
     return;
 }
 
