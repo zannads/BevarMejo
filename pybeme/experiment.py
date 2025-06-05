@@ -37,7 +37,7 @@ class Experiment:
         if 'software' in self.data and 'bemelib_version' in self.data['software']:
             return self.data['software']['bemelib_version']
         
-        return "v25.03.02"
+        return "v25.05.00"
 
     @property
     def islands(self) -> dict:
