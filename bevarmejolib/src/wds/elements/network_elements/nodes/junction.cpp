@@ -55,6 +55,11 @@ unsigned int Junction::type_code() const
     return self_traits::code;
 }
 
+auto Junction::demands() const noexcept -> const Demands&
+{
+    return m__demands;
+}
+
 // === Read-only properties ===
 bool Junction::has_demand() const
 {
@@ -121,22 +126,17 @@ void Junction::__retrieve_EN_properties()
         errorcode= EN_getbasedemand(ph, m__en_index, i, &base_demand);
         assert(errorcode < 100);
 
-        int pattern_index= 0;
-        errorcode= EN_getdemandpattern(ph, m__en_index, i, &pattern_index);
-        assert(errorcode < 100);
-
-        char __pattern_id[EN_MAXID+1];
-        errorcode= EN_getpatternid(ph, pattern_index, __pattern_id);
-        assert(errorcode < 100);
-        std::string pattern_id(__pattern_id);
-
         char __demand_category[EN_MAXID+1];
         errorcode= EN_getdemandname(ph, m__en_index, i, __demand_category);
         assert(errorcode < 100);
         std::string demand_category(__demand_category);
 
-        // Pattern id can be "" if the demand is constant
-        if (pattern_id.empty())
+        int pattern_index= 0;
+        errorcode= EN_getdemandpattern(ph, m__en_index, i, &pattern_index);
+        assert(errorcode < 100);
+
+        // EPANET uses index == 0 to signal no pattern, i.e., constant demand
+        if (pattern_index == 0)
         {   
             aux::QuantitySeries<double> cdemand(m__wds.time_series(label::__CONSTANT_TS));
             cdemand.commit(0l, base_demand);
@@ -145,6 +145,11 @@ void Junction::__retrieve_EN_properties()
         }
         else // It's a pattern demand
         {   
+            char __pattern_id[EN_MAXID+1];
+            errorcode= EN_getpatternid(ph, pattern_index, __pattern_id);
+            assert(errorcode < 100);
+            std::string pattern_id(__pattern_id);
+
             aux::QuantitySeries<double> pdemand(m__wds.time_series(label::__EN_PATTERN_TS));
 
             const auto& pattern = m__wds.pattern(pattern_id);
@@ -194,7 +199,18 @@ void Junction::__retrieve_EN_results()
         "Junction ID: ", m__name);
     emitter_flow = epanet::convert_flow_to_L_per_s(ph, emitter_flow);
 
-    // TODO: get also the leakage flow if v 240712
+#if BEME_VERSION >= 250200
+    // After v25.02.00 we started using a new EPANET version (Commit at 2024/07/12).
+    // This new version allows to retireve a couple more info from the API.
+    // Mainly the leakage and the ...
+    double leakage_flow = 0.0;
+    errorcode = EN_getnodevalue(ph, m__en_index, EN_LEAKAGEFLOW, &leakage_flow);
+    beme_throw_if_EN_error(errorcode,
+        "Impossible to retrieve the properties of the junction.",
+        "Error originating from the EPANET API while retrieving value: EN_LEAKAGEFLOW",
+        "Junction ID: ", m__name);
+    leakage_flow = epanet::convert_flow_to_L_per_s(ph, leakage_flow);
+#endif
     
     // If a Junction with a demand is experiencing a negative pressure with a DDA,
     // the demand was not satisfied and it should go as a demand undelivered.
@@ -215,9 +231,13 @@ void Junction::__retrieve_EN_results()
     }
     else
     {
-        m__demand.commit(t, outflow - emitter_flow);
-        m__consumption.commit(t, outflow);
+#if BEME_VERSION >= 250200
+        m__consumption.commit(t, outflow - emitter_flow - leakage_flow);
+#else
+        m__consumption.commit(t, outflow - emitter_flow);
+#endif
         m__undelivered_demand.commit(t, undeliv);
+        m__demand.commit(t, m__consumption.when_t(t) + m__undelivered_demand.when_t(t));
     }
 }
 

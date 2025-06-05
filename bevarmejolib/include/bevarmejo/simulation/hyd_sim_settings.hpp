@@ -38,14 +38,14 @@ public:
     bool should_terminate_early() const noexcept;
 
 /*--- Modifiers ---*/
-    void start_time(time_t a_start_time);
+    auto start_time(time_t a_start_time) -> HydSimSettings&;
 
-    void horizon(time_t a_horizon);
+    auto horizon(time_t a_horizon) -> HydSimSettings&;
 
-    void resolution(time_t a_resolution);
+    auto resolution(time_t a_resolution) -> HydSimSettings&;
 
-    void enable_early_termination();
-    void disable_early_termination();
+    auto enable_early_termination() -> HydSimSettings&;
+    auto disable_early_termination() -> HydSimSettings&;
 
 /*--- Other ---*/
     std::size_t n_steps() const noexcept

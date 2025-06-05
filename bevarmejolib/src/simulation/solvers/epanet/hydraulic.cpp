@@ -1,29 +1,143 @@
+#include <memory>
+
+#include "epanet2_2.h"
+#include "types.h"
+
+#include "bevarmejo/utility/exceptions.hpp"
+
 #include "bevarmejo/simulation/hyd_sim_settings.hpp"
 #include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
 
 namespace bevarmejo::sim::solvers::epanet
 {
 
-time_t HydSimSettings::report_resolution() const noexcept
+/*------- Member functions -------*/
+// (constructor)
+HydSimSettings::HydSimSettings() :
+    inherited(),
+    m__report_resolution__s(resolution() > horizon() ? resolution() : horizon()),
+    m__wdm(std::make_unique<DemandDrivenAnalysis>()),
+    m__demand_multiplier(1.0)
+{ }
+
+HydSimSettings::HydSimSettings(const HydSimSettings& other) :
+    inherited(other),
+    m__report_resolution__s(other.m__report_resolution__s),
+    m__wdm(other.m__wdm ? other.m__wdm->clone() : nullptr),
+    m__demand_multiplier(other.m__demand_multiplier)
+{ }
+
+HydSimSettings& HydSimSettings::operator=(const HydSimSettings& other)
 {
-    return report_resolution__s;
+    if (this != &other) {
+        inherited::operator=(other);
+        m__report_resolution__s = other.m__report_resolution__s;
+        m__wdm = other.m__wdm ? other.m__wdm->clone() : nullptr;
+        m__demand_multiplier = other.m__demand_multiplier;
+    }
+    return *this;
 }
 
-void HydSimSettings::report_resolution(time_t a_resolution)
+auto HydSimSettings::report_resolution() const noexcept -> time_t
+{
+    return m__report_resolution__s;
+}
+
+auto HydSimSettings::demand_multiplier() const noexcept -> double
+{
+    return m__demand_multiplier;
+}
+
+auto HydSimSettings::report_resolution(time_t a_resolution) -> HydSimSettings&
 {
     beme_throw_if(a_resolution <= 0, std::invalid_argument,
         "Impossible to set the resolution of the reporting.",
         "The resolution must be a positive number.",
         "Resolution: ", a_resolution);
 
-    report_resolution__s = a_resolution;
+    m__report_resolution__s = a_resolution;
+
+    return *this;
+}
+
+auto HydSimSettings::demand_driven_analysis() -> HydSimSettings&
+{
+    m__wdm = std::make_unique<DemandDrivenAnalysis>();
+
+    return *this;
+}
+
+auto HydSimSettings::pressure_driven_analysis(
+    const double a_minimum_pressure__m,
+    const double a_required_pressure__m,
+    const double a_pressure_exponent
+) -> HydSimSettings&
+{
+    m__wdm = std::make_unique<PressureDrivenAnalysis>(
+        a_minimum_pressure__m,
+        a_required_pressure__m,
+        a_pressure_exponent
+    );
+
+    return *this;
+}
+
+auto HydSimSettings::demand_multiplier(double a_multiplier) -> HydSimSettings&
+{
+    beme_throw_if(a_multiplier < 0.0, std::invalid_argument,
+        "Impossible to set the global water demand multiplier.",
+        "The multiplier must be a non-negative number.",
+        "Multiplier: ", a_multiplier);
+
+    m__demand_multiplier = a_multiplier;
+
+    return *this;
+}
+
+auto HydSimSettings::apply_water_demand_model(EN_Project a_ph) const -> void
+{
+    // If uses DDA
+    if (dynamic_cast<const DemandDrivenAnalysis*>(m__wdm.get()) != nullptr)
+    {
+        int errorcode = EN_setdemandmodel(a_ph, EN_DDA, 0.0, 0.0, 0.0);
+        assert(errorcode <= 100);
+        return;
+    }
+    
+    // otherwise we are using PDA
+    assert(dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get()) != nullptr);
+    auto pda = dynamic_cast<const PressureDrivenAnalysis*>(m__wdm.get());
+
+    // If the units are US, pressures must be in PSI
+    if (a_ph->parser.Unitsflag == US)
+    {
+        int errorcode = EN_setdemandmodel(
+            a_ph, EN_PDA,
+            pda->minimum_pressure__m()/MperFT*PSIperFT,
+            pda->required_pressure__m()/MperFT*PSIperFT,
+            pda->pressure_exponent()
+        );
+        assert(errorcode <= 100);
+        return;
+    }
+    
+    // otherwise it's in SI
+    int errorcode = EN_setdemandmodel(
+        a_ph, EN_PDA,
+        pda->minimum_pressure__m(),
+        pda->required_pressure__m(),
+        pda->pressure_exponent()
+    );
+    assert(errorcode <= 100);
+    return;
+
 }
 
 // Forward declaration of the internal functions
 namespace detail
 {
 
-void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
+void prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSettings& a_settings) noexcept;
 void retrieve_results(const int errorcode, const time_t t, bevarmejo::WaterDistributionSystem& a_wds, HydSimResults& res);
 void release_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept;
 
@@ -41,7 +155,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
 
     auto res = HydSimResults(a_wds.result_time_series());
 
-    detail::prepare_internal_solver(a_wds);
+    detail::prepare_internal_solver(a_wds, a_settings);
 
     // Run the simulation
     time_t t = 0; // current time
@@ -114,12 +228,30 @@ auto is_successful_with_warnings(const HydSimResults& a_result) noexcept -> bool
     return true;
 }
 
-auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds) noexcept -> void
+auto detail::prepare_internal_solver(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSettings& a_settings) noexcept -> void
 {
     auto ph = a_wds.ph();
     assert(ph != nullptr);
+
+    // Let's set the options...
+    int errorcode = EN_settimeparam(ph, EN_DURATION, a_settings.horizon());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_HYDSTEP, a_settings.resolution());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_STARTTIME, a_settings.start_time());
+    assert(errorcode <= 100);
+
+    errorcode = EN_settimeparam(ph, EN_REPORTSTEP, a_settings.report_resolution());
+    assert(errorcode <= 100);
+
+    a_settings.apply_water_demand_model(ph);
+
+    errorcode = EN_setoption(ph, EN_DEMANDMULT, a_settings.demand_multiplier());
+    assert(errorcode <= 100);
     
-    int errorcode = EN_openH(ph);
+    errorcode = EN_openH(ph);
     assert(errorcode <= 100);
     
     errorcode = EN_initH(ph, 10);

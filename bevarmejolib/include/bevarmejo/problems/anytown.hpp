@@ -140,7 +140,8 @@ enum class ExistingPipesFormulation
 enum class NewTanksFormulation
 {
     Simple,
-    Farmani
+    Farmani,
+    LocVolRisDiamH2DRatio // Location, Volume, Riser diameter, Height-to-Diameter Ratio
 }; // enum class NewTanksFormulation
 
 enum class ReliabilityObjectiveFunctionFormulation
@@ -203,9 +204,10 @@ auto apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::ve
 auto cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> double;
 auto reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) -> void;
 }
+// LocVolRisDiamH2DRatio defined in systol
 
 
-// Reliability Function for hte objectives
+// Reliability Function for the objectives
 // Base
 namespace fr1 {
 double of__reliability(const WDS& anytown);
