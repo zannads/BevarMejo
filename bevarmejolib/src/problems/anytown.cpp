@@ -1386,11 +1386,11 @@ auto fnt2::apply_dv__tanks(
 		already_installed_tanks.insert(new_tank_loc_shift);
 #ifdef DEBUGSIM
 		bemeio::stream_out(std::cout, "Installed tank at node ", junction_id, 
-		" with volume ", tank_volume_gal, " gal(", tank_volume_m3, " m^3)", 
+		" with: ",
 		" Elev ", new_tank.elevation(),
 		" Min level ", new_tank.min_level().value(),
 		" Max lev ", new_tank.max_level().value(),
-		" Diam ", diam_m, "\n");
+		" Diam ", tank_diam__m, "\n");
 #endif
 	}
 }

@@ -44,6 +44,13 @@ auto Link::to_node() const -> Node_ptr
     return m__to_node;
 }
 
+
+auto Link::flow() const noexcept -> const FlowSeries&
+{
+    return m__flow;
+}
+
+
 /*------- Capacity -------*/
 
 /*------- Modifiers -------*/
