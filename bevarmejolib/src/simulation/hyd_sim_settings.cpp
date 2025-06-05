@@ -28,7 +28,7 @@ bool HydSimSettings::should_terminate_early() const noexcept
 }
 
 /*--- Modifiers ---*/
-void HydSimSettings::start_time(time_t a_start_time)
+auto HydSimSettings::start_time(time_t a_start_time) -> HydSimSettings&
 {
     beme_throw_if(a_start_time < 0 || a_start_time > 24*60*60, std::invalid_argument,
         "Impossible to set the start time of the simulation.",
@@ -36,9 +36,11 @@ void HydSimSettings::start_time(time_t a_start_time)
         "Start time: ", a_start_time);
 
     shift_start_time__s = a_start_time;
+
+    return *this;
 }
 
-void HydSimSettings::horizon(time_t a_horizon)
+auto HydSimSettings::horizon(time_t a_horizon) -> HydSimSettings&
 {
     beme_throw_if(a_horizon < 0, std::invalid_argument,
         "Impossible to set the duration of the simulation.",
@@ -46,9 +48,11 @@ void HydSimSettings::horizon(time_t a_horizon)
         "Duration: ", a_horizon);
 
     horizon__s = a_horizon;
+
+    return *this;
 }
 
-void HydSimSettings::resolution(time_t a_resolution)
+auto HydSimSettings::resolution(time_t a_resolution) -> HydSimSettings&
 {
     beme_throw_if(a_resolution <= 0, std::invalid_argument,
         "Impossible to set the resolution of the simulation.",
@@ -56,16 +60,22 @@ void HydSimSettings::resolution(time_t a_resolution)
         "Resolution: ", a_resolution);
 
     resolution__s = a_resolution;
+
+    return *this;
 }
 
-void HydSimSettings::enable_early_termination()
+auto HydSimSettings::enable_early_termination() -> HydSimSettings&
 {
     f__early_termination = true;
+
+    return *this;
 }
 
-void HydSimSettings::disable_early_termination()
+auto HydSimSettings::disable_early_termination() -> HydSimSettings&
 {
     f__early_termination = false;
+
+    return *this;
 }
 
 } // namespace bevarmejo::sim

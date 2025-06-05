@@ -25,7 +25,30 @@ public:
 /*------- Compute method -------*/
 public:
     wds::aux::QuantitySeries<double> operator()(const wds::Junction& a_junction) const;
-};    
+};
+
+auto total_water_demand(const WDS& a_wds) -> wds::aux::QuantitySeries<double>;
+
+auto total_water_consumption(const WDS& a_wds) -> wds::aux::QuantitySeries<double>;
+
+
+namespace PaezFilion
+{
+auto mechanical_reliability_estimator(const WDS& a_wds) -> wds::aux::QuantitySeries<double>;
+
+auto mechanical_reliability_estimator_impl(
+    const std::vector<double>& availability_pipes,
+    const std::vector<double>& flow_pipes,
+    const double total_demand,
+    const double total_consumption
+) -> double;
+
+} // PaezFilion
+
+namespace CullinaneEtAl
+{
+auto pipe_mechanical_availability(const WDS::Pipe& a_pipe) -> double;
+}
 
 
 } // namespace bevarmejo::eval::metrics
