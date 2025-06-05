@@ -216,6 +216,22 @@ class Simulator:
 
             return self.networks
         
-    def convert_to_formulation(self, formulation: int) -> "Simulator":
-        
-        fc.from_fx_to_fy(self, formulation)
+    def convert_to_formulation(self, formulation: str) -> "Simulator":
+
+        suite = self.data['problem']['type'].split('::')[0]
+        assert suite == 'bevarmejo'
+
+        problem = self.data['problem']['type'].split('::')[1]
+
+        if problem == 'anytown':
+            # We use a numerical convention here
+            f = int(formulation)
+            fc.anytown__from_fx_to_fy(self, f)
+
+        elif problem == 'anytown_systol25':
+            # just pass the name along
+            fc.anytown_systol25__from_a_to_b(self, formulation)
+
+        else:
+            raise ValueError(f"Unsupported problem type: {problem}")
+

@@ -37,7 +37,7 @@ class Experiment:
         if 'software' in self.data and 'bemelib_version' in self.data['software']:
             return self.data['software']['bemelib_version']
         
-        return "v25.03.02"
+        return "v25.05.00"
 
     @property
     def islands(self) -> dict:
@@ -183,6 +183,11 @@ class Experiment:
     def final_fitness_vectors(self) -> pd.DataFrame:
         # Return the fitness vector of the last population of each island
         return self.fitness_vectors.groupby(['island', 'individual']).last()
+    
+    @property
+    def final_decision_vectors(self) -> pd.DataFrame:
+        # Return the decision vector of the last population of each island
+        return self.decision_vectors.groupby(['island', 'individual']).last()
 
     def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
         if generation_index is None:
