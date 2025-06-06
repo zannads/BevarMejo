@@ -232,7 +232,7 @@ mkdir build
 	# option a: for versions before v25.02.00: June 18, 2024
 # git checkout -b c24-06-18 <sha1>
 	# option b: for versions starting from  v25.02.00: December 21, 2024
-# git checkout -b c24-12-21 <sha1>
+git checkout -b c24-12-21 <sha1>
 
 # 4. Build EPANET in that folder
 cmake -DCMAKE_BUILD_TYPE:STRING=Release \
