@@ -11,7 +11,7 @@ The repository consists of two main components:
 
 ## Related Resources
 
-All research outputs, presentations, and supplementary materials that can be shared are available open-access on Zenodo: [Zanutto, 2022](https://doi.org/10.5281/zenodo.10912467).
+All research outputs, presentations, and supplementary materials that can be shared are available open-access on Zenodo: [Zanutto, 2022](https://doi.org/10.5281/zenodo.10912466).
 
 ## Getting Started
 
