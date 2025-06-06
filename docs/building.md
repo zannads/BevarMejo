@@ -217,6 +217,7 @@ Therefore, if you're reproducing results from published work, you will need to u
 During the part A installation, modify steps 2.4 and 3 as follows:
 
 1. **Create a version-specific build** for EPANET:
+
 ```bash
 # 1. Navigate to the EPANET folder
 cd path/to/EPANET
@@ -231,7 +232,7 @@ mkdir build
 	# option a: for versions before v25.02.00: June 18, 2024
 # git checkout -b c24-06-18 <sha1>
 	# option b: for versions starting from  v25.02.00: December 21, 2024
-# git checkout -b c24-12-21 <sha1>
+git checkout -b c24-12-21 <sha1>
 
 # 4. Build EPANET in that folder
 cmake -DCMAKE_BUILD_TYPE:STRING=Release \
@@ -240,6 +241,7 @@ cmake --build <build_folder> --config release
 ```
 
 2. **Create a version-specific build** for the BeMe:
+
 ```bash
 # 1. Navigate to the BeMe folder 
 cd path/to/BevarMejo
@@ -257,6 +259,7 @@ cmake --build builds/releases/your_version --config Release
 ```
 
 For full results reproduction, the following versions are required: `v24.04.00`, `v24.06.00`, `v24.10.00`, `v24.11.00`, `v24.12.00`, and `latest`.
+
 ## Troubleshooting
 
 ### Common Issues
