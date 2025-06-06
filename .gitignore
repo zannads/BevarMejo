@@ -419,7 +419,9 @@ data
 **/.tmp/
 **/tmp/
 temp*
-*.py
-*.ipynb
 
 *.sh
+
+# For the documentation and obsidian
+.obsidian*
+docs/git-ignore-docs

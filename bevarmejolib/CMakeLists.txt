@@ -11,6 +11,13 @@
 #     message(STATUS "PUGIXML_ROOT environmental variable NOT found, using ${PUGIXML_ROOT}" )
 # ENDIF()
 
+set(BEME_UTILS
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
+)
+
+# ==============================
+# WDS
+# ==============================
 set(WDS_INC_ROOT    
         "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" 
         CACHE PATH "Path to the rootfolder of the WDS"
@@ -19,59 +26,84 @@ set(WDS_SRC_ROOT
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds" 
         CACHE PATH "Path to the rootfolder of the WDS"
 )
-set(WDS_FILES   
-        "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
-        "${WDS_SRC_ROOT}/epanet_helpers/water_distribution_system.cpp"
-        "${WDS_SRC_ROOT}/user_defined_elements_group.cpp"
-)
 
-set(WDS_BASE_ELEMENTS
-        "${WDS_SRC_ROOT}/elements/element.cpp"
+set(BEME_WDS_BASE_ELEMENTS
+        "${WDS_SRC_ROOT}/element.cpp"
         "${WDS_SRC_ROOT}/elements/network_element.cpp"
+        "${WDS_SRC_ROOT}/elements/curve.cpp"
+        "${WDS_SRC_ROOT}/elements/pattern.cpp"
 )
-set(WDS_NODES   
-        "${WDS_SRC_ROOT}/elements/junction.cpp"
-        "${WDS_SRC_ROOT}/elements/tank.cpp"
-        "${WDS_SRC_ROOT}/elements/reservoir.cpp"
-        "${WDS_SRC_ROOT}/elements/source.cpp"
-        "${WDS_SRC_ROOT}/elements/node.cpp"
+set(BEME_WDS_NODES
+        "${WDS_SRC_ROOT}/elements/network_elements/node.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/nodes/junction.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/nodes/tank.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/nodes/reservoir.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/nodes/source.cpp"
+        
 )
-set(WDS_LINKS   
-        "${WDS_SRC_ROOT}/elements/pipe.cpp"
-        "${WDS_SRC_ROOT}/elements/dimensioned_link.cpp"
-        "${WDS_SRC_ROOT}/elements/link.cpp"
-        "${WDS_SRC_ROOT}/elements/pump.cpp"
-)
-
-set(WDS_AUX     
-        "${WDS_SRC_ROOT}/auxiliary/curves.cpp"
-        "${WDS_SRC_ROOT}/auxiliary/pattern.cpp"
-        "${WDS_SRC_ROOT}/auxiliary/global_times.cpp"
-        "${WDS_SRC_ROOT}/auxiliary/time_series.cpp"
+set(BEME_WDS_LINKS   
+        "${WDS_SRC_ROOT}/elements/network_elements/link.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/links/dimensioned_link.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/links/pipe.cpp"
+        "${WDS_SRC_ROOT}/elements/network_elements/links/pump.cpp"
 )
 
-set(IO_FILES
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/fsys_helpers.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/io/json_serializers.cpp"
+set(BEME_WDS_UTIL
+        "${WDS_SRC_ROOT}/utility/global_times.cpp"
+        "${WDS_SRC_ROOT}/utility/time_series.cpp"
 )
 
-set(HELPERS     
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/pagmo_helpers/containers_help.cpp"
+set(BEME_WDS
+        "${WDS_SRC_ROOT}/water_distribution_system.cpp" 
+        "${WDS_SRC_ROOT}/utility/epanet/water_distribution_system.cpp"
+        ${BEME_WDS_BASE_ELEMENTS}
+        ${BEME_WDS_NODES}
+        ${BEME_WDS_LINKS}
+        ${BEME_WDS_UTIL}
+)
+
+# ==============================
+# SIMULATION
+# ==============================
+set(BEME_SIMULATION
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/hyd_sim_settings.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/hydraulic.cpp"
+)
+
+# ==============================
+# EVALUATION
+# ==============================
+set(BEME_EVALUATION
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/evaluation/metrics/hydraulic_functions.cpp"
+)
+
+
+# ==============================
+# PROBLEM
+# ==============================
+set(BEME_PROBLEM
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/decision_variable.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
+)
+
+# ==============================
+# BEME PROBLEMS, e.g., Anytown, Hanoi, etc.
+# ==============================
+set(BEME_PROBLEMS
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown.cpp"
+        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/hanoi.cpp"
 )
 
 add_library(bemelib 
         "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/factories.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds_problem.cpp"
-        ${WDS_FILES}
-        ${WDS_BASE_ELEMENTS}
-        ${WDS_NODES}
-        ${WDS_LINKS}
-        ${WDS_AUX}
-        ${WDS_DATAS}
-        ${IO_FILES}
-        ${HELPERS}
+        ${BEME_IO}
+        ${BEME_UTILS}
+        ${BEME_WDS}
+        ${BEME_SIMULATION}
+        ${BEME_EVALUATION}
+        ${BEME_PROBLEM}
+        ${BEME_PROBLEMS}
 )
             
 set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
@@ -86,11 +118,9 @@ target_include_directories(bemelib PUBLIC
 target_include_directories(bemelib PRIVATE
                         "include/bevarmejo"
                         "include/bevarmejo/io"
-                        "include/bevarmejo/epanet_helpers"
-                        "include/bevarmejo/pagmo_helpers"
-                        "include/bevarmejo/pagmo_helpers/algorithms"
+                        "include/bevarmejo/utility"
                         "include/bevarmejo/wds"
-                        "include/bevarmejo/wds/elements"
-                        "include/bevarmejo/wds/auxiliary"
-                        "include/bevarmejo/wds/epanet_helpers"
+                        "include/bevarmejo/simulation"
+                        "include/bevarmejo/evaluation"
+                        "include/bevarmejo/problem"
 )
