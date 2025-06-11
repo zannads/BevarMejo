@@ -442,7 +442,10 @@ enum class Formulation {
     rehab_f4,
     mixed_f4,
     rehab_f5,
-    mixed_f5
+    mixed_f5,
+    rehab_f6,
+    mixed_f6, // same as anytown_systol25::hyd_rel (except order of dvs)
+    opertns_f2
 }; // enum class Formulation
 
 // For the json serializers:

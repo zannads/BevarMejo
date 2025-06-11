@@ -70,6 +70,9 @@ static const std::string rehab_f4 = "rehab::f4";
 static const std::string mixed_f4 = "mixed::f4";
 static const std::string rehab_f5 = "rehab::f5";
 static const std::string mixed_f5 = "mixed::f5";
+static const std::string rehab_f6 = "rehab::f6";
+static const std::string mixed_f6 = "mixed::f6";
+static const std::string opertns_f2 = "operations::f2";
 } // namespace io::value
 
 // Extra information for the formulations.
@@ -86,6 +89,8 @@ static const std::string rehab_f4_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f4_exinfo =  "Anytown Mixed Formulation 4\nOperations as dv, pipes as single dv, Tanks as before, of reliability formulation 3 (velocities)\n";
 static const std::string rehab_f5_exinfo =  "Anytown Rehabilitation Formulation 5\nOperations from input, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
 static const std::string mixed_f5_exinfo =  "Anytown Mixed Formulation 5\nOperations as dv, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
+static const std::string rehab_f6_exinfo =  "Anytown Rehabilitation Formulation 6\nOperations from input, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
+static const std::string mixed_f6_exinfo =  "Anytown Mixed Formulation 6\nOperations as dv, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
 }
 
 auto decompose_pumpgroup_pattern(
@@ -235,6 +240,26 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f5_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f6)
+	{
+		m__formulation = Formulation::rehab_f6;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__has_design = true;
+		m__has_operations = false;
+		m__extra_info = io::other::rehab_f6_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f6)
+	{
+		m__formulation = Formulation::mixed_f6;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__has_design = true;
+		m__has_operations = true;
+		m__extra_info = io::other::mixed_f6_exinfo;
 	}
 	else
 	{
