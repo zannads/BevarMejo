@@ -117,7 +117,23 @@ auto decompose_pumpgroup_pattern(
 	return patterns;
 }
  
-Problem::Problem(std::string_view a_formulation_str, const Json& settings, const bemeio::Paths &lookup_paths)
+Problem::Problem(std::string_view a_formulation_str, const Json& settings, const bemeio::Paths &lookup_paths) :
+	inherithed(),
+	m__anytown(),
+	m__anytown_filename(),
+	m__exi_pipe_options(anytown::exi_pipe_options),
+	m__new_pipe_options(anytown::new_pipe_options),
+	m__tank_options(anytown::tank_options),
+	m__formulation(),
+	m__exi_pipes_formulation(),
+	m__new_tanks_formulation(),
+	m__reliability_obj_func_formulation(),
+	m__has_design(false),
+	m__has_operations(false),
+	m__max_velocity__m_per_s(2.0),
+	__old_HW_coeffs(),
+	m_algo(),
+	m_pop()
 {
 	if (a_formulation_str == io::value::rehab_f1)
 	{
@@ -268,6 +284,20 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	}
 	m__name = bemeio::log::nname::beme_l+problem_name+"::"+std::string(a_formulation_str);
 
+	load_network(settings, lookup_paths);
+
+	load_other_data(settings, lookup_paths);
+	
+	// We have "configured" the formulations for the various parts, we can pass this info to the adapter
+	m__dv_adapter.reconfigure(this->get_continuous_dvs_mask());
+}
+
+void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths)
+{
+	assert(settings != nullptr && io::key::at_inp.exists_in(settings));
+
+	const auto inp_filename = settings.at(io::key::at_inp.as_in(settings)).get<fsys::path>();
+
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
 		// change curve ID 2 to a pump curve
@@ -281,108 +311,111 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		assert(errorcode <= 100);
 	};
 
-	load_network(settings, lookup_paths, fix_inp);
-
-	if (m__formulation != Formulation::opertns_f1) {
-		// Custom made subnetworks for the temporary elements 
-		m__anytown->submit_id_sequence(label::__temp_elems);
-
-		load_other_data(settings, lookup_paths);
-	}
-
-	if (m__formulation == Formulation::twoph_f1) {
-		/*
-		// Prepare the internal optimization problem 
-		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
-		&& settings["Internal optimization"].contains("UDP") && settings["Internal optimization"].contains("Population") );
-		auto uda = settings["Internal optimization"]["UDA"];
-		auto udp = settings["Internal optimization"]["UDP"];
-		auto udpop = settings["Internal optimization"]["Population"];
-
-		// this is nasty but as of now it will work // I am not passing any info for now 
-		assert(udpop.contains(label::__report_gen_sh));
-		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
-		m_algo = pagmo::algorithm( bevarmejo::Nsga2( Json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
-
-		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
-		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
-		
-		assert(udpop.contains(label::__size));
-		m_pop = pagmo::population( prob, udpop[label::__size].get<unsigned int>()-2u ); // -2 because I will manually add the two extreme solutions (the bounds)
-		m_pop.push_back(prob.get_bounds().first); // all zero operations not running 
-		m_pop.push_back(prob.get_bounds().second); // all operations running at max
-		*/
-	}
-	
-	// We have "configured" the formulations for the various parts, we can pass this info to the adapter
-	m__dv_adapter.reconfigure(this->get_continuous_dvs_mask());
-}
-
-void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf)
-{
-	assert(settings && io::key::at_inp.exists_in(settings));
-
-	const auto inp_filename = settings.at(io::key::at_inp.as_in(settings)).get<fsys::path>();
-
 	// Check the existence of the inp_filename in any of the lookup paths and its extension
 	m__anytown = std::make_shared<WDS>(
 		bemeio::locate_file</* log = */true>(inp_filename, lookup_paths), 
-		preprocessf
+		fix_inp
 	);
 	m__anytown_filename = inp_filename.string();
 
 	// Load the sequences of names for the subnetworks
-	// If is in array of strings it is the name of the files, otherwise it is a json object with the data.
+	if (io::key::at_subnets.exists_in(settings)) {
+		auto j_names = Json{}; // Json for the named sequences of names
+		// If is in array of strings it is the name of the files, otherwise it is a json object with the data.
+		bemeio::expand_if_filepaths(
+			settings.at(io::key::at_subnets.as_in(settings)),
+			lookup_paths,
+			j_names
+		);
 
-	auto j_names = Json{}; // Json for the named sequences of names
-	bemeio::expand_if_filepaths(settings.at(io::key::at_subnets.as_in(settings)), lookup_paths, 
-		j_names);
-
-	for (const auto& [seq_name, names_in_seq] : j_names.items())
-	{
-		m__anytown->submit_id_sequence(seq_name, names_in_seq.get<std::vector<std::string>>());
+		for (const auto& [seq_name, names_in_seq] : j_names.items()) {
+			m__anytown->submit_id_sequence(seq_name, names_in_seq.get<std::vector<std::string>>());
+		}
 	}
 	
+	// Just check that all mandatory networks have been added, otherwise add them from the default.
+	// Lambda to check if a mandatory id sequence was added.
+	auto has_id_sequence = [this](const auto& subnet_name) -> bool {
+		for (auto&& id_seq : m__anytown->id_sequences()) {
+			if (id_seq.name == subnet_name) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	if (!has_id_sequence(anytown::city_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::city_pipes__subnet_name, anytown::city_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::exis_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::exis_pipes__subnet_name, anytown::exis_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::new_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::new_pipes__subnet_name, anytown::new_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::pos_tank_loc__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::pos_tank_loc__subnet_name, anytown::pos_tank_loc__el_names);
+	}
+
+	// Custom made subnetworks for the temporary elements 
+	if (m__formulation != Formulation::opertns_f1) {
+		m__anytown->submit_id_sequence(label::__temp_elems);
+	}
 }
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
-	assert(
-		settings != nullptr && 
-		io::key::exi_pipe_opts.exists_in(settings) && 
-		io::key::new_pipe_opts.exists_in(settings) &&
-		io::key::tank_opts.exists_in(settings)
-	);
-	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
-		assert(io::key::opers.exists_in(settings));
+	if (m__formulation == Formulation::opertns_f1) { return; }
 
-	// If the settings is a string it means it is a filename, otherwise it shuold 
-	// be a json array with the data.
-	auto j_aep = Json{}; // Json for the available existing pipes
-	bemeio::expand_if_filepath(settings.at(io::key::exi_pipe_opts.as_in(settings)), lookup_paths, 
-		j_aep);
-	
-	m__exi_pipe_options = j_aep.get<std::vector<anytown::exi_pipe_option>>();
-	
-	auto j_anp = Json{}; // Json for the available new pipes
-	bemeio::expand_if_filepath(settings.at(io::key::new_pipe_opts.as_in(settings)), lookup_paths, 
-		j_anp);
+	assert(settings != nullptr);
 
-	m__new_pipe_options = j_anp.get<std::vector<anytown::new_pipe_option>>();
-	
-	auto j_tanks = Json{}; // Json for the tanks costs
-	bemeio::expand_if_filepath(settings.at(io::key::tank_opts.as_in(settings)), lookup_paths, 
-		j_tanks);
+	if (io::key::exi_pipe_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::exi_pipe_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
 		
-	m__tank_options = j_tanks.get<std::vector<anytown::tank_option>>();
+		m__exi_pipe_options = j.get<std::vector<anytown::exi_pipe_option>>();
+	}
+
+	if (io::key::new_pipe_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::new_pipe_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
+	
+		m__new_pipe_options = j.get<std::vector<anytown::new_pipe_option>>();
+	}
+	
+	if (io::key::tank_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::tank_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
+		
+		m__tank_options = j.get<std::vector<anytown::tank_option>>();
+	}
 
 	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
 	{
-		// Need to se the operations for the rehabilitation problems
-		auto j_oper = Json{}; // Json for the operations
-		bemeio::expand_if_filepath(settings.at(io::key::opers.as_in(settings)), lookup_paths, 
-			j_oper);
-		auto operations = j_oper.get<std::vector<double>>();
-		assert(operations.size() == 24);
+		auto operations = anytown::pump_group_operations;
+
+		if (io::key::opers.exists_in(settings)) {
+			auto j = Json{}; // Json for the operations
+			bemeio::expand_if_filepath(
+				settings.at(io::key::opers.as_in(settings)),
+				lookup_paths,
+				j
+			);
+
+			operations = j.get<std::vector<double>>();
+			assert(operations.size() == 24);
+		}
 
 		// Fix pumps' patterns
 		for (int i = 0; i < 3; ++i) {
@@ -407,6 +440,30 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 	// Optional value that is only used in the reliability function from formulations 4:
 	m__max_velocity__m_per_s = settings.value(io::key::max_vel.as_in(settings), 2.0); // 2 m/s
+
+	if (m__formulation == Formulation::twoph_f1) {
+		/*
+		// Prepare the internal optimization problem 
+		assert(settings.contains("Internal optimization") && settings["Internal optimization"].contains("UDA")
+		&& settings["Internal optimization"].contains("UDP") && settings["Internal optimization"].contains("Population") );
+		auto uda = settings["Internal optimization"]["UDA"];
+		auto udp = settings["Internal optimization"]["UDP"];
+		auto udpop = settings["Internal optimization"]["Population"];
+
+		// this is nasty but as of now it will work // I am not passing any info for now 
+		assert(udpop.contains(label::__report_gen_sh));
+		assert(uda.contains(label::__name) && uda[label::__name] == "nsga2");
+		m_algo = pagmo::algorithm( bevarmejo::Nsga2( Json{ {label::__report_gen_sh, udpop[label::__report_gen_sh] } } ) );
+
+		assert(udp.contains(label::__name) && udp[label::__name] == "bevarmejo::anytown::operations::f1" && udp.contains(label::__params));
+		pagmo::problem prob{ Problem(Formulation::opertns_f1, udp[label::__params], lookup_paths)};
+		
+		assert(udpop.contains(label::__size));
+		m_pop = pagmo::population( prob, udpop[label::__size].get<unsigned int>()-2u ); // -2 because I will manually add the two extreme solutions (the bounds)
+		m_pop.push_back(prob.get_bounds().first); // all zero operations not running 
+		m_pop.push_back(prob.get_bounds().second); // all operations running at max
+		*/
+	}
 }
 
 // ------------------- Pagmo functions ------------------- //

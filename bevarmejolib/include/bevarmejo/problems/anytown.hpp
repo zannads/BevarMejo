@@ -538,7 +538,7 @@ protected:
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
     // For constructor:
-    void load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf = [](EN_Project ph){ return;});
+    void load_network(const Json& settings, const bemeio::Paths& lookup_paths);
     void load_other_data(const Json& settings, const bemeio::Paths& lookup_paths);
 
     // For fitness function:
