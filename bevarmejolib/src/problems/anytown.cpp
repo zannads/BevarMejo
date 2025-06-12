@@ -505,12 +505,7 @@ auto Problem::get_nic() const -> std::vector<double>::size_type
 {
 	return 0ul;
 }
-
-auto Problem::get_nix() const -> std::vector<double>::size_type
-{
-	auto mask = get_continuous_dvs_mask();
-	return std::count(mask.begin(), mask.end(), false);
-}
+	
 
 auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 {

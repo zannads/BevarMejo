@@ -58,9 +58,6 @@ public:
     // Number of INequality constraints
     std::vector<double>::size_type get_nic() const;
 
-    // Number of integer decision variables
-    std::vector<double>::size_type get_nix() const;
-
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.
     std::vector<double> fitness(const std::vector<double>& dvs) const;
@@ -105,7 +102,7 @@ protected:
     void reset_dv(const std::vector<double>& dvs) const;
 
     // Helper to transform the decision variables from pagmo to beme format
-    std::vector<bool> get_continuous_dvs_mask() const;
+    std::vector<bool> get_continuous_dvs_mask() const override;
 private:
     // Json serializers
     friend void to_json(Json &j, const Problem &prob);
