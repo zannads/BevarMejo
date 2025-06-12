@@ -293,7 +293,7 @@ void reset_dv__new_pipes(
 
 // Pumps:
 // My preferred default pattern for the pump group (inspired by Siew et al., 2016 and modified based on early results)
-static const std::vector<double> pump_group_operations {
+constexpr std::array<double, bevarmejo::k__hours_per_day> pump_group_operations {
     3, 2, 2, 2, 2, 2,
     2, 2, 2, 2, 2, 2,
     2, 3, 3, 3, 3, 3,
@@ -306,6 +306,16 @@ auto decompose_pumpgroup_pattern(
     const std::size_t n_pumps
 ) -> std::vector<std::vector<double>>;
 
+// Pump Group Operationd Decision Variable
+namespace pgo_dv {
+constexpr std::size_t size = pump_group_operations.size();
+constexpr std::array<bool,size> is_continous_mask{
+    false, false, false, false, false, false,
+    false, false, false, false, false, false,
+    false, false, false, false, false, false,
+    false, false, false, false, false, false
+};
+constexpr std::size_t n_discrete_dv = size;
 auto bounds__pumps(
     InputExcludingRegistryView<WDS::Pump> pumps
 ) -> std::pair<std::vector<double>, std::vector<double>>;
@@ -320,6 +330,7 @@ void reset_dv__pumps(
     WDS& anytown,
     const std::vector<double>& dvs
 );
+} // pgo_dv
 
 // New tanks:
 // up two tanks and its complete specifications, however the riser length is fixed

@@ -117,7 +117,11 @@ auto decompose_pumpgroup_pattern(
 	return patterns;
 }
  
-Problem::Problem(std::string_view a_formulation_str, const Json& settings, const bemeio::Paths &lookup_paths) :
+Problem::Problem(
+	std::string_view a_formulation_str,
+	const Json& settings,
+	const bemeio::Paths &lookup_paths
+) :
 	inherithed(),
 	m__anytown(),
 	m__anytown_filename(),
@@ -403,7 +407,10 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
 	{
-		auto operations = anytown::pump_group_operations;
+		auto operations = std::vector<double> (
+			pump_group_operations.begin(),
+			pump_group_operations.end()
+		);
 
 		if (io::key::opers.exists_in(settings)) {
 			auto j = Json{}; // Json for the operations
@@ -414,7 +421,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 			);
 
 			operations = j.get<std::vector<double>>();
-			assert(operations.size() == 24);
+			assert(operations.size() == pgo_dv::size);
 		}
 
 		// Fix pumps' patterns
@@ -492,8 +499,7 @@ auto Problem::get_nix() const -> std::vector<double>::size_type
 auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 {
 	std::size_t mask_size = 0;
-	if (m__has_design)
-	{
+	if (m__has_design) {
 		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
 		std::size_t dv_size = [this]() {
 			switch (m__exi_pipes_formulation)
@@ -514,9 +520,8 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 		mask_size += dv_size*subnet_size;
 	}
 	
-	if (m__has_operations)
-	{
-		mask_size += 24;
+	if (m__has_operations) {
+		mask_size += pgo_dv::size;
 	}
 
 	if (m__has_design) {
@@ -577,7 +582,10 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 	}
 
 	if (m__has_operations) {
-		mask.insert(mask.end(),24,false);
+		mask.insert(mask.end(),
+			pgo_dv::is_continous_mask.begin(),
+			pgo_dv::is_continous_mask.end()
+		);
 	}
 
 	if (m__has_design) {
@@ -732,7 +740,7 @@ auto Problem::apply_dv(
 
 	if (m__has_operations)
 	{
-		apply_dv__pumps(*anytown, extract_next(24));
+		pgo_dv::apply_dv__pumps(*anytown, extract_next(24));
 		i += 24;
 	}
 
@@ -796,7 +804,7 @@ auto Problem::cost(
 
 	if (m__formulation == Formulation::opertns_f1) {
 		// Just the operational cost!
-		return cost__energy_per_day(anytown);
+		return pgo_dv::cost__energy_per_day(anytown);
 	}
 
 	// If it is a design or integrated problem, we need to consider design cost and net present value of the energy cost.
@@ -834,7 +842,7 @@ auto Problem::cost(
 		i += 12;
 	}
 		
-	double energy_cost_per_day = cost__energy_per_day(anytown);
+	double energy_cost_per_day = pgo_dv::cost__energy_per_day(anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 	
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
@@ -1037,7 +1045,7 @@ auto Problem::reset_dv(
 
 	if (m__has_operations)
 	{
-		reset_dv__pumps(*anytown, extract_next(24));
+		pgo_dv::reset_dv__pumps(*anytown, extract_next(24));
 		i += 24;
 	}
 
@@ -1254,7 +1262,7 @@ void fnp1::apply_dv__new_pipes(
 	}
 }
 
-void apply_dv__pumps(
+void pgo_dv::apply_dv__pumps(
 	WDS& anyt_wds,
 	const std::vector<double>& dvs)
 {
@@ -1815,7 +1823,7 @@ auto fnp1::cost__new_pipes(
 	return capital_cost;
 }
 
-auto cost__energy_per_day(
+auto pgo_dv::cost__energy_per_day(
 	const WDS &anytown
 ) -> double
 {
@@ -2087,7 +2095,7 @@ void fnp1::reset_dv__new_pipes(
 	}
 }
 
-void reset_dv__pumps(
+void pgo_dv::reset_dv__pumps(
 	WDS& anytown,
 	const std::vector<double>& dvs)
 {
@@ -2226,7 +2234,7 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 
 	if (m__has_operations)
 	{
-		append_bounds(bounds__pumps, std::as_const(*m__anytown).pumps());
+		append_bounds(pgo_dv::bounds__pumps, std::as_const(*m__anytown).pumps());
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
@@ -2309,7 +2317,7 @@ auto fnp1::bounds__new_pipes(
     return std::make_pair(lb, ub);
 }
 
-auto bounds__pumps(
+auto pgo_dv::bounds__pumps(
 	InputExcludingRegistryView<WDS::Pump> pumps
 ) -> std::pair<std::vector<double>, std::vector<double>>
 {

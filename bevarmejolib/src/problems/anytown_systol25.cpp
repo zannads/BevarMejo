@@ -193,19 +193,25 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
     }
 
     // By default we use the ones I set in this file
-    auto operations = anytown::pump_group_operations;
+    auto operations = std::vector<double> (
+        anytown::pump_group_operations.begin(),
+        anytown::pump_group_operations.end()
+    );
 
     // If it is there, let's override
     if (io::key::opers.exists_in(settings))
     {
-        auto j_oper = Json{}; // Json for the operations
-        bemeio::expand_if_filepath(settings.at(io::key::opers.as_in(settings)), lookup_paths, 
-            j_oper);
+        auto j = Json{};
+        bemeio::expand_if_filepath(
+            settings.at(io::key::opers.as_in(settings)),
+            lookup_paths,
+            j
+        );
 
-        operations = j_oper.get<std::vector<double>>();
+        operations = j.get<std::vector<double>>();
     }
         
-    assert(operations.size() == 24);
+    assert(operations.size() == anytown::pgo_dv::size);
 
     // Set up the operations if it doesn't need to optimize them.
     assert(m__anytown->n_pumps() == 3);
@@ -215,8 +221,8 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
         int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
         assert(errorcode <= 100);
 
-        std::vector<double> temp(k__hours_per_day, 0.0);
-        for (int j = 0; j < k__hours_per_day; ++j) {
+        std::vector<double> temp(anytown::pgo_dv::size, 0.0);
+        for (int j = 0; j < anytown::pgo_dv::size; ++j) {
             temp[j] = operations[j] > i ? 1.0 : 0.0;
         }
 
@@ -255,13 +261,13 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
     // All of these formulations have only integer decision variable.
     // The only thing that changes is how many, which depends on the formulation.
     std::size_t s = (
-        anytown::exis_pipes__el_names.size()+ // 35
-        anytown::new_pipes__el_names.size()+ // 6
-        anytown::max_n_installable_tanks*anytown::fnt3::dv_size // 8
+        anytown::exis_pipes__el_names.size() * anytown::fep2::dv_size + // 35
+        anytown::new_pipes__el_names.size() * anytown::fnp1::dv_size + // 6
+        anytown::max_n_installable_tanks * anytown::fnt3::dv_size // 8
     );
 
     if (m__formulation == Formulation::hr) {
-        s += k__hours_per_day;
+        s += anytown::pgo_dv::size;
     }
     return std::vector<bool>(s, false);
 }
@@ -408,11 +414,11 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
     {
-        bevarmejo::anytown::apply_dv__pumps(
+        anytown::pgo_dv::apply_dv__pumps(
             *m__anytown,
-            extract_next(k__hours_per_day)
+            extract_next(anytown::pgo_dv::size)
         );
-        i += k__hours_per_day;
+        i += anytown::pgo_dv::size;
     }
 
     // In the firefighting case I have to apply the dvs also to the network used to simulate the fire events
@@ -499,7 +505,7 @@ auto Problem::cost(const std::vector<double>& dvs) const -> double
     );
     i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
 
-    double energy_cost_per_day = bevarmejo::anytown::cost__energy_per_day(*m__anytown);
+    double energy_cost_per_day = bevarmejo::anytown::pgo_dv::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 
     // NPV requires initial capital investment to be positive when exiting
@@ -648,11 +654,11 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
     {
-        bevarmejo::anytown::reset_dv__pumps(
+        bevarmejo::anytown::pgo_dv::reset_dv__pumps(
             *m__anytown,
-            extract_next(k__hours_per_day)
+            extract_next(anytown::pgo_dv::size)
         );
-        i += k__hours_per_day;
+        i += anytown::pgo_dv::size;
     }
 
     if (m__formulation == Formulation::fr)
@@ -701,7 +707,7 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
      // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
     {
-        append_bounds(bevarmejo::anytown::bounds__pumps, std::as_const(*m__anytown).pumps());
+        append_bounds(bevarmejo::anytown::pgo_dv::bounds__pumps, std::as_const(*m__anytown).pumps());
     }
 
     // We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
