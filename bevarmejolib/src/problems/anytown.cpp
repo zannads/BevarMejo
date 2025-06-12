@@ -365,6 +365,22 @@ void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_pat
 	if (m__formulation != Formulation::opertns_f1) {
 		m__anytown->submit_id_sequence(label::__temp_elems);
 	}
+
+	// Prepare the simulation settings.
+	long h_step = 0;
+    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long horizon = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
+    assert(errorcode < 100);
+
+	m__eps_settings.resolution(h_step).horizon(horizon);
+
+    long r_step = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+
+    m__eps_settings.report_resolution(r_step);
 }
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
@@ -622,8 +638,15 @@ auto Problem::fitness(
 	const std::vector<double>& pagmo_dv
 ) const -> std::vector<double>
 {
-	// First thing first reconvert back from the pagmo ordering to the beme one
-	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+	// Let's pre-allocate in case something doesn't work out.
+	std::vector<double> fitv(get_nobj()+get_nec()+get_nic(), std::numeric_limits<double>::max());
+
+    // First thing first reconvert back from the pagmo ordering to the beme one.
+	const auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+
+	// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
+	// This doesn't allow parallelization unless you have different copies of the problem.
+    apply_dv(dvs);
 
 	// things to do 
 	// 1. EPS 
@@ -632,7 +655,7 @@ auto Problem::fitness(
 	// 	 [x]	check energy consumption
 	// 	 [x]	check pressure for reliability
 	// 	 [x]	check min pressure constraint
-	// 	 [ ]	check tanks complete emptying and filling
+	// 	 [x]	check tanks complete emptying and filling (implicit)
 	// 2. instantenous peak flow
 	// 		apply changes wrt EPS
 	//      	not running anymore for 24h but instantenous 
@@ -645,48 +668,15 @@ auto Problem::fitness(
 	//			add the emitters and then remove them and repeat for the next condition
 	// 		check min pressure constraint 
 
-
-	// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
-	// This doesn't allow parallelization unless you have different copies of the problem.
-	// For duplicate pipes they will have name Dxx where xx is the original pipe name.
-	// For cleaned pipes I write on a vector the original HW coefficients and then I reset them.
-	// For new pipes and pumps (dvs from 71 onwards) I don't need to reset them as they are always overwritten.
-
 	// 1. EPS
-	//auto anytown_temp = m__anytown->clone(); 
-	// in the future this will be a perfect copy and I will be able to call 
-	// everything in a new thread and then simply discard it.
-
-	apply_dv(dvs);
-
-	sim::solvers::epanet::HydSimSettings settings;
-
-	long h_step = 0;
-    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
-    assert(errorcode < 100);
-    long r_step = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
-    assert(errorcode < 100);
-    long horizon = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
-    assert(errorcode < 100);
-
-	settings.resolution(h_step);
-	settings.report_resolution(r_step);
-	settings.horizon(horizon);
-
-	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
+	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
 		reset_dv(dvs);
-		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
-					std::numeric_limits<double>::max());
+		return std::move(fitv);
 	}
-
-	// Compute OF on res. 
-	std::vector<double> fitv(get_nobj(), 0.0);
 
 	// First objective is always cost for all formulations.
 	fitv[0] = cost(*m__anytown, dvs);
@@ -708,7 +698,7 @@ auto Problem::fitness(
 	}
 	
 	reset_dv(dvs);
-	return fitv;
+    return std::move(fitv);
 }
 
 // ------------------- 2nd level ------------------- //

@@ -276,7 +276,6 @@ auto Problem::fitness(
 	const std::vector<double>& pagmo_dv
 ) const -> std::vector<double>
 {
-    // This function need to return the fitness function.
     // Let's pre-allocate in case something doesn't work out.
 	std::vector<double> fitv(get_nobj()+get_nec()+get_nic(), std::numeric_limits<double>::max());
 

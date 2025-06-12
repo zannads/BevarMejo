@@ -532,6 +532,8 @@ protected:
     // Anytown specific data
     mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
     std::string m__anytown_filename;
+    sim::solvers::epanet::HydSimSettings m__eps_settings; // Settings for the main 24-hour EPS simulation
+
     std::vector<bevarmejo::anytown::exi_pipe_option> m__exi_pipe_options;
     std::vector<bevarmejo::anytown::new_pipe_option> m__new_pipe_options;
     std::vector<bevarmejo::anytown::tank_option> m__tank_options;
