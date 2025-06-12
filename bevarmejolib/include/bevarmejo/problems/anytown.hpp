@@ -176,15 +176,19 @@ static const std::vector<bevarmejo::anytown::exi_pipe_option> exi_pipe_options {
 };
 
 // The way that this decision variable is coded can vary.
-// The "Farmani" way, is the one described in the "Farmani et al., 2005" paper.
+// The "FarmaniEtAl2005" approach is the one described in the "Farmani et al., 2005" paper.
 // The "Combined" one is how I would have define it to simplify the search space.
 enum class ExistingPipesFormulation {
-    Farmani,
+    FarmaniEtAl2005,
     Combined
 }; // enum class ExistingPipesFormulation
 
-// Farmani
+// ExistingPipesFormulation: "FarmaniEtAl2005"
 namespace fep1 {
+constexpr std::size_t dv_size = 2;
+constexpr std::array<bool,dv_size> dv_continous_mask{false, false};
+constexpr std::size_t n_dvs_disc = dv_size;
+
 auto bounds__exis_pipes(
     InputOrderedRegistryView<WDS::Pipe> exis_pipes,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
@@ -207,8 +211,12 @@ void reset_dv__exis_pipes(
 );
 } // fep1
 
-// Combined
+// ExistingPipesFormulation: "Combined"
 namespace fep2 {
+constexpr std::size_t dv_size = 1;
+constexpr std::array<bool,dv_size> dv_continous_mask{false};
+constexpr std::size_t n_dvs_disc = dv_size;
+
 auto bounds__exis_pipes(
     InputOrderedRegistryView<WDS::Pipe> exis_pipes,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
@@ -258,7 +266,11 @@ static const std::vector<bevarmejo::anytown::new_pipe_option> new_pipe_options {
 // This pipes are already installed in the network with a "non-existing pipe diameter"
 constexpr double nonexisting_pipe_diam__ft = 0.0001;
 
-// New Pipes
+// NewPipesFormulation: "Default" only existing one
+namespace fnp1 {
+constexpr std::size_t dv_size = 1;
+constexpr std::array<bool,dv_size> dv_continous_mask{false};
+constexpr std::size_t n_dvs_disc = dv_size;
 auto bounds__new_pipes(
     InputOrderedRegistryView<WDS::Pipe> new_pipes,
     const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts
@@ -273,8 +285,11 @@ auto cost__new_pipes(
     const std::vector<double>& dvs,
     const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts
 ) -> double;
-void reset_dv__new_pipes(WDS& anytown, const std::vector<double>& dvs);
-
+void reset_dv__new_pipes(
+    WDS& anytown,
+    const std::vector<double>& dvs
+);
+} // fnp1
 
 // Pumps:
 // My preferred default pattern for the pump group (inspired by Siew et al., 2016 and modified based on early results)
@@ -337,12 +352,15 @@ constexpr double bottom_height_tank__ft = 215.0; // emergency volume between min
 // This decision variable can be coded in many ways...
 enum class NewTanksFormulation {
     Simple,
-    Farmani,
+    FarmaniEtAl2005,
     LocVolRisDiamH2DRatio // Location, Volume, Riser diameter, Height-to-Diameter Ratio
 }; // enum class NewTanksFormulation
 
-// Simple
+// NewTanksFormulation: "Simple"
 namespace fnt1 {
+constexpr std::size_t dv_size = 2;
+constexpr std::array<bool,dv_size> dv_continous_mask{false, false};
+constexpr std::size_t n_dvs_disc = dv_size;
 auto bounds__tanks(
     InputOrderedRegistryView<WDS::Junction> tank_locs,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options
@@ -364,9 +382,11 @@ void reset_dv__tanks(
 );
 } // fnt1
 
-// Farmani
+// FarmaniEtAl2005
 namespace fnt2 {
-constexpr std::size_t n_dvs = 6;
+constexpr std::size_t dv_size = 6;
+constexpr std::array<bool,dv_size> dv_continous_mask{false, false, true, true, true, true};
+constexpr std::size_t n_dvs_disc = 2;
 constexpr double tank_hmax_ub__m = 250*MperFT; // new tank maximum hydraulic head level upper boundary for optimisation
 constexpr double tank_hmax_lb__m = 200*MperFT; // same but lower boundary
 constexpr double tank_hmin_ub__m = 240*MperFT;
@@ -400,7 +420,9 @@ void reset_dv__tanks(
 
 // LocVolRisDiamH2DRatio
 namespace fnt3 {
-constexpr std::size_t n_dvs = 4;
+constexpr std::size_t dv_size = 4;
+constexpr std::array<bool,dv_size> dv_continous_mask{false, false, false, false};
+constexpr std::size_t n_dvs_disc = dv_size;
 constexpr double h2d_ratio__min = 0.9;
 constexpr double h2d_ratio__max = 1.5;
 constexpr double hd2_ratio__step = 0.1;
