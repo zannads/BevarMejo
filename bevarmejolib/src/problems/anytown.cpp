@@ -657,7 +657,7 @@ auto Problem::fitness(
 	// in the future this will be a perfect copy and I will be able to call 
 	// everything in a new thread and then simply discard it.
 
-	apply_dv(m__anytown, dvs);
+	apply_dv(dvs);
 
 	sim::solvers::epanet::HydSimSettings settings;
 
@@ -680,7 +680,7 @@ auto Problem::fitness(
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
-		reset_dv(m__anytown, dvs);
+		reset_dv(dvs);
 		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
 					std::numeric_limits<double>::max());
 	}
@@ -707,51 +707,50 @@ auto Problem::fitness(
 		break;
 	}
 	
-	reset_dv(m__anytown, dvs);
+	reset_dv(dvs);
 	return fitv;
 }
 
 // ------------------- 2nd level ------------------- //
 auto Problem::apply_dv(
-	std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown,
 	const std::vector<double>& dvs
 ) const -> void
 {
-	anytown->cache_indices();
+	m__anytown->cache_indices();
 
 	std::size_t i = 0.0;
 	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::FarmaniEtAl2005)
 	{
-		fep1::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, extract_next(70), m__exi_pipe_options);
+		fep1::apply_dv__exis_pipes(*m__anytown, __old_HW_coeffs, extract_next(70), m__exi_pipe_options);
 		i += 70;
 	}
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
 	{
-		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, extract_next(35), m__exi_pipe_options);
+		fep2::apply_dv__exis_pipes(*m__anytown, __old_HW_coeffs, extract_next(35), m__exi_pipe_options);
 		i += 35;
 	}
 
 	if (m__has_design)
 	{
-		fnp1::apply_dv__new_pipes(*anytown, extract_next(6), m__new_pipe_options);
+		fnp1::apply_dv__new_pipes(*m__anytown, extract_next(6), m__new_pipe_options);
 		i += 6;
 	}
 
 	if (m__has_operations)
 	{
-		pgo_dv::apply_dv__pumps(*anytown, extract_next(24));
+		pgo_dv::apply_dv__pumps(*m__anytown, extract_next(24));
 		i += 24;
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
-		fnt1::apply_dv__tanks(*anytown, extract_next(4), m__tank_options);
+		fnt1::apply_dv__tanks(*m__anytown, extract_next(4), m__tank_options);
 		i += 4;
 	}
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::FarmaniEtAl2005)
 	{
-		fnt2::apply_dv__tanks(*anytown, extract_next(12), m__new_pipe_options);
+		fnt2::apply_dv__tanks(*m__anytown, extract_next(12), m__new_pipe_options);
 		i += 12;
 	}
 
@@ -790,7 +789,7 @@ auto Problem::apply_dv(
 		
 		// To calculate the reliability index, since I lost the results in the internal optimization
 		// I have to apply the selected pattern to the network and run the simulation again. 
-		apply_dv__pumps(*anytown, m_pop.get_x().at(idx.front()));
+		apply_dv__pumps(*m__anytown, m_pop.get_x().at(idx.front()));
 		return;	
 	}
 	*/
@@ -1017,46 +1016,45 @@ auto fr3::of__reliability(
 }
 
 auto Problem::reset_dv(
-	std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown,
 	const std::vector<double>& dvs
 ) const -> void
 {
 	// Do the opposite operations of apply_dv 
-	anytown->cache_indices();
+	m__anytown->cache_indices();
 
 	std::size_t i = 0;
 	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::FarmaniEtAl2005)
 	{
-		fep1::reset_dv__exis_pipes(*anytown, extract_next(70), __old_HW_coeffs);
+		fep1::reset_dv__exis_pipes(*m__anytown, extract_next(70), __old_HW_coeffs);
 		i += 70;
 	}
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
 	{
-		fep2::reset_dv__exis_pipes(*anytown, extract_next(35), __old_HW_coeffs);
+		fep2::reset_dv__exis_pipes(*m__anytown, extract_next(35), __old_HW_coeffs);
 		i += 35;
 	}
 
 	if (m__has_design)
 	{
-		fnp1::reset_dv__new_pipes(*anytown, extract_next(6));
+		fnp1::reset_dv__new_pipes(*m__anytown, extract_next(6));
 		i += 6;
 	}
 
 	if (m__has_operations)
 	{
-		pgo_dv::reset_dv__pumps(*anytown, extract_next(24));
+		pgo_dv::reset_dv__pumps(*m__anytown, extract_next(24));
 		i += 24;
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
-		fnt1::reset_dv__tanks(*anytown, extract_next(4));
+		fnt1::reset_dv__tanks(*m__anytown, extract_next(4));
 		i += 4;
 	}
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::FarmaniEtAl2005)
 	{
-		fnt2::reset_dv__tanks(*anytown, extract_next(12));
+		fnt2::reset_dv__tanks(*m__anytown, extract_next(12));
 		i += 12;
 	}
 }
@@ -2444,12 +2442,12 @@ void Problem::save_solution(const std::vector<double>& pagmo_dv, const fsys::pat
 {
 	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
 
-	apply_dv(this->m__anytown, dvs);
+	apply_dv(dvs);
 
 	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
 	assert(errco <= 100);
 
-	reset_dv(this->m__anytown, dvs);
+	reset_dv(dvs);
 }
 
 void to_json(Json& j, const bevarmejo::anytown::Problem &prob)

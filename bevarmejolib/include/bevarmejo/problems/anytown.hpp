@@ -555,8 +555,8 @@ protected:
     // For fitness function:
     double cost(const WDS &anytown, const std::vector<double>& dv) const;
     
-    void apply_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
-    void reset_dv(std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown, const std::vector<double>& dvs) const;
+    void apply_dv(const std::vector<double>& dvs) const;
+    void reset_dv(const std::vector<double>& dvs) const;
 
     // Helper to transform the decision variables from pagmo to beme format
     std::vector<bool> get_continuous_dvs_mask() const;
