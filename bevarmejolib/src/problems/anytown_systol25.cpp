@@ -257,10 +257,10 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
     std::size_t s = (
         anytown::exis_pipes__el_names.size()+ // 35
         anytown::new_pipes__el_names.size()+ // 6
-        anytown::max_n_installable_tanks*anytown::fnt3::n_dvs); // 8
+        anytown::max_n_installable_tanks*anytown::fnt3::dv_size // 8
+    );
 
-    if (m__formulation == Formulation::hr)
-    {
+    if (m__formulation == Formulation::hr) {
         s += k__hours_per_day;
     }
     return std::vector<bool>(s, false);
@@ -390,7 +390,7 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
     );
     i += anytown::exis_pipes__el_names.size();
     
-    bevarmejo::anytown::apply_dv__new_pipes(
+    bevarmejo::anytown::fnp1::apply_dv__new_pipes(
         *m__anytown,
         extract_next(anytown::new_pipes__el_names.size()),
         anytown::new_pipe_options
@@ -399,11 +399,11 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
 
     bevarmejo::anytown::fnt3::apply_dv__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs), // 8
+        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size), // 8
         anytown::tank_options,
         anytown::new_pipe_options
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs;
+    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
 
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
@@ -428,7 +428,7 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
         );
         i += anytown::exis_pipes__el_names.size();
         
-        bevarmejo::anytown::apply_dv__new_pipes(
+        bevarmejo::anytown::fnp1::apply_dv__new_pipes(
             *m__ff_anytown,
             extract_next(anytown::new_pipes__el_names.size()),
             anytown::new_pipe_options
@@ -437,11 +437,11 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
 
         bevarmejo::anytown::fnt3::apply_dv__tanks(
             *m__ff_anytown,
-            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs), // 8
+            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size), // 8
             anytown::tank_options,
             anytown::new_pipe_options
         );
-        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs;
+        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
 
         // However, for the tanks, the min level must be moved to 0 so that we can simulate the fireflow events...
         // For each tank in the temp elements, set the min level to 0 and then the min volume
@@ -484,7 +484,7 @@ auto Problem::cost(const std::vector<double>& dvs) const -> double
     );
     i += anytown::exis_pipes__el_names.size();
 
-    capital_cost += bevarmejo::anytown::cost__new_pipes(
+    capital_cost += bevarmejo::anytown::fnp1::cost__new_pipes(
         *m__anytown,
         extract_next(anytown::new_pipes__el_names.size()),
         anytown::new_pipe_options
@@ -493,11 +493,11 @@ auto Problem::cost(const std::vector<double>& dvs) const -> double
 
     capital_cost += bevarmejo::anytown::fnt3::cost__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs),
+        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size),
         anytown::tank_options,
         anytown::new_pipe_options
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs;
+    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
 
     double energy_cost_per_day = bevarmejo::anytown::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
@@ -633,7 +633,7 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
     );
     i += anytown::exis_pipes__el_names.size();
     
-    bevarmejo::anytown::reset_dv__new_pipes(
+    bevarmejo::anytown::fnp1::reset_dv__new_pipes(
         *m__anytown,
         extract_next(anytown::new_pipes__el_names.size())
     );
@@ -641,9 +641,9 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
 
     bevarmejo::anytown::fnt3::reset_dv__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs)
+        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size)
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs;
+    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
 
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
@@ -667,7 +667,7 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
         );
         i += anytown::exis_pipes__el_names.size();
         
-        bevarmejo::anytown::reset_dv__new_pipes(
+        bevarmejo::anytown::fnp1::reset_dv__new_pipes(
             *m__ff_anytown,
             extract_next(anytown::new_pipes__el_names.size())
         );
@@ -675,9 +675,9 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
 
         bevarmejo::anytown::fnt3::reset_dv__tanks(
             *m__ff_anytown,
-            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs)
+            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size)
         );
-        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::n_dvs;
+        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
     }
 }
 
@@ -694,7 +694,7 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 
     append_bounds(bevarmejo::anytown::fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(anytown::exis_pipes__subnet_name), anytown::exi_pipe_options);
 
-    append_bounds(bevarmejo::anytown::bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(anytown::new_pipes__subnet_name), anytown::new_pipe_options);
+    append_bounds(bevarmejo::anytown::fnp1::bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(anytown::new_pipes__subnet_name), anytown::new_pipe_options);
 
     append_bounds(bevarmejo::anytown::fnt3::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(anytown::pos_tank_loc__subnet_name), anytown::tank_options, anytown::new_pipe_options);
 
