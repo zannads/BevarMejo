@@ -674,7 +674,7 @@ auto Problem::fitness(
 	}
 
 	// First objective is always cost for all formulations.
-	fitv[0] = cost(*m__anytown, dvs);
+	fitv[0] = cost(dvs);
 	
 	// Second objective is the of__reliability, based on the formulation
 	switch (m__reliability_obj_func_formulation)
@@ -844,14 +844,13 @@ auto Problem::apply_dv(
 }
 
 auto Problem::cost(
-	const WDS &anytown,
 	const std::vector<double> &dvs
 ) const -> double
 {
 
 	if (m__formulation == Formulation::opertns_f1) {
 		// Just the operational cost!
-		return pgo_dv::cost__energy_per_day(anytown);
+		return pgo_dv::cost__energy_per_day(*m__anytown);
 	}
 
 	// If we are here is either a design or an integrated problem, so it has design for sure
@@ -872,7 +871,7 @@ auto Problem::cost(
 		case ExistingPipesFormulation::FarmaniEtAl2005:
 			gene_size = fep1::dv_size*subnet_size;
 			capital_cost += fep1::cost__exis_pipes(
-				anytown,
+				*m__anytown,
 				curr_dv,
 				curr_dv+gene_size,
 				m__exi_pipe_options
@@ -881,7 +880,7 @@ auto Problem::cost(
 		case ExistingPipesFormulation::Combined:
 			gene_size = fep2::dv_size*subnet_size;
 			capital_cost += fep2::cost__exis_pipes(
-				anytown,
+				*m__anytown,
 				curr_dv,
 				curr_dv+gene_size,
 				m__exi_pipe_options
@@ -896,7 +895,7 @@ auto Problem::cost(
 	subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
 	gene_size = fnp1::dv_size*subnet_size;
 	capital_cost += fnp1::cost__new_pipes(
-		anytown,
+		*m__anytown,
 		curr_dv,
 		curr_dv+gene_size,
 		m__new_pipe_options
@@ -917,7 +916,7 @@ auto Problem::cost(
 		case NewTanksFormulation::Simple:
 			gene_size = fnt1::dv_size*max_n_installable_tanks;
 			capital_cost += fnt1::cost__tanks(
-				anytown,
+				*m__anytown,
 				curr_dv,
 				curr_dv+gene_size,
 				m__tank_options,
@@ -927,7 +926,7 @@ auto Problem::cost(
 		case NewTanksFormulation::FarmaniEtAl2005:
 			gene_size = fnt2::dv_size *max_n_installable_tanks;
 			capital_cost += fnt2::cost__tanks(
-				anytown,
+				*m__anytown,
 				curr_dv,
 				curr_dv+gene_size,
 				m__tank_options,
@@ -937,7 +936,7 @@ auto Problem::cost(
 		case NewTanksFormulation::LocVolRisDiamH2DRatio:
 			gene_size = fnt3::dv_size *max_n_installable_tanks;
 			capital_cost += fnt3::cost__tanks(
-				anytown,
+				*m__anytown,
 				curr_dv,
 				curr_dv+gene_size,
 				m__tank_options,
@@ -949,7 +948,7 @@ auto Problem::cost(
 	}
 	curr_dv += gene_size;
 		
-	double energy_cost_per_day = pgo_dv::cost__energy_per_day(anytown);
+	double energy_cost_per_day = pgo_dv::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
 	
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies

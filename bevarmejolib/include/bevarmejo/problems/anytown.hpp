@@ -570,7 +570,7 @@ protected:
     void load_other_data(const Json& settings, const bemeio::Paths& lookup_paths);
 
     // For fitness function:
-    double cost(const WDS &anytown, const std::vector<double>& dv) const;
+    double cost(const std::vector<double>& dv) const;
     
     void apply_dv(const std::vector<double>& dvs) const;
     void reset_dv(const std::vector<double>& dvs) const;
