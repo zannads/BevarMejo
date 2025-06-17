@@ -1136,22 +1136,20 @@ auto Problem::reset_dv(
 		{
 			case ExistingPipesFormulation::FarmaniEtAl2005:
 				gene_size = fep1::dv_size*subnet_size;
-				fep1::apply_dv__exis_pipes(
+				fep1::reset_dv__exis_pipes(
 					*m__anytown,
-					__old_HW_coeffs,
 					curr_dv,
 					curr_dv+gene_size,
-					m__exi_pipe_options
+					__old_HW_coeffs
 				);
 				break;
 			case ExistingPipesFormulation::Combined:
 				gene_size = fep2::dv_size*subnet_size;
-				fep2::apply_dv__exis_pipes(
+				fep2::reset_dv__exis_pipes(
 					*m__anytown,
-					__old_HW_coeffs,
 					curr_dv,
 					curr_dv+gene_size,
-					m__exi_pipe_options
+					__old_HW_coeffs
 				);
 				break;
 			default:
@@ -1162,11 +1160,10 @@ auto Problem::reset_dv(
 		// 2. New pipes
 		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
 		gene_size = fnp1::dv_size*subnet_size;
-		fnp1::apply_dv__new_pipes(
+		fnp1::reset_dv__new_pipes(
 			*m__anytown,
 			curr_dv,
-			curr_dv+gene_size,
-			m__new_pipe_options
+			curr_dv+gene_size
 		);
 		curr_dv += gene_size;
 	}
@@ -1174,7 +1171,7 @@ auto Problem::reset_dv(
 	// 3. Operations
 	if (m__has_operations) {
 		auto gene_size = pgo_dv::size;
-		pgo_dv::apply_dv__pumps(
+		pgo_dv::reset_dv__pumps(
 			*m__anytown,
 			curr_dv,
 			curr_dv+gene_size
@@ -1189,30 +1186,26 @@ auto Problem::reset_dv(
 		{
 			case NewTanksFormulation::Simple:
 				gene_size = fnt1::dv_size*max_n_installable_tanks;
-				fnt1::apply_dv__tanks(
+				fnt1::reset_dv__tanks(
 					*m__anytown,
 					curr_dv,
-					curr_dv+gene_size,
-					m__tank_options
+					curr_dv+gene_size
 				);
 				break;
 			case NewTanksFormulation::FarmaniEtAl2005:
 				gene_size = fnt2::dv_size *max_n_installable_tanks;
-				fnt2::apply_dv__tanks(
+				fnt2::reset_dv__tanks(
 					*m__anytown,
 					curr_dv,
-					curr_dv+gene_size,
-					m__new_pipe_options
+					curr_dv+gene_size
 				);
 				break;
 			case NewTanksFormulation::LocVolRisDiamH2DRatio:
 				gene_size = fnt3::dv_size *max_n_installable_tanks;
-				fnt3::apply_dv__tanks(
+				fnt3::reset_dv__tanks(
 					*m__anytown,
 					curr_dv,
-					curr_dv+gene_size,
-					m__tank_options,
-					m__new_pipe_options
+					curr_dv+gene_size
 				);
 				break;
 			default:
@@ -1430,7 +1423,7 @@ void pgo_dv::apply_dv__pumps(
     std::vector<double>::const_iterator end_dv)
 {
 	// A pump is on only if the dv at that time instant is >= i
-	std::size_t i = 1;
+	std::size_t i = 0;
 	for (auto&& [id, pump] : anyt_wds.pumps()) {
 		auto curr_dv = start_dv;
 		auto pattern_i = std::vector<double>(pgo_dv::size, 0.0);
@@ -1438,8 +1431,9 @@ void pgo_dv::apply_dv__pumps(
 			if (*curr_dv > (double)i) {
 				*it_pattern = 1.0;
 			}
-			assert(curr_dv <= end_dv);
+			++curr_dv;
 		}
+		assert(curr_dv == end_dv);
 		
 		// set the pattern
 		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), pattern_i.data(), pattern_i.size());
@@ -2435,6 +2429,15 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::FarmaniEtAl2005)
 	{
 		append_bounds(fnt2::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options,
+			m__new_pipe_options
+		);
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::LocVolRisDiamH2DRatio)
+	{
+		append_bounds(fnt3::bounds__tanks,
 			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
 			m__tank_options,
 			m__new_pipe_options

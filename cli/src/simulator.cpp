@@ -283,6 +283,7 @@ Simulator Simulator::parse(int argc, char *argv[])
 
 void Simulator::pre_run_tasks()
 {
+    bool a_task_has_failed = false;
     for (const auto& task : m__pre_run_tasks)
     {
         try
@@ -295,8 +296,15 @@ void Simulator::pre_run_tasks()
                 "An error happend while executing a pre-run task:\n",
                 "Task: ", std::get<0>(task), "\n",
                 e.what(), "\n");
+            a_task_has_failed = true;
         }
     }
+
+    beme_throw_if(a_task_has_failed,
+        std::runtime_error,
+        "At least an error has happend while exucuting a pre-run task:\n",
+        "See above for the details"
+    );
 }
 
 void Simulator::run()
@@ -318,6 +326,7 @@ void Simulator::run()
 
 void Simulator::post_run_tasks()
 {
+    bool a_task_has_failed = false;
     for (const auto& task : m__post_run_tasks)
     {
         try
@@ -330,8 +339,15 @@ void Simulator::post_run_tasks()
                 "An error happend while executing a post-run task:\n",
                 "Task: ", std::get<0>(task), "\n",
                 e.what(), "\n");
+            a_task_has_failed = true;
         }
     }
+
+     beme_throw_if(a_task_has_failed,
+        std::runtime_error,
+        "At least an error has happend while exucuting a pre-run task:\n",
+        "See above for the details"
+    );
 }
 
 /*----------------------------------------------------------------------------*/
