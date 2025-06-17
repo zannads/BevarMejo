@@ -196,17 +196,20 @@ auto bounds__exis_pipes(
 void apply_dv__exis_pipes(
     WDS& anytown,
     std::unordered_map<std::string, double> &old_HW_coeffs,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
 );
 auto cost__exis_pipes(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
 ) -> double;
 void reset_dv__exis_pipes(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::unordered_map<std::string, double> &old_HW_coeffs
 );
 } // fep1
@@ -224,17 +227,20 @@ auto bounds__exis_pipes(
 void apply_dv__exis_pipes(
     WDS& anytown,
     std::unordered_map<std::string, double> &old_HW_coeffs,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
 );
 auto cost__exis_pipes(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::exi_pipe_option> &ep_opts
 ) -> double;
 void reset_dv__exis_pipes(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::unordered_map<std::string, double> &old_HW_coeffs
 );
 } // fep2
@@ -277,17 +283,20 @@ auto bounds__new_pipes(
 ) -> std::pair<std::vector<double>, std::vector<double>>;
 void apply_dv__new_pipes(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts
 );
 auto cost__new_pipes(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::new_pipe_option> &np_opts
 ) -> double;
 void reset_dv__new_pipes(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 } // fnp1
 
@@ -321,14 +330,16 @@ auto bounds__pumps(
 ) -> std::pair<std::vector<double>, std::vector<double>>;
 void apply_dv__pumps(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 auto cost__energy_per_day(
     const WDS& anytown
 ) -> double;
 void reset_dv__pumps(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 } // pgo_dv
 
@@ -378,18 +389,21 @@ auto bounds__tanks(
 ) -> std::pair<std::vector<double>, std::vector<double>>;
 void apply_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options
 );
 auto cost__tanks(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options,
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double;
 void reset_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 } // fnt1
 
@@ -414,18 +428,21 @@ auto bounds__tanks(
 ) -> std::pair<std::vector<double>, std::vector<double>>;
 void apply_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 );
 auto cost__tanks(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options,
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double;
 void reset_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 } // fnt2
 
@@ -446,19 +463,22 @@ auto bounds__tanks(
 ) -> std::pair<std::vector<double>, std::vector<double>>;
 void apply_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options,
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 );
 auto cost__tanks(
     const WDS& anytown,
-    const std::vector<double>& dvs,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
     const std::vector<bevarmejo::anytown::tank_option> &tank_options,
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double;
 void reset_dv__tanks(
     WDS& anytown,
-    const std::vector<double>& dvs
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 );
 }
 

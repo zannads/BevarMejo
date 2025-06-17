@@ -377,70 +377,95 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
 {
     m__anytown->cache_indices();
 
-    // Helper Lambda to iterate over the dv
-    std::size_t i = 0.0;
-	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
+    // For each decision variable group (existing pipes, new pipes, etc)
+    // Do the same operations:
+    // (gene_size) How many dvs are in that group
+    // call the function from curr_dv to curr_dv+gene_size
+    // advance the curr_dv
+    std::size_t gene_size = 0;
+    auto curr_dv = dvs.begin();
 
+    // 1. Existing pipes:
+    gene_size = anytown::fep2::dv_size*anytown::exis_pipes__el_names.size();
     bevarmejo::anytown::fep2::apply_dv__exis_pipes(
         *m__anytown,
         __old_HW_coeffs,
-        extract_next(anytown::exis_pipes__el_names.size()),
+        curr_dv,
+        curr_dv+gene_size,
         anytown::exi_pipe_options
     );
-    i += anytown::exis_pipes__el_names.size();
+    curr_dv += gene_size;
     
+    // 2. New pipes
+    gene_size = anytown::fnp1::dv_size*anytown::new_pipes__el_names.size();
     bevarmejo::anytown::fnp1::apply_dv__new_pipes(
         *m__anytown,
-        extract_next(anytown::new_pipes__el_names.size()),
+        curr_dv,
+        curr_dv+gene_size,
         anytown::new_pipe_options
     );
-    i += anytown::new_pipes__el_names.size();
+    curr_dv += gene_size;
 
+    // 3. Tanks
+    gene_size = anytown::fnt3::dv_size*anytown::max_n_installable_tanks;
     bevarmejo::anytown::fnt3::apply_dv__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size), // 8
+        curr_dv,
+        curr_dv+gene_size,
         anytown::tank_options,
         anytown::new_pipe_options
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
+    curr_dv += gene_size;
 
-    // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
+    // (4.) Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
     {
+        gene_size = anytown::pgo_dv::size;
         anytown::pgo_dv::apply_dv__pumps(
             *m__anytown,
-            extract_next(anytown::pgo_dv::size)
+            curr_dv,
+            curr_dv+gene_size
         );
-        i += anytown::pgo_dv::size;
+        curr_dv += gene_size;
     }
 
     // In the firefighting case I have to apply the dvs also to the network used to simulate the fire events
     if (m__formulation == Formulation::fr)
     {
         m__ff_anytown->cache_indices();
-        i = 0;
+        curr_dv = dvs.begin();
+
+        // 1. Existing pipes:
+        gene_size = anytown::fep2::dv_size*anytown::exis_pipes__el_names.size();
         bevarmejo::anytown::fep2::apply_dv__exis_pipes(
             *m__ff_anytown,
             __old_HW_coeffs,
-            extract_next(anytown::exis_pipes__el_names.size()),
+            curr_dv,
+            curr_dv+gene_size,
             anytown::exi_pipe_options
         );
-        i += anytown::exis_pipes__el_names.size();
+        curr_dv += gene_size;
         
+        // 2. New pipes
+        gene_size = anytown::fnp1::dv_size*anytown::new_pipes__el_names.size();
         bevarmejo::anytown::fnp1::apply_dv__new_pipes(
             *m__ff_anytown,
-            extract_next(anytown::new_pipes__el_names.size()),
+            curr_dv,
+            curr_dv+gene_size,
             anytown::new_pipe_options
         );
-        i += anytown::new_pipes__el_names.size();
+        curr_dv += gene_size;
 
+        // 3. Tanks
+        gene_size = anytown::fnt3::dv_size*anytown::max_n_installable_tanks;
         bevarmejo::anytown::fnt3::apply_dv__tanks(
             *m__ff_anytown,
-            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size), // 8
+            curr_dv,
+            curr_dv+gene_size,
             anytown::tank_options,
             anytown::new_pipe_options
         );
-        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
+        curr_dv += gene_size;
 
         // However, for the tanks, the min level must be moved to 0 so that we can simulate the fireflow events...
         // For each tank in the temp elements, set the min level to 0 and then the min volume
@@ -473,30 +498,42 @@ auto Problem::cost(const std::vector<double>& dvs) const -> double
     // Capital cost of interventions plus operational cost
     double capital_cost = 0.0;
 	
-	std::size_t i = 0;
-	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
+	std::size_t gene_size = 0;
+    auto curr_dv = dvs.begin();
 
+    // 1. Existing pipes:
+    gene_size = anytown::fep2::dv_size*anytown::exis_pipes__el_names.size();
     capital_cost += bevarmejo::anytown::fep2::cost__exis_pipes(
         *m__anytown,
-        extract_next(anytown::exis_pipes__el_names.size()),
+        curr_dv,
+        curr_dv+gene_size,
         anytown::exi_pipe_options
     );
-    i += anytown::exis_pipes__el_names.size();
-
+    curr_dv += gene_size;
+        
+    // 2. New pipes
+    gene_size = anytown::fnp1::dv_size*anytown::new_pipes__el_names.size();
     capital_cost += bevarmejo::anytown::fnp1::cost__new_pipes(
         *m__anytown,
-        extract_next(anytown::new_pipes__el_names.size()),
+        curr_dv,
+        curr_dv+gene_size,
         anytown::new_pipe_options
     );
-    i += anytown::new_pipes__el_names.size();
+    curr_dv += gene_size;
 
+    // 3. Tanks
+    gene_size = anytown::fnt3::dv_size*anytown::max_n_installable_tanks;
     capital_cost += bevarmejo::anytown::fnt3::cost__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size),
+        curr_dv,
+        curr_dv+gene_size,
         anytown::tank_options,
         anytown::new_pipe_options
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
+    curr_dv += gene_size;
+
+    // No cost is associated with the fireflow condition and the "cost" of operations
+    // Is extracted as the energy cost of the network...
 
     double energy_cost_per_day = bevarmejo::anytown::pgo_dv::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
@@ -621,62 +658,81 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
 {
     m__anytown->cache_indices();
 
-    // Helper Lambda to iterate over the dv
-    std::size_t i = 0.0;
-    auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
+    std::size_t gene_size = 0;
+    auto curr_dv = dvs.begin();
 
+    // 1. Existing pipes:
+    gene_size = anytown::fep2::dv_size*anytown::exis_pipes__el_names.size();
     bevarmejo::anytown::fep2::reset_dv__exis_pipes(
         *m__anytown,
-        extract_next(anytown::exis_pipes__el_names.size()),
+        curr_dv,
+        curr_dv+gene_size,
         __old_HW_coeffs
     );
-    i += anytown::exis_pipes__el_names.size();
-    
+    curr_dv += gene_size;
+        
+    // 2. New pipes
+    gene_size = anytown::fnp1::dv_size*anytown::new_pipes__el_names.size();
     bevarmejo::anytown::fnp1::reset_dv__new_pipes(
         *m__anytown,
-        extract_next(anytown::new_pipes__el_names.size())
+        curr_dv,
+        curr_dv+gene_size
     );
-    i += anytown::new_pipes__el_names.size();
+    curr_dv += gene_size;
 
+    // 3. Tanks
+    gene_size = anytown::fnt3::dv_size*anytown::max_n_installable_tanks;
     bevarmejo::anytown::fnt3::reset_dv__tanks(
         *m__anytown,
-        extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size)
+        curr_dv,
+        curr_dv+gene_size
     );
-    i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
+    curr_dv += gene_size;
 
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
     if (m__formulation == Formulation::hr)
     {
+        gene_size = anytown::pgo_dv::size;
         bevarmejo::anytown::pgo_dv::reset_dv__pumps(
             *m__anytown,
-            extract_next(anytown::pgo_dv::size)
+            curr_dv,
+            curr_dv+gene_size
         );
-        i += anytown::pgo_dv::size;
+        curr_dv += gene_size;
     }
 
     if (m__formulation == Formulation::fr)
     {
         m__ff_anytown->cache_indices();
-        i = 0.0;
+        curr_dv = dvs.begin();
 
+        // 1. Existing pipes:
+        gene_size = anytown::fep2::dv_size*anytown::exis_pipes__el_names.size();
         bevarmejo::anytown::fep2::reset_dv__exis_pipes(
             *m__ff_anytown,
-            extract_next(anytown::exis_pipes__el_names.size()),
+            curr_dv,
+            curr_dv+gene_size,
             __old_HW_coeffs
         );
-        i += anytown::exis_pipes__el_names.size();
+        curr_dv += gene_size;
         
+        // 2. New pipes
+        gene_size = anytown::fnp1::dv_size*anytown::new_pipes__el_names.size();
         bevarmejo::anytown::fnp1::reset_dv__new_pipes(
             *m__ff_anytown,
-            extract_next(anytown::new_pipes__el_names.size())
+            curr_dv,
+            curr_dv+gene_size
         );
-        i += anytown::new_pipes__el_names.size();
+        curr_dv += gene_size;
 
+        // 3. Tanks
+        gene_size = anytown::fnt3::dv_size*anytown::max_n_installable_tanks;
         bevarmejo::anytown::fnt3::reset_dv__tanks(
             *m__ff_anytown,
-            extract_next(bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size)
+            curr_dv,
+            curr_dv+gene_size
         );
-        i += bevarmejo::anytown::max_n_installable_tanks*anytown::fnt3::dv_size;
+        curr_dv += gene_size;
     }
 }
 
