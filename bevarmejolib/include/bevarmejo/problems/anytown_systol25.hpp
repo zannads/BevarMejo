@@ -63,7 +63,7 @@ public:
     std::vector<double> fitness(const std::vector<double>& dvs) const;
 
     // Implementation of the box bounds.
-    std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
+    std::pair<std::vector<double>, std::vector<double>> get_bounds() const override;
 
     void save_solution(const std::vector<double>& dvs, const fsys::path& out_file) const;
 
