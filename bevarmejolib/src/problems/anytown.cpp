@@ -1231,9 +1231,7 @@ void fep1::apply_dv__exis_pipes(
     std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs)
 {
-	assert(dvs.size() == 2*anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1311,7 +1309,7 @@ void fep1::apply_dv__exis_pipes(
 			new_pipe.roughness(bevarmejo::anytown::coeff_HW_new);
 		}
 	}
-	assert(curr_dv == dvs.end());
+	assert(curr_dv == end_dv);
 	return;
 }
 void fep2::apply_dv__exis_pipes(
@@ -1321,9 +1319,7 @@ void fep2::apply_dv__exis_pipes(
     std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs)
 {
-	assert(dvs.size() == anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 
 	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
@@ -1397,19 +1393,19 @@ void fep2::apply_dv__exis_pipes(
 			new_pipe.roughness(bevarmejo::anytown::coeff_HW_new);
 		}
 	}
-	assert(curr_dv == dvs.end());
+	assert(curr_dv == end_dv);
 	return;
 }
 
 void fnp1::apply_dv__new_pipes(
 	WDS &anyt_wds,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs)
 {
-    assert(dvs.size() == anyt_wds.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
+    auto curr_dv = start_dv;
 
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
 		std::size_t alt_option = *curr_dv++;	
 
@@ -1423,23 +1419,35 @@ void fnp1::apply_dv__new_pipes(
 		std::cout << "New pipe with ID " << id << " installed with diam of " << diameter__in << " in (" <<diameter__in*MperFT/12*1000 <<" mm)\n";
 #endif
 	}
+
+	assert(curr_dv == end_dv);
+	return;
 }
 
 void pgo_dv::apply_dv__pumps(
 	WDS& anyt_wds,
 	std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,)
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == 24); // 24 hours x [npr]
-
-	auto patterns = decompose_pumpgroup_pattern(dvs, anyt_wds.pumps().size());
-	std::size_t i = 0;
+	// A pump is on only if the dv at that time instant is >= i
+	std::size_t i = 1;
 	for (auto&& [id, pump] : anyt_wds.pumps()) {
+		auto curr_dv = start_dv;
+		auto pattern_i = std::vector<double>(pgo_dv::size, 0.0);
+		for (auto it_pattern = pattern_i.begin(); it_pattern != pattern_i.end(); ++it_pattern) {
+			if (*curr_dv > (double)i) {
+				*it_pattern = 1.0;
+			}
+			assert(curr_dv <= end_dv);
+		}
+		
 		// set the pattern
-		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), patterns[i].data(), patterns[i].size());
+		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), pattern_i.data(), pattern_i.size());
 		assert(errorcode <= 100);
 		++i;
 	}
+
+	return;
 }
 
 auto fnt1::apply_dv__tanks(
@@ -1449,12 +1457,10 @@ auto fnt1::apply_dv__tanks(
 	const std::vector<bevarmejo::anytown::tank_option> &tank_option
 ) -> void
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1561,6 +1567,9 @@ auto fnt1::apply_dv__tanks(
 		" Diam ", diam_m, "\n");
 #endif
 	}
+	
+	assert(curr_dv == end_dv);
+	return;
 }
 
 auto fnt2::apply_dv__tanks(
@@ -1580,12 +1589,10 @@ auto fnt2::apply_dv__tanks(
 	// 6. (continuous) bottom of the tank [Elevtion = 5. - 6.] 
 	// We do it twice because we can install 2
 
-	assert(dvs.size() == fnt2::dv_size*bevarmejo::anytown::max_n_installable_tanks);
-
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t riser_dv = *curr_dv++;
@@ -1689,6 +1696,9 @@ auto fnt2::apply_dv__tanks(
 		" Diam ", tank_diam__m, "\n");
 #endif
 	}
+
+	assert(curr_dv == end_dv);
+	return;
 }
 
 auto anytown::fnt3::apply_dv__tanks(
@@ -1710,12 +1720,10 @@ auto anytown::fnt3::apply_dv__tanks(
 	// 3. (discrete) Riser Diameter: index for the pipe options indicating the riser diameter
 	// 4. (discrete) Height-to-Diameter ratio
 
-	assert(dvs.size() == anytown::fnt3::dv_size*bevarmejo::anytown::max_n_installable_tanks);
-
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t tank_loc_dv = *curr_dv++;
@@ -1858,6 +1866,9 @@ auto anytown::fnt3::apply_dv__tanks(
 		" Diam ", diam__m, "\n");
 #endif
     }
+
+	assert(curr_dv == end_dv);
+	return;
 }
 
 
@@ -1869,11 +1880,9 @@ auto fep1::cost__exis_pipes(
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == 2*anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
 	double capital_cost = 0.0;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1882,7 +1891,7 @@ auto fep1::cost__exis_pipes(
 		if (action_type == 0) // no action
 			continue;
 		
-		bool city = anytown.id_sequence("city_pipes").contains(id);
+		bool city = anytown.id_sequence(city_pipes__subnet_name).contains(id);
 		double pipe_cost_per_ft = 0.0;
 
 		if (action_type == 1) // clean
@@ -1914,7 +1923,8 @@ auto fep1::cost__exis_pipes(
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 		// again I save the length in mm, but the table is in $/ft
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 auto fep2::cost__exis_pipes(
@@ -1924,11 +1934,9 @@ auto fep2::cost__exis_pipes(
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
 	double capital_cost = 0.0;
 	
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1937,7 +1945,7 @@ auto fep2::cost__exis_pipes(
 		if (action_type == 0) // no action
 			continue;
 
-		bool city = anytown.id_sequence("city_pipes").contains(id);
+		bool city = anytown.id_sequence(city_pipes__subnet_name).contains(id);
 		double pipe_cost_per_ft = 0.0;
 
 		if (action_type == 1) // clean
@@ -1965,23 +1973,24 @@ auto fep2::cost__exis_pipes(
 
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
 auto fnp1::cost__new_pipes(
 	const WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
-	
 	// 6 pipes x [prc]
 	// This must be installed, thus minimum cost will never be 0.
 	double capital_cost = 0.0;
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
 		std::size_t alt_option = *curr_dv++;
 		
@@ -1989,6 +1998,7 @@ auto fnp1::cost__new_pipes(
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value();
 	}
 
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
@@ -2014,17 +2024,16 @@ auto pgo_dv::cost__energy_per_day(
 
 auto fnt1::cost__tanks(
 	const WDS& anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::tank_option> &tank_option,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	double capital_cost = 0.0;
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -2046,6 +2055,8 @@ auto fnt1::cost__tanks(
 
 		already_installed_tanks.insert(new_tank_loc_shift);
 	}
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
@@ -2057,7 +2068,6 @@ auto fnt2::cost__tanks(
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double
 {
-	assert(dvs.size() == fnt2::dv_size*bevarmejo::anytown::max_n_installable_tanks);
 	assert(tank_options.size()>2); // otherwise I can't make the interpolation
 	assert(new_pipes_options.size() > 1);
 
@@ -2112,7 +2122,7 @@ auto fnt2::cost__tanks(
 			
 			// The riser diameter is defined by the first decison variable (once you removed the do-nothing option)
 			std::size_t pos = 0 + t*fnt2::dv_size;
-			auto riser_diam_option_idx = dvs[pos]-1;
+			std::size_t riser_diam_option_idx = *(start_dv+pos)-1.0;
 
 			capital_cost += new_pipes_options.at(riser_diam_option_idx).cost__per_ft*bevarmejo::anytown::riser_length__ft;
 		}
@@ -2129,8 +2139,6 @@ auto anytown::fnt3::cost__tanks(
     const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double
 {
-    assert(dvs.size() == anytown::fnt3::dv_size*bevarmejo::anytown::max_n_installable_tanks);
-
     // The cost of installing a tank is independent of the location and needs to
     // take into account only two aspects: its volume and the riser cost.
     // I count the cost of the tank even if it was not installed, so that solutions
@@ -2140,7 +2148,7 @@ auto anytown::fnt3::cost__tanks(
     
     double capital_cost = 0.0;
 	
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t tank_loc_dv = *curr_dv++;
@@ -2154,6 +2162,8 @@ auto anytown::fnt3::cost__tanks(
 		
 		capital_cost += new_pipes_options.at(riser_diam_opt_idx).cost__per_ft*bevarmejo::anytown::riser_length__ft;
 	}
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
@@ -2162,14 +2172,11 @@ auto anytown::fnt3::cost__tanks(
 // ------------------- reset_dv ------------------- //
 void fep1::reset_dv__exis_pipes(
 	WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::unordered_map<std::string, double> &old_HW_coeffs)
 {
-	assert(dvs.size() == 2*anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
-	auto curr_dv = dvs.begin();
-
-	// 1. existing pipes
+	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{	
 		std::size_t action_type = *curr_dv++;
@@ -2202,18 +2209,17 @@ void fep1::reset_dv__exis_pipes(
 			anytown.cache_indices();
 		}
 	}
-	assert(curr_dv == dvs.end());
+	
+	assert(curr_dv == end_dv);
 	return;
 }
 void fep2::reset_dv__exis_pipes(
 	WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::unordered_map<std::string, double> &old_HW_coeffs)
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size());
-
-	auto curr_dv = dvs.begin();
-
+	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t dv = *curr_dv++;
@@ -2246,19 +2252,18 @@ void fep2::reset_dv__exis_pipes(
 			anytown.cache_indices();
 		}
 	}
-	assert(curr_dv == dvs.end());
+	
+	assert(curr_dv == end_dv);
 	return;
 }
 
 void fnp1::reset_dv__new_pipes(
 	WDS& anytown,
 	std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,)
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
-
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
 		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::nonexisting_pipe_diam__ft);
 		assert(errorcode <= 100);
@@ -2270,7 +2275,7 @@ void fnp1::reset_dv__new_pipes(
 void pgo_dv::reset_dv__pumps(
 	WDS& anytown,
 	std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,)
+    std::vector<double>::const_iterator end_dv)
 {
 	for (std::size_t i = 0; i < 3; ++i)
 	{
@@ -2289,13 +2294,11 @@ void pgo_dv::reset_dv__pumps(
 void fnt1::reset_dv__tanks(
 	WDS& anytown,
 	std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,)
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -2321,18 +2324,17 @@ void fnt1::reset_dv__tanks(
 
 		already_installed_tanks.insert(new_tank_loc_shift);
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return;
 }
 
 auto fnt2::reset_dv__tanks(
 	WDS& anytown,
 	std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,
+    std::vector<double>::const_iterator end_dv
 ) -> void
 {
-	assert(dvs.size() == fnt2::dv_size*bevarmejo::anytown::max_n_installable_tanks);
-
 	auto& temp_elems = anytown.id_sequence(label::__temp_elems);
 	for (std::size_t i = max_n_installable_tanks; i; --i)
 	{
@@ -2356,11 +2358,9 @@ auto fnt2::reset_dv__tanks(
 auto anytown::fnt3::reset_dv__tanks(
     WDS& a_anytown_sys,
     std::vector<double>::const_iterator start_dv,
-    std::vector<double>::const_iterator end_dv,
+    std::vector<double>::const_iterator end_dv
 ) -> void
 {
-    assert(dvs.size() == anytown::fnt3::dv_size*bevarmejo::anytown::max_n_installable_tanks);
-
     auto& temp_elems = a_anytown_sys.id_sequence(label::__temp_elems);
 	for (std::size_t i = max_n_installable_tanks; i; --i)
 	{
@@ -2396,31 +2396,49 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::FarmaniEtAl2005)
 	{
-		append_bounds(fep1::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name), m__exi_pipe_options);
+		append_bounds(fep1::bounds__exis_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name),
+			m__exi_pipe_options
+		);
 	}
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
 	{
-		append_bounds(fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name), m__exi_pipe_options);
+		append_bounds(fep2::bounds__exis_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name),
+			m__exi_pipe_options
+		);
 	}
 
 	if (m__has_design)
 	{
-		append_bounds(fnp1::bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("new_pipes"), m__new_pipe_options);
+		append_bounds(fnp1::bounds__new_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name),
+			m__new_pipe_options
+		);
 	}
 
 	if (m__has_operations)
 	{
-		append_bounds(pgo_dv::bounds__pumps, std::as_const(*m__anytown).pumps());
+		append_bounds(pgo_dv::bounds__pumps,
+			std::as_const(*m__anytown).pumps()
+		);
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
-		append_bounds(fnt1::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options);
+		append_bounds(fnt1::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options
+		);
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::FarmaniEtAl2005)
 	{
-		append_bounds(fnt2::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options, m__new_pipe_options);
+		append_bounds(fnt2::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options,
+			m__new_pipe_options
+		);
 	}
 
 	// We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
