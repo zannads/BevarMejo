@@ -1111,6 +1111,8 @@ auto fr3::of__reliability(
 			}
 		}
 	}
+	// With the velocity violation written like this we can a violation > 1 or even 2.
+	// So the objective function is not really bounded by the 2.
 	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ? 0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
 	
 	// We extract the pressure violation and todini's rel index from the value
