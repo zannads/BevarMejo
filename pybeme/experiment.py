@@ -5,6 +5,12 @@ import re
 
 import numpy as np
 import pandas as pd
+# If pygmo is available we can have extra utilities about the pareto fronts and hypervolumes
+try:
+    import pygmo as pg
+    pygmo_available = True
+except ImportError:
+    pygmo_available = False
 
 from pybeme.simulator import Simulator
 
@@ -219,6 +225,68 @@ class Experiment:
             self.__nadirs = pd.DataFrame.from_dict(nadirs, orient='index')
 
         return self.__nadirs
+
+    if pygmo_available:
+        def hypervolumes(self, ref_point) -> pd.DataFrame:
+            """
+            Compute hypervolume for each island and generation combination.
+            
+            Args:
+                ref_point: Reference point for hypervolume calculation. Can be:
+                        - A single list/array: same reference point for all islands
+                        - A dict: {island_name: ref_point_array} for per-island reference points
+                        - A pandas DataFrame: with islands as index and ref point components as columns
+            
+            Returns:
+                pd.DataFrame: Multi-index DataFrame with index ['island', 'generation'] and 'hypervolume' column
+            """
+            fvs = self.fitness_vectors
+        
+            # Handle different ref_point input formats
+            if isinstance(ref_point, dict):
+                # Dictionary format: {island_name: ref_point_array}
+                ref_points = ref_point
+            elif isinstance(ref_point, pd.DataFrame):
+                # DataFrame format: convert to dictionary
+                ref_points = {island: row.values for island, row in ref_point.iterrows()}
+            else:
+                # Single ref_point for all islands
+                ref_points = {}
+                for island in fvs.index.get_level_values('island').unique():
+                    ref_points[island] = ref_point
+            
+            # Lists to store index tuples and hypervolume values for the final multi-index dataframe
+            index_list = []
+            hypervolume_values = []
+            
+            # Group by island and generation
+            for (island, generation), group in fvs.groupby(['island', 'generation']):
+                
+                fitness_array = group.to_numpy()
+                
+                # Get reference point for this island
+                if island not in ref_points:
+                    raise ValueError(f"No reference point provided for island '{island}'")
+                
+                island_ref_point = ref_points[island]
+
+                # Remove points where ANY objective is worse than (greater than) the reference point 
+                fitness_array = fitness_array[np.all(fitness_array <= island_ref_point, axis=1)]
+
+                if len(fitness_array) == 0:
+                    index_list.append((island, generation))
+                    hypervolume_values.append(0.0)
+                    continue
+
+                # Compute hypervolume with the island-specific reference point
+                hv = pg.hypervolume(fitness_array)
+                hypervolume_value = hv.compute(island_ref_point)
+                
+                index_list.append((island, generation))
+                hypervolume_values.append(hypervolume_value)
+            
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation'])
+            return pd.DataFrame({'hypervolume': hypervolume_values}, index=multi_index)
 
     def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
         if generation_index is None:
