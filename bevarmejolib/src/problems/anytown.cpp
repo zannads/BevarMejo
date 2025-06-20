@@ -286,7 +286,13 @@ Problem::Problem(
 		beme_throw(std::invalid_argument, "Impossible to construct the anytown Problem.",
 			"The provided Anytown formulation is not yet implemented.");
 	}
-	m__name = bemeio::log::nname::beme_l+problem_name+"::"+std::string(a_formulation_str);
+	m__name = (
+        bemeio::other::nsp__beme +
+        bemeio::other::sep__namespaces +
+        problem_name + 
+        bemeio::other::sep__namespaces +
+        std::string(a_formulation_str)
+    );
 
 	load_network(settings, lookup_paths);
 

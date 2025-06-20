@@ -67,7 +67,13 @@ Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const 
         "The provided Anytown SysTol25 formulation is not recognised.",
         "Formulation: ", a_ud_formulation);
     }
-    m__name = bemeio::log::nname::beme_l+problem_name+"::"+std::string(a_ud_formulation);
+    m__name = (
+        bemeio::other::nsp__beme +
+        bemeio::other::sep__namespaces +
+        problem_name + 
+        bemeio::other::sep__namespaces +
+        std::string(a_ud_formulation)
+    );
 
     load_networks(settings, lookup_paths);
     

@@ -526,11 +526,11 @@ void save_inp(Simulator &simr)
 {
     if (simr.problem().is<bevarmejo::anytown::Problem>())
     {
-        simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
+        simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + io::other::ext__inp);
     }
     else if (simr.problem().is<bevarmejo::anytown_systol25::Problem>())
     {
-        simr.problem().extract<bevarmejo::anytown_systol25::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
+        simr.problem().extract<bevarmejo::anytown_systol25::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + io::other::ext__inp);
     }
     else
     {
