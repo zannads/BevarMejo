@@ -92,7 +92,8 @@ public:
     const std::string& name() const;
 
     const std::vector<double>& decision_variables() const;
-    
+
+    pagmo::problem& problem();
     const pagmo::problem& problem() const;
 
     const std::vector<double>& expected_fitness_vector() const;

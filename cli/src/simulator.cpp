@@ -200,6 +200,8 @@ void save_inp(Simulator& simr);
 
 void save_metrics(Simulator& simr);
 
+void run_simulator(Simulator& simr);
+
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
 /*----------------------------------------------------------------------------*/
@@ -215,6 +217,10 @@ const std::vector<double>& Simulator::decision_variables() const
     return m__dvs;
 }
 
+auto Simulator::problem() -> pagmo::problem& 
+{
+    return m__p;
+}
 const pagmo::problem& Simulator::problem() const
 {
     return m__p;
@@ -275,19 +281,49 @@ Simulator Simulator::parse(int argc, char *argv[])
         simulator.m__post_run_tasks.emplace_back("Check correctness", check_correctness, "");
     }
 
-    // 3. Check the flags
-    // 3.1 save inp file
+    // 3. Check the flags for additional tasks.
+    // Some of them may require a second run of the simulator (so that the first
+    // one doesn't have any additional overhead and can be used to time the simulation)
+    bool second_run_needed = false;
     for (int i = 2; i < argc; ++i)
     {
         auto arg = std::string(argv[i]);
         if (arg == "--saveinp")
         {
-            simulator.m__post_run_tasks.emplace_back("Save inp file", save_inp, "");
+            simulator.m__post_run_tasks.emplace_back(
+                "Save inp file",
+                save_inp,
+                ""
+            );
+            second_run_needed = true;
         }
         else if (arg == "--savefv")
         {
-            simulator.m__post_run_tasks.emplace_back("Save results", save_results, "");
+            simulator.m__post_run_tasks.emplace_back(
+                "Save results",
+                save_results,
+                ""
+            );
+            // No need for a second run there because in the first one I save them already in "m__res".
         }
+        else if (arg == "--savemetrics")
+        {
+            simulator.m__post_run_tasks.emplace_back(
+                "Save evaluator metrics",
+                save_metrics,
+                ""
+            );
+            second_run_needed = true;
+        }
+    }
+
+    if (second_run_needed)
+    {
+        simulator.m__post_run_tasks.emplace_back(
+            "Second simulator run",
+            run_simulator,
+            "Run the simulator again to save additional information"
+        );
     }
 
     return std::move(simulator);
@@ -531,7 +567,10 @@ void save_results(Simulator &simr)
     res_file.close();
 
     bevarmejo::io::stream_out(std::cout,
-        "Results saved in: ", (fsys::current_path()/fsys::path(filename)).string());
+        "Results saved in: ", 
+        (fsys::current_path()/fsys::path(filename)).string(),
+        "\n"
+    );
 }
 
 void save_inp(Simulator &simr)
@@ -557,4 +596,38 @@ void save_inp(Simulator &simr)
         "EPANET '.inp' file saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".inp\n")).string());
 }
 
+void save_metrics(Simulator& simr)
+{
+    // Lambda to extract and call "enable_save_metrics" on a unknown derived WDS::Problem object
+    auto try_extract_and_save = []<typename T>(pagmo::problem& prob, const std::string& name) -> bool {
+        if (prob.is<T>()) {
+            prob.extract<T>()->enable_save_metrics(name);
+            return true;
+        }
+        return false;
+    };
+    
+    // Helper to call with explicit template parameter
+    auto try_type = [&]<typename T>() {
+        return try_extract_and_save.template operator()<T>(simr.problem(), simr.name());
+    };
+    
+    if (try_type.template operator()<bevarmejo::anytown::Problem>() ||
+        try_type.template operator()<bevarmejo::anytown_systol25::Problem>() ||
+        try_type.template operator()<bevarmejo::hanoi::fbiobj::Problem>()) {
+        return;
+    }
+    
+    // If we are here, it didn't work in any of the types...
+    beme_throw(std::runtime_error,
+        "Impossible to enable the saving of the WDS Problem metrics.",
+        "The problem type is not supported.",
+        "Problem type: ", simr.problem().get_name()
+    );
+}
+
+void run_simulator(Simulator& simr)
+{
+    simr.run();
+}
 } // namespace bevarmejo
