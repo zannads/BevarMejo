@@ -8,13 +8,6 @@ namespace bevarmejo {
 
 class WDSProblem {
 
-protected:
-    std::string m__name;
-    std::string m__extra_info;
-
-    // Decision Variables Adapter
-    PagmoDecisionVectorAdapter m__dv_adapter;
-
 public:
     WDSProblem();
     WDSProblem(const std::string& name, const std::string& extra_info="");
@@ -60,8 +53,31 @@ protected:
     virtual std::vector<bool> get_continuous_dvs_mask() const;
 
 public:
-    // Number of integer decision variables.
+    // Number of continuous decision variables.
     std::vector<double>::size_type get_ncx() const;
+
+/*----------------------*/
+// UTILITIES
+/*----------------------*/
+public:
+    WDSProblem& enable_save_inp(std::string a_inp_base_filename);
+    WDSProblem& disable_save_inp() noexcept;
+
+    WDSProblem& enable_save_metrics(std::string a_metrics_filename);
+    WDSProblem& disable_save_metrics() noexcept;
+
+protected:
+    std::string m__name;
+    std::string m__extra_info;
+
+    // Decision Variables Adapter
+    PagmoDecisionVectorAdapter m__dv_adapter;
+
+    // Base filename for when it is required to save the inp files
+    std::string m__inp_base_filename;
+
+    // Filename to save the metrics
+    std::string m__metrics_filename;
 
 }; // class WDSProblem
 
