@@ -258,7 +258,11 @@ void Experiment::build_island(const Json &config)
     m__archipelago.push_back(algo, pop); 
 
     // The name should be built from the string and extracting the placeholders (e.g., ${seed})
-    m__islands_names.push_back(std::to_string(pop.get_seed()));
+    auto island_name = config.value(io::key::name.as_in(config), std::string("${population_seed}"));
+    if (island_name == std::string("${population_seed}")) {
+        island_name = std::to_string(pop.get_seed());
+    }
+    m__islands_names.push_back(island_name);
 }
 
 void Experiment::build_islands(const Json &typconfig, const Json &specs, const std::size_t rand_starts)
