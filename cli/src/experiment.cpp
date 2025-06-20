@@ -295,9 +295,9 @@ void Experiment::build_islands(const Json &typconfig, const Json &specs, const s
         if (!specs.empty())
         {
             if (specs.is_object())
-                config.update(specs);
+                config.update(specs, /*merge_objects=*/ true);
             else
-                config.update(specs[i]);
+                config.update(specs[i], /*merge_objects=*/ true);
         }
         
         for (std::size_t j = 0; j < rand_starts; ++j)
