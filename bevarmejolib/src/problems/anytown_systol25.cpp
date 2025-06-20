@@ -286,6 +286,28 @@ auto Problem::fitness(
 
 	const auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
+    if (!m__inp_base_filename.empty()) {
+		auto out_file = fsys::current_path()/fsys::path(
+			m__inp_base_filename + 
+			bemeio::other::sep__beme_filenames +
+			m__anytown_filename.substr(0, m__anytown_filename.size()-4) + // Remove the extension
+			bemeio::other::sep__beme_filenames +
+			"EPS" +
+			bemeio::other::sep__beme_filenames +
+			"0" +
+			bemeio::other::ext__inp
+		);
+
+		int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
+		assert(errco <= 100);
+
+		bevarmejo::io::stream_out(std::cout,
+			"EPANET '.inp' file saved in: ",
+			out_file.string(),
+			"\n"
+		);
+	}
+
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
@@ -609,6 +631,7 @@ auto Problem::firefighting_reliability_perspective() const -> double
     // Let's note that if a simulation fails, we regard the entire simulation as failed to not make the EA exploit weird behaviours that could emerge.
     double ff_rel = 0.0;
     
+    unsigned int ff_test_idx = 0;
     for (const auto& ff_test : anytown::fireflow_test_values)
     {
         // 1. Apply the additional demand;
@@ -634,7 +657,28 @@ auto Problem::firefighting_reliability_perspective() const -> double
 
         // 2. --------------------
         const auto results = sim::solvers::epanet::solve_hydraulics(*m__ff_anytown, m__ffsim_settings);
+        if (!m__inp_base_filename.empty()) {
+            auto out_file = fsys::current_path()/fsys::path(
+                m__inp_base_filename + 
+                bemeio::other::sep__beme_filenames +
+                m__ff_anytown_filename.substr(0, m__ff_anytown_filename.size()-4) + // Remove the extension
+                bemeio::other::sep__beme_filenames +
+                "FF-" + std::string(ff_test.junction_name) + 
+                bemeio::other::sep__beme_filenames +
+                "0" +
+                bemeio::other::ext__inp
+            );
 
+            int errco = EN_saveinpfile(this->m__ff_anytown->ph_, out_file.string().c_str());
+            assert(errco <= 100);
+
+            bevarmejo::io::stream_out(std::cout,
+                "EPANET '.inp' file saved in: ",
+                out_file.string(),
+                "\n"
+            );
+        }
+        
         // 3. --------------------
         // Extract the values, but only if it was actually fully feasible. Otherwise, highest penalty (aka + 0, aka do nothing)
         // It should not happen because it is PDA, but anyway...
@@ -767,23 +811,6 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 
     // We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
 	return {m__dv_adapter.from_beme_to_pagmo(lb), m__dv_adapter.from_beme_to_pagmo(ub)};
-}
-
-auto Problem::save_solution(
-    const std::vector<double>& pagmo_dv,
-    const fsys::path& out_file
-) const -> void
-{
-    auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
-
-	apply_dv(dvs);
-
-	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
-	assert(errco <= 100);
-
-    // Eventually other save... 
-
-	reset_dv(dvs);
 }
 
 auto to_json(Json& j, const bevarmejo::anytown_systol25::Problem& prob) -> void

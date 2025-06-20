@@ -672,6 +672,28 @@ auto Problem::fitness(
 	// 1. EPS
 	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
+	if (!m__inp_base_filename.empty()) {
+		auto out_file = fsys::current_path()/fsys::path(
+			m__inp_base_filename + 
+			bemeio::other::sep__beme_filenames +
+			m__anytown_filename.substr(0, m__anytown_filename.size()-4) + // Remove the extension
+			bemeio::other::sep__beme_filenames +
+			"EPS" +
+			bemeio::other::sep__beme_filenames +
+			"0" +
+			bemeio::other::ext__inp
+		);
+
+		int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
+		assert(errco <= 100);
+
+		bevarmejo::io::stream_out(std::cout,
+			"EPANET '.inp' file saved in: ",
+			out_file.string(),
+			"\n"
+		);
+	}
+
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
@@ -698,6 +720,10 @@ auto Problem::fitness(
 		break;
 	}
 	
+	if (!m__metrics_filename.empty()) {
+		bemeio::stream_out(std::cout, "I will save the metrics\n");
+	}
+
 	reset_dv(dvs);
     return std::move(fitv);
 }
@@ -2644,18 +2670,6 @@ auto anytown::fnt3::bounds__tanks(
 }
 
 // ------------------- 1st level ------------------- //
-// -------------------   Save  ------------------- //
-void Problem::save_solution(const std::vector<double>& pagmo_dv, const fsys::path& out_file) const
-{
-	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
-
-	apply_dv(dvs);
-
-	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
-	assert(errco <= 100);
-
-	reset_dv(dvs);
-}
 
 void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 {

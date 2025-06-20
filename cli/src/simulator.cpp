@@ -577,25 +577,30 @@ void save_results(Simulator &simr)
 
 void save_inp(Simulator &simr)
 {
-    if (simr.problem().is<bevarmejo::anytown::Problem>())
-    {
-        simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + io::other::ext__inp);
-    }
-    else if (simr.problem().is<bevarmejo::anytown_systol25::Problem>())
-    {
-        simr.problem().extract<bevarmejo::anytown_systol25::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + io::other::ext__inp);
-    }
-    else
-    {
-        beme_throw_if( !simr.problem().is<bevarmejo::anytown::Problem>(), std::runtime_error,
-        "Impossible to save the inp file.",
-        "The problem is not of the type anytown::Problem.",
-        "Problem type: ", simr.problem().get_name());
-
-    }
+    // Lambda to extract and call "enable_save_inp" on a unknown derived WDS::Problem object
+    auto try_extract_and_save = []<typename T>(pagmo::problem& prob, const std::string& name) -> bool {
+        if (prob.is<T>()) {
+            prob.extract<T>()->enable_save_inp(name);
+            return true;
+        }
+        return false;
+    };
     
-    bevarmejo::io::stream_out(std::cout,
-        "EPANET '.inp' file saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".inp\n")).string());
+    // Helper to call with explicit template parameter
+    auto try_type = [&]<typename T>() {
+        return try_extract_and_save.template operator()<T>(simr.problem(), simr.name());
+    };
+    
+    if (try_type.template operator()<bevarmejo::anytown::Problem>() ||
+        try_type.template operator()<bevarmejo::anytown_systol25::Problem>() ||
+        try_type.template operator()<bevarmejo::hanoi::fbiobj::Problem>()) {
+        return;
+    }
+
+    beme_throw(std::runtime_error,
+        "Impossible to enable the saving of the WDS Problem '.inp' files.",
+        "This problem does not support this feature.",
+        "Problem type: ", simr.problem().get_name());
 }
 
 void save_metrics(Simulator& simr)

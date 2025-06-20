@@ -541,8 +541,6 @@ public:
     // Implementation of the box bounds.
     std::pair<std::vector<double>, std::vector<double>> get_bounds() const override;
 
-    void save_solution(const std::vector<double>& dvs, const fsys::path& out_file) const;
-
 protected:
     // Anytown specific data
     mutable std::shared_ptr<bevarmejo::WaterDistributionSystem> m__anytown;
