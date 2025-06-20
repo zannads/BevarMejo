@@ -415,7 +415,7 @@ void print_results_msg(Simulator & simr)
     if ( simr.id() != 0 )
     {
         bevarmejo::io::stream_out(std::cout,
-            "ID: ", simr.id(), "\n");
+            "\tID: ", simr.id(), "\n");
     }
 
     bevarmejo::io::stream_out(std::cout,
@@ -427,6 +427,8 @@ void print_results_msg(Simulator & simr)
         bevarmejo::io::stream_out(std::cout,
             "\n\t", simr.extra_message(), "\n");
     }
+    
+    bevarmejo::io::stream_out(std::cout, "\n");
 }
 
 void check_correctness(Simulator & simr)
@@ -621,7 +623,7 @@ void save_metrics(Simulator& simr)
     // If we are here, it didn't work in any of the types...
     beme_throw(std::runtime_error,
         "Impossible to enable the saving of the WDS Problem metrics.",
-        "The problem type is not supported.",
+        "This problem does not support this feature.",
         "Problem type: ", simr.problem().get_name()
     );
 }
