@@ -23,6 +23,7 @@ class Experiment:
         self.__fvs = None # Multi-index Pandas DataFrame with the fitness vectors of the individuals.
         self.__dvs = None # Multi-index Pandas DataFrame with the decision vectors of the individuals.
         self.__ids = None # Multi-index Pandas Series with the ids of the individuals.
+        self.__nadirs = None # Multi-index Pandas Series with the nadir point of each island.
 
     @property
     def name(self) -> str:
@@ -188,6 +189,36 @@ class Experiment:
     def final_decision_vectors(self) -> pd.DataFrame:
         # Return the decision vector of the last population of each island
         return self.decision_vectors.groupby(['island', 'individual']).last()
+
+    @property
+    def nadir_points(self) -> pd.DataFrame:
+        """
+        Compute the nadir point for each island.
+        
+        The nadir point represents the worst objective values found across all individuals
+        and generations for each island. It serves as a reference point for hypervolume
+        calculations and multi-objective optimization analysis.
+        
+        Since each island may solve different problems (different objective functions),
+        each island gets its own nadir point computed from its specific fitness vectors.
+        
+        Returns:
+            pd.DataFrame: DataFrame with islands as index and nadir point components as columns.
+                        Each row contains the maximum (worst) values for each objective
+                        found in that island across all generations and individuals.
+        """
+        if self.__nadirs is None:
+            nadirs = {}
+            fvs = self.fitness_vectors
+
+            for island, individuals in fvs.groupby('island'):
+                # Compute nadir point as maximum values across all objectives for this island
+                # (We assume it's a minimization problem as in pagmo/pygmo)
+                nadirs[island] = np.max(individuals.to_numpy(), axis=0)
+
+            self.__nadirs = pd.DataFrame.from_dict(nadirs, orient='index')
+
+        return self.__nadirs
 
     def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
         if generation_index is None:
