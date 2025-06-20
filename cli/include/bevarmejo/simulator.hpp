@@ -27,6 +27,8 @@ private:
 /*----------------------------------------------------------------------------*/
 // (common utility objects)
 private:
+    // The name used to save the objects
+    std::string m__name;
     // The folder where the experiment is stored or going to be saved.
     fsys::path m__root_folder;
     // The full path to the settings file
@@ -87,6 +89,8 @@ public:
 
 // Element access
 public:
+    const std::string& name() const;
+
     const std::vector<double>& decision_variables() const;
     
     const pagmo::problem& problem() const;

@@ -53,6 +53,7 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 } // namespace io
 
 Simulator::Simulator(const fsys::path& settings_file) :
+    m__name(),
     m__settings_file(settings_file),
     m__root_folder(settings_file.parent_path()),
     m__lookup_paths({settings_file.parent_path(), fsys::current_path()}),
@@ -66,6 +67,10 @@ Simulator::Simulator(const fsys::path& settings_file) :
     m__start_time(),
     m__end_time()
 {
+    // Extract the name of the simulator (used to save files eventually) from the settings file
+    m__name = m__settings_file.stem().string();
+    m__name = m__name.substr(m__name.find_first_not_of(io::other::pre__beme_sim+io::other::sep__beme_filenames));
+
     // Check the extension, and based on that open the file, parse it based on
     // the file structure (JSON, YAML, XML, etc). 
     // Apply the key value pairs passed from command line
@@ -183,19 +188,26 @@ Simulator::Simulator(const fsys::path& settings_file) :
 /*----------------------------------------------------------------------------*/
 /*-------------------------------- Tasks -------------------------------------*/
 /*----------------------------------------------------------------------------*/
-void print_hello_msg(Simulator & simr);
+void print_hello_msg(Simulator& simr);
 
-void print_results_msg(Simulator & simr);
+void print_results_msg(Simulator& simr);
 
-void check_correctness(Simulator & simr);
+void check_correctness(Simulator& simr);
 
-void save_results(Simulator & simr);
+void save_results(Simulator& simr);
 
-void save_inp(Simulator & simr);
+void save_inp(Simulator& simr);
+
+void save_metrics(Simulator& simr);
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
 /*----------------------------------------------------------------------------*/
+
+auto Simulator::name() const -> const std::string&
+{
+    return m__name;
+}
 
 // Element access
 const std::vector<double>& Simulator::decision_variables() const
@@ -361,15 +373,13 @@ void print_hello_msg(Simulator & simr)
 
 void print_results_msg(Simulator & simr)
 {
+    bevarmejo::io::stream_out(std::cout,
+        "Simulator object with name: ", simr.name(), " evaluated.\n"
+    );
     if ( simr.id() != 0 )
     {
         bevarmejo::io::stream_out(std::cout,
-            "Element with ID: ", simr.id(), " evaluated.\n");
-    }
-    else
-    {
-        bevarmejo::io::stream_out(std::cout,
-            "Unnamed element evaluated.\n");
+            "ID: ", simr.id(), "\n");
     }
 
     bevarmejo::io::stream_out(std::cout,
@@ -508,18 +518,20 @@ void check_correctness(Simulator & simr)
 void save_results(Simulator &simr)
 {
     Json jres = simr.resulting_fitness_vector();
-    std::ofstream res_file(std::to_string(simr.id())+".fv.json");
+    auto filename = simr.name() + bemeio::other::ext__beme_fv + bemeio::other::ext__json;
+    std::ofstream res_file(filename);
 
     beme_throw_if(!res_file.is_open(), std::runtime_error,
         "Failed to open the result file for writing.",
         "The file could not be opened.",
-        "File: ", std::to_string(simr.id()) + ".fv.json");
+        "File: ", filename
+    );
 
     res_file << jres.dump();
     res_file.close();
 
     bevarmejo::io::stream_out(std::cout,
-        "Results saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".fv.json\n")).string());
+        "Results saved in: ", (fsys::current_path()/fsys::path(filename)).string());
 }
 
 void save_inp(Simulator &simr)

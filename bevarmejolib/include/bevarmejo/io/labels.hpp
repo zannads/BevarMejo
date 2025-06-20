@@ -15,11 +15,11 @@ static const std::string pre__beme_exp = "bemeexp"; // "bemeexp"
 static const std::string pre__beme_isl = "bemeisl"; // "bemeisl"
 static const std::string pre__beme_out = "bemeout"; // "bemeout"
 
-static const std::string suf__beme_metrics = "metrics"; // "metrics"
-
 static const std::string dir__beme_out = "output"; // "output"
 
-static const std::string ext__beme_rnt = ".rnt"; // ".rnt"
+static const std::string ext__beme_fv = ".fv"; // ".fv" - fitness vector
+static const std::string ext__beme_metrics = ".mtr"; // ".mtr" - metrics
+static const std::string ext__beme_rnt = ".rnt"; // ".rnt" - runtime
 static const std::string ext__beme_log = ".log"; // ".log"
 static const std::string ext__json = ".json"; // ".json"
 static const std::string ext__jsonl = ".jsonl"; // ".jsonl"
