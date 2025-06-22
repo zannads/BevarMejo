@@ -575,25 +575,30 @@ void save_results(Simulator &simr)
     );
 }
 
+namespace detail {
+    // Template function to extract and call a method on unknown derived WDS::Problem object
+    auto extract_wds_problem(
+        pagmo::problem& prob
+    ) -> bevarmejo::WDSProblem*
+    {
+        if (prob.is<bevarmejo::anytown::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::anytown::Problem>());
+        }
+        if (prob.is<bevarmejo::anytown_systol25::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::anytown_systol25::Problem>());
+        }
+        if (prob.is<bevarmejo::hanoi::fbiobj::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::hanoi::fbiobj::Problem>());
+        }
+        return nullptr;
+    }
+} // namespace detail
+
 void save_inp(Simulator &simr)
 {
-    // Lambda to extract and call "enable_save_inp" on a unknown derived WDS::Problem object
-    auto try_extract_and_save = []<typename T>(pagmo::problem& prob, const std::string& name) -> bool {
-        if (prob.is<T>()) {
-            prob.extract<T>()->enable_save_inp(name);
-            return true;
-        }
-        return false;
-    };
-    
-    // Helper to call with explicit template parameter
-    auto try_type = [&]<typename T>() {
-        return try_extract_and_save.template operator()<T>(simr.problem(), simr.name());
-    };
-    
-    if (try_type.template operator()<bevarmejo::anytown::Problem>() ||
-        try_type.template operator()<bevarmejo::anytown_systol25::Problem>() ||
-        try_type.template operator()<bevarmejo::hanoi::fbiobj::Problem>()) {
+    auto* wds_prob = detail::extract_wds_problem(simr.problem());
+    if (wds_prob) {
+        wds_prob->enable_save_inp(simr.name());
         return;
     }
 
@@ -603,25 +608,12 @@ void save_inp(Simulator &simr)
         "Problem type: ", simr.problem().get_name());
 }
 
+
 void save_metrics(Simulator& simr)
 {
-    // Lambda to extract and call "enable_save_metrics" on a unknown derived WDS::Problem object
-    auto try_extract_and_save = []<typename T>(pagmo::problem& prob, const std::string& name) -> bool {
-        if (prob.is<T>()) {
-            prob.extract<T>()->enable_save_metrics(name);
-            return true;
-        }
-        return false;
-    };
-    
-    // Helper to call with explicit template parameter
-    auto try_type = [&]<typename T>() {
-        return try_extract_and_save.template operator()<T>(simr.problem(), simr.name());
-    };
-    
-    if (try_type.template operator()<bevarmejo::anytown::Problem>() ||
-        try_type.template operator()<bevarmejo::anytown_systol25::Problem>() ||
-        try_type.template operator()<bevarmejo::hanoi::fbiobj::Problem>()) {
+    auto* wds_prob = detail::extract_wds_problem(simr.problem());
+    if (wds_prob) {
+        wds_prob->enable_save_metrics(simr.name());
         return;
     }
     
