@@ -1588,6 +1588,9 @@ auto fnt1::apply_dv__tanks(
 		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
 		assert(errco <= 100);
 
+		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
+		assert(errco <= 100);
+
 		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
 			orig_tank.elevation()/MperFT, 
 			orig_tank.min_level().value()/MperFT, 
@@ -1723,6 +1726,9 @@ auto fnt2::apply_dv__tanks(
 		// do it again in EPANET
 		int new_tank_idx = 0; 
 		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
 		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
@@ -1893,6 +1899,9 @@ auto anytown::fnt3::apply_dv__tanks(
         // do it again in EPANET
         int new_tank_idx = 0; 
 		int errco = EN_addnode(a_anytown_sys.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_setcoord(a_anytown_sys.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
 		errco = EN_settankdata(a_anytown_sys.ph_, new_tank_idx, 
