@@ -172,6 +172,7 @@ class Simulator:
     
     def save_inps(self, directory: str = ".tmp") -> list:
         # Save the network models to inp files
+        os.makedirs(directory, exist_ok=True)
         
         # Run the simulator with the saveinp flag
         self.run("--saveinp")
