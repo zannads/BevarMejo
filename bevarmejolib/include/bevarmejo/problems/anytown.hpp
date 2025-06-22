@@ -308,12 +308,6 @@ constexpr std::array<double, bevarmejo::k__hours_per_day> pump_group_operations 
     2, 3, 3, 3, 3, 3,
     3, 3, 3, 3, 3, 2
 };
-// Function to convert a single vector with the number of pumps in a group running
-// at a given time to a set of boolean (double actually) to specifiy if a pump is on or off.
-auto decompose_pumpgroup_pattern(
-    std::vector<double> pg_pattern,
-    const std::size_t n_pumps
-) -> std::vector<std::vector<double>>;
 
 // Pump Group Operationd Decision Variable
 namespace pgo_dv {

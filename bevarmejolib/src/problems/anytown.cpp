@@ -94,28 +94,6 @@ static const std::string rehab_f6_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f6_exinfo =  "Anytown Mixed Formulation 6\nOperations as dv, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
 }
 
-auto decompose_pumpgroup_pattern(
-	std::vector<double> pg_pattern,
-	const std::size_t n_pumps
-) -> std::vector<std::vector<double>>
-{
-	// I want a copy of the decision variables because every time I put a 
-	// pattern to 1 I want to remove it from the vector.
-	std::size_t n_periods = pg_pattern.size();
-	std::vector<std::vector<double>> patterns (n_pumps, std::vector<double>(n_periods, 0.0));
-
-	for (auto& pump_pattern : patterns) {
-		auto it = pg_pattern.begin();
-		for (auto& val : pump_pattern){
-			if (*it > 0.0) {
-				val = 1.0;
-				--(*it);
-			}
-			++it;
-		}
-	}
-
-	return patterns;
 }
  
 Problem::Problem(
@@ -139,7 +117,8 @@ Problem::Problem(
 	m__max_velocity__m_per_s(2.0),
 	__old_HW_coeffs(),
 	m_algo(),
-	m_pop()
+	m_pop(),
+	m__cached_metrics()
 {
 	if (a_formulation_str == io::value::rehab_f1)
 	{
@@ -520,7 +499,6 @@ auto Problem::get_nic() const -> std::vector<double>::size_type
 {
 	return 0ul;
 }
-	
 
 auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 {
@@ -2761,6 +2739,10 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 	if (prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity)
 	{
 		j[io::key::max_vel()] = prob.m__max_velocity__m_per_s;
+	}
+
+	if (prob.m__additional_capital_cost != 0.0) {
+		j[io::key::cap_cost()] = prob.m__additional_capital_cost;
 	}
 }
 
