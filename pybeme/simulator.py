@@ -195,7 +195,7 @@ class Simulator:
             return self.networks
         
     if epyt_available:
-        def epanet_networks(self) -> list:
+        def epanet_networks(self, remove_files: bool = True) -> list:
             # Return the water network models
             # Run with the saveinp flag
             # List the inp files
@@ -210,12 +210,13 @@ class Simulator:
                               customlib=os.path.join(os.path.expanduser("~"), "repos", "zannadsEPANET", "builds", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}","lib", "libepanet2.dylib"),
                               display_msg=True, display_warnings=True)
                 networks.append(enet)
-                os.remove(inp_file)
+                if remove_files:
+                    os.remove(inp_file)
 
             self.networks = networks
 
             return self.networks
-        
+            
     def convert_to_formulation(self, formulation: str) -> "Simulator":
 
         suite = self.data['problem']['type'].split('::')[0]
