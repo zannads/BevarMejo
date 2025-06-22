@@ -563,6 +563,12 @@ protected:
     pagmo::algorithm m_algo;
     mutable pagmo::population m_pop; // I need this to be mutable, so that I can invoke non-const functions on it. In particular, change the problem pointer.
 
+    struct CachedMetrics{
+        double capital_cost;
+        double energy_cost_per_day;
+    };
+    mutable CachedMetrics m__cached_metrics;
+
     // For constructor:
     void load_network(const Json& settings, const bemeio::Paths& lookup_paths);
     void load_other_data(const Json& settings, const bemeio::Paths& lookup_paths);

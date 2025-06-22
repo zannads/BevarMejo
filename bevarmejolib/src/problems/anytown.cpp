@@ -730,7 +730,38 @@ auto Problem::fitness(
 	}
 	
 	if (!m__metrics_filename.empty()) {
-		bemeio::stream_out(std::cout, "I will save the metrics\n");
+		auto filename = fsys::current_path()/fsys::path(
+			m__metrics_filename + 
+			bemeio::other::ext__beme_metrics +
+			bemeio::other::ext__json
+		);
+
+		Json jout = {
+			{"capital_cost", m__cached_metrics.capital_cost},
+			{"energy_cost_per_day", m__cached_metrics.energy_cost_per_day} 
+		};
+
+		std::ofstream out_file(filename);
+		if (!out_file.is_open()) {
+			bevarmejo::io::stream_out(std::cerr,
+				"Impossible to save the metrics to file.",
+				"Could not open the metrics file."
+				"File:", filename, "\n",
+				"\nContent:\n",
+				jout
+			);
+			
+		}
+		else {
+			out_file << jout.dump() << std::endl;
+			out_file.close();
+
+			bevarmejo::io::stream_out(std::cout,
+				"Metrics saved in file: ",
+				filename.string(),
+				"\n"
+			);
+		}
 	}
 
 	reset_dv(dvs);
@@ -889,111 +920,123 @@ auto Problem::cost(
 ) const -> double
 {
 	double capital_cost = m__additional_capital_cost; // Start counting from the user provided capital cost
-	if (m__formulation == Formulation::opertns_f1) {
-		// Just the operational cost!
-		return pgo_dv::cost__energy_per_day(*m__anytown);
-	}
 
-	// If we are here is either a design or an integrated problem, so it has design for sure
-	// So we will account for the capital cost of interventions
-	assertm(m__has_design, "Logic error, this part should be called only for problems with design");
-	double capital_cost = 0.0;
+	if (m__has_design) {
+		// For each dv group I need to:
+		// 1. get the gene size,
+		// 2. apply the correct cost function
+		// 3. move forwarde the curr_dv
+		auto curr_dv = dvs.begin();
+		std::size_t gene_size;
 
-	// For each dv group I need to:
-	// 1. get the gene size,
-	// 2. apply the correct cost function
-	// 3. move forwarde the curr_dv
-	auto curr_dv = dvs.begin();
-	std::size_t gene_size;
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		switch (m__exi_pipes_formulation)
+		{
+			case ExistingPipesFormulation::FarmaniEtAl2005:
+				gene_size = fep1::dv_size*subnet_size;
+				capital_cost += fep1::cost__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			case ExistingPipesFormulation::Combined:
+				gene_size = fep2::dv_size*subnet_size;
+				capital_cost += fep2::cost__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
 
-	std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
-	switch (m__exi_pipes_formulation)
-	{
-		case ExistingPipesFormulation::FarmaniEtAl2005:
-			gene_size = fep1::dv_size*subnet_size;
-			capital_cost += fep1::cost__exis_pipes(
-				*m__anytown,
-				curr_dv,
-				curr_dv+gene_size,
-				m__exi_pipe_options
-			);
-			break;
-		case ExistingPipesFormulation::Combined:
-			gene_size = fep2::dv_size*subnet_size;
-			capital_cost += fep2::cost__exis_pipes(
-				*m__anytown,
-				curr_dv,
-				curr_dv+gene_size,
-				m__exi_pipe_options
-			);
-			break;
-		default:
-			break;
-	}
-	curr_dv += gene_size;
+		// 2. New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		gene_size = fnp1::dv_size*subnet_size;
+		capital_cost += fnp1::cost__new_pipes(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size,
+			m__new_pipe_options
+		);
+		curr_dv += gene_size;
 
-	// 2. New pipes
-	subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
-	gene_size = fnp1::dv_size*subnet_size;
-	capital_cost += fnp1::cost__new_pipes(
-		*m__anytown,
-		curr_dv,
-		curr_dv+gene_size,
-		m__new_pipe_options
-	);
-	curr_dv += gene_size;
+		// 3. Operations
+		if (m__has_operations) {
+			gene_size = pgo_dv::size;
+			// No cost function here we will take energy later independenlty of the 
+			// fact that there is a dv or not
+			curr_dv += gene_size;
+		}
 
-	// 3. Operations
-	if (m__has_operations) {
-		gene_size = pgo_dv::size;
-		// No cost function here we will take energy later independenlty of the 
-		// fact that there is a dv or not
+		// 4. Tanks
+		switch (m__new_tanks_formulation)
+		{
+			case NewTanksFormulation::Simple:
+				gene_size = fnt1::dv_size*max_n_installable_tanks;
+				capital_cost += fnt1::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			case NewTanksFormulation::FarmaniEtAl2005:
+				gene_size = fnt2::dv_size *max_n_installable_tanks;
+				capital_cost += fnt2::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			case NewTanksFormulation::LocVolRisDiamH2DRatio:
+				gene_size = fnt3::dv_size *max_n_installable_tanks;
+				capital_cost += fnt3::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
 		curr_dv += gene_size;
 	}
-
-	// 4. Tanks
-	switch (m__new_tanks_formulation)
-	{
-		case NewTanksFormulation::Simple:
-			gene_size = fnt1::dv_size*max_n_installable_tanks;
-			capital_cost += fnt1::cost__tanks(
-				*m__anytown,
-				curr_dv,
-				curr_dv+gene_size,
-				m__tank_options,
-				m__new_pipe_options
-			);
-			break;
-		case NewTanksFormulation::FarmaniEtAl2005:
-			gene_size = fnt2::dv_size *max_n_installable_tanks;
-			capital_cost += fnt2::cost__tanks(
-				*m__anytown,
-				curr_dv,
-				curr_dv+gene_size,
-				m__tank_options,
-				m__new_pipe_options
-			);
-			break;
-		case NewTanksFormulation::LocVolRisDiamH2DRatio:
-			gene_size = fnt3::dv_size *max_n_installable_tanks;
-			capital_cost += fnt3::cost__tanks(
-				*m__anytown,
-				curr_dv,
-				curr_dv+gene_size,
-				m__tank_options,
-				m__new_pipe_options
-			);
-			break;
-		default:
-			break;
-	}
-	curr_dv += gene_size;
-		
+	
 	double energy_cost_per_day = pgo_dv::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
-	
+	double discount_rate = anytown::discount_rate;
+	double amortization_years = anytown::amortization_years;
+	if (m__formulation == Formulation::opertns_f1) {
+		// This formulation is the only one that was returning the cost per day instead
+		// of the net present cost. This is equivalent to r = 0.0 1 year, and using the day value.
+		yearly_energy_cost = energy_cost_per_day;
+		discount_rate = 0.0;
+		amortization_years = 1.0;
+	}
+
+	if (!m__metrics_filename.empty()) {
+		m__cached_metrics.capital_cost = capital_cost;
+		m__cached_metrics.energy_cost_per_day = energy_cost_per_day;
+	}
+
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
-	return -bevarmejo::net_present_value(capital_cost, discount_rate, -yearly_energy_cost, amortization_years);
+	return -bevarmejo::net_present_value(
+		capital_cost,
+		discount_rate,
+		-yearly_energy_cost,
+		amortization_years
+	);
 }
 
 auto fr1::of__reliability(

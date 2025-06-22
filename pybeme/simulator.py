@@ -140,7 +140,7 @@ class Simulator:
         # Prepare the command to run the simulator
         beme_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # The root folder of the project is outside the pybeme folder
         release_dir = os.path.join(beme_dir, 'builds', release_version)
-        command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv'
+        command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
         # Run the command
         simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
@@ -157,7 +157,18 @@ class Simulator:
         os.remove(f"{self.data['id']}.fv.json")
 
         self.result = np.array(fv)
-        return fv
+
+        # Same thing for the metrics file
+        metrics_file = f"{self.data['id']}.mtr.json"
+        if os.path.exists(metrics_file):
+            with open(metrics_file, 'r') as file:
+                metrics = json.load(file)
+            os.remove(metrics_file)
+            self.metrics = metrics
+        else:
+            self.metrics = {}
+
+        return self.result
     
     def save_inps(self, directory: str = ".tmp") -> list:
         # Save the network models to inp files
