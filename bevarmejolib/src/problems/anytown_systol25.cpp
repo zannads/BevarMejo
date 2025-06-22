@@ -287,10 +287,12 @@ auto Problem::fitness(
 	const auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
     if (!m__inp_base_filename.empty()) {
+		auto orig_filename_stem = fsys::path(m__anytown_filename).stem().string();
+		
 		auto out_file = fsys::current_path()/fsys::path(
 			m__inp_base_filename + 
 			bemeio::other::sep__beme_filenames +
-			m__anytown_filename.substr(0, m__anytown_filename.size()-4) + // Remove the extension
+			orig_filename_stem +
 			bemeio::other::sep__beme_filenames +
 			"EPS" +
 			bemeio::other::sep__beme_filenames +
@@ -658,10 +660,12 @@ auto Problem::firefighting_reliability_perspective() const -> double
         // 2. --------------------
         const auto results = sim::solvers::epanet::solve_hydraulics(*m__ff_anytown, m__ffsim_settings);
         if (!m__inp_base_filename.empty()) {
-            auto out_file = fsys::current_path()/fsys::path(
+            auto orig_filename_stem = fsys::path(m__ff_anytown_filename).stem().string();
+		
+	        auto out_file = fsys::current_path()/fsys::path(
                 m__inp_base_filename + 
                 bemeio::other::sep__beme_filenames +
-                m__ff_anytown_filename.substr(0, m__ff_anytown_filename.size()-4) + // Remove the extension
+                orig_filename_stem +
                 bemeio::other::sep__beme_filenames +
                 "FF-" + std::string(ff_test.junction_name) + 
                 bemeio::other::sep__beme_filenames +
