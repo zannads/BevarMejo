@@ -92,7 +92,7 @@ static const std::string rehab_f5_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f5_exinfo =  "Anytown Mixed Formulation 5\nOperations as dv, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
 static const std::string rehab_f6_exinfo =  "Anytown Rehabilitation Formulation 6\nOperations from input, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
 static const std::string mixed_f6_exinfo =  "Anytown Mixed Formulation 6\nOperations as dv, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
-}
+static const std::string opertns_f2_exinfo = "Anytown Operations-only problem. Pure 24-h scheduling. New objectives and cost as net present value.\n";
 
 }
  
@@ -262,6 +262,16 @@ Problem::Problem(
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f6_exinfo;
 	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::opertns_f2)
+	{
+		m__formulation = Formulation::opertns_f2;
+		// m__exi_pipes_formulation
+		// m__new_tanks_formulation
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__has_design = false;
+		m__has_operations = true;
+		m__extra_info = io::other::opertns_f2_exinfo;
+	}
 	else
 	{
 		beme_throw(std::invalid_argument, "Impossible to construct the anytown Problem.",
@@ -349,7 +359,10 @@ void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_pat
 	}
 
 	// Custom made subnetworks for the temporary elements 
-	if (m__formulation != Formulation::opertns_f1) {
+	if (
+		m__formulation != Formulation::opertns_f1 &&
+		m__formulation != Formulation::opertns_f2
+	) {
 		m__anytown->submit_id_sequence(label::__temp_elems);
 	}
 
