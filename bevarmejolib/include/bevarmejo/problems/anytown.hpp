@@ -556,7 +556,7 @@ protected:
     ReliabilityObjectiveFunctionFormulation m__reliability_obj_func_formulation;
     bool m__has_design;
     bool m__has_operations;
-
+    double m__additional_capital_cost; // Optional value for the initial infrastructure interventions (usually for operations problems)
     double m__max_velocity__m_per_s; // Maximum velocity for the reliability function
     mutable std::unordered_map<std::string, double> __old_HW_coeffs; // Store the old HW coefficients for reset_dv__exis_pipes
     // internal operation optimisation problem:

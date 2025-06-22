@@ -55,6 +55,7 @@ static constexpr bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options
 static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 #endif
 static constexpr bemeio::AliasedKey max_vel{"Pipe max velocity"}; // "Pipe max velocity"
+static constexpr bemeio::AliasedKey cap_cost{"Additional capital cost"}; // "Additional capital cost"
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -134,6 +135,7 @@ Problem::Problem(
 	m__reliability_obj_func_formulation(),
 	m__has_design(false),
 	m__has_operations(false),
+	m__additional_capital_cost(0.0),
 	m__max_velocity__m_per_s(2.0),
 	__old_HW_coeffs(),
 	m_algo(),
@@ -390,8 +392,10 @@ void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_pat
 }
 
 void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
-	if (m__formulation == Formulation::opertns_f1) { return; }
-
+	// Optional values modifying the behaviour of the problem,
+	// They are all default initialized in the Problem constructor and overwritten here 
+	// only if the key is present.
+	
 	assert(settings != nullptr);
 
 	if (io::key::exi_pipe_opts.exists_in(settings)) {
@@ -467,8 +471,13 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		}
 	}
 
-	// Optional value that is only used in the reliability function from formulations 4:
-	m__max_velocity__m_per_s = settings.value(io::key::max_vel.as_in(settings), 2.0); // 2 m/s
+	if (io::key::max_vel.exists_in(settings)) {
+		m__max_velocity__m_per_s = settings[io::key::max_vel.as_in(settings)];
+	}
+
+	if (io::key::cap_cost.exists_in(settings)) {
+		m__additional_capital_cost = settings[io::key::cap_cost.as_in(settings)];
+	}
 
 	if (m__formulation == Formulation::twoph_f1) {
 		/*
@@ -879,7 +888,7 @@ auto Problem::cost(
 	const std::vector<double> &dvs
 ) const -> double
 {
-
+	double capital_cost = m__additional_capital_cost; // Start counting from the user provided capital cost
 	if (m__formulation == Formulation::opertns_f1) {
 		// Just the operational cost!
 		return pgo_dv::cost__energy_per_day(*m__anytown);
@@ -1092,7 +1101,6 @@ auto fr2::of__reliability(
 		// Return the average normalized deficit
 		return normdeficit_daily.back().first != 0 ? value / normdeficit_daily.back().first : value;
 	}
-	
 
 	// All constraints are satisfied, now check the reliability index
 	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT);
