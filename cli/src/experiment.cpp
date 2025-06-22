@@ -183,7 +183,11 @@ void Experiment::build(const Json &jinput)
     else
     {
         m__name = m__settings_file.stem().string();
-        m__name = m__name.substr(m__name.find_first_not_of(io::other::pre__beme_opt+io::other::sep__beme_filenames));
+        auto bemeopt_prefix = io::other::pre__beme_opt+io::other::sep__beme_filenames;
+        if (m__name.find(bemeopt_prefix) == 0) {
+            m__name = m__name.substr(bemeopt_prefix.length());
+        }
+        
     }
 
     auto typconfig = jinput.value(io::key::typconfig.as_in(jinput), Json{});

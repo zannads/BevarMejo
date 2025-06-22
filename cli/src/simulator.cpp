@@ -69,11 +69,14 @@ Simulator::Simulator(const fsys::path& settings_file) :
 {
     // Extract the name of the simulator (used to save files eventually) from the settings file
     m__name = m__settings_file.stem().string();
-    m__name = m__name.substr(m__name.find_first_not_of(io::other::pre__beme_sim+io::other::sep__beme_filenames));
+    auto bemesim_prefix = io::other::pre__beme_sim+io::other::sep__beme_filenames;
+    if (m__name.find(bemesim_prefix) == 0) {
+        m__name = m__name.substr(bemesim_prefix.length());
+    }
 
     // Check the extension, and based on that open the file, parse it based on
     // the file structure (JSON, YAML, XML, etc). 
-    // Apply the key value pairs passed from command line
+    // Apply the 5key value pairs passed from command line
     // Once you have the final object call the build function.
     
     std::ifstream file(settings_file);
