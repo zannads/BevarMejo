@@ -1503,19 +1503,25 @@ void pgo_dv::apply_dv__pumps(
 	// A pump is on only if the dv at that time instant is >= i
 	std::size_t i = 0;
 	for (auto&& [id, pump] : anyt_wds.pumps()) {
+		auto pattern_idx = pump.speed_pattern()->EN_index();
+
 		auto curr_dv = start_dv;
-		auto pattern_i = std::vector<double>(pgo_dv::size, 0.0);
-		for (auto it_pattern = pattern_i.begin(); it_pattern != pattern_i.end(); ++it_pattern) {
+		for (auto t=1; t <= pgo_dv::size; ++t, ++curr_dv ) {
+			double value = 0.0;
 			if (*curr_dv > (double)i) {
-				*it_pattern = 1.0;
+				value = 1.0;	
 			}
-			++curr_dv;
+
+			int errorcode = EN_setpatternvalue(
+				anyt_wds.ph_,
+				pattern_idx,
+				t,
+				value
+			);
+			assert(errorcode <= 100);
 		}
 		assert(curr_dv == end_dv);
-		
-		// set the pattern
-		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), pattern_i.data(), pattern_i.size());
-		assert(errorcode <= 100);
+
 		++i;
 	}
 
@@ -2349,18 +2355,9 @@ void pgo_dv::reset_dv__pumps(
 	std::vector<double>::const_iterator start_dv,
     std::vector<double>::const_iterator end_dv)
 {
-	for (std::size_t i = 0; i < 3; ++i)
-	{
-		// I know pump patterns IDs are from 2, 3, and 4
-		int pump_idx = i + 2;
-		std::string pump_id = std::to_string(pump_idx);
-		int errorcode = EN_getpatternindex(anytown.ph_, pump_id.c_str(), &pump_idx);
-		assert(errorcode <= 100);
-
-		// set the pattern, use empty array of 24 double to zero
-		errorcode = EN_setpattern(anytown.ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
-		assert(errorcode <= 100);
-	}
+	// This dection variable always overwrite the data, so there is no need to 
+	// revert its changes.
+	return;
 }
 
 void fnt1::reset_dv__tanks(
