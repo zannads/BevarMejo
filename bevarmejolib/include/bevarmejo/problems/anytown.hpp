@@ -109,8 +109,7 @@ static constexpr double max_velocity__m_per_s = 1.5;
 enum class ReliabilityObjectiveFunctionFormulation
 {
     Base,
-    Hierarchical,
-    HierarchicalWithMaxVelocity
+    Hierarchical
 }; // enum class ReliabilityObjectiveFunctionFormulation
 
 // Base
@@ -119,19 +118,17 @@ auto of__reliability(
     const WDS& anytown
 ) -> double;
 }
-// Hierarchical
+// Hierarchical:
+// between 2 and 1 solutions that fails in the hydraulic simulations (raise EPANET warnings)
+// between 1 and 0 solutions that work, but violates the constratints (minimum pressure and max velocity)
+// Between 0 and -1 solutions that fully satisfy the constraints, actual objective.
 namespace fr2 {
 auto of__reliability(
     const WDS& anytown,
-    const bevarmejo::sim::solvers::epanet::HydSimResults &res
-) -> double;
-}
-// Hierarchical with MAx veloicty
-namespace fr3 {
-auto of__reliability(
-    const WDS& anytown,
     const bevarmejo::sim::solvers::epanet::HydSimResults &res,
-    double max_velocity__m_per_s
+    double max_velocity__m_per_s,
+    std::size_t discrete_steps_failed_solutions,
+    std::size_t discrete_steps_unsati_solutions
 ) -> double;
 }
 
@@ -548,6 +545,8 @@ protected:
     ExistingPipesFormulation m__exi_pipes_formulation;
     NewTanksFormulation m__new_tanks_formulation;
     ReliabilityObjectiveFunctionFormulation m__reliability_obj_func_formulation;
+    std::size_t m__ds_failed_sols;
+    std::size_t m__ds_unsati_sols;
     bool m__has_design;
     bool m__has_operations;
     double m__additional_capital_cost; // Optional value for the initial infrastructure interventions (usually for operations problems)

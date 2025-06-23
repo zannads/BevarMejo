@@ -111,6 +111,8 @@ Problem::Problem(
 	m__exi_pipes_formulation(),
 	m__new_tanks_formulation(),
 	m__reliability_obj_func_formulation(),
+	m__ds_failed_sols(0),
+	m__ds_unsati_sols(0),
 	m__has_design(false),
 	m__has_operations(false),
 	m__additional_capital_cost(0.0),
@@ -188,6 +190,7 @@ Problem::Problem(
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__max_velocity__m_per_s = std::numeric_limits<double>::infinity();
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f3_exinfo;
@@ -198,6 +201,7 @@ Problem::Problem(
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__max_velocity__m_per_s = std::numeric_limits<double>::infinity();
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f3_exinfo;
@@ -207,7 +211,7 @@ Problem::Problem(
 		m__formulation = Formulation::rehab_f4;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f4_exinfo;
@@ -217,7 +221,7 @@ Problem::Problem(
 		m__formulation = Formulation::mixed_f4;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f4_exinfo;
@@ -227,7 +231,7 @@ Problem::Problem(
 		m__formulation = Formulation::rehab_f5;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::FarmaniEtAl2005;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f5_exinfo;
@@ -237,7 +241,7 @@ Problem::Problem(
 		m__formulation = Formulation::mixed_f5;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::FarmaniEtAl2005;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f5_exinfo;
@@ -247,7 +251,7 @@ Problem::Problem(
 		m__formulation = Formulation::rehab_f6;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f6_exinfo;
@@ -257,7 +261,7 @@ Problem::Problem(
 		m__formulation = Formulation::mixed_f6;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f6_exinfo;
@@ -267,7 +271,7 @@ Problem::Problem(
 		m__formulation = Formulation::opertns_f2;
 		// m__exi_pipes_formulation
 		// m__new_tanks_formulation
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = false;
 		m__has_operations = true;
 		m__extra_info = io::other::opertns_f2_exinfo;
@@ -465,6 +469,9 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 	if (io::key::max_vel.exists_in(settings)) {
 		m__max_velocity__m_per_s = settings[io::key::max_vel.as_in(settings)];
+
+		// Note that if the key doesn't exist it keeps the default value (2.0), unless
+		// it is a formulation that overwrites that...
 	}
 
 	if (io::key::cap_cost.exists_in(settings)) {
@@ -713,10 +720,12 @@ auto Problem::fitness(
 		fitv[1] = fr1::of__reliability(*m__anytown);
 		break;
 	case ReliabilityObjectiveFunctionFormulation::Hierarchical:
-		fitv[1] = fr2::of__reliability(*m__anytown, results);
-		break;
-	case ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity:
-		fitv[1] = fr3::of__reliability(*m__anytown, results, m__max_velocity__m_per_s);
+		fitv[1] = fr2::of__reliability(
+			*m__anytown, results,
+			m__max_velocity__m_per_s,
+			m__ds_failed_sols,
+			m__ds_unsati_sols
+		);
 		break;
 	default:
 		break;
@@ -1101,7 +1110,8 @@ auto fr1::of__reliability(
 	return value;
 }
 
-auto fr2::of__reliability(
+namespace detail {
+auto of__reliability(
 	const WDS& anytown,
 	const bevarmejo::sim::solvers::epanet::HydSimResults &res
 ) -> double
@@ -1149,11 +1159,14 @@ auto fr2::of__reliability(
 
 	return -value; // I want to maximize the reliability index
 }
+}
 
-auto fr3::of__reliability(
+auto fr2::of__reliability(
 	const WDS& anytown,
 	const bevarmejo::sim::solvers::epanet::HydSimResults& res,
-	double max_velocity__m_per_s
+	double max_velocity__m_per_s,
+    std::size_t discrete_steps_failed_solutions,
+    std::size_t discrete_steps_unsati_solutions
 ) -> double
 {
 	// With this formulation, we have one additional constraint to include with
@@ -1166,7 +1179,7 @@ auto fr3::of__reliability(
 	// This is between 2 and 1 for unfeasible solutions.
 	// This is between 1 and 0 for solutions that do not satisfy the pressure constraint.
 	// This is between 0 and -1 for solutions that satisfy the pressure constraint (the value is the rel index).
-	double value = fr2::of__reliability(anytown, res);
+	double value = detail::of__reliability(anytown, res);
 
 	// If value >= 1.0, it's an unfeasible solution, we just forward it. 
 	if (value >= 1.0)
@@ -2757,7 +2770,11 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 
 	j["extra_info"] = prob.get_extra_info();
 
-	if (prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity)
+	if (
+		prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::Hierarchical &&
+		prob.m__max_velocity__m_per_s != std::numeric_limits<double>::infinity() &&
+		prob.m__max_velocity__m_per_s != 2.0
+	)
 	{
 		j[io::key::max_vel()] = prob.m__max_velocity__m_per_s;
 	}
