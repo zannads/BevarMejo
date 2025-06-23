@@ -56,6 +56,8 @@ static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump gr
 #endif
 static constexpr bemeio::AliasedKey max_vel{"Pipe max velocity"}; // "Pipe max velocity"
 static constexpr bemeio::AliasedKey cap_cost{"Additional capital cost"}; // "Additional capital cost"
+static constexpr bemeio::AliasedKey ds_fail_sols{"N ds failed sols"}; // "N ds failed sols"
+static constexpr bemeio::AliasedKey ds_unsat_sols{"N ds unsati sols"}; // "N ds unsati sols" 
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -476,6 +478,14 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 	if (io::key::cap_cost.exists_in(settings)) {
 		m__additional_capital_cost = settings[io::key::cap_cost.as_in(settings)];
+	}
+
+	if (io::key::ds_fail_sols.exists_in(settings)) {
+		m__ds_failed_sols = settings[io::key::ds_fail_sols.as_in(settings)];
+	}
+
+	if (io::key::ds_unsat_sols.exists_in(settings)) {
+		m__ds_unsati_sols = settings[io::key::ds_unsat_sols.as_in(settings)];
 	}
 
 	if (m__formulation == Formulation::twoph_f1) {
@@ -2781,6 +2791,14 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 
 	if (prob.m__additional_capital_cost != 0.0) {
 		j[io::key::cap_cost()] = prob.m__additional_capital_cost;
+	}
+
+	if (prob.m__ds_failed_sols != 0) {
+		j[io::key::ds_fail_sols()] = prob.m__ds_failed_sols;
+	}
+
+	if (prob.m__ds_unsati_sols != 0) {
+		j[io::key::ds_unsat_sols()] = prob.m__ds_unsati_sols;
 	}
 }
 
