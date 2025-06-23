@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -1120,57 +1121,6 @@ auto fr1::of__reliability(
 	return value;
 }
 
-namespace detail {
-auto of__reliability(
-	const WDS& anytown,
-	const bevarmejo::sim::solvers::epanet::HydSimResults &res
-) -> double
-{
-	double value = 0.0;
-	/*
-	 * The reliability index will display a hierarchy for the constraints and the objectives.
-	 * Since it has to be minimized, we start from the highest priority constraint (highest objective value) and go down.
-	 * - from 2 to 1, the main constraint on mathematical solution validity. We are using EPANET that returns a warning
-	 *  when the equations are solved but the solution is not valid. This is the first thing to check.
-	 * - from 1 to 0, the normalized pressure deficit averaged across the nodes, integrated though time.
-	 *   We want to fully satisify this before moving to the reliablity index because the Ir depends on a min pressure constraint.
-	 * - from 0 to -1, the reliability index. This can be reduced by multipling by unsatisfied soft constraints.
-	 */
-
-	// Get the share of un-solved steps in the hydraulic simulation
-	int n_steps = res.size();
-	const int n_correct_steps = std::count(res.values().begin(), res.values().end(), 0);
-
-	if ( n_correct_steps <  n_steps )
-	{
-		return 1.0 + (n_steps - n_correct_steps) / (double)n_steps; 
-	}
-
-	// All steps are solved, now check the pressure deficit
-
-	// Get the cumulative deficit of all junctions
-	const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT, /*relative=*/ true);
-	value = normdeficit_daily.integrate_forward();
-
-	if ( value > 0. )
-	{
-		// Return the average normalized deficit
-		return normdeficit_daily.back().first != 0 ? value / normdeficit_daily.back().first : value;
-	}
-
-	// All constraints are satisfied, now check the reliability index
-	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT);
-	value = ir_daily.integrate_forward();
-
-	value = ir_daily.back().first != 0 ? value / ir_daily.back().first : value;
-
-	// Here you could add other constraint between 0 and 1 and use them ro reduce the reliability index
-	// Or wrap this function in a new one that does this for you.
-
-	return -value; // I want to maximize the reliability index
-}
-}
-
 auto fr2::of__reliability(
 	const WDS& anytown,
 	const bevarmejo::sim::solvers::epanet::HydSimResults& res,
@@ -1179,25 +1129,54 @@ auto fr2::of__reliability(
     std::size_t discrete_steps_unsati_solutions
 ) -> double
 {
-	// With this formulation, we have one additional constraint to include with
-	// respect to the fr2::of__reliability. This is the maximum velocity constraint.
+	// Objective function 2:
+    // It is divided in 3 parts:
+    // A: [2 -> 1]
+    // Unfeasible solutions in the EPS: share of unfeasible timesteps.
+	// if 'discrete_steps_failed_solutions' is different from 0 tells you in how 
+	// many parts this part of the objective space is discretized.
+    // B: [1 -> 0]
+    // Feasible solutions in the EPS: EPS constraint violations
+    //      - total normalized pressure deficit
+    //      - max velocity normalized
+    // C: [0 -> -1]
+	// Todini Reliability index integrated through time.
 
-	// We need to return the average of the constraint violations if there are any.
-	// If there are no constraint violations, we return the reliability index.
+    // Part A
+    const auto n_steps = res.size();
+    const auto n_correct_steps = std::count(res.values().begin(), res.values().end(), 0);
 
-	// We re use the reliability index from the previous formulation.
-	// This is between 2 and 1 for unfeasible solutions.
-	// This is between 1 and 0 for solutions that do not satisfy the pressure constraint.
-	// This is between 0 and -1 for solutions that satisfy the pressure constraint (the value is the rel index).
-	double value = detail::of__reliability(anytown, res);
+    if (n_correct_steps < n_steps) {
+		// Share of failed steps.
+		const double cvalue = ((double)n_steps - (double)n_correct_steps) / (double)n_steps;
+		
+		// This variable specify if the objective space between 1 and 2 is to be discretized and by how much
+		if (discrete_steps_failed_solutions == 0) {
+			return cvalue + 1.0;
+		}
 
-	// If value >= 1.0, it's an unfeasible solution, we just forward it. 
-	if (value >= 1.0)
-	{
-		return value;
+		const double step = 1.0 / discrete_steps_failed_solutions;
+
+		// Find which discrete step this continuous value falls into
+		// We use ceiling to ensure values > (1 + k*step_size) map to the next
+		// higher discrete level
+		const int dstep = std::ceil(cvalue / step);
+
+		// Clamp to valid range [1, discrete_steps_failed_solutions] and convert back to [1, 2] range
+    	const int clamped_step = std::max(1, std::min(dstep, (int)discrete_steps_failed_solutions));
+    
+    	return 1.0 + (double)clamped_step / (double)discrete_steps_failed_solutions;
 	}
 
-	// The solution is mathematically feasible, so we compute the maximum velocity constraint violation.
+	// All steps are correctly solved, now check the pressure deficit
+	// Part B
+	const auto normdeficit_daily = pressure_deficiency(
+		anytown,
+		anytown::min_pressure__psi*MperFT/PSIperFT,
+		/*relative=*/ true
+	);
+	const auto pressure_violation = normdeficit_daily.back().first == 0 ? 
+		normdeficit_daily.value() : normdeficit_daily.integrate_forward() / normdeficit_daily.back().first;
 
 	double observed_max_velocity = 0.0;
 	for (const auto& [id, pipe] : anytown.pipes())
@@ -1210,17 +1189,25 @@ auto fr2::of__reliability(
 			}
 		}
 	}
-	// With the velocity violation written like this we can a violation > 1 or even 2.
-	// So the objective function is not really bounded by the 2.
-	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ? 0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
+	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ?
+		0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
+
+	// We must do the average of the violations because we want it to be at 0 when both are at 0.
+    auto total_violation = (pressure_violation+velocity_violation) / 2.0;
+    
+    if (total_violation > 0.0) {
+		return total_violation;
+	}
+
+	// The solution is feasible and satisfies all constraints.
+	// Part C
+	const auto ir_daily = resilience_index_from_min_pressure(
+		anytown,
+		bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT
+	);
 	
-	// We extract the pressure violation and todini's rel index from the value
-	double pressure_violation = (value > 0.0) ? value : 0.0;
-	double ir = (value <= 0.0) ? value : 0.0; // unneccessary, but here for better readability of return value
-
-	double total_violation = (pressure_violation + velocity_violation) / 2.0;
-
-	return (total_violation > 0.0) ? total_violation : ir;
+	return ir_daily.back().first == 0 ?
+		-ir_daily.value() : -(ir_daily.integrate_forward() / ir_daily.back().first);
 }
 
 auto Problem::reset_dv(
