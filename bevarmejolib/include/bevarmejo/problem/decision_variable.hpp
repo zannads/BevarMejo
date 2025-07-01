@@ -43,10 +43,6 @@ public:
 public:
     void reconfigure(const DecisionVectorMask& continuous_dvs);
 
-// transformation
-private:
-    auto reorder(const DecisionVector& original, const Indexes& idxs, std::string_view from_format_str, std::string_view to_format_str) const -> DecisionVector;
-
 public:
     auto from_beme_to_pagmo(const DecisionVector& original) const -> DecisionVector;
 

@@ -58,17 +58,12 @@ public:
     // Number of INequality constraints
     std::vector<double>::size_type get_nic() const;
 
-    // Number of integer decision variables
-    std::vector<double>::size_type get_nix() const;
-
     // Mandatory public functions necessary for the optimization algorithm:
     // Implementation of the objective function.
     std::vector<double> fitness(const std::vector<double>& dvs) const;
 
     // Implementation of the box bounds.
-    std::pair<std::vector<double>, std::vector<double>> get_bounds() const;
-
-    void save_solution(const std::vector<double>& dvs, const fsys::path& out_file) const;
+    std::pair<std::vector<double>, std::vector<double>> get_bounds() const override;
 
 protected:
     Formulation m__formulation; // Track the problem formulation
@@ -105,7 +100,7 @@ protected:
     void reset_dv(const std::vector<double>& dvs) const;
 
     // Helper to transform the decision variables from pagmo to beme format
-    std::vector<bool> get_continuous_dvs_mask() const;
+    std::vector<bool> get_continuous_dvs_mask() const override;
 private:
     // Json serializers
     friend void to_json(Json &j, const Problem &prob);
@@ -113,15 +108,6 @@ private:
 }; // class Problem
     
 } // namespace anytown_systol25
-
-namespace anytown::fnt3
-{
-auto bounds__tanks(InputOrderedRegistryView<WDS::Junction> tank_locs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options) -> std::pair<std::vector<double>, std::vector<double>>;
-auto apply_dv__tanks(WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> void;
-auto cost__tanks(const WDS& anytown, const std::vector<double>& dvs, const std::vector<bevarmejo::anytown::tank_option> &tank_options, const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options) -> double;
-auto reset_dv__tanks(WDS& anytown, const std::vector<double>& dvs) -> void;
-} // namespace anytown::fnt3
-
 
 } // namespace bevarmejo
 

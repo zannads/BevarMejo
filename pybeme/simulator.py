@@ -104,7 +104,7 @@ class Simulator:
                     fitness_vector: list = None,
                     id: int = 0,
                     print_message: str = "",
-                    bemelib_version: str = "v25.02.0",
+                    bemelib_version: str = "v25.06.0",
                     lookup_paths: list = None):
         
         self.data = {
@@ -140,7 +140,7 @@ class Simulator:
         # Prepare the command to run the simulator
         beme_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # The root folder of the project is outside the pybeme folder
         release_dir = os.path.join(beme_dir, 'builds', release_version)
-        command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv'
+        command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
         # Run the command
         simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
@@ -157,10 +157,22 @@ class Simulator:
         os.remove(f"{self.data['id']}.fv.json")
 
         self.result = np.array(fv)
-        return fv
+
+        # Same thing for the metrics file
+        metrics_file = f"{self.data['id']}.mtr.json"
+        if os.path.exists(metrics_file):
+            with open(metrics_file, 'r') as file:
+                metrics = json.load(file)
+            os.remove(metrics_file)
+            self.metrics = metrics
+        else:
+            self.metrics = {}
+
+        return self.result
     
     def save_inps(self, directory: str = ".tmp") -> list:
         # Save the network models to inp files
+        os.makedirs(directory, exist_ok=True)
         
         # Run the simulator with the saveinp flag
         self.run("--saveinp")
@@ -195,7 +207,7 @@ class Simulator:
             return self.networks
         
     if epyt_available:
-        def epanet_networks(self) -> list:
+        def epanet_networks(self, remove_files: bool = True) -> list:
             # Return the water network models
             # Run with the saveinp flag
             # List the inp files
@@ -210,12 +222,13 @@ class Simulator:
                               customlib=os.path.join(os.path.expanduser("~"), "repos", "zannadsEPANET", "builds", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}","lib", "libepanet2.dylib"),
                               display_msg=True, display_warnings=True)
                 networks.append(enet)
-                os.remove(inp_file)
+                if remove_files:
+                    os.remove(inp_file)
 
             self.networks = networks
 
             return self.networks
-        
+            
     def convert_to_formulation(self, formulation: str) -> "Simulator":
 
         suite = self.data['problem']['type'].split('::')[0]
