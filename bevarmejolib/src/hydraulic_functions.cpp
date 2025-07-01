@@ -237,8 +237,9 @@ double resilience_index(const std::vector<double>& req_flows_dnodes_lps,
         denominator -= req_flows_dnodes_lps[i] * req_head_dnodes_m[i] / 1000;
     }
 
-    // return the Ir if the denominator is not 0 otherwise return - infinity (min of double)
-    return denominator > 0 ? numerator/denominator : std::numeric_limits<double>::min();
+    // The denominator should be 0 only if entering power is exactly equal to the required exiting power.
+    // This would require no energy loss which should be impossible in EPANET.
+    return denominator > 0 ? numerator/denominator : std::numeric_limits<double>::infinity();
 }
     
 } // namespace bevarmejo
