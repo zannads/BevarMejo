@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -55,6 +56,9 @@ static constexpr bemeio::AliasedKey tank_opts {"Tank options"}; // "Tank options
 static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump group operations"
 #endif
 static constexpr bemeio::AliasedKey max_vel{"Pipe max velocity"}; // "Pipe max velocity"
+static constexpr bemeio::AliasedKey cap_cost{"Additional capital cost"}; // "Additional capital cost"
+static constexpr bemeio::AliasedKey ds_fail_sols{"N ds failed sols"}; // "N ds failed sols"
+static constexpr bemeio::AliasedKey ds_unsat_sols{"N ds unsati sols"}; // "N ds unsati sols" 
 } // namespace key
 // Values for the allowed formulations in the json file.
 namespace io::value {
@@ -70,6 +74,9 @@ static const std::string rehab_f4 = "rehab::f4";
 static const std::string mixed_f4 = "mixed::f4";
 static const std::string rehab_f5 = "rehab::f5";
 static const std::string mixed_f5 = "mixed::f5";
+static const std::string rehab_f6 = "rehab::f6";
+static const std::string mixed_f6 = "mixed::f6";
+static const std::string opertns_f2 = "operations::f2";
 } // namespace io::value
 
 // Extra information for the formulations.
@@ -86,38 +93,42 @@ static const std::string rehab_f4_exinfo =  "Anytown Rehabilitation Formulation 
 static const std::string mixed_f4_exinfo =  "Anytown Mixed Formulation 4\nOperations as dv, pipes as single dv, Tanks as before, of reliability formulation 3 (velocities)\n";
 static const std::string rehab_f5_exinfo =  "Anytown Rehabilitation Formulation 5\nOperations from input, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
 static const std::string mixed_f5_exinfo =  "Anytown Mixed Formulation 5\nOperations as dv, pipes as single dv, Tanks as Farmani, of reliability formulation 3 (velocities)\n";
-}
+static const std::string rehab_f6_exinfo =  "Anytown Rehabilitation Formulation 6\nOperations from input, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
+static const std::string mixed_f6_exinfo =  "Anytown Mixed Formulation 6\nOperations as dv, pipes as single dv, Tanks as LocVolRisDiamH2DRatio, of reliability formulation 3 (velocities)\n";
+static const std::string opertns_f2_exinfo = "Anytown Operations-only problem. Pure 24-h scheduling. New objectives and cost as net present value.\n";
 
-auto decompose_pumpgroup_pattern(
-	std::vector<double> pg_pattern,
-	const std::size_t n_pumps
-) -> std::vector<std::vector<double>>
-{
-	// I want a copy of the decision variables because every time I put a 
-	// pattern to 1 I want to remove it from the vector.
-	std::size_t n_periods = pg_pattern.size();
-	std::vector<std::vector<double>> patterns (n_pumps, std::vector<double>(n_periods, 0.0));
-
-	for (auto& pump_pattern : patterns) {
-		auto it = pg_pattern.begin();
-		for (auto& val : pump_pattern){
-			if (*it > 0.0) {
-				val = 1.0;
-				--(*it);
-			}
-			++it;
-		}
-	}
-
-	return patterns;
 }
  
-Problem::Problem(std::string_view a_formulation_str, const Json& settings, const bemeio::Paths &lookup_paths)
+Problem::Problem(
+	std::string_view a_formulation_str,
+	const Json& settings,
+	const bemeio::Paths &lookup_paths
+) :
+	inherithed(),
+	m__anytown(),
+	m__anytown_filename(),
+	m__exi_pipe_options(anytown::exi_pipe_options),
+	m__new_pipe_options(anytown::new_pipe_options),
+	m__tank_options(anytown::tank_options),
+	m__formulation(),
+	m__exi_pipes_formulation(),
+	m__new_tanks_formulation(),
+	m__reliability_obj_func_formulation(),
+	m__ds_failed_sols(0),
+	m__ds_unsati_sols(0),
+	m__has_design(false),
+	m__has_operations(false),
+	m__additional_capital_cost(0.0),
+	m__max_velocity__m_per_s(2.0),
+	__old_HW_coeffs(),
+	m_algo(),
+	m_pop(),
+	m__cached_metrics()
 {
 	if (a_formulation_str == io::value::rehab_f1)
 	{
 		m__formulation = Formulation::rehab_f1;
-		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__exi_pipes_formulation = ExistingPipesFormulation::FarmaniEtAl2005;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__has_design = true;
@@ -127,7 +138,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	else if (a_formulation_str == io::value::mixed_f1)
 	{
 		m__formulation = Formulation::mixed_f1;
-		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__exi_pipes_formulation = ExistingPipesFormulation::FarmaniEtAl2005;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__has_design = true;
@@ -137,7 +148,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	else if (a_formulation_str == io::value::opertns_f1)
 	{
 		m__formulation = Formulation::opertns_f1;
-		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__exi_pipes_formulation = ExistingPipesFormulation::FarmaniEtAl2005;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__has_design = false;
@@ -147,7 +158,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	else if (a_formulation_str == io::value::twoph_f1)
 	{
 		m__formulation = Formulation::twoph_f1;
-		m__exi_pipes_formulation = ExistingPipesFormulation::Farmani;
+		m__exi_pipes_formulation = ExistingPipesFormulation::FarmaniEtAl2005;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Base;
 		m__has_design = true;
@@ -182,6 +193,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__max_velocity__m_per_s = std::numeric_limits<double>::infinity();
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f3_exinfo;
@@ -192,6 +204,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
 		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__max_velocity__m_per_s = std::numeric_limits<double>::infinity();
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f3_exinfo;
@@ -201,7 +214,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		m__formulation = Formulation::rehab_f4;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f4_exinfo;
@@ -211,7 +224,7 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		m__formulation = Formulation::mixed_f4;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
 		m__new_tanks_formulation = NewTanksFormulation::Simple;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f4_exinfo;
@@ -220,8 +233,8 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	{
 		m__formulation = Formulation::rehab_f5;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
-		m__new_tanks_formulation = NewTanksFormulation::Farmani;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__new_tanks_formulation = NewTanksFormulation::FarmaniEtAl2005;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = false;
 		m__extra_info = io::other::rehab_f5_exinfo;
@@ -230,21 +243,68 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	{
 		m__formulation = Formulation::mixed_f5;
 		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
-		m__new_tanks_formulation = NewTanksFormulation::Farmani;
-		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity;
+		m__new_tanks_formulation = NewTanksFormulation::FarmaniEtAl2005;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
 		m__has_design = true;
 		m__has_operations = true;
 		m__extra_info = io::other::mixed_f5_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::rehab_f6)
+	{
+		m__formulation = Formulation::rehab_f6;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__has_design = true;
+		m__has_operations = false;
+		m__extra_info = io::other::rehab_f6_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::mixed_f6)
+	{
+		m__formulation = Formulation::mixed_f6;
+		m__exi_pipes_formulation = ExistingPipesFormulation::Combined;
+		m__new_tanks_formulation = NewTanksFormulation::LocVolRisDiamH2DRatio;
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__has_design = true;
+		m__has_operations = true;
+		m__extra_info = io::other::mixed_f6_exinfo;
+	}
+	else if (a_formulation_str == bevarmejo::anytown::io::value::opertns_f2)
+	{
+		m__formulation = Formulation::opertns_f2;
+		// m__exi_pipes_formulation
+		// m__new_tanks_formulation
+		m__reliability_obj_func_formulation = ReliabilityObjectiveFunctionFormulation::Hierarchical;
+		m__has_design = false;
+		m__has_operations = true;
+		m__extra_info = io::other::opertns_f2_exinfo;
 	}
 	else
 	{
 		beme_throw(std::invalid_argument, "Impossible to construct the anytown Problem.",
 			"The provided Anytown formulation is not yet implemented.");
 	}
-	m__name = bemeio::log::nname::beme_l+nname+std::string(a_formulation_str);
+	m__name = (
+        bemeio::other::nsp__beme +
+        bemeio::other::sep__namespaces +
+        problem_name + 
+        bemeio::other::sep__namespaces +
+        std::string(a_formulation_str)
+    );
 
+	load_network(settings, lookup_paths);
+
+	load_other_data(settings, lookup_paths);
+	
 	// We have "configured" the formulations for the various parts, we can pass this info to the adapter
 	m__dv_adapter.reconfigure(this->get_continuous_dvs_mask());
+}
+
+void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths)
+{
+	assert(settings != nullptr && io::key::at_inp.exists_in(settings));
+
+	const auto inp_filename = settings.at(io::key::at_inp.as_in(settings)).get<fsys::path>();
 
 	// Unfortunately, this is always necessary because of the way that the inp file is loaded
 	std::function<void (EN_Project)> fix_inp = [](EN_Project ph) {
@@ -259,13 +319,174 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 		assert(errorcode <= 100);
 	};
 
-	load_network(settings, lookup_paths, fix_inp);
+	// Check the existence of the inp_filename in any of the lookup paths and its extension
+	m__anytown = std::make_shared<WDS>(
+		bemeio::locate_file</* log = */true>(inp_filename, lookup_paths), 
+		fix_inp
+	);
+	m__anytown_filename = inp_filename.string();
 
-	if (m__formulation != Formulation::opertns_f1) {
-		// Custom made subnetworks for the temporary elements 
+	// Load the sequences of names for the subnetworks
+	if (io::key::at_subnets.exists_in(settings)) {
+		auto j_names = Json{}; // Json for the named sequences of names
+		// If is in array of strings it is the name of the files, otherwise it is a json object with the data.
+		bemeio::expand_if_filepaths(
+			settings.at(io::key::at_subnets.as_in(settings)),
+			lookup_paths,
+			j_names
+		);
+
+		for (const auto& [seq_name, names_in_seq] : j_names.items()) {
+			m__anytown->submit_id_sequence(seq_name, names_in_seq.get<std::vector<std::string>>());
+		}
+	}
+	
+	// Just check that all mandatory networks have been added, otherwise add them from the default.
+	// Lambda to check if a mandatory id sequence was added.
+	auto has_id_sequence = [this](const auto& subnet_name) -> bool {
+		for (auto&& id_seq : m__anytown->id_sequences()) {
+			if (id_seq.name == subnet_name) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	if (!has_id_sequence(anytown::city_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::city_pipes__subnet_name, anytown::city_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::exis_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::exis_pipes__subnet_name, anytown::exis_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::new_pipes__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::new_pipes__subnet_name, anytown::new_pipes__el_names);
+	}
+	if (!has_id_sequence(anytown::pos_tank_loc__subnet_name)) {
+		m__anytown->submit_id_sequence(anytown::pos_tank_loc__subnet_name, anytown::pos_tank_loc__el_names);
+	}
+
+	// Custom made subnetworks for the temporary elements 
+	if (
+		m__formulation != Formulation::opertns_f1 &&
+		m__formulation != Formulation::opertns_f2
+	) {
 		m__anytown->submit_id_sequence(label::__temp_elems);
+	}
 
-		load_other_data(settings, lookup_paths);
+	// Prepare the simulation settings.
+	long h_step = 0;
+    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
+    assert(errorcode < 100);
+    long horizon = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
+    assert(errorcode < 100);
+
+	m__eps_settings.resolution(h_step).horizon(horizon);
+
+    long r_step = 0;
+    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
+    assert(errorcode < 100);
+
+    m__eps_settings.report_resolution(r_step);
+}
+
+void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
+	// Optional values modifying the behaviour of the problem,
+	// They are all default initialized in the Problem constructor and overwritten here 
+	// only if the key is present.
+	
+	assert(settings != nullptr);
+
+	if (io::key::exi_pipe_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::exi_pipe_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
+		
+		m__exi_pipe_options = j.get<std::vector<anytown::exi_pipe_option>>();
+	}
+
+	if (io::key::new_pipe_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::new_pipe_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
+	
+		m__new_pipe_options = j.get<std::vector<anytown::new_pipe_option>>();
+	}
+	
+	if (io::key::tank_opts.exists_in(settings)) {
+		auto j = Json{};
+		bemeio::expand_if_filepath(
+			settings.at(io::key::tank_opts.as_in(settings)),
+			lookup_paths,
+			j
+		);
+		
+		m__tank_options = j.get<std::vector<anytown::tank_option>>();
+	}
+
+	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
+	{
+		auto operations = std::vector<double> (
+			pump_group_operations.begin(),
+			pump_group_operations.end()
+		);
+
+		if (io::key::opers.exists_in(settings)) {
+			auto j = Json{}; // Json for the operations
+			bemeio::expand_if_filepath(
+				settings.at(io::key::opers.as_in(settings)),
+				lookup_paths,
+				j
+			);
+
+			operations = j.get<std::vector<double>>();
+			assert(operations.size() == pgo_dv::size);
+		}
+
+		// Fix pumps' patterns
+		for (int i = 0; i < 3; ++i) {
+			// no need to go through the pumps, I know the pattern ID
+			int pattern_idx = 0;
+			int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+			assert(errorcode <= 100);
+
+			std::vector<double> temp(24, 0.0);
+			for (int j = 0; j < 24; ++j) {
+				temp[j] = operations[j] > i ? 1.0 : 0.0;
+			}
+
+			errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+			assert(errorcode <= 100);
+
+			// Should be the same as
+			// m__anytown->pumps().find(std::to_string(i+2))->operator->()->speed_pattern() = temp;
+			// but I can avoid as it is not used yet
+		}
+	}
+
+	if (io::key::max_vel.exists_in(settings)) {
+		m__max_velocity__m_per_s = settings[io::key::max_vel.as_in(settings)];
+
+		// Note that if the key doesn't exist it keeps the default value (2.0), unless
+		// it is a formulation that overwrites that...
+	}
+
+	if (io::key::cap_cost.exists_in(settings)) {
+		m__additional_capital_cost = settings[io::key::cap_cost.as_in(settings)];
+	}
+
+	if (io::key::ds_fail_sols.exists_in(settings)) {
+		m__ds_failed_sols = settings[io::key::ds_fail_sols.as_in(settings)];
+	}
+
+	if (io::key::ds_unsat_sols.exists_in(settings)) {
+		m__ds_unsati_sols = settings[io::key::ds_unsat_sols.as_in(settings)];
 	}
 
 	if (m__formulation == Formulation::twoph_f1) {
@@ -293,99 +514,6 @@ Problem::Problem(std::string_view a_formulation_str, const Json& settings, const
 	}
 }
 
-void Problem::load_network(const Json& settings, const bemeio::Paths& lookup_paths, std::function<void (EN_Project)> preprocessf)
-{
-	assert(settings != nullptr &&
-		io::key::at_inp.exists_in(settings) &&
-		io::key::at_subnets.exists_in(settings)
-	);
-	const auto inp_filename = settings.at(io::key::at_inp.as_in(settings)).get<fsys::path>();
-
-	// Check the existence of the inp_filename in any of the lookup paths and its extension
-	m__anytown = std::make_shared<WDS>(
-		bemeio::locate_file</* log = */true>(inp_filename, lookup_paths), 
-		preprocessf
-	);
-	m__anytown_filename = inp_filename.string();
-
-	// Load the sequences of names for the subnetworks
-	// If is in array of strings it is the name of the files, otherwise it is a json object with the data.
-
-	auto j_names = Json{}; // Json for the named sequences of names
-	bemeio::expand_if_filepaths(settings.at(io::key::at_subnets.as_in(settings)), lookup_paths, 
-		j_names);
-
-	for (const auto& [seq_name, names_in_seq] : j_names.items())
-	{
-		m__anytown->submit_id_sequence(seq_name, names_in_seq.get<std::vector<std::string>>());
-	}
-	
-}
-
-void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_paths) {
-	assert(
-		settings != nullptr && 
-		io::key::exi_pipe_opts.exists_in(settings) && 
-		io::key::new_pipe_opts.exists_in(settings) &&
-		io::key::tank_opts.exists_in(settings)
-	);
-	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
-		assert(io::key::opers.exists_in(settings));
-
-	// If the settings is a string it means it is a filename, otherwise it shuold 
-	// be a json array with the data.
-	auto j_aep = Json{}; // Json for the available existing pipes
-	bemeio::expand_if_filepath(settings.at(io::key::exi_pipe_opts.as_in(settings)), lookup_paths, 
-		j_aep);
-	
-	m__exi_pipe_options = j_aep.get<std::vector<anytown::exi_pipe_option>>();
-	
-	auto j_anp = Json{}; // Json for the available new pipes
-	bemeio::expand_if_filepath(settings.at(io::key::new_pipe_opts.as_in(settings)), lookup_paths, 
-		j_anp);
-
-	m__new_pipe_options = j_anp.get<std::vector<anytown::new_pipe_option>>();
-	
-	auto j_tanks = Json{}; // Json for the tanks costs
-	bemeio::expand_if_filepath(settings.at(io::key::tank_opts.as_in(settings)), lookup_paths, 
-		j_tanks);
-		
-	m__tank_options = j_tanks.get<std::vector<anytown::tank_option>>();
-
-	if (!m__has_operations && m__formulation != Formulation::twoph_f1)
-	{
-		// Need to se the operations for the rehabilitation problems
-		auto j_oper = Json{}; // Json for the operations
-		bemeio::expand_if_filepath(settings.at(io::key::opers.as_in(settings)), lookup_paths, 
-			j_oper);
-		auto operations = j_oper.get<std::vector<double>>();
-		assert(operations.size() == 24);
-
-		// Fix pumps' patterns
-		for (int i = 0; i < 3; ++i) {
-			// no need to go through the pumps, I know the pattern ID
-			int pattern_idx = 0;
-			int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
-			assert(errorcode <= 100);
-
-			std::vector<double> temp(24, 0.0);
-			for (int j = 0; j < 24; ++j) {
-				temp[j] = operations[j] > i ? 1.0 : 0.0;
-			}
-
-			errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
-			assert(errorcode <= 100);
-
-			// Should be the same as
-			// m__anytown->pumps().find(std::to_string(i+2))->operator->()->speed_pattern() = temp;
-			// but I can avoid as it is not used yet
-		}
-	}
-
-	// Optional value that is only used in the reliability function from formulations 4:
-	m__max_velocity__m_per_s = settings.value(io::key::max_vel.as_in(settings), 2.0); // 2 m/s
-}
-
 // ------------------- Pagmo functions ------------------- //
 // For now, all formulations have a fixed number of objectives, constraints, but different number of variables
 auto Problem::get_nobj() const -> std::vector<double>::size_type
@@ -403,88 +531,125 @@ auto Problem::get_nic() const -> std::vector<double>::size_type
 	return 0ul;
 }
 
-auto Problem::get_nix() const -> std::vector<double>::size_type
-{
-	auto mask = get_continuous_dvs_mask();
-	return std::count(mask.begin(), mask.end(), false);
-}
-
 auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
 {
-	std::size_t s = 0;
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
-	{
-		s += 70;
-	}
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
-	{
-		s += 35;
+	std::size_t mask_size = 0;
+	if (m__has_design) {
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		std::size_t dv_size = [this]() {
+			switch (m__exi_pipes_formulation)
+			{
+				case ExistingPipesFormulation::FarmaniEtAl2005:
+					return fep1::dv_size;
+				case ExistingPipesFormulation::Combined:
+					return fep2::dv_size;
+				default:
+					return fep1::dv_size;
+			}
+		}();
+		mask_size += subnet_size*dv_size;
+
+		// New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		dv_size = fnp1::dv_size;
+		mask_size += dv_size*subnet_size;
 	}
 	
-	if (m__has_design)
-	{
-		s += 6;
+	if (m__has_operations) {
+		mask_size += pgo_dv::size;
 	}
 
-	if (m__has_operations)
-	{
-		s += 24;
-	}
-
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
-	{
-		s += 4;
-	}
-
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
-	{
-		s += 12;
+	if (m__has_design) {
+		std::size_t dv_size = [this]() {
+			switch (m__new_tanks_formulation)
+			{
+				case NewTanksFormulation::Simple:
+					return fnt1::dv_size;
+				case NewTanksFormulation::FarmaniEtAl2005:
+					return fnt2::dv_size;
+				case NewTanksFormulation::LocVolRisDiamH2DRatio:
+					return fnt3::dv_size;
+				default:
+					return fnt1::dv_size;
+			}
+		}();
+		mask_size += dv_size*max_n_installable_tanks;
 	}
 
 	// Mask indicating which decision variable is continuous and hwihc one is discrete
 	// Used by the PagmoDecisionVectorAdapter to rearrange them.
 	// we put all true by default because in pagmo by default nix is 0 and they are all considered continuous dvs 
-	auto mask = std::vector<bool>(s, true);
+	auto mask = std::vector<bool>();
+	mask.reserve(mask_size);
 
-	s = 0;
-	auto make_next_n_discrete_and_advance = [&mask, &s](std::size_t n) {
-		auto end = (mask.begin()+s+n) < mask.end() ? mask.begin()+s+n : mask.end();
-		for (auto it = mask.begin()+s; it < end; ++it, ++s)
-			*it = false;
-	};
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
-	{
-		make_next_n_discrete_and_advance(70);	
-	}
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
-	{
-		make_next_n_discrete_and_advance(35);
-	}
-	
-	if (m__has_design)
-	{
-		make_next_n_discrete_and_advance(6);
-	}
+	std::size_t pos = 0;
 
-	if (m__has_operations)
-	{
-		make_next_n_discrete_and_advance(24);
-	}
+	if (m__has_design) {
 
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
-	{
-		make_next_n_discrete_and_advance(4);
-	}
+		// Existing pipes
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		for (auto i = 0; i < subnet_size; ++i) {
+			switch (m__exi_pipes_formulation)
+			{
+				case ExistingPipesFormulation::FarmaniEtAl2005:
+					mask.insert(mask.end(),
+						fep1::dv_continous_mask.begin(),
+						fep1::dv_continous_mask.end()
+					);
+					break;
+				case ExistingPipesFormulation::Combined:
+					mask.insert(mask.end(),
+						fep2::dv_continous_mask.begin(),
+						fep2::dv_continous_mask.end()
+					);
+					break;
+			}
+		}
 
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
-	{
-		make_next_n_discrete_and_advance(2); // For riser diameter and tank location of first choice
-		s += 4; // For tank diam, hmax, hmin, safety level of first choice
-		make_next_n_discrete_and_advance(2); // Same but second choice
-		s += 4;
+		// New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		for (auto i = 0; i < subnet_size; ++i) {
+			mask.insert(mask.end(),
+				fnp1::dv_continous_mask.begin(),
+				fnp1::dv_continous_mask.end()
+			);
+		}
 	}
 
-	return mask;
+	if (m__has_operations) {
+		mask.insert(mask.end(),
+			pgo_dv::is_continous_mask.begin(),
+			pgo_dv::is_continous_mask.end()
+		);
+	}
+
+	if (m__has_design) {
+		for (auto i = 0; i < max_n_installable_tanks; ++i) {
+			switch (m__new_tanks_formulation)
+			{
+				case NewTanksFormulation::Simple:
+					mask.insert(mask.end(),
+						fnt1::dv_continous_mask.begin(),
+						fnt1::dv_continous_mask.end()
+					);
+					break;
+				case NewTanksFormulation::FarmaniEtAl2005:
+					mask.insert(mask.end(),
+						fnt2::dv_continous_mask.begin(),
+						fnt2::dv_continous_mask.end()
+					);
+					break;
+				case NewTanksFormulation::LocVolRisDiamH2DRatio:
+					mask.insert(mask.end(),
+						fnt3::dv_continous_mask.begin(),
+						fnt3::dv_continous_mask.end()
+					);
+			}
+		}
+
+	}
+
+	return std::move(mask);
 }
 
 // ------------------- 1st level ------------------- //
@@ -492,8 +657,15 @@ auto Problem::fitness(
 	const std::vector<double>& pagmo_dv
 ) const -> std::vector<double>
 {
-	// First thing first reconvert back from the pagmo ordering to the beme one
-	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+	// Let's pre-allocate in case something doesn't work out.
+	std::vector<double> fitv(get_nobj()+get_nec()+get_nic(), std::numeric_limits<double>::max());
+
+    // First thing first reconvert back from the pagmo ordering to the beme one.
+	const auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
+
+	// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
+	// This doesn't allow parallelization unless you have different copies of the problem.
+    apply_dv(dvs);
 
 	// things to do 
 	// 1. EPS 
@@ -502,7 +674,7 @@ auto Problem::fitness(
 	// 	 [x]	check energy consumption
 	// 	 [x]	check pressure for reliability
 	// 	 [x]	check min pressure constraint
-	// 	 [ ]	check tanks complete emptying and filling
+	// 	 [x]	check tanks complete emptying and filling (implicit)
 	// 2. instantenous peak flow
 	// 		apply changes wrt EPS
 	//      	not running anymore for 24h but instantenous 
@@ -515,51 +687,42 @@ auto Problem::fitness(
 	//			add the emitters and then remove them and repeat for the next condition
 	// 		check min pressure constraint 
 
-
-	// For now, instead of creating a copy object, I will just apply the changes to the network and then reset it.
-	// This doesn't allow parallelization unless you have different copies of the problem.
-	// For duplicate pipes they will have name Dxx where xx is the original pipe name.
-	// For cleaned pipes I write on a vector the original HW coefficients and then I reset them.
-	// For new pipes and pumps (dvs from 71 onwards) I don't need to reset them as they are always overwritten.
-
 	// 1. EPS
-	//auto anytown_temp = m__anytown->clone(); 
-	// in the future this will be a perfect copy and I will be able to call 
-	// everything in a new thread and then simply discard it.
+	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, m__eps_settings);
 
-	apply_dv(m__anytown, dvs);
+	if (!m__inp_base_filename.empty()) {
+		auto orig_filename_stem = fsys::path(m__anytown_filename).stem().string();
+		
+		auto out_file = fsys::current_path()/fsys::path(
+			m__inp_base_filename + 
+			bemeio::other::sep__beme_filenames +
+			orig_filename_stem +
+			bemeio::other::sep__beme_filenames +
+			"EPS" +
+			bemeio::other::sep__beme_filenames +
+			"0" +
+			bemeio::other::ext__inp
+		);
 
-	sim::solvers::epanet::HydSimSettings settings;
+		int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
+		assert(errco <= 100);
 
-	long h_step = 0;
-    int errorcode = EN_gettimeparam(m__anytown->ph(), EN_HYDSTEP, &h_step);
-    assert(errorcode < 100);
-    long r_step = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_REPORTSTEP, &r_step);
-    assert(errorcode < 100);
-    long horizon = 0;
-    errorcode = EN_gettimeparam(m__anytown->ph(), EN_DURATION, &horizon);
-    assert(errorcode < 100);
-
-	settings.resolution(h_step);
-	settings.report_resolution(r_step);
-	settings.horizon(horizon);
-
-	auto results = sim::solvers::epanet::solve_hydraulics(*m__anytown, settings);
+		bevarmejo::io::stream_out(std::cout,
+			"EPANET '.inp' file saved in: ",
+			out_file.string(),
+			"\n"
+		);
+	}
 
 	if (!sim::solvers::epanet::is_successful_with_warnings(results))
 	{
 		bemeio::stream_out( std::cerr, "Error in the hydraulic simulation. \n");
-		reset_dv(m__anytown, dvs);
-		return std::vector<double>(get_nobj()+get_nec()+get_nic(), 
-					std::numeric_limits<double>::max());
+		reset_dv(dvs);
+		return std::move(fitv);
 	}
 
-	// Compute OF on res. 
-	std::vector<double> fitv(get_nobj(), 0.0);
-
 	// First objective is always cost for all formulations.
-	fitv[0] = cost(*m__anytown, dvs);
+	fitv[0] = cost(dvs);
 	
 	// Second objective is the of__reliability, based on the formulation
 	switch (m__reliability_obj_func_formulation)
@@ -568,61 +731,160 @@ auto Problem::fitness(
 		fitv[1] = fr1::of__reliability(*m__anytown);
 		break;
 	case ReliabilityObjectiveFunctionFormulation::Hierarchical:
-		fitv[1] = fr2::of__reliability(*m__anytown, results);
-		break;
-	case ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity:
-		fitv[1] = fr3::of__reliability(*m__anytown, results, m__max_velocity__m_per_s);
+		fitv[1] = fr2::of__reliability(
+			*m__anytown, results,
+			m__max_velocity__m_per_s,
+			m__ds_failed_sols,
+			m__ds_unsati_sols
+		);
 		break;
 	default:
 		break;
 	}
 	
-	reset_dv(m__anytown, dvs);
-	return fitv;
+	if (!m__metrics_filename.empty()) {
+		auto filename = fsys::current_path()/fsys::path(
+			m__metrics_filename + 
+			bemeio::other::ext__beme_metrics +
+			bemeio::other::ext__json
+		);
+
+		Json jout = {
+			{"capital_cost", m__cached_metrics.capital_cost},
+			{"energy_cost_per_day", m__cached_metrics.energy_cost_per_day} 
+		};
+
+		std::ofstream out_file(filename);
+		if (!out_file.is_open()) {
+			bevarmejo::io::stream_out(std::cerr,
+				"Impossible to save the metrics to file.",
+				"Could not open the metrics file."
+				"File:", filename, "\n",
+				"\nContent:\n",
+				jout
+			);
+			
+		}
+		else {
+			out_file << jout.dump() << std::endl;
+			out_file.close();
+
+			bevarmejo::io::stream_out(std::cout,
+				"Metrics saved in file: ",
+				filename.string(),
+				"\n"
+			);
+		}
+	}
+
+	reset_dv(dvs);
+    return std::move(fitv);
 }
 
 // ------------------- 2nd level ------------------- //
 auto Problem::apply_dv(
-	std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown,
 	const std::vector<double>& dvs
 ) const -> void
 {
-	anytown->cache_indices();
+	m__anytown->cache_indices();
 
-	std::size_t i = 0.0;
-	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
-	{
-		fep1::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, extract_next(70), m__exi_pipe_options);
-		i += 70;
-	}
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
-	{
-		fep2::apply_dv__exis_pipes(*anytown, __old_HW_coeffs, extract_next(35), m__exi_pipe_options);
-		i += 35;
+	// Unfortunately I have to follow an order that doesn't make sense, which is the one on which I implemented the dvs.
+	// 1. Existing pipes,
+	// 2. new pipes
+	// 3. operations 
+	// 4. tanks
+	auto curr_dv = dvs.begin();
+	if (m__has_design) {
+		// 1. Existing pipes
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		std::size_t gene_size;
+		switch (m__exi_pipes_formulation)
+		{
+			case ExistingPipesFormulation::FarmaniEtAl2005:
+				gene_size = fep1::dv_size*subnet_size;
+				fep1::apply_dv__exis_pipes(
+					*m__anytown,
+					__old_HW_coeffs,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			case ExistingPipesFormulation::Combined:
+				gene_size = fep2::dv_size*subnet_size;
+				fep2::apply_dv__exis_pipes(
+					*m__anytown,
+					__old_HW_coeffs,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
+
+		// 2. New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		gene_size = fnp1::dv_size*subnet_size;
+		fnp1::apply_dv__new_pipes(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size,
+			m__new_pipe_options
+		);
+		curr_dv += gene_size;
 	}
 
-	if (m__has_design)
-	{
-		apply_dv__new_pipes(*anytown, extract_next(6), m__new_pipe_options);
-		i += 6;
+	// 3. Operations
+	if (m__has_operations) {
+		auto gene_size = pgo_dv::size;
+		pgo_dv::apply_dv__pumps(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size
+		);
+		curr_dv += gene_size;
 	}
 
-	if (m__has_operations)
-	{
-		apply_dv__pumps(*anytown, extract_next(24));
-		i += 24;
-	}
-
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
-	{
-		fnt1::apply_dv__tanks(*anytown, extract_next(4), m__tank_options);
-		i += 4;
-	}
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
-	{
-		fnt2::apply_dv__tanks(*anytown, extract_next(12), m__new_pipe_options);
-		i += 12;
+	// 4. Tanks
+	if (m__has_design) {
+		auto gene_size = 0;
+		switch (m__new_tanks_formulation)
+		{
+			case NewTanksFormulation::Simple:
+				gene_size = fnt1::dv_size*max_n_installable_tanks;
+				fnt1::apply_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options
+				);
+				break;
+			case NewTanksFormulation::FarmaniEtAl2005:
+				gene_size = fnt2::dv_size *max_n_installable_tanks;
+				fnt2::apply_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__new_pipe_options
+				);
+				break;
+			case NewTanksFormulation::LocVolRisDiamH2DRatio:
+				gene_size = fnt3::dv_size *max_n_installable_tanks;
+				fnt3::apply_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
 	}
 
 	/*
@@ -660,63 +922,134 @@ auto Problem::apply_dv(
 		
 		// To calculate the reliability index, since I lost the results in the internal optimization
 		// I have to apply the selected pattern to the network and run the simulation again. 
-		apply_dv__pumps(*anytown, m_pop.get_x().at(idx.front()));
+		apply_dv__pumps(*m__anytown, m_pop.get_x().at(idx.front()));
 		return;	
 	}
 	*/
 }
 
 auto Problem::cost(
-	const WDS &anytown,
 	const std::vector<double> &dvs
 ) const -> double
 {
+	double capital_cost = m__additional_capital_cost; // Start counting from the user provided capital cost
 
-	if (m__formulation == Formulation::opertns_f1) {
-		// Just the operational cost!
-		return cost__energy_per_day(anytown);
+	if (m__has_design) {
+		// For each dv group I need to:
+		// 1. get the gene size,
+		// 2. apply the correct cost function
+		// 3. move forwarde the curr_dv
+		auto curr_dv = dvs.begin();
+		std::size_t gene_size;
+
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		switch (m__exi_pipes_formulation)
+		{
+			case ExistingPipesFormulation::FarmaniEtAl2005:
+				gene_size = fep1::dv_size*subnet_size;
+				capital_cost += fep1::cost__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			case ExistingPipesFormulation::Combined:
+				gene_size = fep2::dv_size*subnet_size;
+				capital_cost += fep2::cost__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__exi_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
+
+		// 2. New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		gene_size = fnp1::dv_size*subnet_size;
+		capital_cost += fnp1::cost__new_pipes(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size,
+			m__new_pipe_options
+		);
+		curr_dv += gene_size;
+
+		// 3. Operations
+		if (m__has_operations) {
+			gene_size = pgo_dv::size;
+			// No cost function here we will take energy later independenlty of the 
+			// fact that there is a dv or not
+			curr_dv += gene_size;
+		}
+
+		// 4. Tanks
+		switch (m__new_tanks_formulation)
+		{
+			case NewTanksFormulation::Simple:
+				gene_size = fnt1::dv_size*max_n_installable_tanks;
+				capital_cost += fnt1::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			case NewTanksFormulation::FarmaniEtAl2005:
+				gene_size = fnt2::dv_size *max_n_installable_tanks;
+				capital_cost += fnt2::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			case NewTanksFormulation::LocVolRisDiamH2DRatio:
+				gene_size = fnt3::dv_size *max_n_installable_tanks;
+				capital_cost += fnt3::cost__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					m__tank_options,
+					m__new_pipe_options
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
 	}
-
-	// If it is a design or integrated problem, we need to consider design cost and net present value of the energy cost.
-	double capital_cost = 0.0;
 	
-	std::size_t i = 0;
-	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
-	if (m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
-	{
-		capital_cost += fep1::cost__exis_pipes(anytown, extract_next(70), m__exi_pipe_options);
-		i += 70;
-	}
-	if (m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
-	{
-		capital_cost += fep2::cost__exis_pipes(anytown, extract_next(35), m__exi_pipe_options);
-		i += 35;
-	}
-
-	capital_cost += cost__new_pipes(anytown, extract_next(6), m__new_pipe_options);
-	i += 6;
-
-	if (m__has_operations)
-	{
-		i += 24;
-	}
-
-	if (m__new_tanks_formulation == NewTanksFormulation::Simple)
-	{
-		capital_cost += fnt1::cost__tanks(anytown, extract_next(4), m__tank_options, m__new_pipe_options);
-		i += 4;
-	}
-	if (m__new_tanks_formulation == NewTanksFormulation::Farmani)
-	{
-		capital_cost += fnt2::cost__tanks(anytown, extract_next(12), m__tank_options, m__new_pipe_options);
-		i += 12;
-	}
-		
-	double energy_cost_per_day = cost__energy_per_day(anytown);
+	double energy_cost_per_day = pgo_dv::cost__energy_per_day(*m__anytown);
 	double yearly_energy_cost = energy_cost_per_day * bevarmejo::k__days_ina_year;
-	
+	double discount_rate = anytown::discount_rate;
+	double amortization_years = anytown::amortization_years;
+	if (m__formulation == Formulation::opertns_f1) {
+		// This formulation is the only one that was returning the cost per day instead
+		// of the net present cost. This is equivalent to r = 0.0 1 year, and using the day value.
+		yearly_energy_cost = energy_cost_per_day;
+		discount_rate = 0.0;
+		amortization_years = 1.0;
+	}
+
+	if (!m__metrics_filename.empty()) {
+		m__cached_metrics.capital_cost = capital_cost;
+		m__cached_metrics.energy_cost_per_day = energy_cost_per_day;
+	}
+
 	// since this function is named "cost", I return the opposite of the money I have to pay so it is positive as the word implies
-	return -bevarmejo::net_present_value(capital_cost, discount_rate, -yearly_energy_cost, amortization_years);
+	return -bevarmejo::net_present_value(
+		capital_cost,
+		discount_rate,
+		-yearly_energy_cost,
+		amortization_years
+	);
 }
 
 auto fr1::of__reliability(
@@ -727,7 +1060,7 @@ auto fr1::of__reliability(
 	double value = 0.0;
 
 	// Resilience index 
-	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT);
+	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT);
 	
 	unsigned long t_prec = 0;
 	double ir_prec = 0.0;
@@ -757,14 +1090,14 @@ auto fr1::of__reliability(
 	if (value >= 0.0) { // I consider invalid solutions (0.0) and solutions with negative reliability ???
 		// reset reliability, forget about this
 		value = 0.0;
-		const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT, /*relative=*/ true);
 		// just accumulate through the day, no need to average it out
 		for (const auto& [t, deficit] : normdeficit_daily) {
 			value += deficit;
 		}
 	}
 	else {
-		const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
+		const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT, /*relative=*/ true);
 		t_prec = 0;
 		double pdef_prec = 0.0;
 		double mean_norm_daily_deficit = 0.0;
@@ -790,79 +1123,60 @@ auto fr1::of__reliability(
 
 auto fr2::of__reliability(
 	const WDS& anytown,
-	const bevarmejo::sim::solvers::epanet::HydSimResults &res
-) -> double
-{
-	double value = 0.0;
-	/*
-	 * The reliability index will display a hierarchy for the constraints and the objectives.
-	 * Since it has to be minimized, we start from the highest priority constraint (highest objective value) and go down.
-	 * - from 2 to 1, the main constraint on mathematical solution validity. We are using EPANET that returns a warning
-	 *  when the equations are solved but the solution is not valid. This is the first thing to check.
-	 * - from 1 to 0, the normalized pressure deficit averaged across the nodes, integrated though time.
-	 *   We want to fully satisify this before moving to the reliablity index because the Ir depends on a min pressure constraint.
-	 * - from 0 to -1, the reliability index. This can be reduced by multipling by unsatisfied soft constraints.
-	 */
-
-	// Get the share of un-solved steps in the hydraulic simulation
-	int n_steps = res.size();
-	const int n_correct_steps = std::count(res.values().begin(), res.values().end(), 0);
-
-	if ( n_correct_steps <  n_steps )
-	{
-		return 1.0 + (n_steps - n_correct_steps) / (double)n_steps; 
-	}
-
-	// All steps are solved, now check the pressure deficit
-
-	// Get the cumulative deficit of all junctions
-	const auto normdeficit_daily = pressure_deficiency(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT, /*relative=*/ true);
-	value = normdeficit_daily.integrate_forward();
-
-	if ( value > 0. )
-	{
-		// Return the average normalized deficit
-		return normdeficit_daily.back().first != 0 ? value / normdeficit_daily.back().first : value;
-	}
-	
-
-	// All constraints are satisfied, now check the reliability index
-	const auto ir_daily = resilience_index_from_min_pressure(anytown, bevarmejo::anytown::min_pressure_psi*MperFT/PSIperFT);
-	value = ir_daily.integrate_forward();
-
-	value = ir_daily.back().first != 0 ? value / ir_daily.back().first : value;
-
-	// Here you could add other constraint between 0 and 1 and use them ro reduce the reliability index
-	// Or wrap this function in a new one that does this for you.
-
-	return -value; // I want to maximize the reliability index
-}
-
-auto fr3::of__reliability(
-	const WDS& anytown,
 	const bevarmejo::sim::solvers::epanet::HydSimResults& res,
-	double max_velocity__m_per_s
+	double max_velocity__m_per_s,
+    std::size_t discrete_steps_failed_solutions,
+    std::size_t discrete_steps_unsati_solutions
 ) -> double
 {
-	// With this formulation, we have one additional constraint to include with
-	// respect to the fr2::of__reliability. This is the maximum velocity constraint.
+	// Objective function 2:
+    // It is divided in 3 parts:
+    // A: [2 -> 1]
+    // Unfeasible solutions in the EPS: share of unfeasible timesteps.
+	// if 'discrete_steps_failed_solutions' is different from 0 tells you in how 
+	// many parts this part of the objective space is discretized.
+    // B: [1 -> 0]
+    // Feasible solutions in the EPS: EPS constraint violations
+    //      - total normalized pressure deficit
+    //      - max velocity normalized
+    // C: [0 -> -1]
+	// Todini Reliability index integrated through time.
 
-	// We need to return the average of the constraint violations if there are any.
-	// If there are no constraint violations, we return the reliability index.
+    // Part A
+    const auto n_steps = res.size();
+    const auto n_correct_steps = std::count(res.values().begin(), res.values().end(), 0);
 
-	// We re use the reliability index from the previous formulation.
-	// This is between 2 and 1 for unfeasible solutions.
-	// This is between 1 and 0 for solutions that do not satisfy the pressure constraint.
-	// This is between 0 and -1 for solutions that satisfy the pressure constraint (the value is the rel index).
-	double value = fr2::of__reliability(anytown, res);
+    if (n_correct_steps < n_steps) {
+		// Share of failed steps.
+		const double cvalue = ((double)n_steps - (double)n_correct_steps) / (double)n_steps;
+		
+		// This variable specify if the objective space between 1 and 2 is to be discretized and by how much
+		if (discrete_steps_failed_solutions == 0) {
+			return cvalue + 1.0;
+		}
 
-	// If value >= 1.0, it's an unfeasible solution, we just forward it. 
-	if (value >= 1.0)
-	{
-		return value;
+		const double step = 1.0 / discrete_steps_failed_solutions;
+
+		// Find which discrete step this continuous value falls into
+		// We use ceiling to ensure values > (1 + k*step_size) map to the next
+		// higher discrete level
+		const int dstep = std::ceil(cvalue / step);
+
+		// Clamp to valid range [1, discrete_steps_failed_solutions] and convert back to [1, 2] range
+    	const int clamped_step = std::max(1, std::min(dstep, (int)discrete_steps_failed_solutions));
+    
+    	return 1.0 + (double)clamped_step / (double)discrete_steps_failed_solutions;
 	}
 
-	// The solution is mathematically feasible, so we compute the maximum velocity constraint violation.
+	// All steps are correctly solved, now check the pressure deficit
+	// Part B
+	const auto normdeficit_daily = pressure_deficiency(
+		anytown,
+		anytown::min_pressure__psi*MperFT/PSIperFT,
+		/*relative=*/ true
+	);
+	const auto pressure_violation = normdeficit_daily.back().first == 0 ? 
+		normdeficit_daily.value() : normdeficit_daily.integrate_forward() / normdeficit_daily.back().first;
 
 	double observed_max_velocity = 0.0;
 	for (const auto& [id, pipe] : anytown.pipes())
@@ -875,59 +1189,117 @@ auto fr3::of__reliability(
 			}
 		}
 	}
-	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ? 0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
+	double velocity_violation = (observed_max_velocity <= max_velocity__m_per_s) ?
+		0.0 : (observed_max_velocity - max_velocity__m_per_s) / max_velocity__m_per_s;
+
+	// We must do the average of the violations because we want it to be at 0 when both are at 0.
+    auto total_violation = (pressure_violation+velocity_violation) / 2.0;
+    
+    if (total_violation > 0.0) {
+		return total_violation;
+	}
+
+	// The solution is feasible and satisfies all constraints.
+	// Part C
+	const auto ir_daily = resilience_index_from_min_pressure(
+		anytown,
+		bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT
+	);
 	
-	// We extract the pressure violation and todini's rel index from the value
-	double pressure_violation = (value > 0.0) ? value : 0.0;
-	double ir = (value <= 0.0) ? value : 0.0; // unneccessary, but here for better readability of return value
-
-	double total_violation = (pressure_violation + velocity_violation) / 2.0;
-
-	return (total_violation > 0.0) ? total_violation : ir;
+	return ir_daily.back().first == 0 ?
+		-ir_daily.value() : -(ir_daily.integrate_forward() / ir_daily.back().first);
 }
 
 auto Problem::reset_dv(
-	std::shared_ptr<bevarmejo::WaterDistributionSystem> anytown,
 	const std::vector<double>& dvs
 ) const -> void
 {
 	// Do the opposite operations of apply_dv 
-	anytown->cache_indices();
+	auto curr_dv = dvs.begin();
+	if (m__has_design) {
+		// 1. Existing pipes
+		std::size_t subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name).size();
+		std::size_t gene_size;
+		switch (m__exi_pipes_formulation)
+		{
+			case ExistingPipesFormulation::FarmaniEtAl2005:
+				gene_size = fep1::dv_size*subnet_size;
+				fep1::reset_dv__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					__old_HW_coeffs
+				);
+				break;
+			case ExistingPipesFormulation::Combined:
+				gene_size = fep2::dv_size*subnet_size;
+				fep2::reset_dv__exis_pipes(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size,
+					__old_HW_coeffs
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
 
-	std::size_t i = 0;
-	auto extract_next = [&dvs, &i](std::size_t n) { return std::vector(dvs.begin()+i, dvs.begin()+i+n); };
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
-	{
-		fep1::reset_dv__exis_pipes(*anytown, extract_next(70), __old_HW_coeffs);
-		i += 70;
-	}
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
-	{
-		fep2::reset_dv__exis_pipes(*anytown, extract_next(35), __old_HW_coeffs);
-		i += 35;
+		// 2. New pipes
+		subnet_size = m__anytown->subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name).size();
+		gene_size = fnp1::dv_size*subnet_size;
+		fnp1::reset_dv__new_pipes(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size
+		);
+		curr_dv += gene_size;
 	}
 
-	if (m__has_design)
-	{
-		reset_dv__new_pipes(*anytown, extract_next(6));
-		i += 6;
+	// 3. Operations
+	if (m__has_operations) {
+		auto gene_size = pgo_dv::size;
+		pgo_dv::reset_dv__pumps(
+			*m__anytown,
+			curr_dv,
+			curr_dv+gene_size
+		);
+		curr_dv += gene_size;
 	}
 
-	if (m__has_operations)
-	{
-		reset_dv__pumps(*anytown, extract_next(24));
-		i += 24;
-	}
-
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
-	{
-		fnt1::reset_dv__tanks(*anytown, extract_next(4));
-		i += 4;
-	}
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
-	{
-		fnt2::reset_dv__tanks(*anytown, extract_next(12));
-		i += 12;
+	// 4. Tanks
+	if (m__has_design) {
+		auto gene_size = 0;
+		switch (m__new_tanks_formulation)
+		{
+			case NewTanksFormulation::Simple:
+				gene_size = fnt1::dv_size*max_n_installable_tanks;
+				fnt1::reset_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size
+				);
+				break;
+			case NewTanksFormulation::FarmaniEtAl2005:
+				gene_size = fnt2::dv_size *max_n_installable_tanks;
+				fnt2::reset_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size
+				);
+				break;
+			case NewTanksFormulation::LocVolRisDiamH2DRatio:
+				gene_size = fnt3::dv_size *max_n_installable_tanks;
+				fnt3::reset_dv__tanks(
+					*m__anytown,
+					curr_dv,
+					curr_dv+gene_size
+				);
+				break;
+			default:
+				break;
+		}
+		curr_dv += gene_size;
 	}
 }
 
@@ -936,13 +1308,12 @@ auto Problem::reset_dv(
 void fep1::apply_dv__exis_pipes(
 	WDS& anyt_wds,
 	std::unordered_map<std::string, double> &old_HW_coeffs,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs)
 {
-	assert(dvs.size() == 2*anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t alt_option = *curr_dv++;
@@ -1019,20 +1390,19 @@ void fep1::apply_dv__exis_pipes(
 			new_pipe.roughness(bevarmejo::anytown::coeff_HW_new);
 		}
 	}
-	assert(curr_dv == dvs.end());
+	assert(curr_dv == end_dv);
 	return;
 }
 void fep2::apply_dv__exis_pipes(
 	WDS& anyt_wds,
 	std::unordered_map<std::string, double> &old_HW_coeffs,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs)
 {
-	assert(dvs.size() == anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
+	auto curr_dv = start_dv;
 
-	auto curr_dv = dvs.begin();
-
-	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t dv = *curr_dv++;
 		std::size_t alt_option = dv-2; // -2 because the first two options are no action and clean
@@ -1104,19 +1474,19 @@ void fep2::apply_dv__exis_pipes(
 			new_pipe.roughness(bevarmejo::anytown::coeff_HW_new);
 		}
 	}
-	assert(curr_dv == dvs.end());
+	assert(curr_dv == end_dv);
 	return;
 }
 
-void apply_dv__new_pipes(
+void fnp1::apply_dv__new_pipes(
 	WDS &anyt_wds,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs)
 {
-    assert(dvs.size() == anyt_wds.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
+    auto curr_dv = start_dv;
 
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	for (auto&& [id, pipe] : anyt_wds.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
 		std::size_t alt_option = *curr_dv++;	
 
@@ -1130,36 +1500,55 @@ void apply_dv__new_pipes(
 		std::cout << "New pipe with ID " << id << " installed with diam of " << diameter__in << " in (" <<diameter__in*MperFT/12*1000 <<" mm)\n";
 #endif
 	}
+
+	assert(curr_dv == end_dv);
+	return;
 }
 
-void apply_dv__pumps(
+void pgo_dv::apply_dv__pumps(
 	WDS& anyt_wds,
-	const std::vector<double>& dvs)
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == 24); // 24 hours x [npr]
-
-	auto patterns = decompose_pumpgroup_pattern(dvs, anyt_wds.pumps().size());
+	// A pump is on only if the dv at that time instant is >= i
 	std::size_t i = 0;
 	for (auto&& [id, pump] : anyt_wds.pumps()) {
-		// set the pattern
-		int errorcode = EN_setpattern(anyt_wds.ph_, pump.speed_pattern()->EN_index(), patterns[i].data(), patterns[i].size());
-		assert(errorcode <= 100);
+		auto pattern_idx = pump.speed_pattern()->EN_index();
+
+		auto curr_dv = start_dv;
+		for (auto t=1; t <= pgo_dv::size; ++t, ++curr_dv ) {
+			double value = 0.0;
+			if (*curr_dv > (double)i) {
+				value = 1.0;	
+			}
+
+			int errorcode = EN_setpatternvalue(
+				anyt_wds.ph_,
+				pattern_idx,
+				t,
+				value
+			);
+			assert(errorcode <= 100);
+		}
+		assert(curr_dv == end_dv);
+
 		++i;
 	}
+
+	return;
 }
 
 auto fnt1::apply_dv__tanks(
 	WDS& anytown,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::tank_option> &tank_option
 ) -> void
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1195,7 +1584,7 @@ auto fnt1::apply_dv__tanks(
 		new_tank.min_level(orig_tank.min_level().value());
 		new_tank.min_volume(orig_tank.min_volume().value());
 		new_tank.x_coord(junction.x_coord());
-		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length_ft);
+		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length__ft);
 		
 		// We assume d = h for a cilindrical tank, thus V = \pi d^2 /4 * h = \pi d^3 / 4
 		// given that this is a fixed value we could actually have it as a parameter to reduce computational expenses. 
@@ -1207,6 +1596,9 @@ auto fnt1::apply_dv__tanks(
 		// do it again in EPANET
 		int new_tank_idx = 0; 
 		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
 		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
@@ -1230,7 +1622,7 @@ auto fnt1::apply_dv__tanks(
 #endif
 
 		riser.diameter(16.0*MperFT/12*1000);
-		riser.length(bevarmejo::anytown::riser_length_ft*MperFT);
+		riser.length(bevarmejo::anytown::riser_length__ft*MperFT);
 		riser.roughness(bevarmejo::anytown::coeff_HW_new);
 
 		// do it again in EPANET
@@ -1243,7 +1635,7 @@ auto fnt1::apply_dv__tanks(
 		assert(errco <= 100);
 
 		errco = EN_setpipedata(anytown.ph_, riser_idx,
-			bevarmejo::anytown::riser_length_ft,
+			bevarmejo::anytown::riser_length__ft,
 			16.0,
 			bevarmejo::anytown::coeff_HW_new,
 			0.0
@@ -1266,11 +1658,15 @@ auto fnt1::apply_dv__tanks(
 		" Diam ", diam_m, "\n");
 #endif
 	}
+	
+	assert(curr_dv == end_dv);
+	return;
 }
 
 auto fnt2::apply_dv__tanks(
 	WDS& anytown,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> void
 {
@@ -1284,12 +1680,10 @@ auto fnt2::apply_dv__tanks(
 	// 6. (continuous) bottom of the tank [Elevtion = 5. - 6.] 
 	// We do it twice because we can install 2
 
-	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
-
 	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for (std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t riser_dv = *curr_dv++;
@@ -1329,19 +1723,22 @@ auto fnt2::apply_dv__tanks(
 		double min_vol = k__pi*tank_diam__m*tank_diam__m/4.0*new_tank.min_level().value();
 		new_tank.min_volume(min_vol);
 		new_tank.x_coord(junction.x_coord());
-		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length_ft);
+		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length__ft);
 		new_tank.diameter(tank_diam__m);
 		double operational_tank_height = tank_hmax__m-tank_hmin__m;
 		// Since tank_hmax__lb < tank_hmin__ub, it could happen that the tank is ill formed.
 		if (operational_tank_height < 0)
 		{
-			operational_tank_height = farmani_et_al_2005::tank_hmax_ub__m-tank_hmin__m;
+			operational_tank_height = fnt2::tank_hmax_ub__m-tank_hmin__m;
 		}
 		new_tank.max_level(operational_tank_height+tank_safetyl__m);
 
 		// do it again in EPANET
 		int new_tank_idx = 0; 
 		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
 		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
@@ -1361,7 +1758,7 @@ auto fnt2::apply_dv__tanks(
 		
 		double riser_diam__mm = new_pipes_options.at(riser_dv-1).diameter__in*MperFT/12*1000;
 		riser.diameter(riser_diam__mm);
-		riser.length(bevarmejo::anytown::riser_length_ft*MperFT);
+		riser.length(bevarmejo::anytown::riser_length__ft*MperFT);
 		riser.roughness(bevarmejo::anytown::coeff_HW_new);
 
 		// do it again in EPANET
@@ -1370,7 +1767,7 @@ auto fnt2::apply_dv__tanks(
 		assert(errco <= 100);
 
 		errco = EN_setpipedata(anytown.ph_, riser_idx,
-			bevarmejo::anytown::riser_length_ft,
+			bevarmejo::anytown::riser_length__ft,
 			new_pipes_options.at(riser_dv-1).diameter__in,
 			bevarmejo::anytown::coeff_HW_new,
 			0.0
@@ -1393,21 +1790,197 @@ auto fnt2::apply_dv__tanks(
 		" Diam ", tank_diam__m, "\n");
 #endif
 	}
+
+	assert(curr_dv == end_dv);
+	return;
 }
+
+auto anytown::fnt3::apply_dv__tanks(
+	WDS& a_anytown_sys,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
+	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> void
+{
+	// We assume:
+	// a. a cylindrical tank: Area = d^2/4*pi
+	// b. operational levels fixed
+	// c. riser length fixed -> tank elevation = junction elevation + riser_length
+	// d. safety volume = (min oper level - tank elevation ) * Area
+	// Therefore the tanks specifications are:
+	// 1. (discrete) Location: index of the tank location with check that one is not installed there yet. Also do nothing option to turn off the tank
+	// 2. (discrete) Volume: index of the tank volume options
+	// 3. (discrete) Riser Diameter: index for the pipe options indicating the riser diameter
+	// 4. (discrete) Height-to-Diameter ratio
+
+	// You can't store multiple tanks in the same location, so I need to keep track of the ones I have already installed.
+	std::unordered_set<std::size_t> already_installed_tanks;
+
+	auto curr_dv = start_dv;
+	for (std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		std::size_t tank_loc_dv = *curr_dv++;
+		std::size_t tank_vol_opt_idx = *curr_dv++;
+		std::size_t riser_diam_opt_idx = *curr_dv++;
+		std::size_t h2d_ratio_opt_idx = *curr_dv++;
+
+        // This tells you if and where you would like to insall the tank
+		bool install_tank = (tank_loc_dv != 0 );
+        std::size_t tank_loc_shift = install_tank ? tank_loc_dv-1 : anytown::pos_tank_loc__el_names.size();
+        // However, you need to adjust for already installed tanks
+        install_tank = install_tank && (already_installed_tanks.find(tank_loc_shift) == already_installed_tanks.end());
+
+        if (!install_tank)
+		{
+#ifdef DEBUGSIM
+			bemeio::stream_out(std::cout, "No action for tank T"+std::to_string(i)+".\n");
+#endif
+			continue;
+		}
+
+		// If we are here, we need to install the tank and now we know all the specifications
+        // or at least we could calculate them.
+        
+        // Elevation is completely defined from the elevation of the node/hunction where it is installed
+        // plus the fixed riser length
+        auto&& [junction_id, junction] = *(a_anytown_sys.subnetwork_with_order<WDS::Junction>(bevarmejo::anytown::pos_tank_loc__subnet_name).begin() + tank_loc_shift);
+        double elev__m = junction.elevation() + bevarmejo::anytown::riser_length__ft*MperFT;
+
+        // The volume is selected from the dvs and together with the ratio we can
+        // calculate the diameter and height.
+		double vol__m3 = tank_options.at(tank_vol_opt_idx).volume__gal* bevarmejo::k__m3_per_gal;
+        // We assume h = a*d for a cilindrical tank, thus V = \pi d^2 /4 * h =  \pi d^3 /4 * a
+        // a is the height-to-diameter ratio
+        double h2d_ratio = anytown::fnt3::h2d_ratio__min + h2d_ratio_opt_idx*anytown::fnt3::hd2_ratio__step;
+
+		double diam__m = std::pow(vol__m3*4.0/k__pi/h2d_ratio, 1.0/3.0);
+        double height__m = h2d_ratio * diam__m;
+        double top_lev__m = elev__m+height__m;
+
+        // Operational levels are fixed by the water utility. However, we need to
+        // make sure that they are between the physical levels of the tank.
+        double min_ope_lev__m = bevarmejo::anytown::min_w_level_tank__ft*MperFT; // Min ope level in absolute m from the ground
+        double max_ope_lev__m = bevarmejo::anytown::max_w_level_tank__ft*MperFT; // Max ope level in absolute m from the ground
+
+        // Fix ope levels to make sure that they are both not above the top_level
+
+        // approach 1: tank doesn't match the operational levels, so we discard it.
+        // approach 2: that tank operational levels for this tank are adjusted.
+        bool strict_ope_levels = true;
+
+        if (strict_ope_levels)
+        {
+            if ((min_ope_lev__m >= top_lev__m || max_ope_lev__m > top_lev__m))
+            {
+#ifdef DEBUGSIM
+			bemeio::stream_out(std::cout, "No action for tank T"+std::to_string(i)+" because out of operational levels boundaries.\n");
+#endif
+			continue;
+            }
+        }
+        else
+        {
+            if (min_ope_lev__m >= top_lev__m)
+            {
+                min_ope_lev__m = elev__m + height__m*0.2857142857; // Where the 0.28... is the ratio in the original tanks...
+                max_ope_lev__m = top_lev__m;
+            }
+            else if (max_ope_lev__m > top_lev__m )
+            {
+                max_ope_lev__m = top_lev__m;
+            }
+        }
+        
+		auto new_tank_id = std::string("T")+std::to_string(i);
+		auto& new_tank = a_anytown_sys.insert_tank(new_tank_id);
+
+        new_tank.elevation(elev__m);
+        new_tank.diameter(diam__m);
+        new_tank.min_volume(k__pi*diam__m*diam__m/4.0*(min_ope_lev__m-elev__m));
+
+        new_tank.min_level(min_ope_lev__m-elev__m);
+        new_tank.max_level(max_ope_lev__m-elev__m);
+        new_tank.initial_level(min_ope_lev__m-elev__m);
+        
+        new_tank.x_coord(junction.x_coord());
+		new_tank.y_coord(junction.y_coord()+bevarmejo::anytown::riser_length__ft);
+
+        // do it again in EPANET
+        int new_tank_idx = 0; 
+		int errco = EN_addnode(a_anytown_sys.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		assert(errco <= 100);
+
+		errco = EN_setcoord(a_anytown_sys.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
+		assert(errco <= 100);
+
+		errco = EN_settankdata(a_anytown_sys.ph_, new_tank_idx, 
+			new_tank.elevation()/MperFT, 
+			new_tank.min_level().value()/MperFT, 
+			new_tank.min_level().value()/MperFT, 
+			new_tank.max_level().value()/MperFT, 
+			new_tank.diameter().value()/MperFT, 
+			new_tank.min_volume().value()/M3perFT3, 
+			"");
+		assert(errco <= 100);
+        
+        // The riser has a well defined length, but the diameter is a dv.
+		auto riser_id = std::string("Ris_")+std::to_string(i);
+
+		auto& riser = a_anytown_sys.install_pipe(riser_id, junction_id, new_tank_id);
+		
+		double riser_diam__mm = new_pipes_options.at(riser_diam_opt_idx).diameter__in*MperFT/12*1000;
+		riser.diameter(riser_diam__mm);
+		riser.length(bevarmejo::anytown::riser_length__ft*MperFT);
+		riser.roughness(bevarmejo::anytown::coeff_HW_new);
+
+		// do it again in EPANET
+		int riser_idx = 0;
+		errco = EN_addlink(a_anytown_sys.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		assert(errco <= 100);
+
+		errco = EN_setpipedata(a_anytown_sys.ph_, riser_idx,
+			bevarmejo::anytown::riser_length__ft,
+			new_pipes_options.at(riser_diam_opt_idx).diameter__in,
+			bevarmejo::anytown::coeff_HW_new,
+			0.0
+		);
+		assert(errco <= 100);
+
+		a_anytown_sys.cache_indices();
+		assert(riser.EN_index() != 0 && riser.EN_index() == riser_idx);
+
+		// add them to the "TBR" net and the already installed tanks
+		a_anytown_sys.id_sequence(label::__temp_elems).push_back(new_tank_id);
+		a_anytown_sys.id_sequence(label::__temp_elems).push_back(riser_id);
+		already_installed_tanks.insert(tank_loc_shift);
+#ifdef DEBUGSIM
+		bemeio::stream_out(std::cout, "Installed tank at node ", junction_id, 
+		" with volume ", tank_options.at(tank_vol_opt_idx).volume__gal, " gal(", vol__m3, " m^3)", 
+		" Elev ", new_tank.elevation(),
+		" Min level ", new_tank.min_level().value(),
+		" Max lev ", new_tank.max_level().value(),
+		" Diam ", diam__m, "\n");
+#endif
+    }
+
+	assert(curr_dv == end_dv);
+	return;
+}
+
 
 // -------------------   cost   ------------------- //
 auto fep1::cost__exis_pipes(
 	const WDS& anytown,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == 2*anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-
 	double capital_cost = 0.0;
 
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t alt_option = *curr_dv++;
@@ -1415,7 +1988,7 @@ auto fep1::cost__exis_pipes(
 		if (action_type == 0) // no action
 			continue;
 		
-		bool city = anytown.id_sequence("city_pipes").contains(id);
+		bool city = anytown.id_sequence(city_pipes__subnet_name).contains(id);
 		double pipe_cost_per_ft = 0.0;
 
 		if (action_type == 1) // clean
@@ -1447,21 +2020,21 @@ auto fep1::cost__exis_pipes(
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 		// again I save the length in mm, but the table is in $/ft
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 auto fep2::cost__exis_pipes(
 	const WDS& anytown,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::exi_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-
 	double capital_cost = 0.0;
 	
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t action_type = *curr_dv++;
 		std::size_t alt_option = action_type-2; // -2 because the first two options are no action and clean
@@ -1469,7 +2042,7 @@ auto fep2::cost__exis_pipes(
 		if (action_type == 0) // no action
 			continue;
 
-		bool city = anytown.id_sequence("city_pipes").contains(id);
+		bool city = anytown.id_sequence(city_pipes__subnet_name).contains(id);
 		double pipe_cost_per_ft = 0.0;
 
 		if (action_type == 1) // clean
@@ -1497,23 +2070,24 @@ auto fep2::cost__exis_pipes(
 
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value(); 
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
-auto cost__new_pipes(
+auto fnp1::cost__new_pipes(
 	const WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
-	
 	// 6 pipes x [prc]
 	// This must be installed, thus minimum cost will never be 0.
 	double capital_cost = 0.0;
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
 		std::size_t alt_option = *curr_dv++;
 		
@@ -1521,10 +2095,11 @@ auto cost__new_pipes(
 		capital_cost += pipe_cost_per_ft/MperFT * pipe.length().value();
 	}
 
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
-auto cost__energy_per_day(
+auto pgo_dv::cost__energy_per_day(
 	const WDS &anytown
 ) -> double
 {
@@ -1536,7 +2111,7 @@ auto cost__energy_per_day(
 		// at time t, I should multiply the instant energy at t until t+1, or with this single for loop shift by one all indeces
 		for (const auto& [t, power_kW] : pump.instant_energy() )
 		{
-			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost_kWh ; 
+			total_ene_cost_per_day += power_kW_prec * (t - t_prec)/bevarmejo::k__sec_per_hour * bevarmejo::anytown::energy_cost__kWh ; 
 			t_prec = t;
 			power_kW_prec = power_kW;
 		}
@@ -1546,17 +2121,16 @@ auto cost__energy_per_day(
 
 auto fnt1::cost__tanks(
 	const WDS& anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::tank_option> &tank_option,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs
 ) -> double
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	double capital_cost = 0.0;
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1574,21 +2148,23 @@ auto fnt1::cost__tanks(
 		double tank_cost = tank_option.at(tank_vol_option).cost;
 		capital_cost += tank_cost;
 		
-		capital_cost += pipes_alt_costs.at(5).cost__per_ft*bevarmejo::anytown::riser_length_ft;
+		capital_cost += pipes_alt_costs.at(5).cost__per_ft*bevarmejo::anytown::riser_length__ft;
 
 		already_installed_tanks.insert(new_tank_loc_shift);
 	}
+
+	assert(curr_dv == end_dv);
 	return capital_cost;
 }
 
 auto fnt2::cost__tanks(
 	const WDS& anytown,
-	const std::vector<double>& dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::vector<bevarmejo::anytown::tank_option> &tank_options,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
 ) -> double
 {
-	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
 	assert(tank_options.size()>2); // otherwise I can't make the interpolation
 	assert(new_pipes_options.size() > 1);
 
@@ -1642,29 +2218,63 @@ auto fnt2::cost__tanks(
 			}
 			
 			// The riser diameter is defined by the first decison variable (once you removed the do-nothing option)
-			std::size_t pos = 0 + t*6;
-			auto riser_diam_option_idx = dvs[pos]-1;
+			std::size_t pos = 0 + t*fnt2::dv_size;
+			std::size_t riser_diam_option_idx = *(start_dv+pos)-1.0;
 
-			capital_cost += new_pipes_options.at(riser_diam_option_idx).cost__per_ft*bevarmejo::anytown::riser_length_ft;
+			capital_cost += new_pipes_options.at(riser_diam_option_idx).cost__per_ft*bevarmejo::anytown::riser_length__ft;
 		}
 	}
 
 	return capital_cost;
 }
+
+auto anytown::fnt3::cost__tanks(
+    const WDS& anytown,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
+    const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+    const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipes_options
+) -> double
+{
+    // The cost of installing a tank is independent of the location and needs to
+    // take into account only two aspects: its volume and the riser cost.
+    // I count the cost of the tank even if it was not installed, so that solutions
+    // with a double tank or a ill tank (which don't install the tank in apply_dv
+    // for hydraulic motivation) are more expensive than their same counterpart 
+    // where the tank is not installed because the OA doesn't want to.
+    
+    double capital_cost = 0.0;
+	
+	auto curr_dv = start_dv;
+	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		std::size_t tank_loc_dv = *curr_dv++;
+		std::size_t tank_vol_opt_idx = *curr_dv++;
+		std::size_t riser_diam_opt_idx = *curr_dv++;
+		auto h2d_ratio = *curr_dv++;
+
+		if (tank_loc_dv == 0) { continue; }
+
+		capital_cost += tank_options.at(tank_vol_opt_idx).cost;
+		
+		capital_cost += new_pipes_options.at(riser_diam_opt_idx).cost__per_ft*bevarmejo::anytown::riser_length__ft;
+	}
+
+	assert(curr_dv == end_dv);
+	return capital_cost;
+}
+
 // ------------------- of__reliability ------------------- //
 
 // ------------------- reset_dv ------------------- //
 void fep1::reset_dv__exis_pipes(
 	WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::unordered_map<std::string, double> &old_HW_coeffs)
 {
-	assert(dvs.size() == 2*anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-
-	auto curr_dv = dvs.begin();
-
-	// 1. existing pipes
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{	
 		std::size_t action_type = *curr_dv++;
 		std::size_t alt_option = *curr_dv++;
@@ -1696,19 +2306,18 @@ void fep1::reset_dv__exis_pipes(
 			anytown.cache_indices();
 		}
 	}
-	assert(curr_dv == dvs.end());
+	
+	assert(curr_dv == end_dv);
 	return;
 }
 void fep2::reset_dv__exis_pipes(
 	WDS &anytown,
-	const std::vector<double> &dvs,
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv,
 	const std::unordered_map<std::string, double> &old_HW_coeffs)
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes").size());
-
-	auto curr_dv = dvs.begin();
-
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("existing_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name))
 	{
 		std::size_t dv = *curr_dv++;
 		std::size_t alt_option = dv-2; // -2 because the first two options are no action and clean
@@ -1740,53 +2349,44 @@ void fep2::reset_dv__exis_pipes(
 			anytown.cache_indices();
 		}
 	}
-	assert(curr_dv == dvs.end());
+	
+	assert(curr_dv == end_dv);
 	return;
 }
 
-void reset_dv__new_pipes(
+void fnp1::reset_dv__new_pipes(
 	WDS& anytown,
-	const std::vector<double>& dvs)
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == anytown.subnetwork_with_order<WDS::Pipe>("new_pipes").size());
-
-	auto curr_dv = dvs.begin();
-	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>("new_pipes"))
+	auto curr_dv = start_dv;
+	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
-		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::_nonexisting_pipe_diam_ft);
+		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::nonexisting_pipe_diam__ft);
 		assert(errorcode <= 100);
 
-		pipe.diameter(bevarmejo::anytown::_nonexisting_pipe_diam_ft); // it's ok also in ft because its' super small small
+		pipe.diameter(bevarmejo::anytown::nonexisting_pipe_diam__ft); // it's ok also in ft because its' super small small
 	}
 }
 
-void reset_dv__pumps(
+void pgo_dv::reset_dv__pumps(
 	WDS& anytown,
-	const std::vector<double>& dvs)
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv)
 {
-	for (std::size_t i = 0; i < 3; ++i)
-	{
-		// I know pump patterns IDs are from 2, 3, and 4
-		int pump_idx = i + 2;
-		std::string pump_id = std::to_string(pump_idx);
-		int errorcode = EN_getpatternindex(anytown.ph_, pump_id.c_str(), &pump_idx);
-		assert(errorcode <= 100);
-
-		// set the pattern, use empty array of 24 double to zero
-		errorcode = EN_setpattern(anytown.ph_, pump_idx, std::vector<double>(24, .0).data(), 24);
-		assert(errorcode <= 100);
-	}
+	// This dection variable always overwrite the data, so there is no need to 
+	// revert its changes.
+	return;
 }
 
 void fnt1::reset_dv__tanks(
 	WDS& anytown,
-	const std::vector<double>& dvs)
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv)
 {
-	assert(dvs.size() == 2*bevarmejo::anytown::max_n_installable_tanks);
-
 	std::unordered_set<std::size_t> already_installed_tanks;
 
-	auto curr_dv = dvs.begin();
+	auto curr_dv = start_dv;
 	for(std::size_t i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
 	{
 		std::size_t action_type = *curr_dv++;
@@ -1812,17 +2412,17 @@ void fnt1::reset_dv__tanks(
 
 		already_installed_tanks.insert(new_tank_loc_shift);
 	}
-	assert(curr_dv == dvs.end());
+
+	assert(curr_dv == end_dv);
 	return;
 }
 
 auto fnt2::reset_dv__tanks(
 	WDS& anytown,
-	const std::vector<double>& dvs
+	std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
 ) -> void
 {
-	assert(dvs.size() == 6*bevarmejo::anytown::max_n_installable_tanks);
-
 	auto& temp_elems = anytown.id_sequence(label::__temp_elems);
 	for (std::size_t i = max_n_installable_tanks; i; --i)
 	{
@@ -1843,6 +2443,32 @@ auto fnt2::reset_dv__tanks(
 	}
 }
 
+auto anytown::fnt3::reset_dv__tanks(
+    WDS& a_anytown_sys,
+    std::vector<double>::const_iterator start_dv,
+    std::vector<double>::const_iterator end_dv
+) -> void
+{
+    auto& temp_elems = a_anytown_sys.id_sequence(label::__temp_elems);
+	for (std::size_t i = max_n_installable_tanks; i; --i)
+	{
+		auto new_tank_id = std::string("T")+std::to_string(i-1);
+		auto riser_id = std::string("Ris_")+std::to_string(i-1);
+
+		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
+		{
+			// remove the new tank and the the riser is automatically deleted 
+			int errorcode = EN_deletenode(a_anytown_sys.ph_, a_anytown_sys.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+			assert(errorcode <= 100);
+
+			temp_elems.erase(new_tank_id);
+			temp_elems.erase(riser_id);
+			a_anytown_sys.remove_tank(new_tank_id); // also removing the links too
+			a_anytown_sys.cache_indices();
+		}
+	}
+}
+
 // ------------------- 1st level ------------------- //
 // -------------------   Bounds  ------------------- //
 auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<double>>
@@ -1856,33 +2482,60 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
 		ub.insert(ub.end(), upper.begin(), upper.end());
 	};
 
-	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Farmani)
+	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::FarmaniEtAl2005)
 	{
-		append_bounds(fep1::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__exi_pipe_options);
+		append_bounds(fep1::bounds__exis_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name),
+			m__exi_pipe_options
+		);
 	}
 	if (m__has_design && m__exi_pipes_formulation == ExistingPipesFormulation::Combined)
 	{
-		append_bounds(fep2::bounds__exis_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("existing_pipes"), m__exi_pipe_options);
+		append_bounds(fep2::bounds__exis_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(exis_pipes__subnet_name),
+			m__exi_pipe_options
+		);
 	}
 
 	if (m__has_design)
 	{
-		append_bounds(bounds__new_pipes, std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>("new_pipes"), m__new_pipe_options);
+		append_bounds(fnp1::bounds__new_pipes,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name),
+			m__new_pipe_options
+		);
 	}
 
 	if (m__has_operations)
 	{
-		append_bounds(bounds__pumps, std::as_const(*m__anytown).pumps());
+		append_bounds(pgo_dv::bounds__pumps,
+			std::as_const(*m__anytown).pumps()
+		);
 	}
 
 	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Simple)
 	{
-		append_bounds(fnt1::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options);
+		append_bounds(fnt1::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options
+		);
 	}
 
-	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::Farmani)
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::FarmaniEtAl2005)
 	{
-		append_bounds(fnt2::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>("possible_tank_locations"), m__tank_options, m__new_pipe_options);
+		append_bounds(fnt2::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options,
+			m__new_pipe_options
+		);
+	}
+
+	if (m__has_design && m__new_tanks_formulation == NewTanksFormulation::LocVolRisDiamH2DRatio)
+	{
+		append_bounds(fnt3::bounds__tanks,
+			std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(pos_tank_loc__subnet_name),
+			m__tank_options,
+			m__new_pipe_options
+		);
 	}
 
 	// We added the bound in the beme order, so now we use the adpater to map them to the pagmo order.
@@ -1903,12 +2556,12 @@ auto fep1::bounds__exis_pipes(
 	assert(exis_pipes.size() == 35);
 	assert(pipes_alt_costs.size() == 10);
 
-	auto n_dvs= 2ul*exis_pipes.size();
+	auto dv_size= 2ul*exis_pipes.size();
 	double n_pra= pipes_alt_costs.size();
 
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, 0.0);
-	for (std::size_t i = 0; i < n_dvs; i+=2)
+	std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, 0.0);
+	for (std::size_t i = 0; i < dv_size; i+=2)
 	{
 		ub[i] = 2.0;
 		ub[i+1] = n_pra-1;
@@ -1929,13 +2582,13 @@ auto fep2::bounds__exis_pipes(
 	assert(exis_pipes.size() == 35);
 	assert(pipes_alt_costs.size() == 10);
 
-	auto n_dvs= exis_pipes.size();
+	auto dv_size= exis_pipes.size();
 	double n_actions= 2+pipes_alt_costs.size();
 
-	return std::make_pair(std::vector<double>(n_dvs, 0), std::vector<double>(n_dvs, n_actions-1));
+	return std::make_pair(std::vector<double>(dv_size, 0), std::vector<double>(dv_size, n_actions-1));
 }
 
-auto bounds__new_pipes(
+auto fnp1::bounds__new_pipes(
 	InputOrderedRegistryView<WDS::Pipe> new_pipes,
 	const std::vector<bevarmejo::anytown::new_pipe_option> &pipes_alt_costs
 ) -> std::pair<std::vector<double>, std::vector<double>>
@@ -1946,16 +2599,16 @@ auto bounds__new_pipes(
 	assert(new_pipes.size() == 6);
 	assert(pipes_alt_costs.size() == 10);
 
-	auto n_dvs= new_pipes.size();
+	auto dv_size= new_pipes.size();
 	double n_pra= pipes_alt_costs.size();
 
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, n_pra-1);
+	std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, n_pra-1);
 
     return std::make_pair(lb, ub);
 }
 
-auto bounds__pumps(
+auto pgo_dv::bounds__pumps(
 	InputExcludingRegistryView<WDS::Pump> pumps
 ) -> std::pair<std::vector<double>, std::vector<double>>
 {
@@ -1964,11 +2617,11 @@ auto bounds__pumps(
 // npr: 4 options indicate the number of pumps running -> 0 - 3
 	assert(pumps.size() == 3);
 
-	auto n_dvs= 24;
+	auto dv_size= 24;
 	double n_npr= 3.0;
 
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, n_npr);
+	std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, n_npr);
 
 	return std::make_pair(lb, ub);
 }
@@ -1986,13 +2639,13 @@ auto fnt1::bounds__tanks(
 	assert(tank_locs.size() == 17);
 	assert(tank_option.size() == 5);
 
-	auto n_dvs= 2*bevarmejo::anytown::max_n_installable_tanks;
+	auto dv_size= 2*bevarmejo::anytown::max_n_installable_tanks;
 	double n_tpl= tank_locs.size();
 	double n_tvol= tank_option.size();
 
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, 0.0);
-	for (std::size_t i = 0; i < n_dvs; i+=2)
+	std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, 0.0);
+	for (std::size_t i = 0; i < dv_size; i+=2)
 	{
 		ub[i] = n_tpl; // 0 is a valid option, so no minus one
 		ub[i+1] = n_tvol-1;
@@ -2011,17 +2664,17 @@ auto fnt2::bounds__tanks(
 	assert(tank_options.size() == 5);
 	assert(new_pipe_options.size() == 10);
 
-	auto n_dvs = 6*bevarmejo::anytown::max_n_installable_tanks;
+	auto dv_size = fnt2::dv_size*bevarmejo::anytown::max_n_installable_tanks;
 	double n_tpl = tank_locs.size(); // number of tanks possible locations
 	double n_rpd = new_pipe_options.size(); // number of risers possible diameters
 	
-	std::vector<double> lb(n_dvs, 0.0);
-	std::vector<double> ub(n_dvs, 0.0);
+	std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, 0.0);
 	
 	// The order is (see apply_dv) 
 	for (auto i = 0; i < max_n_installable_tanks; ++i)
 	{
-		auto j = i*6;
+		auto j = i*fnt2::dv_size;
 		// riser possible diameters + do nothing option
 		lb[0+j] = 0.0;
 		ub[0+j] = n_rpd;
@@ -2029,35 +2682,54 @@ auto fnt2::bounds__tanks(
 		lb[1+j] = 0.0;
 		ub[1+j] = n_tpl-1;
 		// diameter
-		lb[2+j] = farmani_et_al_2005::tank_diam_lb__m;
-		ub[2+j] = farmani_et_al_2005::tank_diam_ub__m;
+		lb[2+j] = fnt2::tank_diam_lb__m;
+		ub[2+j] = fnt2::tank_diam_ub__m;
 		// overflow elev
-		lb[3+j] = farmani_et_al_2005::tank_hmax_lb__m;
-		ub[3+j] = farmani_et_al_2005::tank_hmax_ub__m;
+		lb[3+j] = fnt2::tank_hmax_lb__m;
+		ub[3+j] = fnt2::tank_hmax_ub__m;
 		// min elev 
-		lb[4+j] = farmani_et_al_2005::tank_hmin_lb__m;
-		ub[4+j] = farmani_et_al_2005::tank_hmin_ub__m;
+		lb[4+j] = fnt2::tank_hmin_lb__m;
+		ub[4+j] = fnt2::tank_hmin_ub__m;
 		// safety level
-		lb[5+j] = farmani_et_al_2005::tank_safetyl_lb__m;
-		ub[5+j] = farmani_et_al_2005::tank_safetyl_ub__m;
+		lb[5+j] = fnt2::tank_safetyl_lb__m;
+		ub[5+j] = fnt2::tank_safetyl_ub__m;
+	}
+
+	return std::make_pair(std::move(lb), std::move(ub));
+}
+
+auto anytown::fnt3::bounds__tanks(
+    InputOrderedRegistryView<WDS::Junction> tank_locs,
+    const std::vector<bevarmejo::anytown::tank_option> &tank_options,
+    const std::vector<bevarmejo::anytown::new_pipe_option> &new_pipe_options
+) -> std::pair<std::vector<double>, std::vector<double>>
+{
+    std::size_t dv_size = anytown::fnt3::dv_size*bevarmejo::anytown::max_n_installable_tanks;
+    std::vector<double> lb(dv_size, 0.0);
+	std::vector<double> ub(dv_size, 0.0);
+
+    // The order is (see apply_dv) 
+	for (auto i = 0; i < bevarmejo::anytown::max_n_installable_tanks; ++i)
+	{
+		auto j = i*anytown::fnt3::dv_size;
+		// Tanks location index + do nothing option
+		lb[0+j] = 0.0;
+		ub[0+j] = anytown::pos_tank_loc__el_names.size();
+		// Tanks volume index
+		lb[1+j] = 0.0;
+		ub[1+j] = tank_options.size()-1;
+		// Riser diameter index
+		lb[2+j] = 0;
+		ub[2+j] = new_pipe_options.size()-1;
+		// Heigh-to-diameter ratio index
+		lb[3+j] = 0;
+		ub[3+j] = anytown::fnt3::h2d_ratio__steps;
 	}
 
 	return std::make_pair(std::move(lb), std::move(ub));
 }
 
 // ------------------- 1st level ------------------- //
-// -------------------   Save  ------------------- //
-void Problem::save_solution(const std::vector<double>& pagmo_dv, const fsys::path& out_file) const
-{
-	auto dvs = m__dv_adapter.from_pagmo_to_beme(pagmo_dv);
-
-	apply_dv(this->m__anytown, dvs);
-
-	int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
-	assert(errco <= 100);
-
-	reset_dv(this->m__anytown, dvs);
-}
 
 void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 {
@@ -2095,9 +2767,25 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 
 	j["extra_info"] = prob.get_extra_info();
 
-	if (prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::HierarchicalWithMaxVelocity)
+	if (
+		prob.m__reliability_obj_func_formulation == ReliabilityObjectiveFunctionFormulation::Hierarchical &&
+		prob.m__max_velocity__m_per_s != std::numeric_limits<double>::infinity() &&
+		prob.m__max_velocity__m_per_s != 2.0
+	)
 	{
 		j[io::key::max_vel()] = prob.m__max_velocity__m_per_s;
+	}
+
+	if (prob.m__additional_capital_cost != 0.0) {
+		j[io::key::cap_cost()] = prob.m__additional_capital_cost;
+	}
+
+	if (prob.m__ds_failed_sols != 0) {
+		j[io::key::ds_fail_sols()] = prob.m__ds_failed_sols;
+	}
+
+	if (prob.m__ds_unsati_sols != 0) {
+		j[io::key::ds_unsat_sols()] = prob.m__ds_unsati_sols;
 	}
 }
 
