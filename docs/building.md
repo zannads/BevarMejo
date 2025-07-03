@@ -4,7 +4,7 @@ This guide will walk you through downloading, building, and running the Bèvar M
 
 ## What You'll Need
 
-This project contains both C++ code (which needs to be compiled) and Python code working with Python 3.12 (which will need a dedicated environment). Don't worry if you're not familiar with C++ or Python - we'll guide you through each step!
+This project contains both C++ code (which needs to be compiled) and Python code working with Python 3.12 (which will need a dedicated environment). Don't worry if you're unfamiliar with C++ or Python - we'll guide you through each step!
 
 ## Supported Platforms and Development Environments
 
@@ -25,7 +25,7 @@ Choose the section that matches your operating system:
 #### Windows Users
 
 - Download and install [Visual Studio 2022](https://visualstudio.microsoft.com/vs/) (Community edition is free)
-- Make sure to include "Desktop development with C++" workload during installation
+- Make sure to include the "Desktop development with C++" workload during installation
 
 #### macOS Users
 
@@ -43,7 +43,7 @@ sudo apt install git g++ cmake
 
 ### Step 2: Set Up Workspace and Dependencies
 
-**Important**: We expect that all repositories necessary to build this project are located in the same folder. Here's the expected structure:
+**Important**: We expect all repositories necessary to build this project to be in the same folder. Here's the expected structure:
 
 ```
 / (workspace folder)
@@ -111,16 +111,22 @@ Alternatively, you can install it using CMake in your workspace folder. See the 
 
 #### Step 2.4: Install EPANET
 
-EPANET (OWA-EPANET) is used for modeling Water Distribution Systems and solving hydraulic equations. This library is not available through Vcpkg and must be installed manually.
-
-Navigate back to your workspace folder:
+EPANET (OWA-EPANET) is used to model water distribution systems and solve hydraulic equations. This library is not available through Vcpkg and must be installed manually. 
 
 ```bash
 cd ..  # Go back to workspace folder
 git clone https://github.com/OpenWaterAnalytics/EPANET.git
 ```
 
-Follow the building instructions in the [EPANET BUILDING.md file](https://github.com/OpenWaterAnalytics/EPANET/blob/dev/BUILDING.md).
+To build EPANET, you can follow the building instructions in the [EPANET BUILDING.md file](https://github.com/OpenWaterAnalytics/EPANET/blob/dev/BUILDING.md), but it is basically:
+
+```bash
+cd EPANET
+mkdir build
+git checkout origin/dev
+cmake -DCMAKE_BUILD_TYPE:STRING=Release -S . -B build # On Windows, add -A x64 for a 64-bit build when MS Visual Studio is the compiler.
+cmake --build build --config Release
+```
 
 ### Step 3: Build Bèvar Méjo
 
@@ -132,7 +138,7 @@ cd BevarMejo
 mkdir -p builds/releases/latest
 ```
 
-**Note:** Since EPANET is in the workspace folder, the build system will find it automatically. However, if you installed Vcpkg outside the default path (`/opt/vcpkg/`), you need to specify its location:
+**Note:** The build system will find it automatically since EPANET is in the workspace folder. However, if you installed Vcpkg outside the default path (`/opt/vcpkg/`), you need to specify its location:
 
 ```bash
 # Generate build system
@@ -146,7 +152,7 @@ cmake --build builds/releases/latest --config Release
 
 #### Custom Installation Flags
 
-You can customize the build process with these CMake flags:
+You can customise the build process with these CMake flags:
 
 - **Custom JSON library path**: If you installed JSON via CMake instead of Vcpkg or used a different name:
     
@@ -160,15 +166,15 @@ You can customize the build process with these CMake flags:
     -DEPANET_ROOT:PATH=/your/path
     ```
     
-    _Note_: Build files are expected in the `build` subfolder.
+    _Note_: Build files are expected in the `build` subfolder, unless you are trying to reproduce old results or build an older version of this software (see below the "Set project version flag").
     
-- **Change output JSON style**: Customize the JSON key format (default: `"snake_case"`):
+- **Change output JSON style**: Customize the JSON key format:
     
     ```
     -DOUT_STYLE:STRING="option"
     ```
     
-    Options: `"Sentence case"`, `"CamelCase"`, `"kebab-case"`, `"pascalCase"`
+    Options: DEFAULT: `"snake_case"`, `"Sentence case"`, `"CamelCase"`, `"kebab-case"`, `"pascalCase"`.
     
 - **Set project version**: Change the project version (default: `"latest"`):
     
@@ -177,7 +183,8 @@ You can customize the build process with these CMake flags:
     ```
     
     _Note_: This requires additional setup. See ["Installation for Results Reproduction"](#installation-for-results-reproduction) section.
-    
+    *Another note*: You need to specify the version with the `yy.m.d` format.
+
 ## Part B: Python Installation
 
 ### Step 1: Create Python Environment
@@ -212,32 +219,30 @@ For detailed instructions, see the [PyGMO installation guide](https://esa.github
 
 During development, some results were published before certain bugs were discovered and fixed. To maintain backwards compatibility and ensure reproducibility of published work, I implemented a system of C preprocessor flags that preserves both the original (buggy) and corrected versions of the code.
 
-Therefore, if you're reproducing results from published work, you will need to use specific versions of both the BeMe and EPANET projects that correspond to the version used when those results were generated. See ["About Versioning"](versioning.md).
+Therefore, if you're reproducing results from published work, you must use specific versions of both the BeMe and EPANET projects that correspond to the version used when those results were generated. See ["About Versioning"](versioning.md).
 
 During the part A installation, modify steps 2.4 and 3 as follows:
 
-1. **Create a version-specific build** for EPANET:
+1. **Create the version-specific builds** for EPANET:
 
 ```bash
-# 1. Navigate to the EPANET folder
-cd path/to/EPANET
+cd path/to/EPANET # Navigate to the folder and add a second remote (my fork)
+git remote add zannads https://github.com/zannads/EPANET.git 
 
-# 2. Create the build folder
-	# option a: for versions before v25.02.00
-# mkdir -p builds/24.6.18
-	# option b: for versions starting from v25.02.00
-mkdir build
+# Create the correct file hierarchy for the BevarMejo project
+mkdir beme-releases
+cd beme-releases/
+mkdir 24.6.18 24.12.21
 
-# 3. Checkout the commit from the date using its hash value
-	# option a: for versions before v25.02.00: June 18, 2024
-# git checkout -b c24-06-18 <sha1>
-	# option b: for versions starting from  v25.02.00: December 21, 2024
-git checkout -b c24-12-21 <sha1>
+# Check out the first snapshot and build that version
+git checkout zannads/beme-dev-v240618
+cmake -DCMAKE_BUILD_TYPE:STRING=Release -S .. -B 24.6.18/ 
+cmake --build 24.6.18/ --config Release
 
-# 4. Build EPANET in that folder
-cmake -DCMAKE_BUILD_TYPE:STRING=Release \
-	-S. -B<build_folder>
-cmake --build <build_folder> --config release
+# Same for the second snapshot
+git checkout zannads/beme-dev-v241221
+cmake -DCMAKE_BUILD_TYPE:STRING=Release -S .. -B 24.12.21/
+cmake --build 24.12.21/ --config Release
 ```
 
 2. **Create a version-specific build** for the BeMe:
@@ -258,20 +263,20 @@ cmake -DCMAKE_BUILD_TYPE:STRING=Release \
 cmake --build builds/releases/your_version --config Release
 ```
 
-For full results reproduction, the following versions are required: `v24.04.00`, `v24.06.00`, `v24.10.00`, `v24.11.00`, `v24.12.00`, and `latest`.
+The following versions are required for full results reproduction: `v24.04.00`, `v24.06.00`, `v24.10.00`, `v24.11.00`, `v24.12.00`, and `latest`.
 
 ## Troubleshooting
 
 ### Common Issues
 
 - **CMake not found**: Ensure CMake is installed. On Windows, it comes with Visual Studio.
-- **Library not found**: Verify all libraries are in the correct locations and Vcpkg installation completed successfully.
+- **Library not found**: Verify all libraries are in the correct locations and the Vcpkg installation completed successfully.
 - **Permission errors (macOS/Linux)**: You may need `sudo` for some installation commands.
 - **Python version issues**: Ensure you're using Python 3.12 for best compatibility.
 
 ## What's Next?
 
-Once installation is complete, you'll be ready to run optimization problems! Check out the usage guide for examples of how to use the software.
+Once installation is complete, you'll be ready to run optimisation problems! Check out the usage guide for examples of how to use the software.
 
 ---
 

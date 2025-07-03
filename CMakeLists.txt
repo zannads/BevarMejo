@@ -23,7 +23,7 @@ set(CMAKE_TOOLCHAIN_FILE "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FIL
 # ------------------------------------------------------------------------------
 
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION 250601)
+set(CURRENT_VERSION 250700)
 set(FIRST_VERSION 230600)
 if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
   math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
@@ -193,14 +193,13 @@ ELSE() # NOT EPANET FROM SOURCE
   # built in builds/VERSION_YY.VERSION_MM.VERSION_DD folder for previous versions
   # and in build for the latest version.
   set(EPANET_BUILD_DIR "${EPANET_ROOT}/build")
-  IF(BEME_VERSION LESS 250200)
+  IF(BEME_VERSION LESS CURRENT_VERSION)
     math(EXPR MAJOR_VERSION "${EPANET_VERSION} / 10000")
     math(EXPR MINOR_VERSION "(${EPANET_VERSION} % 10000) / 100")
     math(EXPR PATCH_VERSION "${EPANET_VERSION} % 100")
-    set(EPANET_BUILD_DIR "${EPANET_ROOT}/builds/${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
-    # string(REGEX REPLACE "([0-9][0-9])([0-9][0-9])([0-9][0-9])" "${EPANET_ROOT}/builds/\\1.\\2.\\3" EPANET_BUILD_DIR ${EPANET_VERSION})
-    message(STATUS "EPANET build directory: ${EPANET_BUILD_DIR}")
+    set(EPANET_BUILD_DIR "${EPANET_ROOT}/beme-releases/${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
   ENDIF()
+  message(STATUS "EPANET build directory: ${EPANET_BUILD_DIR}")
 
   # When using Visual Studio on Windows, cmake is a multi-configuration generator.
   # We need to set the path for Release configuration. On Unix, makefiles are usually

@@ -7,7 +7,7 @@ BevarMejo is a monolithic repository containing all the code and documentation d
 The repository consists of two main components:
 
 - **bemelib**: A C++17 library for optimisation of water distribution systems, built around the pagmo optimisation framework for highly parallel computing and the EPANET project for hydraulic simulation
-- **pybeme**: A Python 3.12 library providing utilities for visualisation and analysis of bemelib optimisation results
+- **pybeme**: A Python 3.12 library providing utilities for the visualisation and analysis of bemelib optimisation results
 
 ## Related Resources
 
