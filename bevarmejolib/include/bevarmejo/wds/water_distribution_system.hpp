@@ -472,16 +472,17 @@ public:
 // EPANET Support starts here.
 ///////////////////////////////////////////////////////////////////////////
 /*------- Member types -------*/
+public:
+    // Shared ptr to a EPANET Project struct to hold a EN_Project with automatic lifetime management.
+    using ENProjectPtr = std::shared_ptr<struct Project>;
 
 /*------- Member objects -------*/
-public:
-    // Handler for the project.
-    // Public because I may want to modify it (e.g., apply a decision vector).
-    // it is just faster than doing insert an interface. I will be careful.
-    mutable EN_Project ph_;
 protected:
+    // Handler for the EPANET project.
+    ENProjectPtr m__ph;
+
     // Path to the inp file from which the project will be uploaded.
-    fsys::path _inp_file_;
+    fsys::path m__inp_file;
 
 /*------- Member functions -------*/
 // (constructor)
@@ -490,7 +491,7 @@ public:
 
 /*------- Element access -------*/
 public:
-    // ph is public, so you can use it to modify the project.
+    // Get the classic EN_Project (pointer to an opaque struct) to directly modify it or query information.
     EN_Project ph() const noexcept;
 
     const fsys::path& inp_file() const noexcept;

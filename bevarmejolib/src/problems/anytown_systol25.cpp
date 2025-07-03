@@ -224,7 +224,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
     for (int i = 0; i < 3; ++i) {
         // no need to go through the pumps, I know the pattern ID
         int pattern_idx = 0;
-        int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+        int errorcode = EN_getpatternindex(m__anytown->ph(), std::to_string(i+2).c_str(), &pattern_idx);
         assert(errorcode <= 100);
 
         std::vector<double> temp(anytown::pgo_dv::size, 0.0);
@@ -232,7 +232,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
             temp[j] = operations[j] > i ? 1.0 : 0.0;
         }
 
-        errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+        errorcode = EN_setpattern(m__anytown->ph(), pattern_idx, temp.data(), temp.size());
         assert(errorcode <= 100);
     }
     return;
@@ -300,7 +300,7 @@ auto Problem::fitness(
 			bemeio::other::ext__inp
 		);
 
-		int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
+		int errco = EN_saveinpfile(this->m__anytown->ph(), out_file.string().c_str());
 		assert(errco <= 100);
 
 		bevarmejo::io::stream_out(std::cout,
@@ -673,7 +673,7 @@ auto Problem::firefighting_reliability_perspective() const -> double
                 bemeio::other::ext__inp
             );
 
-            int errco = EN_saveinpfile(this->m__ff_anytown->ph_, out_file.string().c_str());
+            int errco = EN_saveinpfile(this->m__ff_anytown->ph(), out_file.string().c_str());
             assert(errco <= 100);
 
             bevarmejo::io::stream_out(std::cout,

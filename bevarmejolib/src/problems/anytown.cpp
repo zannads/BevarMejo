@@ -453,7 +453,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 		for (int i = 0; i < 3; ++i) {
 			// no need to go through the pumps, I know the pattern ID
 			int pattern_idx = 0;
-			int errorcode = EN_getpatternindex(m__anytown->ph_, std::to_string(i+2).c_str(), &pattern_idx);
+			int errorcode = EN_getpatternindex(m__anytown->ph(), std::to_string(i+2).c_str(), &pattern_idx);
 			assert(errorcode <= 100);
 
 			std::vector<double> temp(24, 0.0);
@@ -461,7 +461,7 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 				temp[j] = operations[j] > i ? 1.0 : 0.0;
 			}
 
-			errorcode = EN_setpattern(m__anytown->ph_, pattern_idx, temp.data(), temp.size());
+			errorcode = EN_setpattern(m__anytown->ph(), pattern_idx, temp.data(), temp.size());
 			assert(errorcode <= 100);
 
 			// Should be the same as
@@ -704,7 +704,7 @@ auto Problem::fitness(
 			bemeio::other::ext__inp
 		);
 
-		int errco = EN_saveinpfile(this->m__anytown->ph_, out_file.string().c_str());
+		int errco = EN_saveinpfile(this->m__anytown->ph(), out_file.string().c_str());
 		assert(errco <= 100);
 
 		bevarmejo::io::stream_out(std::cout,
@@ -1333,7 +1333,7 @@ void fep1::apply_dv__exis_pipes(
 			double old_pipe_roughness = pipe.roughness().value();
 			old_HW_coeffs.insert({id, old_pipe_roughness});
 
-			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
+			int errorcode = EN_setlinkvalue(anyt_wds.ph(), pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);	
 			assert(errorcode <= 100);
 
 			pipe.roughness(bevarmejo::anytown::coeff_HW_cleaned);
@@ -1353,17 +1353,17 @@ void fep1::apply_dv__exis_pipes(
 			// retrieve the old property of the already existing pipe
 			int out_node1_idx = 0;
 			int out_node2_idx = 0;
-			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.EN_index(), &out_node1_idx, &out_node2_idx);
+			int errorcode = EN_getlinknodes(anyt_wds.ph(), pipe.EN_index(), &out_node1_idx, &out_node2_idx);
 			assert(errorcode <= 100);
 
-			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
-			std::string out_node2_id = epanet::get_node_id(anyt_wds.ph_, out_node2_idx);
+			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph(), out_node1_idx);
+			std::string out_node2_id = epanet::get_node_id(anyt_wds.ph(), out_node2_idx);
 			
 			// create the new pipe
 			// new name is Dxx where xx is the original pipe name
 			auto dup_pipe_id = std::string("D")+id;
 			int dup_pipe_idx = 0;
-			errorcode = EN_addlink(anyt_wds.ph_, dup_pipe_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &dup_pipe_idx);
+			errorcode = EN_addlink(anyt_wds.ph(), dup_pipe_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &dup_pipe_idx);
 			assert(errorcode <= 100);
 			
 			// change the new pipe properties:
@@ -1371,14 +1371,14 @@ void fep1::apply_dv__exis_pipes(
 			// 2. roughness = coeff_HV_new
 			// 3. length  = value of link_idx
 			double diameter__in = pipes_alt_costs.at(alt_option).diameter__in;
-			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_DIAMETER, diameter__in);
+			errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_DIAMETER, diameter__in);
 			assert(errorcode <= 100);
-			// errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
+			// errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
 			// assert(errorcode <= 100);
 			double link_length = 0.0;
-			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_LENGTH, &link_length);
+			errorcode = EN_getlinkvalue(anyt_wds.ph(), pipe.EN_index(), EN_LENGTH, &link_length);
 			assert(errorcode <= 100);
-			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_LENGTH, link_length);
+			errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_LENGTH, link_length);
 			assert(errorcode <= 100);
 
 			// DUPLICATE on my network object
@@ -1422,7 +1422,7 @@ void fep2::apply_dv__exis_pipes(
 			double old_pipe_roughness = pipe.roughness().value();
 			old_HW_coeffs.insert({id, old_pipe_roughness});
 
-			int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);
+			int errorcode = EN_setlinkvalue(anyt_wds.ph(), pipe.EN_index(), EN_ROUGHNESS, bevarmejo::anytown::coeff_HW_cleaned);
 			assert(errorcode <= 100);
 
 			pipe.roughness(bevarmejo::anytown::coeff_HW_cleaned);
@@ -1436,17 +1436,17 @@ void fep2::apply_dv__exis_pipes(
 			// retrieve the old property of the already existing pipe
 			int out_node1_idx = 0;
 			int out_node2_idx = 0;
-			int errorcode = EN_getlinknodes(anyt_wds.ph_, pipe.EN_index(), &out_node1_idx, &out_node2_idx);
+			int errorcode = EN_getlinknodes(anyt_wds.ph(), pipe.EN_index(), &out_node1_idx, &out_node2_idx);
 			assert(errorcode <= 100);
 
-			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph_, out_node1_idx);
-			std::string out_node2_id = epanet::get_node_id(anyt_wds.ph_, out_node2_idx);
+			std::string out_node1_id = epanet::get_node_id(anyt_wds.ph(), out_node1_idx);
+			std::string out_node2_id = epanet::get_node_id(anyt_wds.ph(), out_node2_idx);
 			
 			// create the new pipe
 			// new name is Dxx where xx is the original pipe name
 			auto new_link_id = std::string("D")+id;
 			int dup_pipe_idx = 0;
-			errorcode = EN_addlink(anyt_wds.ph_, new_link_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &dup_pipe_idx);
+			errorcode = EN_addlink(anyt_wds.ph(), new_link_id.c_str(), EN_PIPE, out_node1_id.c_str(), out_node2_id.c_str(), &dup_pipe_idx);
 			assert(errorcode <= 100);
 			
 			// change the new pipe properties:
@@ -1454,14 +1454,14 @@ void fep2::apply_dv__exis_pipes(
 			// 2. roughness = coeff_HV_new
 			// 3. length  = value of link_idx
 			double diameter__in = pipes_alt_costs.at(alt_option).diameter__in;
-			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_DIAMETER, diameter__in);
+			errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_DIAMETER, diameter__in);
 			assert(errorcode <= 100);
-			// errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
+			// errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_ROUGHNESS, coeff_HW_new);
 			// assert(errorcode <= 100);
 			double link_length = 0.0;
-			errorcode = EN_getlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_LENGTH, &link_length);
+			errorcode = EN_getlinkvalue(anyt_wds.ph(), pipe.EN_index(), EN_LENGTH, &link_length);
 			assert(errorcode <= 100);
-			errorcode = EN_setlinkvalue(anyt_wds.ph_, dup_pipe_idx, EN_LENGTH, link_length);
+			errorcode = EN_setlinkvalue(anyt_wds.ph(), dup_pipe_idx, EN_LENGTH, link_length);
 			assert(errorcode <= 100);
 
 
@@ -1491,7 +1491,7 @@ void fnp1::apply_dv__new_pipes(
 		std::size_t alt_option = *curr_dv++;	
 
 		double diameter__in = pipes_alt_costs.at(alt_option).diameter__in;
-		int errorcode = EN_setlinkvalue(anyt_wds.ph_, pipe.EN_index(), EN_DIAMETER, diameter__in);
+		int errorcode = EN_setlinkvalue(anyt_wds.ph(), pipe.EN_index(), EN_DIAMETER, diameter__in);
 		assert(errorcode <= 100);
 
 		pipe.diameter(diameter__in*MperFT/12*1000); //save in mm
@@ -1523,7 +1523,7 @@ void pgo_dv::apply_dv__pumps(
 			}
 
 			int errorcode = EN_setpatternvalue(
-				anyt_wds.ph_,
+				anyt_wds.ph(),
 				pattern_idx,
 				t,
 				value
@@ -1595,13 +1595,13 @@ auto fnt1::apply_dv__tanks(
 
 		// do it again in EPANET
 		int new_tank_idx = 0; 
-		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		int errco = EN_addnode(anytown.ph(), new_tank_id.c_str(), EN_TANK, &new_tank_idx);
 		assert(errco <= 100);
 
-		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
+		errco = EN_setcoord(anytown.ph(), new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
-		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
+		errco = EN_settankdata(anytown.ph(), new_tank_idx, 
 			orig_tank.elevation()/MperFT, 
 			orig_tank.min_level().value()/MperFT, 
 			orig_tank.min_level().value()/MperFT, 
@@ -1628,13 +1628,13 @@ auto fnt1::apply_dv__tanks(
 		// do it again in EPANET
 		int riser_idx = 0;
 #if BEME_VERSION < 241200
-		errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, new_tank_id.c_str(), junction_id.c_str(), &riser_idx);
+		errco = EN_addlink(anytown.ph(), riser_id.c_str(), EN_PIPE, new_tank_id.c_str(), junction_id.c_str(), &riser_idx);
 #else
-		errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		errco = EN_addlink(anytown.ph(), riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
 #endif
 		assert(errco <= 100);
 
-		errco = EN_setpipedata(anytown.ph_, riser_idx,
+		errco = EN_setpipedata(anytown.ph(), riser_idx,
 			bevarmejo::anytown::riser_length__ft,
 			16.0,
 			bevarmejo::anytown::coeff_HW_new,
@@ -1735,13 +1735,13 @@ auto fnt2::apply_dv__tanks(
 
 		// do it again in EPANET
 		int new_tank_idx = 0; 
-		int errco = EN_addnode(anytown.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		int errco = EN_addnode(anytown.ph(), new_tank_id.c_str(), EN_TANK, &new_tank_idx);
 		assert(errco <= 100);
 
-		errco = EN_setcoord(anytown.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
+		errco = EN_setcoord(anytown.ph(), new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
-		errco = EN_settankdata(anytown.ph_, new_tank_idx, 
+		errco = EN_settankdata(anytown.ph(), new_tank_idx, 
 			new_tank.elevation()/MperFT, 
 			new_tank.min_level().value()/MperFT, 
 			new_tank.min_level().value()/MperFT, 
@@ -1763,10 +1763,10 @@ auto fnt2::apply_dv__tanks(
 
 		// do it again in EPANET
 		int riser_idx = 0;
-		errco = EN_addlink(anytown.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		errco = EN_addlink(anytown.ph(), riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
 		assert(errco <= 100);
 
-		errco = EN_setpipedata(anytown.ph_, riser_idx,
+		errco = EN_setpipedata(anytown.ph(), riser_idx,
 			bevarmejo::anytown::riser_length__ft,
 			new_pipes_options.at(riser_dv-1).diameter__in,
 			bevarmejo::anytown::coeff_HW_new,
@@ -1908,13 +1908,13 @@ auto anytown::fnt3::apply_dv__tanks(
 
         // do it again in EPANET
         int new_tank_idx = 0; 
-		int errco = EN_addnode(a_anytown_sys.ph_, new_tank_id.c_str(), EN_TANK, &new_tank_idx);
+		int errco = EN_addnode(a_anytown_sys.ph(), new_tank_id.c_str(), EN_TANK, &new_tank_idx);
 		assert(errco <= 100);
 
-		errco = EN_setcoord(a_anytown_sys.ph_, new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
+		errco = EN_setcoord(a_anytown_sys.ph(), new_tank_idx, new_tank.x_coord(), new_tank.y_coord());
 		assert(errco <= 100);
 
-		errco = EN_settankdata(a_anytown_sys.ph_, new_tank_idx, 
+		errco = EN_settankdata(a_anytown_sys.ph(), new_tank_idx, 
 			new_tank.elevation()/MperFT, 
 			new_tank.min_level().value()/MperFT, 
 			new_tank.min_level().value()/MperFT, 
@@ -1936,10 +1936,10 @@ auto anytown::fnt3::apply_dv__tanks(
 
 		// do it again in EPANET
 		int riser_idx = 0;
-		errco = EN_addlink(a_anytown_sys.ph_, riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
+		errco = EN_addlink(a_anytown_sys.ph(), riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);
 		assert(errco <= 100);
 
-		errco = EN_setpipedata(a_anytown_sys.ph_, riser_idx,
+		errco = EN_setpipedata(a_anytown_sys.ph(), riser_idx,
 			bevarmejo::anytown::riser_length__ft,
 			new_pipes_options.at(riser_diam_opt_idx).diameter__in,
 			bevarmejo::anytown::coeff_HW_new,
@@ -2287,7 +2287,7 @@ void fep1::reset_dv__exis_pipes(
 		else if (action_type == 1) // clean
 		{
 			// reset the HW coefficients
-			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
+			int errorcode = EN_setlinkvalue(anytown.ph(), pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
 			assert(errorcode <= 100);
 
 			pipe.roughness(old_HW_coeffs.at(id));
@@ -2298,7 +2298,7 @@ void fep1::reset_dv__exis_pipes(
 			// duplicate pipe has been named Dxx where xx is the original pipe name
 			auto dup_pipe_id = std::string("D")+id;
 
-			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletelink(anytown.ph(), anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			anytown.id_sequence(label::__temp_elems).erase(dup_pipe_id);
@@ -2330,7 +2330,7 @@ void fep2::reset_dv__exis_pipes(
 		else if (dv == 1) // clean
 		{
 			// reset the HW coefficients
-			int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
+			int errorcode = EN_setlinkvalue(anytown.ph(), pipe.EN_index(), EN_ROUGHNESS, old_HW_coeffs.at(id));
 			assert(errorcode <= 100);
 
 			pipe.roughness(old_HW_coeffs.at(id));
@@ -2341,7 +2341,7 @@ void fep2::reset_dv__exis_pipes(
 			// duplicate pipe has been named Dxx where xx is the original pipe name
 			auto dup_pipe_id = std::string("D")+id;
 
-			int errorcode = EN_deletelink(anytown.ph_, anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletelink(anytown.ph(), anytown.pipe(dup_pipe_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			anytown.id_sequence(label::__temp_elems).erase(dup_pipe_id);
@@ -2362,7 +2362,7 @@ void fnp1::reset_dv__new_pipes(
 	auto curr_dv = start_dv;
 	for (auto&& [id, pipe] : anytown.subnetwork_with_order<WDS::Pipe>(new_pipes__subnet_name))
 	{
-		int errorcode = EN_setlinkvalue(anytown.ph_, pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::nonexisting_pipe_diam__ft);
+		int errorcode = EN_setlinkvalue(anytown.ph(), pipe.EN_index(), EN_DIAMETER, bevarmejo::anytown::nonexisting_pipe_diam__ft);
 		assert(errorcode <= 100);
 
 		pipe.diameter(bevarmejo::anytown::nonexisting_pipe_diam__ft); // it's ok also in ft because its' super small small
@@ -2402,7 +2402,7 @@ void fnt1::reset_dv__tanks(
 		auto riser_id = std::string("Ris_")+std::to_string(i);
 
 		// remove the new tank and the the riser is automatically deleted 
-		int errorcode = EN_deletenode(anytown.ph_, anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+		int errorcode = EN_deletenode(anytown.ph(), anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
 		assert(errorcode <= 100);
 
 		anytown.id_sequence(label::__temp_elems).erase(new_tank_id);
@@ -2432,7 +2432,7 @@ auto fnt2::reset_dv__tanks(
 		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
 		{
 			// remove the new tank and the the riser is automatically deleted 
-			int errorcode = EN_deletenode(anytown.ph_, anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletenode(anytown.ph(), anytown.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			temp_elems.erase(new_tank_id);
@@ -2458,7 +2458,7 @@ auto anytown::fnt3::reset_dv__tanks(
 		if (temp_elems.contains(new_tank_id)) //  we can assume it also correctly contains riser_id
 		{
 			// remove the new tank and the the riser is automatically deleted 
-			int errorcode = EN_deletenode(a_anytown_sys.ph_, a_anytown_sys.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
+			int errorcode = EN_deletenode(a_anytown_sys.ph(), a_anytown_sys.tank(new_tank_id).EN_index(), EN_UNCONDITIONAL);
 			assert(errorcode <= 100);
 
 			temp_elems.erase(new_tank_id);
@@ -2748,7 +2748,7 @@ void to_json(Json& j, const bevarmejo::anytown::Problem &prob)
 			auto pump_pattern_idx = pump.speed_pattern()->EN_index();
 			for (std::size_t i = 1; i <= 24; ++i) {
 				double val = 0.0;
-				int errorcode = EN_getpatternvalue(prob.m__anytown->ph_, pump_pattern_idx, i, &val);
+				int errorcode = EN_getpatternvalue(prob.m__anytown->ph(), pump_pattern_idx, i, &val);
 				pumpgroup_pattern[i-1] += val;
 			}
 		}

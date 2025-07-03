@@ -28,8 +28,8 @@ namespace bevarmejo
 {
 
 WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std::function<void (EN_Project)> preprocessf) :
-    ph_(nullptr),
-    _inp_file_(inp_file),
+    m__ph(nullptr),
+    m__inp_file(inp_file),
     _nodes_(),
     _junctions_(),
     _tanks_(),
@@ -43,12 +43,15 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
 {
     assert(!inp_file.empty());
 
-    int errorcode = EN_createproject(&ph_);
+    // We manage the EPANET Project with a shared ptr with a custome deleter.
+
+    // First we creat a normal EPANET Project
+    EN_Project raw_ph = nullptr;
+    int errorcode = EN_createproject(&raw_ph);
     assert(errorcode<100);
-    
-    errorcode = EN_open(ph_, inp_file.string().c_str(), "", ""); // with '\0' doesn't work. WHy?
+    errorcode = EN_open(raw_ph, inp_file.string().c_str(), "", "");
     if (errorcode>100){
-        EN_deleteproject(ph_);
+        EN_deleteproject(raw_ph);
 
         beme_throw(std::runtime_error,
             "Impossible to create a Water Distribution System.",
@@ -58,13 +61,24 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
             "Filename: ", inp_file);
     }
 
-    errorcode = EN_setreport(ph_, "SUMMARY NO");
-    errorcode = EN_setreport(ph_, "STATUS NO");
-    errorcode = EN_setreport(ph_, "MESSAGES NO");
+    // Then we pass it to the shared_ptr object with a custom Deleter method that
+    // knows how to delete it correctly.
+    m__ph = ENProjectPtr(raw_ph, [](EN_Project a_ph) {
+        if (a_ph) {
+            EN_close(a_ph);
+            EN_deleteproject(a_ph);
+
+            std::cout << "EPANET project deleted\n";
+        }
+    });
+    
+    errorcode = EN_setreport(this->ph(), "SUMMARY NO");
+    errorcode = EN_setreport(this->ph(), "STATUS NO");
+    errorcode = EN_setreport(this->ph(), "MESSAGES NO");
 
     // Do everything you need to do on your Project before loading the network
     if (preprocessf)
-        preprocessf(ph_);
+        preprocessf(this->ph());
 
     // There is a specific order in which to load stuff from the EPANET project, because we need to
     // create the elements in the right order as some of them depend on others (e.g. Links depend on Nodes).
@@ -74,7 +88,7 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
     this->load_EN_time_settings();
 
     // 1.3 Load analysis options
-    // TODO: this->load_EN_analysis_options(ph_);
+    // TODO: this->load_EN_analysis_options(ph());
 
     // 2.0 Load the auxiliary EPANET elements
     this->load_EN_curves();
@@ -94,35 +108,35 @@ WaterDistributionSystem::WaterDistributionSystem(const fsys::path& inp_file, std
 /*------- Element access -------*/
 EN_Project WaterDistributionSystem::ph() const noexcept
 {
-    return ph_;
+    return m__ph.get();
 }
 
 const fsys::path& WaterDistributionSystem::inp_file() const noexcept
 {
-    return _inp_file_;
+    return m__inp_file;
 }
 
 /*------- Modifiers -------*/
 void WaterDistributionSystem::load_EN_time_settings()
 {
-    assert(ph_ != nullptr);
+    assert(m__ph != nullptr);
 
     epanet::time_t a_time= 0l;
-    int errorcode= EN_gettimeparam(ph_, EN_DURATION, &a_time);
+    int errorcode= EN_gettimeparam(ph(), EN_DURATION, &a_time);
     assert(errorcode < 100);
     m__times.duration__s(a_time);
 
-    errorcode= EN_gettimeparam(ph_, EN_STARTTIME, &a_time);
+    errorcode= EN_gettimeparam(ph(), EN_STARTTIME, &a_time);
     assert(errorcode < 100);
     m__times.shift_start_time__s(a_time);
 
 
     // Prepare for the inputs that are patterns
-    errorcode = EN_gettimeparam(ph_, EN_PATTERNSTEP, &a_time);
+    errorcode = EN_gettimeparam(ph(), EN_PATTERNSTEP, &a_time);
     assert(errorcode < 100);
     epanet::time_t pstep = a_time;
 
-    errorcode= EN_gettimeparam(ph_, EN_PATTERNSTART, &a_time);
+    errorcode= EN_gettimeparam(ph(), EN_PATTERNSTART, &a_time);
     assert(errorcode < 100);
     epanet::time_t pstart = a_time;
 
@@ -159,18 +173,18 @@ void WaterDistributionSystem::load_EN_time_settings()
 void WaterDistributionSystem::load_EN_curves()
 {
     int n_curves= 0;
-    int errorcode = EN_getcount(ph_, EN_CURVECOUNT, &n_curves);
+    int errorcode = EN_getcount(ph(), EN_CURVECOUNT, &n_curves);
     assert(errorcode < 100);
     m__aux_elements_.curves.reserve(n_curves);
 
     for (int i = 1; i <= n_curves; ++i)
     {
         char curve_id[EN_MAXID+1];
-        errorcode = EN_getcurveid(ph_, i, curve_id);
+        errorcode = EN_getcurveid(ph(), i, curve_id);
         assert(errorcode < 100);
 
         int curve_type;
-        errorcode = EN_getcurvetype(ph_, i, &curve_type);
+        errorcode = EN_getcurvetype(ph(), i, &curve_type);
         assert(errorcode < 100);
 
         switch (curve_type)
@@ -210,14 +224,14 @@ void WaterDistributionSystem::load_EN_curves()
 void WaterDistributionSystem::load_EN_patterns()
 {
     int n_patterns= 0;
-    int errorcode = EN_getcount(ph_, EN_PATCOUNT, &n_patterns);
+    int errorcode = EN_getcount(ph(), EN_PATCOUNT, &n_patterns);
     assert(errorcode < 100);
     m__aux_elements_.patterns.reserve(n_patterns);
 
     for (int i = 1; i <= n_patterns; ++i)
     {
         char pattern_id[EN_MAXID+1];
-        errorcode = EN_getpatternid(ph_, i, pattern_id);
+        errorcode = EN_getpatternid(ph(), i, pattern_id);
         assert(errorcode < 100);
 
         m__aux_elements_.patterns.insert(pattern_id, wds::Pattern::make_from_EN_for(*this, pattern_id));
@@ -227,18 +241,18 @@ void WaterDistributionSystem::load_EN_patterns()
 void WaterDistributionSystem::load_EN_nodes()
 {
     int n_nodes = 0;
-    int errorcode = EN_getcount(ph_, EN_NODECOUNT, &n_nodes);
+    int errorcode = EN_getcount(ph(), EN_NODECOUNT, &n_nodes);
     assert(errorcode < 100);
     _nodes_.reserve(n_nodes);
      
     for (int i = 1; i <= n_nodes; ++i)
     {
         char node_id[EN_MAXID + 1];
-        errorcode = EN_getnodeid(ph_, i, node_id);
+        errorcode = EN_getnodeid(ph(), i, node_id);
         assert(errorcode < 100);
 
         int node_type;
-        errorcode = EN_getnodetype(ph_, i, &node_type);
+        errorcode = EN_getnodetype(ph(), i, &node_type);
         assert(errorcode < 100);
 
         auto insert_ele_in_cont = [this, node_id](auto& container) -> void
@@ -297,18 +311,18 @@ void WaterDistributionSystem::load_EN_nodes()
 void WaterDistributionSystem::load_EN_links()
 {
     int n_links = 0;
-    int errorcode = EN_getcount(ph_, EN_LINKCOUNT, &n_links);
+    int errorcode = EN_getcount(ph(), EN_LINKCOUNT, &n_links);
     assert(errorcode < 100);
     _links_.reserve(n_links);
 
     for (int i = 1; i <= n_links; ++i)
     {
         char link_id[EN_MAXID+1];
-        errorcode = EN_getlinkid(ph_, i, link_id);
+        errorcode = EN_getlinkid(ph(), i, link_id);
         assert(errorcode < 100);
 
         int link_type;
-        errorcode = EN_getlinktype(ph_, i, &link_type);
+        errorcode = EN_getlinktype(ph(), i, &link_type);
         assert(errorcode < 100);
 
         
@@ -359,7 +373,7 @@ void WaterDistributionSystem::load_EN_links()
 void WaterDistributionSystem::load_EN_controls()
 {
     int n_controls= 0;
-    int errorcode = EN_getcount(ph_, EN_CONTROLCOUNT, &n_controls);
+    int errorcode = EN_getcount(ph(), EN_CONTROLCOUNT, &n_controls);
     assert(errorcode < 100);
     // Reserve
 
@@ -367,7 +381,7 @@ void WaterDistributionSystem::load_EN_controls()
     {
         /*
         char control_id[EN_MAXID+1];
-        errorcode = EN_getlinkid(ph_, i, control_id);
+        errorcode = EN_getlinkid(ph(), i, control_id);
         assert(errorcode < 100);
 
         ...
@@ -379,13 +393,13 @@ void WaterDistributionSystem::load_EN_controls()
 void WaterDistributionSystem::load_EN_rules()
 {
     int n_rules= 0;
-    int errorcode = EN_getcount(ph_, EN_RULECOUNT, &n_rules);
+    int errorcode = EN_getcount(ph(), EN_RULECOUNT, &n_rules);
     assert(errorcode < 100);
     for (int i = 1; i <= n_rules; ++i)
     {
         /*
         char rule_id[EN_MAXID+1];
-        errorcode = EN_getlinkid(ph_, i, rule_id);
+        errorcode = EN_getlinkid(ph(), i, rule_id);
         assert(errorcode < 100);
 
         ...

@@ -151,7 +151,7 @@ void Problem::apply_dv(WaterDistributionSystem& a_wds, const std::vector<double>
 
         // unfortunatley I have to do the same in EPANET
         int errco = 0;
-        errco = EN_setlinkvalue(a_wds.ph_, pipe.EN_index(), EN_DIAMETER, diam_mm);
+        errco = EN_setlinkvalue(a_wds.ph(), pipe.EN_index(), EN_DIAMETER, diam_mm);
 
         ++itp;
         ++itd;

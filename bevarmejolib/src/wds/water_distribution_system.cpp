@@ -28,13 +28,8 @@ namespace fsys = std::filesystem;
 namespace bevarmejo {
 
 WaterDistributionSystem::~WaterDistributionSystem(){
-    if (ph_!=nullptr){
-        EN_close(ph_);
-        EN_deleteproject(ph_);
-        
-        ph_ = nullptr;
-        std::cout << "EPANET project deleted\n";
-    }
+    // The EPANET Project handler is destroyed automatically when this class dies
+    // because its lifetime is managed by the shared pointer.
 
     // First clear all the elements, then the time series and finally the config options
     
@@ -53,7 +48,7 @@ WaterDistributionSystem::~WaterDistributionSystem(){
     // Times and config options can die in peace now as noone is referencing them.
 }
 
-
+/*
 std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
 {
     std::unique_ptr<WaterDistributionSystem> wds_clone = std::make_unique<WaterDistributionSystem>();
@@ -69,6 +64,7 @@ std::unique_ptr<WaterDistributionSystem> WaterDistributionSystem::clone() const
 
     return wds_clone;
 }
+*/
 
 /*------- Element access -------*/
 
