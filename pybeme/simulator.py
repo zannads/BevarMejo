@@ -104,7 +104,7 @@ class Simulator:
                     fitness_vector: list = None,
                     id: int = 0,
                     print_message: str = "",
-                    bemelib_version: str = "v25.06.0",
+                    bemelib_version: str = "v25.07.0",
                     lookup_paths: list = None):
         
         self.data = {
