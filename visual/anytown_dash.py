@@ -157,6 +157,14 @@ def setup_callbacks(app, experiments):
         # Run the simulation
         hres = net.getComputedHydraulicTimeSeries()
 
+        # def remove_epanet_temp_files():
+        for filename in os.listdir('.'):
+            if (os.path.isfile(filename) and 
+                len(filename) == 8 and 
+                filename.startswith('en') and 
+                '.' not in filename):
+                os.remove(filename)
+
         # Extract and setup the time.
         time=np.array(hres.Time)
         

@@ -183,7 +183,11 @@ void Experiment::build(const Json &jinput)
     else
     {
         m__name = m__settings_file.stem().string();
-        m__name = m__name.substr(m__name.find_first_not_of(io::other::pre__beme_opt+io::other::sep__beme_filenames));
+        auto bemeopt_prefix = io::other::pre__beme_opt+io::other::sep__beme_filenames;
+        if (m__name.find(bemeopt_prefix) == 0) {
+            m__name = m__name.substr(bemeopt_prefix.length());
+        }
+        
     }
 
     auto typconfig = jinput.value(io::key::typconfig.as_in(jinput), Json{});
@@ -254,11 +258,52 @@ void Experiment::build_island(const Json &config)
     check_mandatory_field(io::key::size, jpop);
     pagmo::population pop{ std::move(p), jpop.at(io::key::size.as_in(jpop)).get<unsigned int>() };
 
+    // I may have extra individuals in the population objective because I want to seed my population
+    if (io::key::individuals.exists_in(jpop)) {
+        // Technically only the decision vector for each individual would be necessary.
+        // However, I treat them like in the output files and like pagmo does.
+        // An individual is an object with decision_vector, (and optionally in the input) fitness vector and id
+        // The id is automatically added by pagmo and can not be overwritten (is unique in each run)
+        // The fitness vector value I will ignore it.
+
+        // I expect and array of files or an array of objects.
+
+        auto j_individuals = Json{};
+        bemeio::expand_if_filepaths(
+            jpop.at(io::key::individuals.as_in(jpop)),
+            m__lookup_paths,
+            j_individuals
+        );
+        
+        beme_throw_if(!j_individuals.is_array(), std::runtime_error,
+            "Impossible to build the island.",
+            "The 'individuals' object in the population is not an array."
+        );
+
+        for (auto j_it = j_individuals.begin(); j_it != j_individuals.end(); ++j_it) {
+            auto individual = *j_it;
+			if (individual.is_object() && io::key::dv.exists_in(individual)) {
+                pop.push_back(
+                    individual.at(io::key::dv.as_in(individual)).get<std::vector<double>>()
+                );
+            }
+            else {
+                bemeio::stream_out(std::cerr,
+                    "Json element in individuals is not a json object or doesn't have the 'decision_vector' key.\n"
+                );
+            }
+        }
+    }
+
     // Create and track the island
     m__archipelago.push_back(algo, pop); 
 
     // The name should be built from the string and extracting the placeholders (e.g., ${seed})
-    m__islands_names.push_back(std::to_string(pop.get_seed()));
+    auto island_name = config.value(io::key::name.as_in(config), std::string("${population_seed}"));
+    if (island_name == std::string("${population_seed}")) {
+        island_name = std::to_string(pop.get_seed());
+    }
+    m__islands_names.push_back(island_name);
 }
 
 void Experiment::build_islands(const Json &typconfig, const Json &specs, const std::size_t rand_starts)
@@ -295,9 +340,9 @@ void Experiment::build_islands(const Json &typconfig, const Json &specs, const s
         if (!specs.empty())
         {
             if (specs.is_object())
-                config.update(specs);
+                config.update(specs, /*merge_objects=*/ true);
             else
-                config.update(specs[i]);
+                config.update(specs[i], /*merge_objects=*/ true);
         }
         
         for (std::size_t j = 0; j < rand_starts; ++j)
