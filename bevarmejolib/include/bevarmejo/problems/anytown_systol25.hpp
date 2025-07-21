@@ -28,7 +28,8 @@ enum class Formulation
 {
     hr, // Hydraulic reliability
     mr, // Mechanical reliability
-    fr // Firefighting reliability
+    fr, // Firefighting reliability
+    ar // ALL reliabilities
 }; // enum class Formulation
 
 class Problem : public WDSProblem

@@ -30,6 +30,7 @@ namespace io::formulation_name
 static const std::string hr = "hyd_rel";
 static const std::string mr = "mec_rel";
 static const std::string fr = "fire_rel";
+static const std::string ar = "all_rel";
 } // namespace io::formulation_name
 
 namespace io::key
@@ -42,6 +43,7 @@ static constexpr bemeio::AliasedKey opers {"Pump group operations"}; // "Pump gr
 static const std::string hr__exinfo = "Hydraulic Reliability and Operational Efficiency Perspective";
 static const std::string mr__exinfo = "Mechanical Reliability Perspective";
 static const std::string fr__exinfo = "Firefighting Reliability Perspective";
+static const std::string ar__exinfo = "All Reliability Perspectives";
 
 Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const bemeio::Paths& lookup_paths) :
     __old_HW_coeffs()
@@ -60,6 +62,11 @@ Problem::Problem(std::string_view a_ud_formulation, const Json& settings, const 
     {
         m__formulation = Formulation::fr;
         m__extra_info = fr__exinfo;
+    }
+    else if (a_ud_formulation == io::formulation_name::ar)
+    {
+        m__formulation = Formulation::ar;
+        m__extra_info = ar__exinfo;
     }
     else
     {
@@ -140,7 +147,7 @@ void Problem::load_networks(const Json& settings, const bemeio::Paths& lookup_pa
         .resolution(h_step)
         .horizon(0);
     
-    if (m__formulation == Formulation::fr)
+    if (m__formulation == Formulation::fr || m__formulation == Formulation::ar)
     {
         // Upload the second network and do more or less the same actions
         assert(settings != nullptr && 
@@ -243,6 +250,10 @@ void Problem::load_other_data(const Json& settings, const bemeio::Paths& lookup_
 
 auto Problem::get_nobj() const -> std::vector<double>::size_type
 {
+    if (m__formulation == Formulation::ar)
+    {
+        return 4ul;
+    }
 	return 2ul; 
 }
 
@@ -266,7 +277,7 @@ auto Problem::get_continuous_dvs_mask() const -> std::vector<bool>
         anytown::max_n_installable_tanks * anytown::fnt3::dv_size // 8
     );
 
-    if (m__formulation == Formulation::hr) {
+    if (m__formulation == Formulation::hr || m__formulation == Formulation::ar) {
         s += anytown::pgo_dv::size;
     }
     return std::vector<bool>(s, false);
@@ -344,6 +355,13 @@ auto Problem::fitness(
         // Kind of like the error in the hyd simulation.
         reset_dv(dvs);
         fitv[1] = 1.0 + ((double)n_steps - (double)n_correct_steps) / (double)n_steps;
+
+        if (m__formulation == Formulation::ar)
+        {
+            fitv[2] = 0.0;
+            fitv[3] = 0.0;
+        }
+
         return std::move(fitv);
     }
 
@@ -376,27 +394,40 @@ auto Problem::fitness(
         // No need to do extra simulations, simply return the violation as this solution is not good.
         reset_dv(dvs);
         fitv[1] = total_violation;
+
+        if (m__formulation == Formulation::ar)
+        {
+            fitv[2] = 0.0;
+            fitv[3] = 0.0;
+        }
+
         return std::move(fitv);
     }
 
     // We calculated anything we need for objective function 1 and 2 that is common between all formulations,
     // Now, we need to specialize.
-    switch (m__formulation)
+
+    std::size_t i = 1; // Helper index variable to override the return vector with the results
+    // We will override with the opposite of the reliability perspective
+    // because we want to maximize them.
+    // Once it has been added, we move the index forward in case is the "AR"
+
+    if (m__formulation == Formulation::hr || m__formulation == Formulation::ar)
     {
-    case Formulation::hr:
-        fitv[1] = -hydraulic_reliability_perspective();  // I want to maximize the reliability index
-        break;
+        fitv[i] = -hydraulic_reliability_perspective();
+        ++i;
+    }
 
-    case Formulation::mr:
-        fitv[1] = -mechanical_reliability_perspective();
-        break;
+    if (m__formulation == Formulation::mr || m__formulation == Formulation::ar)
+    {
+        fitv[i] = -mechanical_reliability_perspective();
+        ++i;
+    }
 
-    case Formulation::fr:
-        fitv[1] = -firefighting_reliability_perspective();
-        break;
-    
-    default:
-        break;
+    if (m__formulation == Formulation::fr || m__formulation == Formulation::ar)
+    {
+        fitv[i] = -firefighting_reliability_perspective();
+        ++i;
     }
 
     reset_dv(dvs);
@@ -448,7 +479,7 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
     curr_dv += gene_size;
 
     // (4.) Operations are optimized only in the hydraulic reliability and operational efficiency perspective
-    if (m__formulation == Formulation::hr)
+    if (m__formulation == Formulation::hr || m__formulation == Formulation::ar)
     {
         gene_size = anytown::pgo_dv::size;
         anytown::pgo_dv::apply_dv__pumps(
@@ -460,7 +491,7 @@ auto Problem::apply_dv(const std::vector<double>& dvs) const -> void
     }
 
     // In the firefighting case I have to apply the dvs also to the network used to simulate the fire events
-    if (m__formulation == Formulation::fr)
+    if (m__formulation == Formulation::fr || m__formulation == Formulation::ar)
     {
         m__ff_anytown->cache_indices();
         curr_dv = dvs.begin();
@@ -581,7 +612,10 @@ auto Problem::cost(const std::vector<double>& dvs) const -> double
 
 auto Problem::hydraulic_reliability_perspective() const -> double
 {
-    assertm(m__formulation == Formulation::hr, "This functions should be run only for the hr formulation");
+    assertm(
+        m__formulation == Formulation::hr || m__formulation == Formulation::ar,
+        "This functions should be run only for the hr formulation"
+    );
 
     // All constraints are satisfied, now check the reliability index
 	const auto ir_daily = resilience_index_from_min_pressure(*m__anytown, bevarmejo::anytown::min_pressure__psi*MperFT/PSIperFT);
@@ -594,7 +628,10 @@ auto Problem::hydraulic_reliability_perspective() const -> double
 
 auto Problem::mechanical_reliability_perspective() const -> double
 {
-    assertm(m__formulation == Formulation::mr, "This functions should be run only for the mr formulation");
+    assertm(
+        m__formulation == Formulation::mr || m__formulation == Formulation::ar,
+        "This functions should be run only for the mr formulation"
+    );
 
     // We do the mr simulation, get the results and calculate the mechanical reliability estimator
     
@@ -622,7 +659,10 @@ auto Problem::mechanical_reliability_perspective() const -> double
 
 auto Problem::firefighting_reliability_perspective() const -> double
 {
-    assertm(m__formulation == Formulation::fr, "This functions should be run only for the fr formulation");
+    assertm(
+        m__formulation == Formulation::fr || m__formulation == Formulation::ar,
+        "This functions should be run only for the fr formulation"
+    );
 
     // We calculate the firefighting reliability as the expected value of the ratio of supply over demand.
     // Therefore for each scenario, we calculate the aggregated values of supply, integrate over time.
@@ -744,7 +784,7 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
     curr_dv += gene_size;
 
     // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
-    if (m__formulation == Formulation::hr)
+    if (m__formulation == Formulation::hr || m__formulation == Formulation::ar)
     {
         gene_size = anytown::pgo_dv::size;
         bevarmejo::anytown::pgo_dv::reset_dv__pumps(
@@ -755,7 +795,7 @@ auto Problem::reset_dv(const std::vector<double>& dvs) const -> void
         curr_dv += gene_size;
     }
 
-    if (m__formulation == Formulation::fr)
+    if (m__formulation == Formulation::fr || m__formulation == Formulation::ar)
     {
         m__ff_anytown->cache_indices();
         curr_dv = dvs.begin();
@@ -808,7 +848,7 @@ auto Problem::get_bounds() const -> std::pair<std::vector<double>, std::vector<d
     append_bounds(bevarmejo::anytown::fnt3::bounds__tanks, std::as_const(*m__anytown).subnetwork_with_order<WDS::Junction>(anytown::pos_tank_loc__subnet_name), anytown::tank_options, anytown::new_pipe_options);
 
      // Operations are optimized only in the hydraulic reliability and operational efficiency perspective
-    if (m__formulation == Formulation::hr)
+    if (m__formulation == Formulation::hr || m__formulation == Formulation::ar)
     {
         append_bounds(bevarmejo::anytown::pgo_dv::bounds__pumps, std::as_const(*m__anytown).pumps());
     }
@@ -824,7 +864,7 @@ auto to_json(Json& j, const bevarmejo::anytown_systol25::Problem& prob) -> void
 		
 	j[io::key::at_eps_inp()] = prob.m__anytown_filename;
 
-    if (prob.m__formulation == Formulation::fr)
+    if (prob.m__formulation == Formulation::fr || prob.m__formulation == Formulation::ar)
     {
         j[io::key::at_ff_inp()] = prob.m__ff_anytown_filename;
     }
