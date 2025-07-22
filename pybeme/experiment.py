@@ -343,17 +343,50 @@ class Experiment:
         if verbose:
             print(f"Starting to load results of {len(experiment_results['archipelago']['islands'])} islands...")
 
+        # By default, we assume is not complete. It is, if a property "time_end" is correctly filled.
+        self.completed = False
+        if ('time_end' in experiment_results and
+            experiment_results['time_end'] is not None):
+            self.completed = True # Assume it is actually a valid date
+        else:
+            print("Building from uncomplete island files because the experiment terminated earlier.")
+
         islands = { }
         for island_relpath in experiment_results['archipelago']['islands']:
             # The island name is what remains after removing the prefix, the experiment
             # name and before the extensions.
             island_name = os.path.splitext(os.path.basename(island_relpath))[0].split('__')[-1]
 
-            with open( os.path.join(experiment_folder, 'output', island_relpath), 'r') as file:
-                islands[island_name] = json.load(file)
+            if self.completed:
+                # Super easy, the island is ready, just upload
+                with open( os.path.join(experiment_folder, 'output', island_relpath), 'r') as file:
+                    islands[island_name] = json.load(file)
+            else:
+                # We need to upload line by line and append the second object to the
+                # "generations" key
+                with open(os.path.join(experiment_folder, 'output', island_relpath), 'r') as file:
+                    lines = [line.strip() for line in file if line.strip()]  # Get all non-empty lines
+                    
+                    if not lines:
+                        raise RuntimeError(f"Empty file or no valid first line in {island_relpath}")
+                    
+                    # Parse the first line as the base JSON structure
+                    jdata = json.loads(lines[0])
+                    
+                    # Check that the "generations" key is present
+                    if "generations" not in jdata:
+                        raise RuntimeError(f"Runtime file for island does not contain the generations key. File: {island_relpath}")
+                    
+                    # Append remaining lines to the generations key
+                    for line in lines[1:]:
+                        
+                        jdata["generations"].append(json.loads(line))
+                    
+                    # Store the completed data
+                    islands[island_name] = jdata
 
-            if verbose:
-                print(f"Results of island {island_relpath} loaded successfully.")
+                if verbose:
+                    print(f"Results of island {island_relpath} loaded successfully.")
 
         experiment_results['archipelago']['islands'] = islands   
 
