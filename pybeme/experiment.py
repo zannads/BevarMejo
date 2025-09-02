@@ -5,6 +5,12 @@ import re
 
 import numpy as np
 import pandas as pd
+# If pygmo is available we can have extra utilities about the pareto fronts and hypervolumes
+try:
+    import pygmo as pg
+    pygmo_available = True
+except ImportError:
+    pygmo_available = False
 
 from pybeme.simulator import Simulator
 
@@ -23,6 +29,7 @@ class Experiment:
         self.__fvs = None # Multi-index Pandas DataFrame with the fitness vectors of the individuals.
         self.__dvs = None # Multi-index Pandas DataFrame with the decision vectors of the individuals.
         self.__ids = None # Multi-index Pandas Series with the ids of the individuals.
+        self.__nadirs = None # Multi-index Pandas Series with the nadir point of each island.
 
     @property
     def name(self) -> str:
@@ -37,7 +44,7 @@ class Experiment:
         if 'software' in self.data and 'bemelib_version' in self.data['software']:
             return self.data['software']['bemelib_version']
         
-        return "v25.03.02"
+        return "v25.06.01"
 
     @property
     def islands(self) -> dict:
@@ -183,6 +190,103 @@ class Experiment:
     def final_fitness_vectors(self) -> pd.DataFrame:
         # Return the fitness vector of the last population of each island
         return self.fitness_vectors.groupby(['island', 'individual']).last()
+    
+    @property
+    def final_decision_vectors(self) -> pd.DataFrame:
+        # Return the decision vector of the last population of each island
+        return self.decision_vectors.groupby(['island', 'individual']).last()
+
+    @property
+    def nadir_points(self) -> pd.DataFrame:
+        """
+        Compute the nadir point for each island.
+        
+        The nadir point represents the worst objective values found across all individuals
+        and generations for each island. It serves as a reference point for hypervolume
+        calculations and multi-objective optimization analysis.
+        
+        Since each island may solve different problems (different objective functions),
+        each island gets its own nadir point computed from its specific fitness vectors.
+        
+        Returns:
+            pd.DataFrame: DataFrame with islands as index and nadir point components as columns.
+                        Each row contains the maximum (worst) values for each objective
+                        found in that island across all generations and individuals.
+        """
+        if self.__nadirs is None:
+            nadirs = {}
+            fvs = self.fitness_vectors
+
+            for island, individuals in fvs.groupby('island'):
+                # Compute nadir point as maximum values across all objectives for this island
+                # (We assume it's a minimization problem as in pagmo/pygmo)
+                nadirs[island] = np.max(individuals.to_numpy(), axis=0)
+
+            self.__nadirs = pd.DataFrame.from_dict(nadirs, orient='index')
+
+        return self.__nadirs
+
+    if pygmo_available:
+        def hypervolumes(self, ref_point) -> pd.DataFrame:
+            """
+            Compute hypervolume for each island and generation combination.
+            
+            Args:
+                ref_point: Reference point for hypervolume calculation. Can be:
+                        - A single list/array: same reference point for all islands
+                        - A dict: {island_name: ref_point_array} for per-island reference points
+                        - A pandas DataFrame: with islands as index and ref point components as columns
+            
+            Returns:
+                pd.DataFrame: Multi-index DataFrame with index ['island', 'generation'] and 'hypervolume' column
+            """
+            fvs = self.fitness_vectors
+        
+            # Handle different ref_point input formats
+            if isinstance(ref_point, dict):
+                # Dictionary format: {island_name: ref_point_array}
+                ref_points = ref_point
+            elif isinstance(ref_point, pd.DataFrame):
+                # DataFrame format: convert to dictionary
+                ref_points = {island: row.values for island, row in ref_point.iterrows()}
+            else:
+                # Single ref_point for all islands
+                ref_points = {}
+                for island in fvs.index.get_level_values('island').unique():
+                    ref_points[island] = ref_point
+            
+            # Lists to store index tuples and hypervolume values for the final multi-index dataframe
+            index_list = []
+            hypervolume_values = []
+            
+            # Group by island and generation
+            for (island, generation), group in fvs.groupby(['island', 'generation']):
+                
+                fitness_array = group.to_numpy()
+                
+                # Get reference point for this island
+                if island not in ref_points:
+                    raise ValueError(f"No reference point provided for island '{island}'")
+                
+                island_ref_point = ref_points[island]
+
+                # Remove points where ANY objective is worse than (greater than) the reference point 
+                fitness_array = fitness_array[np.all(fitness_array <= island_ref_point, axis=1)]
+
+                if len(fitness_array) == 0:
+                    index_list.append((island, generation))
+                    hypervolume_values.append(0.0)
+                    continue
+
+                # Compute hypervolume with the island-specific reference point
+                hv = pg.hypervolume(fitness_array)
+                hypervolume_value = hv.compute(island_ref_point)
+                
+                index_list.append((island, generation))
+                hypervolume_values.append(hypervolume_value)
+            
+            multi_index = pd.MultiIndex.from_tuples(index_list, names=['island', 'generation'])
+            return pd.DataFrame({'hypervolume': hypervolume_values}, index=multi_index)
 
     def individual(self, island_name: str, individual_index: int, generation_index: int = None, generation: int = None ) -> dict:
         if generation_index is None:

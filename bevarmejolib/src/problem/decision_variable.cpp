@@ -44,16 +44,27 @@ void PagmoDecisionVectorAdapter::reconfigure(const DecisionVectorMask& continuou
     }
 }
 
-auto PagmoDecisionVectorAdapter::reorder(
+namespace detail {
+using DecisionVector = std::vector<double>;
+using DecisionVectorMask = std::vector<bool>;
+using Indexes = std::vector<DecisionVector::size_type>;
+
+enum class AdapterConversion{ Beme2Pagmo, Pagmo2Beme};
+
+template <AdapterConversion Dir>
+auto reorder(
     const DecisionVector& original,
-    const Indexes& idxs,
-    std::string_view from_format_str,
-    std::string_view to_format_str
-) const -> DecisionVector
+    const Indexes& idxs
+) -> DecisionVector
 {
     beme_throw_if(original.size() != idxs.size(),
         std::runtime_error,
-        bevarmejo::stringify("Error converting the decision vector from ",from_format_str," to ",to_format_str),
+        bevarmejo::stringify(
+            "Error converting the decision vector from ",
+            (Dir == AdapterConversion::Beme2Pagmo) ? "beme" : "pagmo",
+            " to ",
+            (Dir == AdapterConversion::Beme2Pagmo) ? "pagmo" : "beme"
+        ),
         "The size of the decision vector doesn't match the one for which the adapter was configured.",
         "Decision vector size: ", original.size(),
         "\nAdapter configured for a dv with size: ", idxs.size()
@@ -61,26 +72,32 @@ auto PagmoDecisionVectorAdapter::reorder(
 
     auto ordered = original;
 
-    for(Indexes::size_type i = 0; i < idxs.size(); ++i)
-    {
+    for(Indexes::size_type i = 0; i < idxs.size(); ++i) {
         ordered[idxs[i]] = original[i];
     }
 
     return ordered;
 }
+} // namespace detail
 
 auto PagmoDecisionVectorAdapter::from_beme_to_pagmo(
     const DecisionVector& original
 ) const ->  DecisionVector
 {
-    return reorder(original, m__b2p_idxs, "beme", "pagmo");
+    return detail::reorder<detail::AdapterConversion::Beme2Pagmo>(
+        original,
+        m__b2p_idxs
+    );
 }
 
 auto PagmoDecisionVectorAdapter::from_pagmo_to_beme(
     const DecisionVector& original
 ) const ->  DecisionVector
 {
-    return reorder(original, m__p2b_idxs, "pagmo", "beme");
+    return detail::reorder<detail::AdapterConversion::Pagmo2Beme>(
+        original,
+        m__p2b_idxs
+    );
 }
 
 }

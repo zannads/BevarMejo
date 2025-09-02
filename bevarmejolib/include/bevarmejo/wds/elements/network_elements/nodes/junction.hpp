@@ -74,8 +74,7 @@ public:
 
     unsigned int type_code() const override;
 
-    Demands& demands();
-    const Demands& demands() const;
+    const Demands& demands() const noexcept;
 
     FlowSeries& demand(const std::string& a_category);
     const FlowSeries& demand(const std::string& a_category) const;

@@ -53,6 +53,7 @@ static const std::string settings_file = "Settings file : "; // "Settings file :
 } // namespace io
 
 Simulator::Simulator(const fsys::path& settings_file) :
+    m__name(),
     m__settings_file(settings_file),
     m__root_folder(settings_file.parent_path()),
     m__lookup_paths({settings_file.parent_path(), fsys::current_path()}),
@@ -66,9 +67,16 @@ Simulator::Simulator(const fsys::path& settings_file) :
     m__start_time(),
     m__end_time()
 {
+    // Extract the name of the simulator (used to save files eventually) from the settings file
+    m__name = m__settings_file.stem().string();
+    auto bemesim_prefix = io::other::pre__beme_sim+io::other::sep__beme_filenames;
+    if (m__name.find(bemesim_prefix) == 0) {
+        m__name = m__name.substr(bemesim_prefix.length());
+    }
+
     // Check the extension, and based on that open the file, parse it based on
     // the file structure (JSON, YAML, XML, etc). 
-    // Apply the key value pairs passed from command line
+    // Apply the 5key value pairs passed from command line
     // Once you have the final object call the build function.
     
     std::ifstream file(settings_file);
@@ -183,19 +191,28 @@ Simulator::Simulator(const fsys::path& settings_file) :
 /*----------------------------------------------------------------------------*/
 /*-------------------------------- Tasks -------------------------------------*/
 /*----------------------------------------------------------------------------*/
-void print_hello_msg(Simulator & simr);
+void print_hello_msg(Simulator& simr);
 
-void print_results_msg(Simulator & simr);
+void print_results_msg(Simulator& simr);
 
-void check_correctness(Simulator & simr);
+void check_correctness(Simulator& simr);
 
-void save_results(Simulator & simr);
+void save_results(Simulator& simr);
 
-void save_inp(Simulator & simr);
+void save_inp(Simulator& simr);
+
+void save_metrics(Simulator& simr);
+
+void run_simulator(Simulator& simr);
 
 /*----------------------------------------------------------------------------*/
 /*--------------------------- Member functions -------------------------------*/
 /*----------------------------------------------------------------------------*/
+
+auto Simulator::name() const -> const std::string&
+{
+    return m__name;
+}
 
 // Element access
 const std::vector<double>& Simulator::decision_variables() const
@@ -203,6 +220,10 @@ const std::vector<double>& Simulator::decision_variables() const
     return m__dvs;
 }
 
+auto Simulator::problem() -> pagmo::problem& 
+{
+    return m__p;
+}
 const pagmo::problem& Simulator::problem() const
 {
     return m__p;
@@ -263,19 +284,49 @@ Simulator Simulator::parse(int argc, char *argv[])
         simulator.m__post_run_tasks.emplace_back("Check correctness", check_correctness, "");
     }
 
-    // 3. Check the flags
-    // 3.1 save inp file
+    // 3. Check the flags for additional tasks.
+    // Some of them may require a second run of the simulator (so that the first
+    // one doesn't have any additional overhead and can be used to time the simulation)
+    bool second_run_needed = false;
     for (int i = 2; i < argc; ++i)
     {
         auto arg = std::string(argv[i]);
         if (arg == "--saveinp")
         {
-            simulator.m__post_run_tasks.emplace_back("Save inp file", save_inp, "");
+            simulator.m__post_run_tasks.emplace_back(
+                "Save inp file",
+                save_inp,
+                ""
+            );
+            second_run_needed = true;
         }
         else if (arg == "--savefv")
         {
-            simulator.m__post_run_tasks.emplace_back("Save results", save_results, "");
+            simulator.m__post_run_tasks.emplace_back(
+                "Save results",
+                save_results,
+                ""
+            );
+            // No need for a second run there because in the first one I save them already in "m__res".
         }
+        else if (arg == "--savemetrics")
+        {
+            simulator.m__post_run_tasks.emplace_back(
+                "Save evaluator metrics",
+                save_metrics,
+                ""
+            );
+            second_run_needed = true;
+        }
+    }
+
+    if (second_run_needed)
+    {
+        simulator.m__post_run_tasks.emplace_back(
+            "Second simulator run",
+            run_simulator,
+            "Run the simulator again to save additional information"
+        );
     }
 
     return std::move(simulator);
@@ -283,6 +334,7 @@ Simulator Simulator::parse(int argc, char *argv[])
 
 void Simulator::pre_run_tasks()
 {
+    bool a_task_has_failed = false;
     for (const auto& task : m__pre_run_tasks)
     {
         try
@@ -295,8 +347,15 @@ void Simulator::pre_run_tasks()
                 "An error happend while executing a pre-run task:\n",
                 "Task: ", std::get<0>(task), "\n",
                 e.what(), "\n");
+            a_task_has_failed = true;
         }
     }
+
+    beme_throw_if(a_task_has_failed,
+        std::runtime_error,
+        "At least an error has happend while exucuting a pre-run task:\n",
+        "See above for the details"
+    );
 }
 
 void Simulator::run()
@@ -318,6 +377,7 @@ void Simulator::run()
 
 void Simulator::post_run_tasks()
 {
+    bool a_task_has_failed = false;
     for (const auto& task : m__post_run_tasks)
     {
         try
@@ -330,8 +390,15 @@ void Simulator::post_run_tasks()
                 "An error happend while executing a post-run task:\n",
                 "Task: ", std::get<0>(task), "\n",
                 e.what(), "\n");
+            a_task_has_failed = true;
         }
     }
+
+     beme_throw_if(a_task_has_failed,
+        std::runtime_error,
+        "At least an error has happend while exucuting a pre-run task:\n",
+        "See above for the details"
+    );
 }
 
 /*----------------------------------------------------------------------------*/
@@ -345,15 +412,13 @@ void print_hello_msg(Simulator & simr)
 
 void print_results_msg(Simulator & simr)
 {
+    bevarmejo::io::stream_out(std::cout,
+        "Simulator object with name: ", simr.name(), " evaluated.\n"
+    );
     if ( simr.id() != 0 )
     {
         bevarmejo::io::stream_out(std::cout,
-            "Element with ID: ", simr.id(), " evaluated.\n");
-    }
-    else
-    {
-        bevarmejo::io::stream_out(std::cout,
-            "Unnamed element evaluated.\n");
+            "\tID: ", simr.id(), "\n");
     }
 
     bevarmejo::io::stream_out(std::cout,
@@ -365,6 +430,8 @@ void print_results_msg(Simulator & simr)
         bevarmejo::io::stream_out(std::cout,
             "\n\t", simr.extra_message(), "\n");
     }
+    
+    bevarmejo::io::stream_out(std::cout, "\n");
 }
 
 void check_correctness(Simulator & simr)
@@ -492,31 +559,77 @@ void check_correctness(Simulator & simr)
 void save_results(Simulator &simr)
 {
     Json jres = simr.resulting_fitness_vector();
-    std::ofstream res_file(std::to_string(simr.id())+".fv.json");
+    auto filename = simr.name() + bemeio::other::ext__beme_fv + bemeio::other::ext__json;
+    std::ofstream res_file(filename);
 
     beme_throw_if(!res_file.is_open(), std::runtime_error,
         "Failed to open the result file for writing.",
         "The file could not be opened.",
-        "File: ", std::to_string(simr.id()) + ".fv.json");
+        "File: ", filename
+    );
 
     res_file << jres.dump();
     res_file.close();
 
     bevarmejo::io::stream_out(std::cout,
-        "Results saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".fv.json\n")).string());
+        "Results saved in: ", 
+        (fsys::current_path()/fsys::path(filename)).string(),
+        "\n"
+    );
 }
+
+namespace detail {
+    // Template function to extract and call a method on unknown derived WDS::Problem object
+    auto extract_wds_problem(
+        pagmo::problem& prob
+    ) -> bevarmejo::WDSProblem*
+    {
+        if (prob.is<bevarmejo::anytown::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::anytown::Problem>());
+        }
+        if (prob.is<bevarmejo::anytown_systol25::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::anytown_systol25::Problem>());
+        }
+        if (prob.is<bevarmejo::hanoi::fbiobj::Problem>()) {
+            return static_cast<bevarmejo::WDSProblem*>(prob.extract<bevarmejo::hanoi::fbiobj::Problem>());
+        }
+        return nullptr;
+    }
+} // namespace detail
 
 void save_inp(Simulator &simr)
 {
-    beme_throw_if( !simr.problem().is<bevarmejo::anytown::Problem>(), std::runtime_error,
-        "Impossible to save the inp file.",
-        "The problem is not of the type anytown::Problem.",
+    auto* wds_prob = detail::extract_wds_problem(simr.problem());
+    if (wds_prob) {
+        wds_prob->enable_save_inp(simr.name());
+        return;
+    }
+
+    beme_throw(std::runtime_error,
+        "Impossible to enable the saving of the WDS Problem '.inp' files.",
+        "This problem does not support this feature.",
         "Problem type: ", simr.problem().get_name());
-
-    simr.problem().extract<bevarmejo::anytown::Problem>()->save_solution(simr.decision_variables(), std::to_string(simr.id()) + ".inp");
-
-    bevarmejo::io::stream_out(std::cout,
-        "EPANET '.inp' file saved in: ", (fsys::current_path()/fsys::path(std::to_string(simr.id()) + ".inp\n")).string());
 }
 
+
+void save_metrics(Simulator& simr)
+{
+    auto* wds_prob = detail::extract_wds_problem(simr.problem());
+    if (wds_prob) {
+        wds_prob->enable_save_metrics(simr.name());
+        return;
+    }
+    
+    // If we are here, it didn't work in any of the types...
+    beme_throw(std::runtime_error,
+        "Impossible to enable the saving of the WDS Problem metrics.",
+        "This problem does not support this feature.",
+        "Problem type: ", simr.problem().get_name()
+    );
+}
+
+void run_simulator(Simulator& simr)
+{
+    simr.run();
+}
 } // namespace bevarmejo

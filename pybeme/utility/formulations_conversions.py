@@ -1,6 +1,6 @@
 import math
 
-def from_fx_to_fy(simr: "Simulator", y: int) -> "Simulator":
+def anytown__from_fx_to_fy(simr: "Simulator", y: int) -> "Simulator":
     """
     Convert the formulation from "bevarmejo::anytown::type::fx" to "bevarmejo::anytown::type::fy"
     """
@@ -161,4 +161,44 @@ def from_fx_to_fy(simr: "Simulator", y: int) -> "Simulator":
     else:
         simr.data['problem']['type'] = simr.data['problem']['type'].replace(fx, fy)
 
+    return simr
+
+def anytown_systol25__from_a_to_b(simr: "Simulator", b: str) -> "Simulator":
+    pre_f = simr.data['problem']['type'].split('::')[:-1] # Track the main family of formulations
+
+    assert pre_f[0] == 'bevarmejo', 'The formulation is not from the bevarmejo namespace'
+    assert pre_f[1] == 'anytown_systol25', 'The formulation is not a Anytown problem'
+
+    a = simr.data['problem']['type'].split('::')[-1] # Extract the formulation type
+    assert b in ['hyd_rel', 'mec_rel', 'fire_rel'], 'Formulation to convert from for the anytown_systol problem not recognised '
+    assert b in ['hyd_rel', 'mec_rel', 'fire_rel'], 'Formulation to convert to for the anytown_systol problem not recognised '
+
+    if a == b:
+        return simr
+    
+    # Generally, I would just need to change the name with replace(a,b)
+    # However:
+    # 1. from hyd_rel to the others I need to remove the operations from the dec vect and viceversa add them.
+    # 2. from any to the fire_rel I need to add the fireflow file
+
+    if a == 'hyd_rel':
+        # Assign the operations (last 24 dvs) as a problem parameter and remove them from the dv
+        simr.data['problem']['parameters']['pump_group_operations'] = simr.data['decision_vector'][-24:]
+        simr.data['decision_vector'] = simr.data['decision_vector'][:-24]
+    
+    if b == 'hyd_rel':
+        # Add the operations as additional dvs (as taken from the cpp anytown_systol)
+        simr.data['decision_vector'].extend(
+           [3, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2,
+            2, 3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3, 2]
+        )
+
+    if b == 'fire_rel':
+        # Add the fireflow inp file
+        simr.data['problem']['parameters']['anytown_fireflow_inp'] = "anytown_base_exeter-ff-30min.inp"
+
+    # Conclude by switching the formulations
+    simr.data['problem']['type'] = simr.data['problem']['type'].replace(a, b)
     return simr
