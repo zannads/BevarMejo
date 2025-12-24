@@ -12,18 +12,18 @@
 # ENDIF()
 
 set(BEME_UTILS
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/utility/unique_string_sequence.cpp"
+        "${PROJECT_SOURCE_DIR}/src/utility/unique_string_sequence.cpp"
 )
 
 # ==============================
 # WDS
 # ==============================
 set(WDS_INC_ROOT    
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/include/bevarmejo/wds" 
+        "${PROJECT_SOURCE_DIR}/include/beme/wds" 
         CACHE PATH "Path to the rootfolder of the WDS"
 )
 set(WDS_SRC_ROOT
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/wds" 
+        "${PROJECT_SOURCE_DIR}/src/wds" 
         CACHE PATH "Path to the rootfolder of the WDS"
 )
 
@@ -66,16 +66,16 @@ set(BEME_WDS
 # SIMULATION
 # ==============================
 set(BEME_SIMULATION
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/hyd_sim_settings.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/hydraulic.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/simulation/solvers/epanet/water_demand_modelling.cpp"
+        "${PROJECT_SOURCE_DIR}/src/simulation/hyd_sim_settings.cpp"
+        "${PROJECT_SOURCE_DIR}/src/simulation/solvers/epanet/hydraulic.cpp"
+        "${PROJECT_SOURCE_DIR}/src/simulation/solvers/epanet/water_demand_modelling.cpp"
 )
 
 # ==============================
 # EVALUATION
 # ==============================
 set(BEME_EVALUATION
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/evaluation/metrics/hydraulic_functions.cpp"
+        "${PROJECT_SOURCE_DIR}/src/evaluation/metrics/hydraulic_functions.cpp"
 )
 
 
@@ -83,22 +83,22 @@ set(BEME_EVALUATION
 # PROBLEM
 # ==============================
 set(BEME_PROBLEM
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/decision_variable.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problem/wds_problem_detail.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problem/decision_variable.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problem/wds_problem.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problem/wds_problem_detail.cpp"
 )
 
 # ==============================
 # BEME PROBLEMS, e.g., Anytown, Hanoi, etc.
 # ==============================
 set(BEME_PROBLEMS
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/hanoi.cpp"
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/problems/anytown_systol25.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problems/anytown.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problems/hanoi.cpp"
+        "${PROJECT_SOURCE_DIR}/src/problems/anytown_systol25.cpp"
 )
 
 add_library(bemelib 
-        "${PROJECT_SOURCE_DIR}/bevarmejolib/src/hydraulic_functions.cpp"
+        "${PROJECT_SOURCE_DIR}/src/hydraulic_functions.cpp"
         ${BEME_IO}
         ${BEME_UTILS}
         ${BEME_WDS}
@@ -113,16 +113,15 @@ set_property(TARGET bemelib PROPERTY CXX_STANDARD 17)
 target_link_libraries(bemelib PUBLIC Pagmo::pagmo epanet nlohmann_json::nlohmann_json)
 
 target_include_directories(bemelib PUBLIC
-                            "include"
-                            "${CMAKE_SOURCE_DIR}"
+                            "${PROJECT_SOURCE_DIR}/include"
 )
 
 target_include_directories(bemelib PRIVATE
-                        "include/bevarmejo"
-                        "include/bevarmejo/io"
-                        "include/bevarmejo/utility"
-                        "include/bevarmejo/wds"
-                        "include/bevarmejo/simulation"
-                        "include/bevarmejo/evaluation"
-                        "include/bevarmejo/problem"
+                        "${PROJECT_SOURCE_DIR}/include/beme"
+                        "${PROJECT_SOURCE_DIR}/include/beme/io"
+                        "${PROJECT_SOURCE_DIR}/include/beme/utility"
+                        "${PROJECT_SOURCE_DIR}/include/beme/wds"
+                        "${PROJECT_SOURCE_DIR}/include/beme/simulation"
+                        "${PROJECT_SOURCE_DIR}/include/beme/evaluation"
+                        "${PROJECT_SOURCE_DIR}/include/beme/problem"
 )

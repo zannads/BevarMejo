@@ -1,4 +1,4 @@
-# CMakeList.txt : Top-level CMake project file, do global configuration
+﻿# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
 cmake_minimum_required (VERSION 3.22)
@@ -231,7 +231,7 @@ ENDIF()
 
 # ------------------------------------------------------------------------------
 # Include my library
-add_subdirectory("bevarmejolib")
+add_subdirectory("src")
 
 # Include the executables and the experiment classes
 add_subdirectory("cli")
