@@ -9,21 +9,33 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-# ------------------------------------------------------------------------------
-# [MANDATORY] Vcpkg toolchain file
-# ------------------------------------------------------------------------------
+# macOS SDK handling for CMake 3.30+
+if(APPLE)
+    if(NOT CMAKE_OSX_SYSROOT)
+        set(CMAKE_OSX_SYSROOT "macosx" CACHE STRING "macOS SDK")
+    endif()
+endif()
 
-# Set the path to the .cmake file in vcpkg that will allow cmake to find information about Pagmo, Boost and all the libraries installed through vcpkg
-# The path to the toolchain file can be set when preparing cmake run 
-# `cmake .. --toolchain /path/to/the/file.cmake` // equivalent to `cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/the/file.cmake`
-set(CMAKE_TOOLCHAIN_FILE "/opt/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "Vcpkg toolchain file")
+# ------------------------------------------------------------------------------
+# [OPTIONAL BUT RECOMMENDED] Vcpkg toolchain file
+# ------------------------------------------------------------------------------
+# Auto-detect vcpkg if VCPKG_ROOT is set, but allow override
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE AND DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" 
+        CACHE FILEPATH "Vcpkg toolchain file")
+    message(STATUS "Using vcpkg toolchain from VCPKG_ROOT: $ENV{VCPKG_ROOT}")
+elseif(DEFINED CMAKE_TOOLCHAIN_FILE)
+    message(STATUS "Using user-specified toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+else()
+    message(STATUS "No vcpkg toolchain detected. Using system packages or custom paths.")
+endif()
 
 # ------------------------------------------------------------------------------
 # [OPTIONAL] Set the version of the project
 # ------------------------------------------------------------------------------
 
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION 250700)
+set(CURRENT_VERSION 251200)
 set(FIRST_VERSION 230600)
 if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
   math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
@@ -50,7 +62,6 @@ endif()
 # ------------------------------------------------------------------------------
 # START OF THE MAIN CMAKE FILE
 # ------------------------------------------------------------------------------
-
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
 # Add version-specific preprocessor definitions
@@ -84,40 +95,46 @@ message(STATUS "BèvarMéjo output files' keys style: ${OUT_STYLE}")
 # SEARCH FOR THE REQUIRED LIBRARIES
 # ------------------------------------------------------------------------------
 
-# Look for an installation of pagmo in the system.
+# ------------------------------------------------------------------------------
+# Pagmo
+# ------------------------------------------------------------------------------
 find_package(Pagmo REQUIRED)
+message(STATUS "Found Pagmo: ${Pagmo_DIR}")
 
 # ------------------------------------------------------------------------------
-# Look for an installation of nlohmann json in the system.
-message(STATUS "Required nlohmann_json version: 3.2.0")
-set(JSON_ROOT "${PROJECT_SOURCE_DIR}/../json" CACHE PATH "Path to the rootfolder to JSON")
-# Include in the cmake prefix path 
-list(APPEND CMAKE_PREFIX_PATH "${JSON_ROOT}/build")
+# nlohmann_json
+# ------------------------------------------------------------------------------
 find_package(nlohmann_json 3.2.0 REQUIRED)
-message(STATUS "Detected nlohmann_json version: ${nlohmann_json_VERSION}")
-message(STATUS "nlohmann_json directory: ${nlohmann_json_DIR}")
+message(STATUS "Found nlohmann_json ${nlohmann_json_VERSION}: ${nlohmann_json_DIR}")
 
 # ------------------------------------------------------------------------------
-# "Look" for an installation of EPANET in the system.
-# Adjust for the EPANET version.
-# Differently from vcpkg, JSON, and Pagmo libraries that have consistent versioning
-# in their releases and are independent of the BeMe library, EPANET is a library that
-# is being wrapped and is not properly versioned (only major and not frequent).
-# Therefore, we need to make sure that we track the version of EPANET that we are using
-# and that we are wrapping. We will use the date of the commit in the dev branch 
-# of the OWA-EPANET repository as the version of the library ("YYMMDD").
-# At the time of the writing, we are testing the code on EPANET on the dev branch 
-# with the latest update at 21 December 2024.
-set(EPANET_VERSION 241221)
-IF(BEME_VERSION LESS 250200)
-  # Before the update to this version, we were using 240618 (Merge pull request #802).
+# EPANET - Custom versioning and source/binary options
+#
+# Unlike externally managed libraries (vcpkg, JSON, Pagmo), EPANET lacks frequent
+# releases and patch versioning.
+# To ensure traceability, we maintain a fork of the OWA-EPANET repository.
+# We track the library version using the commit date from its dev (or master) branch.
+# The fork's branch (`fork_repo/beme/EN_vYY.mm.dd`) branches of at a given commit. 
+# That commit is tagged like this: `beme-EN_vYY.mm.dd`. 
+# The same branch also offers another variation of the tag qwith the suffix `-quiet`.
+# This indicates the same commit with one additional commit turning off printing
+# during simulation and is helpful to include in optimisations.
+# ------------------------------------------------------------------------------
+set(EPANET_VERSION 250930) # DEFAULT: Commit at 2025-09-30 on Master (EPANET v2.3.3)
+
+if(BEME_VERSION LESS 250200)
+  # Before February 2025, we were using EPANET with the commit at 18th June 2024 (Merge pull request #802).
   set(EPANET_VERSION 240618)
 
   # Issue a warning that the version of EPANET is not the latest and it is known
   # to produce different results because of a bug fix on tanks never draining.
   # Therefore use this only in the case of reproducibility of the old results.
   message(WARNING "Using EPANET in a previous version. The results differ from the latest version. Use this only in case you are trying to reproduce old results.\nThis is known to happen after the fix of the tanks never draining issue (pull request #803).")
-ENDIF()
+elseif(BEME_VERSION LESS 251200)
+  # Before December 2025 we were using EPANET with the commit at 21st December 2024
+  set(EPANET_VERSION 241221)
+  message(WARNING "Using EPANET in a previous version. The results differ from the latest version. Use this only in case you are trying to reproduce old results.")
+endif()
 message(STATUS "Using EPANET version: ${EPANET_VERSION}")
 
 # Some of my code also chanes slighlty based on the version of EPANET, for example,
@@ -230,8 +247,7 @@ ELSE() # NOT EPANET FROM SOURCE
 ENDIF()
 
 # ------------------------------------------------------------------------------
-# Include my library
+# Include my library and CLI
+# ------------------------------------------------------------------------------
 add_subdirectory("src")
-
-# Include the executables and the experiment classes
 add_subdirectory("cli")
