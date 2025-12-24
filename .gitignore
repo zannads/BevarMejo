@@ -425,3 +425,6 @@ temp*
 # For the documentation and obsidian
 .obsidian*
 docs/git-ignore-docs
+
+# For the worktrees of the EPANET git submodule
+bemelib/extern/EPANET.beme/

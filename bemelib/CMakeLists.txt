@@ -137,114 +137,126 @@ elseif(BEME_VERSION LESS 251200)
 endif()
 message(STATUS "Using EPANET version: ${EPANET_VERSION}")
 
-# Some of my code also chanes slighlty based on the version of EPANET, for example,
+# Some of my code also changes slighlty based on the version of EPANET, for example,
 # before 240712 (merge pull request #808) the leakage was not implemented so it should 
 # not appear in the code.
 add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
 
-# Set the path to the EPANET library with the flag '-DEPANET_ROOT=/path/to/EPANET'
-# Cached variable.
-set( EPANET_ROOT "${PROJECT_SOURCE_DIR}/../EPANET" CACHE PATH "Path to the rootfolder to EPANET")
-message(STATUS "EPANET directory: ${EPANET_ROOT}")
+# By default the CMake looks in a worktree of the git submodule of EPANET added 
+# from my fork on a specific tag. 
+# You can ovverride this property and link straight to a custom EPANET_DIR
+math(EXPR EN_YY "${EPANET_VERSION} / 10000")
+math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
+math(EXPR EN_DD "${EPANET_VERSION} % 100")
+set(EPANET_VERSION_TAG "v${EN_YY}.${EN_MM}.${EN_DD}")
 
-# In Debug mode, we want to wrap EPANET to debug errors and to have a better understanding.
-cmake_dependent_option(EPANET_FROM_SOURCE "Build EPANET from source" ON "CMAKE_BUILD_TYPE MATCHES Debug" OFF)
-message(STATUS "EPANET from source: ${EPANET_FROM_SOURCE}")
-IF(EPANET_FROM_SOURCE)
-  set(EPANET_SRC
-      "${EPANET_ROOT}/src/epanet.c"
-      # "${EPANET_ROOT}/src/epanet2.c"
-      "${EPANET_ROOT}/src/genmmd.c"
-      "${EPANET_ROOT}/src/hash.c"
-      "${EPANET_ROOT}/src/hydcoeffs.c"
-      "${EPANET_ROOT}/src/hydraul.c"
-      "${EPANET_ROOT}/src/hydsolver.c"
-      "${EPANET_ROOT}/src/hydstatus.c"
-      "${EPANET_ROOT}/src/inpfile.c"
-      "${EPANET_ROOT}/src/input1.c"
-      "${EPANET_ROOT}/src/input2.c"
-      "${EPANET_ROOT}/src/input3.c"
-      "${EPANET_ROOT}/src/mempool.c"
-      "${EPANET_ROOT}/src/output.c"
-      "${EPANET_ROOT}/src/project.c"
-      "${EPANET_ROOT}/src/quality.c"
-      "${EPANET_ROOT}/src/qualreact.c"
-      "${EPANET_ROOT}/src/qualroute.c"
-      "${EPANET_ROOT}/src/report.c"
-      "${EPANET_ROOT}/src/rules.c"
-      "${EPANET_ROOT}/src/smatrix.c"
-      "${EPANET_ROOT}/src/validate.c"
-      "${EPANET_ROOT}/src/util/cstr_helper.c"
-      "${EPANET_ROOT}/src/util/errormanager.c"
-      "${EPANET_ROOT}/src/util/filemanager.c"
+option(EPANET_QUIET "Use EPANET without console output" ON)
+if(EPANET_QUIET)
+  set(EPANET_VERSION_TAG "${EPANET_VERSION_TAG}-quiet")
+endif()
+
+set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET.beme/${EPANET_VERSION_TAG}"
+  CACHE PATH "Path to the exact EPANET version root directory (worktree source).")
+
+# Verify worktree exists
+if(NOT EXISTS "${EPANET_DIR}/src")
+  message(FATAL_ERROR "EPANET source not found at: ${EPANET_DIR}")
+endif()
+
+set(EPANET_SRC
+    "${EPANET_DIR}/src/epanet.c"
+    # "${EPANET_DIR}/src/epanet2.c"
+    "${EPANET_DIR}/src/genmmd.c"
+    "${EPANET_DIR}/src/hash.c"
+    "${EPANET_DIR}/src/hydcoeffs.c"
+    "${EPANET_DIR}/src/hydraul.c"
+    "${EPANET_DIR}/src/hydsolver.c"
+    "${EPANET_DIR}/src/hydstatus.c"
+    "${EPANET_DIR}/src/inpfile.c"
+    "${EPANET_DIR}/src/input1.c"
+    "${EPANET_DIR}/src/input2.c"
+    "${EPANET_DIR}/src/input3.c"
+    "${EPANET_DIR}/src/mempool.c"
+    "${EPANET_DIR}/src/output.c"
+    "${EPANET_DIR}/src/project.c"
+    "${EPANET_DIR}/src/quality.c"
+    "${EPANET_DIR}/src/qualreact.c"
+    "${EPANET_DIR}/src/qualroute.c"
+    "${EPANET_DIR}/src/report.c"
+    "${EPANET_DIR}/src/rules.c"
+    "${EPANET_DIR}/src/smatrix.c"
+    "${EPANET_DIR}/src/validate.c"
+    "${EPANET_DIR}/src/util/cstr_helper.c"
+    "${EPANET_DIR}/src/util/errormanager.c"
+    "${EPANET_DIR}/src/util/filemanager.c"
+  )
+
+  IF(EPANET_VERSION GREATER 240712) # Merge pull request #808 (Add leakage)
+    list(APPEND EPANET_SRC
+      "${EPANET_DIR}/src/leakage.c"
+      "${EPANET_DIR}/src/flowbalance.c"
     )
-
-    IF(EPANET_VERSION GREATER 240712) # Merge pull request #808 (Add leakage)
-      list(APPEND EPANET_SRC
-        "${EPANET_ROOT}/src/leakage.c"
-        "${EPANET_ROOT}/src/flowbalance.c"
-      )
-    ENDIF()
-
-    add_library(epanet ${EPANET_SRC})
-
-    # All API functions of the EPANET library are defined with the DLLEXPORT macro.
-    # Since we are building to source and between lines 21 and 38, when on windows, it 
-    # defines the DLLEXPORT macro as __declspec(dllexport) __stdcall or __declspec(dllimport) __stdcall
-    # we need to empty define the macro so that the functions are not exported.
-    # The EPANET_VERSION is also defined but has no effect on the library.
-    target_compile_definitions(epanet PUBLIC "DLLEXPORT=" "EPANET_VERSION=${EPANET_VERSION}")
-
-    target_include_directories(epanet PUBLIC 
-                                  "${EPANET_ROOT}/include"
-                                  "${EPANET_ROOT}/src"
-    )
-
-ELSE() # NOT EPANET FROM SOURCE
-
-  # Normal behaviour, we are using the library.
-  add_library(epanet SHARED IMPORTED)
-  
-  # However, based on the operating system, we need to set the correct path to the library.
-  # We also need to adjust for the EPANET version. We require that EPANET is 
-  # built in builds/VERSION_YY.VERSION_MM.VERSION_DD folder for previous versions
-  # and in build for the latest version.
-  set(EPANET_BUILD_DIR "${EPANET_ROOT}/build")
-  IF(BEME_VERSION LESS CURRENT_VERSION)
-    math(EXPR MAJOR_VERSION "${EPANET_VERSION} / 10000")
-    math(EXPR MINOR_VERSION "(${EPANET_VERSION} % 10000) / 100")
-    math(EXPR PATCH_VERSION "${EPANET_VERSION} % 100")
-    set(EPANET_BUILD_DIR "${EPANET_ROOT}/beme-releases/${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
   ENDIF()
-  message(STATUS "EPANET build directory: ${EPANET_BUILD_DIR}")
 
-  # When using Visual Studio on Windows, cmake is a multi-configuration generator.
-  # We need to set the path for Release configuration. On Unix, makefiles are usually
-  # used, so it is a single configuration to the folder.
+  add_library(epanet ${EPANET_SRC})
 
-  # To expose the library to the system we define the IMPORTED_LOCATION property to the target.
-  IF (WIN32)
-    set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/bin/Release/epanet2.dll"
-      IMPORTED_IMPLIB   "${EPANET_BUILD_DIR}/lib/Release/epanet2.lib"
-    )
-  ENDIF(WIN32)
-  IF(APPLE)
-    set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.dylib"
-    )
-  ENDIF(APPLE)
-  IF(LINUX)
-    set_target_properties(epanet PROPERTIES
-      IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.so"
-    )
-  ENDIF(LINUX)
+  # All API functions of the EPANET library are defined with the DLLEXPORT macro.
+  # Since we are building to source and between lines 21 and 38, when on windows, it 
+  # defines the DLLEXPORT macro as __declspec(dllexport) __stdcall or __declspec(dllimport) __stdcall
+  # we need to empty define the macro so that the functions are not exported.
+  # The EPANET_VERSION is also defined but has no effect on the library.
+  target_compile_definitions(epanet PUBLIC "DLLEXPORT=" "EPANET_VERSION=${EPANET_VERSION}")
 
-  # Finally, we need to include the directories where the headers are located so
-  # that my library can see them.
-  target_include_directories(epanet INTERFACE "${EPANET_ROOT}/include" "${EPANET_ROOT}/src")
+  target_include_directories(epanet PUBLIC 
+                                "${EPANET_DIR}/include"
+                                "${EPANET_DIR}/src"
+  )
 
-ENDIF()
+# ELSE() # NOT EPANET FROM SOURCE
+
+#   # Normal behaviour, we are using the library.
+#   add_library(epanet SHARED IMPORTED)
+  
+#   # However, based on the operating system, we need to set the correct path to the library.
+#   # We also need to adjust for the EPANET version. We require that EPANET is 
+#   # built in builds/VERSION_YY.VERSION_MM.VERSION_DD folder for previous versions
+#   # and in build for the latest version.
+#   set(EPANET_BUILD_DIR "${EPANET_ROOT}/build")
+#   IF(BEME_VERSION LESS CURRENT_VERSION)
+#     math(EXPR MAJOR_VERSION "${EPANET_VERSION} / 10000")
+#     math(EXPR MINOR_VERSION "(${EPANET_VERSION} % 10000) / 100")
+#     math(EXPR PATCH_VERSION "${EPANET_VERSION} % 100")
+#     set(EPANET_BUILD_DIR "${EPANET_ROOT}/beme-releases/${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+#   ENDIF()
+#   message(STATUS "EPANET build directory: ${EPANET_BUILD_DIR}")
+
+#   # When using Visual Studio on Windows, cmake is a multi-configuration generator.
+#   # We need to set the path for Release configuration. On Unix, makefiles are usually
+#   # used, so it is a single configuration to the folder.
+
+#   # To expose the library to the system we define the IMPORTED_LOCATION property to the target.
+#   IF (WIN32)
+#     set_target_properties(epanet PROPERTIES
+#       IMPORTED_LOCATION "${EPANET_BUILD_DIR}/bin/Release/epanet2.dll"
+#       IMPORTED_IMPLIB   "${EPANET_BUILD_DIR}/lib/Release/epanet2.lib"
+#     )
+#   ENDIF(WIN32)
+#   IF(APPLE)
+#     set_target_properties(epanet PROPERTIES
+#       IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.dylib"
+#     )
+#   ENDIF(APPLE)
+#   IF(LINUX)
+#     set_target_properties(epanet PROPERTIES
+#       IMPORTED_LOCATION "${EPANET_BUILD_DIR}/lib/libepanet2.so"
+#     )
+#   ENDIF(LINUX)
+
+#   # Finally, we need to include the directories where the headers are located so
+#   # that my library can see them.
+#   target_include_directories(epanet INTERFACE "${EPANET_ROOT}/include" "${EPANET_ROOT}/src")
+
+# ENDIF()
 
 # ------------------------------------------------------------------------------
 # Include my library and CLI
