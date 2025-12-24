@@ -5,10 +5,10 @@
 #include <tuple>
 #include <utility>
 
-#include "bevarmejo/io/json.hpp"
+#include "beme/io/json.hpp"
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/string.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/string.hpp"
 
 namespace bevarmejo::io
 {

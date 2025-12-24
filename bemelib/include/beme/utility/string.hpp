@@ -9,8 +9,8 @@
 #include <string_view>
 #include <utility>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/io/streams.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/io/streams.hpp"
 
 namespace bevarmejo
 {

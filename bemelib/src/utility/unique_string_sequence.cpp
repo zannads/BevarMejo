@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
 #include "unique_string_sequence.hpp"
 

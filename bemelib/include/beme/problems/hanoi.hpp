@@ -9,11 +9,11 @@ namespace fsys = std::filesystem;
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/io/json.hpp"
+#include "beme/io/json.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/problem/wds_problem.hpp"
+#include "beme/problem/wds_problem.hpp"
 
 namespace bevarmejo {
 namespace hanoi {

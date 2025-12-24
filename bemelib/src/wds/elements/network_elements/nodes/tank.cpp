@@ -5,19 +5,19 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/wds/utility/epanet/en_help.hpp"
+#include "beme/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/wds/elements/curve.hpp"
-#include "bevarmejo/wds/elements/curves.hpp"
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/elements/curve.hpp"
+#include "beme/wds/elements/curves.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/source.hpp"
+#include "beme/wds/element.hpp"
+#include "beme/wds/elements/network_element.hpp"
+#include "beme/wds/elements/network_elements/nodes/source.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/nodes/tank.hpp"
+#include "beme/wds/elements/network_elements/nodes/tank.hpp"
 
 namespace bevarmejo::wds
 {

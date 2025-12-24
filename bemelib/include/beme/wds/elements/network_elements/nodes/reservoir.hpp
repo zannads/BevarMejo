@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/nodes/source.hpp"
+#include "beme/wds/elements/network_elements/nodes/source.hpp"
 
 namespace bevarmejo::wds
 {

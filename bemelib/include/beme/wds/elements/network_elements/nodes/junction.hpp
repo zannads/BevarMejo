@@ -4,9 +4,9 @@
 #include <string>
 #include <unordered_map>
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/node.hpp"
+#include "beme/wds/elements/network_elements/node.hpp"
 
 namespace bevarmejo::wds
 {

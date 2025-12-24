@@ -9,9 +9,9 @@
 
 #include <vector>
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
 namespace bevarmejo {
 

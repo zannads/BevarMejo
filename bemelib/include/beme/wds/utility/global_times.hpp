@@ -7,9 +7,9 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/utility/epanet/time.hpp"
+#include "beme/utility/epanet/time.hpp"
 
 namespace bevarmejo {
 

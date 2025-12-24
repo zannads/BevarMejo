@@ -5,10 +5,10 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/memory.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/memory.hpp"
 
-#include "bevarmejo/utility/registry_users.ipp"
+#include "beme/utility/registry_users.ipp"
 
 // Forward declaration of friend classes.
 // Only these classes are allowed to create them, insert and remove elements.

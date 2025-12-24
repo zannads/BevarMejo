@@ -2,11 +2,11 @@
 #include <numeric>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/wds/utility/quantity_series.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/evaluation/metrics/hydraulic_functions.hpp"
+#include "beme/evaluation/metrics/hydraulic_functions.hpp"
 
 namespace bevarmejo::eval::metrics
 {

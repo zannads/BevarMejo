@@ -4,7 +4,7 @@
 #include <ctime>
 #include <ratio> // So that with chrono I can define durations
 
-#include "bevarmejo/utility/epanet/time.hpp"
+#include "beme/utility/epanet/time.hpp"
 
 namespace bevarmejo
 {

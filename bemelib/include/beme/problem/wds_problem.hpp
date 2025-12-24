@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "bevarmejo/problem/decision_variable.hpp"
+#include "beme/problem/decision_variable.hpp"
 
 namespace bevarmejo {
 

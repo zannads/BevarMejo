@@ -3,10 +3,10 @@
 #include "epanet2_2.h"
 #include "types.h"
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/simulation/hyd_sim_settings.hpp"
-#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
+#include "beme/simulation/hyd_sim_settings.hpp"
+#include "beme/simulation/solvers/epanet/hydraulic.hpp"
 
 namespace bevarmejo::sim::solvers::epanet
 {

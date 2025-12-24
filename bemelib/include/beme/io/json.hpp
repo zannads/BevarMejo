@@ -5,8 +5,8 @@
 #include <nlohmann/json.hpp>
 using Json = nlohmann::json;
 
-#include "bevarmejo/io/fsys.hpp"
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/io/fsys.hpp"
+#include "beme/utility/exceptions.hpp"
 
 namespace bevarmejo
 {

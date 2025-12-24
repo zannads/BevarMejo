@@ -3,9 +3,9 @@
 // From EPANET
 #include "types.h"
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/simulation/solvers/epanet/water_demand_modelling.hpp"
+#include "beme/simulation/solvers/epanet/water_demand_modelling.hpp"
 
 namespace bevarmejo::sim::solvers::epanet
 {

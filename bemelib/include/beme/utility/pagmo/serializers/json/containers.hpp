@@ -10,18 +10,18 @@
 #include <pagmo/s_policy.hpp>
 #include <pagmo/topology.hpp>
 
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/keys/beme.hpp"
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/io/json.hpp"
+#include "beme/io/keys/beme.hpp"
+#include "beme/utility/exceptions.hpp"
 
 // Pagmo objects that can be serialized
-#include "bevarmejo/utility/pagmo/serializers/json/bevarmejo_allowed_objects.hpp"
-#include "bevarmejo/utility/pagmo/serializers/json/default_objects.hpp"
+#include "beme/utility/pagmo/serializers/json/bevarmejo_allowed_objects.hpp"
+#include "beme/utility/pagmo/serializers/json/default_objects.hpp"
 
 // Bevarmejo objects that can be serialized
-#include "bevarmejo/problems/anytown.hpp"
-#include "bevarmejo/problems/hanoi.hpp"
-#include "bevarmejo/problems/anytown_systol25.hpp"
+#include "beme/problems/anytown.hpp"
+#include "beme/problems/hanoi.hpp"
+#include "beme/problems/anytown_systol25.hpp"
 
 NLOHMANN_JSON_NAMESPACE_BEGIN
 

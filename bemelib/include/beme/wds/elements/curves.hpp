@@ -1,7 +1,7 @@
 #ifndef BEVARMEJOLIB__WDS_ELEMENTS__CURVES_HPP
 #define BEVARMEJOLIB__WDS_ELEMENTS__CURVES_HPP
 
-#include "bevarmejo/wds/elements/curve.hpp"
+#include "beme/wds/elements/curve.hpp"
 
 namespace bevarmejo::wds
 {

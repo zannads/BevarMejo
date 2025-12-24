@@ -2,16 +2,16 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/wds/element.hpp"
-#include "bevarmejo/wds/elements/network_element.hpp"
-#include "bevarmejo/wds/elements/network_elements/node.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/source.hpp"
+#include "beme/wds/element.hpp"
+#include "beme/wds/elements/network_element.hpp"
+#include "beme/wds/elements/network_elements/node.hpp"
+#include "beme/wds/elements/network_elements/nodes/source.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/nodes/reservoir.hpp"
+#include "beme/wds/elements/network_elements/nodes/reservoir.hpp"
 
 namespace bevarmejo::wds
 {

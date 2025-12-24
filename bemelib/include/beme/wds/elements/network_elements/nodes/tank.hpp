@@ -4,12 +4,12 @@
 #include <memory>
 #include <string>
 
-#include "bevarmejo/constants.hpp"
+#include "beme/constants.hpp"
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
-#include "bevarmejo/wds/elements/curves.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
+#include "beme/wds/elements/curves.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/nodes/source.hpp"
+#include "beme/wds/elements/network_elements/nodes/source.hpp"
 
 namespace bevarmejo::wds
 {

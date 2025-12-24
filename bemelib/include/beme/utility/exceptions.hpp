@@ -10,9 +10,9 @@
 #include <string>
 #include <sstream>
 
-#include "bevarmejo/io/streams.hpp"
+#include "beme/io/streams.hpp"
 
-#include "bevarmejo/utility/epanet/exceptions.hpp"
+#include "beme/utility/epanet/exceptions.hpp"
 
 #define assertm(exp, msg) assert(((void)msg, exp))
 

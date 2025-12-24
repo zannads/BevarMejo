@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "bevarmejo/utility/time.hpp"
+#include "beme/utility/time.hpp"
 
 // Quantity Series is the detachted representation of a time series of quantities.
 // Differently from the combo wds::aux::TimeSeries and wds::aux::QuantitySeries,

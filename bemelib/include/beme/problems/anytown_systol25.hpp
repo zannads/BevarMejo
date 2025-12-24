@@ -4,15 +4,15 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/io.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/io.hpp"
 namespace bemeio = bevarmejo::io;
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
-#include "bevarmejo/problem/wds_problem.hpp"
+#include "beme/wds/water_distribution_system.hpp"
+#include "beme/simulation/solvers/epanet/hydraulic.hpp"
+#include "beme/problem/wds_problem.hpp"
 
-#include "bevarmejo/problems/anytown.hpp"
+#include "beme/problems/anytown.hpp"
 
 namespace bevarmejo
 {

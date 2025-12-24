@@ -15,8 +15,8 @@
 #include <pagmo/archipelago.hpp>
 #include <pagmo/island.hpp>
 
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/fsys.hpp"
+#include "beme/io/json.hpp"
+#include "beme/io/fsys.hpp"
 
 namespace bevarmejo
 {

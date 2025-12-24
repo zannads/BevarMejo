@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "bevarmejo/utility/io.hpp"
-#include "bevarmejo/simulator.hpp"
+#include "beme/utility/io.hpp"
+#include "beme/simulator.hpp"
 
 int main(int argc, char* argv[])
 {

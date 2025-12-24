@@ -10,17 +10,17 @@ namespace fsys = std::filesystem;
 #include <vector>
 
 
-#include "bevarmejo/constants.hpp"
-#include "bevarmejo/econometric_functions.hpp"
-#include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/constants.hpp"
+#include "beme/econometric_functions.hpp"
+#include "beme/hydraulic_functions.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
-#include "bevarmejo/utility/io.hpp"
+#include "beme/utility/io.hpp"
 namespace bemeio = bevarmejo::io;
 
-#include "bevarmejo/wds/utility/epanet/en_help.hpp"
+#include "beme/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
+#include "beme/simulation/solvers/epanet/hydraulic.hpp"
 
 
 

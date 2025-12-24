@@ -4,11 +4,11 @@
 
 #include "epanet2_2.h"
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/wds/element.hpp"
+#include "beme/wds/element.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
 #include "elements/pattern.hpp"
 

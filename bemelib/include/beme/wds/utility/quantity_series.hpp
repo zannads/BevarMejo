@@ -12,10 +12,10 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/io/streams.hpp"
+#include "beme/io/streams.hpp"
 
-#include "bevarmejo/utility/epanet/time.hpp"
-#include "bevarmejo/wds/utility/time_series.hpp"
+#include "beme/utility/epanet/time.hpp"
+#include "beme/wds/utility/time_series.hpp"
 
 namespace bevarmejo {
 namespace wds {

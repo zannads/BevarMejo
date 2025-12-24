@@ -7,10 +7,10 @@
 #include <type_traits>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/memory.hpp"
-#include "bevarmejo/utility/registry.hpp"
-#include "bevarmejo/utility/unique_string_sequence.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/memory.hpp"
+#include "beme/utility/registry.hpp"
+#include "beme/utility/unique_string_sequence.hpp"
 
 namespace bevarmejo
 {

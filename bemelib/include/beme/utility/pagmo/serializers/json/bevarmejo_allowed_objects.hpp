@@ -9,11 +9,11 @@
 
 #include <pagmo/algorithms/nsga2.hpp>
 
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/aliased_key.hpp"
-#include "bevarmejo/io/keys/bemeopt.hpp"
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/string.hpp"
+#include "beme/io/json.hpp"
+#include "beme/io/aliased_key.hpp"
+#include "beme/io/keys/bemeopt.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/string.hpp"
 
 namespace bevarmejo::io::key::detail
 {

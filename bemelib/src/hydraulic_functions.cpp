@@ -1,12 +1,12 @@
 #include <vector>
 
-#include "bevarmejo/constants.hpp"
+#include "beme/constants.hpp"
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/nodes/junction.hpp"
+#include "beme/wds/elements/network_elements/nodes/junction.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
+#include "beme/wds/water_distribution_system.hpp"
 
 #include "hydraulic_functions.hpp"
 

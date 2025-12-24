@@ -1,21 +1,21 @@
 #include <string>
 #include <string_view>
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/io/aliased_key.hpp"
-#include "bevarmejo/io/fsys.hpp"
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/labels.hpp"
-#include "bevarmejo/io/streams.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/io/aliased_key.hpp"
+#include "beme/io/fsys.hpp"
+#include "beme/io/json.hpp"
+#include "beme/io/labels.hpp"
+#include "beme/io/streams.hpp"
 namespace bemeio = bevarmejo::io;
-#include "bevarmejo/constants.hpp"
-#include "bevarmejo/econometric_functions.hpp"
-#include "bevarmejo/hydraulic_functions.hpp"
-#include "bevarmejo/evaluation/metrics/hydraulic_functions.hpp"
+#include "beme/constants.hpp"
+#include "beme/econometric_functions.hpp"
+#include "beme/hydraulic_functions.hpp"
+#include "beme/evaluation/metrics/hydraulic_functions.hpp"
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/simulation/solvers/epanet/hydraulic.hpp"
-#include "bevarmejo/problem/wds_problem.hpp"
+#include "beme/wds/water_distribution_system.hpp"
+#include "beme/simulation/solvers/epanet/hydraulic.hpp"
+#include "beme/problem/wds_problem.hpp"
 
 #include "problems/anytown.hpp"
 #include "problems/anytown_systol25.hpp"

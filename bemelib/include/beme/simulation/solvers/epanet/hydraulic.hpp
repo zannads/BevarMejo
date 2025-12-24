@@ -1,9 +1,9 @@
 #pragma once
 
-#include "bevarmejo/wds/water_distribution_system.hpp"
-#include "bevarmejo/simulation/hyd_sim_settings.hpp"
+#include "beme/wds/water_distribution_system.hpp"
+#include "beme/simulation/hyd_sim_settings.hpp"
 
-#include "bevarmejo/simulation/solvers/epanet/water_demand_modelling.hpp"
+#include "beme/simulation/solvers/epanet/water_demand_modelling.hpp"
 
 namespace bevarmejo::sim::solvers::epanet
 {

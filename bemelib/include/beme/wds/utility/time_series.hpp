@@ -10,9 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include "bevarmejo/utility/exceptions.hpp"
+#include "beme/utility/exceptions.hpp"
 
-#include "bevarmejo/wds/utility/global_times.hpp"
+#include "beme/wds/utility/global_times.hpp"
 
 namespace bevarmejo {
 

@@ -5,9 +5,9 @@
 #include <string>
 #include <unordered_set>
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/elements/network_element.hpp"
+#include "beme/wds/elements/network_element.hpp"
 
 
 namespace bevarmejo::wds

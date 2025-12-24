@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
 namespace bevarmejo
 {

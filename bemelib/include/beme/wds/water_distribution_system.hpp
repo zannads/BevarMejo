@@ -19,39 +19,39 @@ namespace fsys = std::filesystem;
 #include <vector>
 
 #include "epanet2_2.h"
-#include "bevarmejo/utility/epanet/time.hpp"
+#include "beme/utility/epanet/time.hpp"
 
-#include "bevarmejo/wds/utility/epanet/en_help.hpp"
+#include "beme/wds/utility/epanet/en_help.hpp"
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/io.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/io.hpp"
 
-#include "bevarmejo/utility/registry.hpp"
-#include "bevarmejo/utility/registry_view.hpp"
-#include "bevarmejo/utility/unique_string_sequence.hpp"
+#include "beme/utility/registry.hpp"
+#include "beme/utility/registry_view.hpp"
+#include "beme/utility/unique_string_sequence.hpp"
 
-#include "bevarmejo/wds/utility/time_series.hpp"
-#include "bevarmejo/wds/utility/quantity_series.hpp"
+#include "beme/wds/utility/time_series.hpp"
+#include "beme/wds/utility/quantity_series.hpp"
 
-#include "bevarmejo/wds/element.hpp"
+#include "beme/wds/element.hpp"
 
-#include "bevarmejo/wds/elements/curve.hpp"
-#include "bevarmejo/wds/elements/curves.hpp"
-#include "bevarmejo/wds/elements/pattern.hpp"
+#include "beme/wds/elements/curve.hpp"
+#include "beme/wds/elements/curves.hpp"
+#include "beme/wds/elements/pattern.hpp"
 
-#include "bevarmejo/wds/elements/network_element.hpp"
+#include "beme/wds/elements/network_element.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/node.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/junction.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/source.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/reservoir.hpp"
-#include "bevarmejo/wds/elements/network_elements/nodes/tank.hpp"
+#include "beme/wds/elements/network_elements/node.hpp"
+#include "beme/wds/elements/network_elements/nodes/junction.hpp"
+#include "beme/wds/elements/network_elements/nodes/source.hpp"
+#include "beme/wds/elements/network_elements/nodes/reservoir.hpp"
+#include "beme/wds/elements/network_elements/nodes/tank.hpp"
 
-#include "bevarmejo/wds/elements/network_elements/link.hpp"
-#include "bevarmejo/wds/elements/network_elements/links/dimensioned_link.hpp"
-#include "bevarmejo/wds/elements/network_elements/links/pipe.hpp"
-#include "bevarmejo/wds/elements/network_elements/links/pump.hpp"
-// #include "bevarmejo/wds/elements/valve.hpp"
+#include "beme/wds/elements/network_elements/link.hpp"
+#include "beme/wds/elements/network_elements/links/dimensioned_link.hpp"
+#include "beme/wds/elements/network_elements/links/pipe.hpp"
+#include "beme/wds/elements/network_elements/links/pump.hpp"
+// #include "beme/wds/elements/valve.hpp"
 
 namespace bevarmejo::label {
 static const std::string __EN_PATTERN_TS = "ENPatt";

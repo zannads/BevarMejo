@@ -12,18 +12,18 @@ namespace fsys = std::filesystem;
 #include <pagmo/algorithm.hpp>
 #include <pagmo/population.hpp>
 
-#include "bevarmejo/io/json.hpp"
-#include "bevarmejo/io/keys/beme.hpp"
-#include "bevarmejo/io/keys/bemeexp.hpp"
-#include "bevarmejo/io/keys/bemeopt.hpp"
-#include "bevarmejo/io/labels.hpp"
-#include "bevarmejo/io/streams.hpp"
+#include "beme/io/json.hpp"
+#include "beme/io/keys/beme.hpp"
+#include "beme/io/keys/bemeexp.hpp"
+#include "beme/io/keys/bemeopt.hpp"
+#include "beme/io/labels.hpp"
+#include "beme/io/streams.hpp"
 
-#include "bevarmejo/utility/exceptions.hpp"
-#include "bevarmejo/utility/metadata.hpp"
-#include "bevarmejo/utility/string.hpp"
+#include "beme/utility/exceptions.hpp"
+#include "beme/utility/metadata.hpp"
+#include "beme/utility/string.hpp"
 
-#include "bevarmejo/utility/pagmo/serializers/json/containers.hpp"
+#include "beme/utility/pagmo/serializers/json/containers.hpp"
 
 #include "experiment.hpp"
 

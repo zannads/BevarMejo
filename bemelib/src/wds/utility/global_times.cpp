@@ -6,9 +6,9 @@
 #include <unordered_map>
 #include <utility>
 
-#include "bevarmejo/wds/utility/global_times.hpp"
+#include "beme/wds/utility/global_times.hpp"
 
-#include "bevarmejo/wds/utility/time_series.hpp"
+#include "beme/wds/utility/time_series.hpp"
 
 namespace bevarmejo {
 
