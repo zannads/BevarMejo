@@ -35,28 +35,13 @@ endif()
 # ------------------------------------------------------------------------------
 
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION 251200)
-set(FIRST_VERSION 230600)
+set(CURRENT_VERSION_INT 251200)
+set(FIRST_VERSION_INT 230600)
 if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
-  math(EXPR MAJOR_VERSION "${CURRENT_VERSION} / 10000")
-  math(EXPR MINOR_VERSION "(${CURRENT_VERSION} % 10000) / 100")
-  math(EXPR PATCH_VERSION "${CURRENT_VERSION} % 100")
-  set(PROJECT_VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
-endif()
-
-# Parse the version string into components
-string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
-list(GET VERSION_LIST 0 MAJOR_VERSION)
-list(GET VERSION_LIST 1 MINOR_VERSION)
-list(GET VERSION_LIST 2 PATCH_VERSION)
-
-# Calculate version as a single integer for easy comparison
-math(EXPR BEME_VERSION 
-    "${MAJOR_VERSION} * 10000 + ${MINOR_VERSION} * 100 + ${PATCH_VERSION}")
-
-# Check that the project version is a valid version string (in bounds/years, no patch version greater than 99, minor version is a valid month
-if(BEME_VERSION LESS FIRST_VERSION OR BEME_VERSION GREATER CURRENT_VERSION OR PATCH_VERSION GREATER 99 OR MINOR_VERSION GREATER 12 OR MINOR_VERSION EQUAL 0)
-  message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
+  math(EXPR MAJOR "${CURRENT_VERSION_INT} / 10000")
+  math(EXPR MINOR "(${CURRENT_VERSION_INT} % 10000) / 100")
+  math(EXPR PATCH "${CURRENT_VERSION_INT} % 100")
+  set(PROJECT_VERSION "${MAJOR}.${MINOR}.${PATCH}")
 endif()
 
 # ------------------------------------------------------------------------------
@@ -64,11 +49,26 @@ endif()
 # ------------------------------------------------------------------------------
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
+# Calculate version as a single integer for easy comparison
+math(EXPR BEME_VERSION 
+    "${PROJECT_VERSION_MAJOR} * 10000 + ${PROJECT_VERSION_MINOR} * 100 + ${PROJECT_VERSION_PATCH}")
+
+# Check that the project version is a valid version string (
+# in bounds/years, no patch version greater than 99, minor version is a valid month
+if(
+  BEME_VERSION LESS FIRST_VERSION_INT 
+  OR BEME_VERSION GREATER CURRENT_VERSION_INT 
+  OR PATCH_VERSION GREATER 99 
+  OR MINOR_VERSION GREATER 12 
+  OR MINOR_VERSION EQUAL 0)
+  message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
+endif()
+
 # Add version-specific preprocessor definitions
 add_definitions(-DBEME_VERSION=${BEME_VERSION})
-add_definitions(-DBEME_MAJOR_VERSION=${MAJOR_VERSION})
-add_definitions(-DBEME_MINOR_VERSION=${MINOR_VERSION})
-add_definitions(-DBEME_PATCH_VERSION=${PATCH_VERSION})
+add_definitions(-DBEME_MAJOR_VERSION=${PROJECT_VERSION_MAJOR})
+add_definitions(-DBEME_MINOR_VERSION=${PROJECT_VERSION_MINOR})
+add_definitions(-DBEME_PATCH_VERSION=${PROJECT_VERSION_PATCH})
 
 message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 
