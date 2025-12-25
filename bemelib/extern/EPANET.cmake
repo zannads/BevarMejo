@@ -1,41 +1,36 @@
-# ------------------------------------------------------------------------------
-# EPANET - Custom versioning and source/binary options
+# ==============================================================================
+# EPANET Configuration
+# ==============================================================================
 #
 # Unlike externally managed libraries (vcpkg, JSON, Pagmo), EPANET lacks frequent
 # releases and patch versioning.
 # To ensure traceability, we maintain a fork of the OWA-EPANET repository.
 # We track the library version using the commit date from its dev (or master) branch.
-# The fork's branch (`fork_repo/beme/EN_vYY.mm.dd`) branches of at a given commit. 
+# The fork's branch (`fork_repo/beme/EN_vYY.mm.dd`) branches off at a given commit. 
 # That commit is tagged like this: `beme-EN_vYY.mm.dd`. 
-# The same branch also offers another variation of the tag qwith the suffix `-quiet`.
+# The same branch also offers another variation with the suffix `-quiet`.
 # This indicates the same commit with one additional commit turning off printing
 # during simulation and is helpful to include in optimisations.
-# ------------------------------------------------------------------------------
+# ==============================================================================
+
 set(EPANET_VERSION 250930) # DEFAULT: Commit at 2025-09-30 on Master (EPANET v2.3.3)
 
 if(BEME_VERSION LESS 250200)
-  # Before February 2025, we were using EPANET with the commit at 18th June 2024 (Merge pull request #802).
+  # Before February 2025, we were using EPANET with the commit at 18th June 2024
   set(EPANET_VERSION 240618)
-
-  # Issue a warning that the version of EPANET is not the latest and it is known
-  # to produce different results because of a bug fix on tanks never draining.
-  # Therefore use this only in the case of reproducibility of the old results.
-  message(WARNING "Using EPANET in a previous version. The results differ from the latest version. Use this only in case you are trying to reproduce old results.\nThis is known to happen after the fix of the tanks never draining issue (pull request #803).")
+  message(WARNING "Using EPANET previous version (24-06-18). Results differ from latest.")
 elseif(BEME_VERSION LESS 251200)
   # Before December 2025 we were using EPANET with the commit at 21st December 2024
   set(EPANET_VERSION 241221)
-  message(WARNING "Using EPANET in a previous version. The results differ from the latest version. Use this only in case you are trying to reproduce old results.")
+  message(WARNING "Using EPANET previous version (24-12-21). Results differ from latest.")
 endif()
-message(STATUS "Using EPANET version: ${EPANET_VERSION}")
 
-# Some of my code also changes slighlty based on the version of EPANET, for example,
-# before 240712 (merge pull request #808) the leakage was not implemented so it should 
-# not appear in the code.
+# Some code changes based on EPANET version so let's define the preprocessor definition
 add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
 
-# By default the CMake looks in a worktree of the git submodule of EPANET added 
-# from my fork on a specific tag. 
-# You can ovverride this property and link straight to a custom EPANET_DIR
+# ------------------------------------------------------------------------------
+# Determine EPANET version tag and directory
+# ------------------------------------------------------------------------------
 math(EXPR EN_YY "${EPANET_VERSION} / 10000")
 math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
 math(EXPR EN_DD "${EPANET_VERSION} % 100")
@@ -46,6 +41,8 @@ if(EPANET_QUIET)
   set(EPANET_VERSION_TAG "${EPANET_VERSION_TAG}-quiet")
 endif()
 
+# Default: worktree in extern/EPANET.beme/
+# Override with: -DEPANET_DIR=/custom/path
 set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET.beme/${EPANET_VERSION_TAG}"
   CACHE PATH "Path to the exact EPANET version root directory (worktree source).")
 
@@ -54,6 +51,9 @@ if(NOT EXISTS "${EPANET_DIR}/src")
   message(FATAL_ERROR "EPANET source not found at: ${EPANET_DIR}")
 endif()
 
+# ------------------------------------------------------------------------------
+# Collect source files
+# ------------------------------------------------------------------------------
 set(EPANET_SRC
     "${EPANET_DIR}/src/epanet.c"
     # "${EPANET_DIR}/src/epanet2.c"
@@ -82,26 +82,38 @@ set(EPANET_SRC
     "${EPANET_DIR}/src/util/filemanager.c"
   )
 
-  IF(EPANET_VERSION GREATER 240712) # Merge pull request #808 (Add leakage)
+# Add leakage support for versions after 240712 (PR #808)
+if(EPANET_VERSION GREATER 240712)
     list(APPEND EPANET_SRC
-      "${EPANET_DIR}/src/leakage.c"
-      "${EPANET_DIR}/src/flowbalance.c"
+        "${EPANET_DIR}/src/leakage.c"
+        "${EPANET_DIR}/src/flowbalance.c"
     )
-  ENDIF()
+endif()
 
-  add_library(epanet ${EPANET_SRC})
+# ------------------------------------------------------------------------------
+# Create EPANET library target
+# ------------------------------------------------------------------------------
+add_library(epanet ${EPANET_SRC})
 
-  # All API functions of the EPANET library are defined with the DLLEXPORT macro.
-  # Since we are building to source and between lines 21 and 38, when on windows, it 
-  # defines the DLLEXPORT macro as __declspec(dllexport) __stdcall or __declspec(dllimport) __stdcall
-  # we need to empty define the macro so that the functions are not exported.
-  # The EPANET_VERSION is also defined but has no effect on the library.
-  target_compile_definitions(epanet PUBLIC "DLLEXPORT=" "EPANET_VERSION=${EPANET_VERSION}")
+# All API functions use DLLEXPORT macro. Since we're building from source,
+# we need to empty-define it to prevent export declarations on Windows.
+target_compile_definitions(epanet PUBLIC 
+    "DLLEXPORT=" 
+    "EPANET_VERSION=${EPANET_VERSION}"
+)
 
-  target_include_directories(epanet PUBLIC 
-                                "${EPANET_DIR}/include"
-                                "${EPANET_DIR}/src"
-  )
+target_include_directories(epanet PUBLIC 
+    "${EPANET_DIR}/include"
+    "${EPANET_DIR}/src"
+)
+
+# Always optimize EPANET (even when bemelib is in Debug mode)
+target_compile_options(epanet PRIVATE
+    $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:-O2>
+    $<$<CXX_COMPILER_ID:MSVC>:/O2>
+)
+
+message(STATUS "EPANET target configured (using: ${EPANET_DIR})")
 
 # ELSE() # NOT EPANET FROM SOURCE
 
