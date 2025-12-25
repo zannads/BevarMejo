@@ -34,7 +34,7 @@ add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
 math(EXPR EN_YY "${EPANET_VERSION} / 10000")
 math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
 math(EXPR EN_DD "${EPANET_VERSION} % 100")
-set(EPANET_VERSION_TAG "v${EN_YY}.${EN_MM}.${EN_DD}")
+set(EPANET_VERSION_TAG "${EN_YY}.${EN_MM}.${EN_DD}")
 
 option(EPANET_QUIET "Use EPANET without console output" ON)
 if(EPANET_QUIET)

@@ -420,8 +420,6 @@ data
 **/tmp/
 temp*
 
-*.sh
-
 # For the documentation and obsidian
 .obsidian*
 docs/git-ignore-docs
