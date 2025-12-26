@@ -83,7 +83,7 @@ build_beme_cmake() {
     fi
 
     # Configure and build the projet
-    cmake -B "$dir" -S ./bemelib -DPROJECT_VERSION:STRING=25.7.1
+    cmake -B "$dir" -S ./bemelib "-DPROJECT_VERSION:STRING=${ver}"
     cmake --build "$dir"
 }
 
