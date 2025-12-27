@@ -345,7 +345,10 @@ class Experiment:
 
         # By default, we assume is not complete. It is, if a property "time_end" is correctly filled.
         self.completed = False
-        if ('time_end' in experiment_results and
+        if ('time_start' not in experiment_results):
+            print("Old experiment, no time information")
+            self.completed = True # I know they were all completed
+        elif ('time_end' in experiment_results and
             experiment_results['time_end'] is not None):
             self.completed = True # Assume it is actually a valid date
         else:
