@@ -1,0 +1,47 @@
+[project]
+name = "pybeme"
+version = "0.1.0"
+description = "Python interface for bemelib: water distribution system optimization with visualization and analysis tools"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files=["LICENSE"]
+keywords=["water", "urban water systems", "optimization", "water distribution systems", "EPANET", "pagmo2"]
+classifiers = [
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: C++",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux"
+]
+authors = [
+    { name = "Dennis Zanutto", email = "dennis.zanutto@polimi.it" }
+]
+maintainers = [
+    {name = "Dennis Zanutto", email = "dennis.zanutto@polimi.it"},
+]
+
+requires-python = ">=3.11"
+dependencies = [
+    "epyt>=1.2.2",
+    "numpy>=2.4.0",
+    "plotly>=6.5.0",
+]
+
+[project.urls]
+Documentation = "https://zannads.github.io/BevarMejo/"
+Repository = "https://github.com/zannads/BevarMejo"
+"Zenodo" = "https://doi.org/10.5281/zenodo.10912756"
+"Zenodo (Data)" = "https://doi.org/10.5281/zenodo.10912466"
+
+[build-system]
+requires = ["uv_build>=0.9.18,<0.10.0"]
+build-backend = "uv_build"
