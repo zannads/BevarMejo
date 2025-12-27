@@ -75,7 +75,7 @@ cd ../../../ # Move back to main folder
 # Function to build bemelib with CMake (with my naming convention)
 build_beme_cmake() {
     local ver=$1
-    local dir="./builds/releases/${ver}"
+    local dir="./releases/${ver}"
 
     # Clean out the folder before building (if exists)
     if [ -d "$dir" ]; then
