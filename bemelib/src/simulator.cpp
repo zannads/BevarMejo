@@ -195,6 +195,10 @@ void print_hello_msg(Simulator& simr);
 
 void print_results_msg(Simulator& simr);
 
+void print_version_msg(Simulator& simr);
+
+void print_compat_range_msg(Simulator& simr);
+
 void check_correctness(Simulator& simr);
 
 void save_results(Simulator& simr);
@@ -269,6 +273,34 @@ Simulator Simulator::parse(int argc, char *argv[])
     // Add the cwd to the lookup path for the settings file as it may be a rel path
     std::vector<fsys::path> lookup_paths;
     lookup_paths.push_back(fsys::current_path());
+
+    auto first_arg = std::string(argv[1]);
+
+    if (first_arg == "--version")
+    {
+        auto simulator = Simulator();
+
+        simulator.m__pre_run_tasks.emplace_back(
+            "Print version message",
+            print_version_msg,
+            ""
+        );
+
+        return std::move(simulator);
+    }
+
+    if (first_arg == "--compat-range")
+    {
+        auto simulator = Simulator();
+
+        simulator.m__pre_run_tasks.emplace_back(
+            "Print compatibility range message",
+            print_compat_range_msg,
+            ""
+        );
+
+        return std::move(simulator);
+    }
 
     auto settings_file = bevarmejo::io::locate_file(fsys::path{argv[1]}, lookup_paths);
 
@@ -432,6 +464,22 @@ void print_results_msg(Simulator & simr)
     }
     
     bevarmejo::io::stream_out(std::cout, "\n");
+}
+
+void print_version_msg(Simulator& simr)
+{
+    bevarmejo::io::stream_out(std::cout,
+        "Bevarmejo Simulator ", bevarmejo::version_str,
+        "\n\n",
+        "Compatible with versions ", bevarmejo::min_version_str, "-", bevarmejo::version_str
+    );
+}
+
+void print_compat_range_msg(Simulator& simr)
+{
+    bevarmejo::io::stream_out(std::cout,
+        bevarmejo::min_version_str, "-", bevarmejo::version_str
+    );
 }
 
 void check_correctness(Simulator & simr)
