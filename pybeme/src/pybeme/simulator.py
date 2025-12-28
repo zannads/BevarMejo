@@ -18,7 +18,7 @@ except ImportError:
     epyt_available = False
 
 from .utility import formulations_conversions as fc
-from .utility.versions import get_working_bemelib_release
+from .utility.versions import get_working_bemelib_release, get_beme_required_exact_en_version
 from ._config import get_beme_project_path
 
 class Simulator:
@@ -72,7 +72,7 @@ class Simulator:
         # Get the release version to run the correct executable
         release_version = get_working_bemelib_release(self.data["bemelib_version"])
         beme_dir = get_beme_project_path()
-        
+
         release_dir = os.path.join(beme_dir, release_version)
         command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
@@ -153,7 +153,7 @@ class Simulator:
             networks = []
             for inp_file in inp_files:
                 enet = epanet(inp_file, version=2.3, ph=True, loadfile=True,
-                              customlib=os.path.join(os.path.expanduser("~"), "repos", "zannadsEPANET", "builds", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}","lib", "libepanet2.dylib"),
+                              customlib=os.path.join(get_beme_project_path(), "bemelib", "extern", "EPANET.beme", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}-quiet", "build", "lib", "libepanet2.dylib"),
                               display_msg=True, display_warnings=True)
                 networks.append(enet)
                 if remove_files:
