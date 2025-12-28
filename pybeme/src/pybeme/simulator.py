@@ -17,74 +17,9 @@ try:
 except ImportError:
     epyt_available = False
 
-import pybeme.utility.formulations_conversions as fc
-
-def get_release_version(problem_version):
-    """
-    Given a problem version (as int or string), returns the appropriate release version
-    based on the version compatibility ranges.
-    
-    Args:
-        problem_version: The version number of the problem file, either as int (e.g., 250200) 
-                        or string (e.g., 'v25.02.0')
-        
-    Returns:
-        str: The release version that can run this problem in format 'release/XX.XX.XX'
-    """
-    # Convert string version to integer if needed
-    if isinstance(problem_version, str) and problem_version.startswith('v'):
-        # Remove 'v' prefix and split by dots
-        version_parts = problem_version[1:].split('.')
-        
-        # Convert to integer format (YYMMDD)
-        major = int(version_parts[0]) * 10000
-        minor = int(version_parts[1]) * 100
-        patch = int(version_parts[2])
-        int_version = major + minor + patch
-    else:
-        int_version = problem_version
-    
-    # Determine the compatible release version using integer comparison
-    if int_version < 230600:
-        raise ValueError(f"Problem version {problem_version} is not compatible with any release version.")
-    elif int_version < 240401:
-        release_v = 240400
-    elif int_version < 240601:
-        release_v = 240600
-    elif int_version < 241100:
-        release_v = 241000
-    elif int_version < 241200:
-        release_v = 241100
-    elif int_version < 250200:
-        release_v = 241200
-    else:
-        return "releases/latest"
-        
-    # Convert integer version to formatted string
-    major = release_v // 10000
-    minor = (release_v % 10000) // 100
-    patch = release_v % 100
-    
-    return f"releases/{major}.{minor}.{patch}"
-
-def get_beme_required_exact_en_version(problem_version:str) -> tuple:
-    # Convert string version to integer if needed
-    if isinstance(problem_version, str) and problem_version.startswith('v'):
-        # Remove 'v' prefix and split by dots
-        version_parts = problem_version[1:].split('.')
-        
-        # Convert to integer format (YYMMDD)
-        major = int(version_parts[0]) * 10000
-        minor = int(version_parts[1]) * 100
-        patch = int(version_parts[2])
-        int_version = major + minor + patch
-    else:
-        int_version = problem_version
-
-    if int_version < 250200:
-        return (24,6,18)
-    else:
-        return (24,12,21)
+from .utility import formulations_conversions as fc
+from .utility.versions import get_working_bemelib_release
+from ._config import get_beme_project_path
 
 class Simulator:
     # I need to create a dict with:
@@ -135,11 +70,10 @@ class Simulator:
         simu_filepath = self.save()
 
         # Get the release version to run the correct executable
-        release_version = get_release_version(self.data["bemelib_version"])
-
-        # Prepare the command to run the simulator
-        beme_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # The root folder of the project is outside the pybeme folder
-        release_dir = os.path.join(beme_dir, 'builds', release_version)
+        release_version = get_working_bemelib_release(self.data["bemelib_version"])
+        beme_dir = get_beme_project_path()
+        
+        release_dir = os.path.join(beme_dir, release_version)
         command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
         # Run the command
