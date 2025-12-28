@@ -60,7 +60,7 @@ def get_bemelib_installed_releases():
     for release in releases:
         try:
             installed_releases[str(release)] = get_bemelib_release_compat_versions(
-                releases_dir / release
+                release
             )
         except Exception as e:
             print(
@@ -90,9 +90,9 @@ def get_working_bemelib_release(problem_version: str):
         
     releases = get_bemelib_installed_releases()
 
-    for release, (min_v, max_v) in releases:
-        if min_v <= ver < max_v:
-            return get_beme_project_path() / "releases" / release
+    for release, (min_v, max_v) in releases.items():
+        if min_v <= ver <= max_v:
+            return release
         
     raise RuntimeError(
         "Impossible to find a working release of bemelib in the set project path."
