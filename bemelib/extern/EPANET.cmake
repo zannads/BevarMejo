@@ -31,15 +31,21 @@ add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
 # ------------------------------------------------------------------------------
 # Determine EPANET version tag and directory
 # ------------------------------------------------------------------------------
-math(EXPR EN_YY "${EPANET_VERSION} / 10000")
-math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
-math(EXPR EN_DD "${EPANET_VERSION} % 100")
-set(EPANET_VERSION_TAG "${EN_YY}.${EN_MM}.${EN_DD}")
+option(REPRODUCIBILITY_MODE "Use reproducibility mode for EPANET" OFF)
 
-# Default: worktree in extern/EPANET.beme/
-# Override with: -DEPANET_DIR=/custom/path
-set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET.beme/${EPANET_VERSION_TAG}"
-  CACHE PATH "Path to the exact EPANET version root directory (worktree source).")
+if(NOT DEFINED EPANET_DIR)
+  if(REPRODUCIBILITY_MODE)
+    math(EXPR EN_YY "${EPANET_VERSION} / 10000")
+    math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
+    math(EXPR EN_DD "${EPANET_VERSION} % 100")
+    set(EPANET_VERSION_TAG "${EN_YY}.${EN_MM}.${EN_DD}")
+    # Default: worktree in extern/EPANET.beme/
+    # Override with: -DEPANET_DIR=/custom/path
+    set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET.beme/${EPANET_VERSION_TAG}")
+  else()
+    set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET")
+  endif()
+endif()
 
 # Verify worktree exists
 if(NOT EXISTS "${EPANET_DIR}/src")

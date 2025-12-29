@@ -40,42 +40,48 @@ git checkout $BRANCH
 git submodule init
 git submodule update
 cd bemelib/extern/EPANET
-# if my remote has not been added yet, add it (necessary for the branches)
-if ! git remote | grep -q '^worktree-src$'; then
-    git remote add --tags worktree-src git@github.com:zannads/EPANET.git
+
+if [ $BUILD_EPANET ]; then
+    cmake -B "./build" -S .
+    cmake --build "./build"
 fi
 
-git fetch worktree-src
-
-# If the worktree folder has not been made ready, prepare it
-if [ ! -d ../EPANET.beme ]; then
-    mkdir ../EPANET.beme
-fi
-
-# Function to create the EPANET worktrees with my naming convention
-create_EPANET_worktree() {
-    local ver=$1
-    local dir="../EPANET.beme/${ver}"
-
-    if [ -d "$dir" ]; then
-       git worktree remove "$dir"
-    fi
-    git worktree add -f "$dir" "beme/en-v$ver"
-
-    if [ BUILD_EPANET ]; then
-        cmake -B "$dir/build" -S "$dir"
-        cmake --build "$dir/build"
-    fi
-}
-
-# Actually checkout the default worktree 
-create_EPANET_worktree "25.9.30"
-
-# If reproducibility mode on, prepare also the other worktrees
 if [ "$REPRODUCIBILITY" = true ]; then
+    # If reproducibility mode on, prepare also the other worktrees
     echo "Reproducibility mode enabled. Preparing also older EPANET versions on their own worktrees"
+
+    # if my remote has not been added yet, add it (necessary for the branches)
+    if ! git remote | grep -q '^worktree-src$'; then
+        git remote add --tags worktree-src git@github.com:zannads/EPANET.git
+    fi
+
+    git fetch worktree-src
+
+    # If the worktree folder has not been made ready, prepare it
+    if [ ! -d ../EPANET.beme ]; then
+        mkdir ../EPANET.beme
+    fi
+
+    # Function to create the EPANET worktrees with my naming convention
+    create_EPANET_worktree() {
+        local ver=$1
+        local dir="../EPANET.beme/${ver}"
+
+        if [ -d "$dir" ]; then
+        git worktree remove "$dir"
+        fi
+        git worktree add -f "$dir" "beme/en-v$ver"
+
+        if [ $BUILD_EPANET ]; then
+            cmake -B "$dir/build" -S "$dir"
+            cmake --build "$dir/build"
+        fi
+    }
+
+    # Actually checkout the worktrees
+    create_EPANET_worktree "25.9.30"
     create_EPANET_worktree "24.12.21"
-    create_EPANET_worktree "24.6.18"
+    create_EPANET_worktree "24.6.18"  
 fi
 
 # EPANET setup completed.
@@ -93,8 +99,14 @@ build_beme_cmake() {
         rm -r "$dir"
     fi
 
+    # Set extra argument if reproducibility mode is enabled
+    local extra_arg=""
+    if [ "$REPRODUCIBILITY" = true ]; then
+        extra_arg="-DREPRODUCIBILITY_MODE=ON"
+    fi
+
     # Configure and build the projet
-    cmake -B "$dir" -S ./bemelib "-DPROJECT_VERSION:STRING=${ver}"
+    cmake -B "$dir" -S ./bemelib "-DPROJECT_VERSION:STRING=${ver}" $extra_arg
     cmake --build "$dir"
 }
 
