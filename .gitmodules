@@ -1,3 +1,4 @@
 [submodule "EPANET"]
 	path = bemelib/extern/EPANET
 	url = https://github.com/OpenWaterAnalytics/EPANET.git
+	branch = master
