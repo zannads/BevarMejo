@@ -36,11 +36,6 @@ math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
 math(EXPR EN_DD "${EPANET_VERSION} % 100")
 set(EPANET_VERSION_TAG "${EN_YY}.${EN_MM}.${EN_DD}")
 
-option(EPANET_QUIET "Use EPANET without console output" ON)
-if(EPANET_QUIET)
-  set(EPANET_VERSION_TAG "${EPANET_VERSION_TAG}-quiet")
-endif()
-
 # Default: worktree in extern/EPANET.beme/
 # Override with: -DEPANET_DIR=/custom/path
 set(EPANET_DIR "${PROJECT_SOURCE_DIR}/extern/EPANET.beme/${EPANET_VERSION_TAG}"

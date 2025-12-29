@@ -10,6 +10,7 @@ git --version
 # 2. reproducibility mode (builds all previous releases) [--reproducibility flag]
 BRANCH="master"
 REPRODUCIBILITY=false
+BUILD_EPANET=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dev)
@@ -18,6 +19,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --reproducibility)
             REPRODUCIBILITY=true
+            shift
+            ;;
+        --build-epanet)
+            BUILD_EPANET=true
             shift
             ;;
         *)
@@ -31,11 +36,11 @@ cd .. # Move out of the scripts folder
 
 git checkout $BRANCH
 
-# Prepare the submodule and add my remote to have the extra tags
+# Prepare the submodule and add my remote to have the extra branches
 git submodule init
 git submodule update
 cd bemelib/extern/EPANET
-# if my remote has not been added yet, add it (necessary for the tags)
+# if my remote has not been added yet, add it (necessary for the branches)
 if ! git remote | grep -q '^worktree-src$'; then
     git remote add --tags worktree-src git@github.com:zannads/EPANET.git
 fi
@@ -47,13 +52,16 @@ fi
 # Function to create the EPANET worktrees with my naming convention
 create_EPANET_worktree() {
     local ver=$1
-    local dir="../EPANET.beme/${ver}-quiet"
+    local dir="../EPANET.beme/${ver}"
 
-    if [ ! -d "$dir" ]; then
-        echo "Creating worktree for $ver..."
-        git worktree add "$dir" "beme-EN_v$ver-quiet"
-    else
-        echo "Worktree $ver already exists"
+    if [ -d "$dir" ]; then
+       git worktree remove "$dir"
+    fi
+    git worktree add "$dir" "beme/en-v$ver"
+
+    if [ BUILD_EPANET ]; then
+        cmake -B "$dir/build" -S "$dir"
+        cmake --build "$dir/build"
     fi
 }
 
