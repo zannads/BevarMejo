@@ -44,6 +44,9 @@ cd bemelib/extern/EPANET
 if ! git remote | grep -q '^worktree-src$'; then
     git remote add --tags worktree-src git@github.com:zannads/EPANET.git
 fi
+
+git fetch worktree-src
+
 # If the worktree folder has not been made ready, prepare it
 if [ ! -d ../EPANET.beme ]; then
     mkdir ../EPANET.beme
@@ -57,7 +60,7 @@ create_EPANET_worktree() {
     if [ -d "$dir" ]; then
        git worktree remove "$dir"
     fi
-    git worktree add "$dir" "beme/en-v$ver"
+    git worktree add -f "$dir" "beme/en-v$ver"
 
     if [ BUILD_EPANET ]; then
         cmake -B "$dir/build" -S "$dir"
