@@ -568,7 +568,7 @@ wheels = [
 
 [[package]]
 name = "pybeme"
-version = "0.1.0"
+version = "25.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "epyt" },

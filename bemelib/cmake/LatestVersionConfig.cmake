@@ -7,3 +7,8 @@ if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
   math(EXPR BEME_LATEST_PATCH "${BEME_LATEST_VERSION_INT} % 100")
   set(PROJECT_VERSION "${BEME_LATEST_MAJOR}.${BEME_LATEST_MINOR}.${BEME_LATEST_PATCH}")
 endif()
+
+# This file will be included in the main CMakeLists file so the current source dir
+# should be monorepo/bemelib
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/../pybeme/src/pybeme/VERSION"
+  "${PROJECT_VERSION}")
