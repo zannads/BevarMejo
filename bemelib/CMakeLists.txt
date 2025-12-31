@@ -34,41 +34,14 @@ endif()
 # [OPTIONAL] Set the version of the project
 # ------------------------------------------------------------------------------
 
-# Allow manually specifying an older version during configuration, if not, default to current.
-set(CURRENT_VERSION_INT 251200)
-set(FIRST_VERSION_INT 230600)
-if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
-  math(EXPR MAJOR "${CURRENT_VERSION_INT} / 10000")
-  math(EXPR MINOR "(${CURRENT_VERSION_INT} % 10000) / 100")
-  math(EXPR PATCH "${CURRENT_VERSION_INT} % 100")
-  set(PROJECT_VERSION "${MAJOR}.${MINOR}.${PATCH}")
-endif()
+include(cmake/LatestVersionConfig.cmake)
 
 # ------------------------------------------------------------------------------
 # START OF THE MAIN CMAKE FILE
 # ------------------------------------------------------------------------------
 project ("BèvarMéjo" VERSION ${PROJECT_VERSION})
 
-# Calculate version as a single integer for easy comparison
-math(EXPR BEME_VERSION 
-    "${PROJECT_VERSION_MAJOR} * 10000 + ${PROJECT_VERSION_MINOR} * 100 + ${PROJECT_VERSION_PATCH}")
-
-# Check that the project version is a valid version string (
-# in bounds/years, no patch version greater than 99, minor version is a valid month
-if(
-  BEME_VERSION LESS FIRST_VERSION_INT 
-  OR BEME_VERSION GREATER CURRENT_VERSION_INT 
-  OR PATCH_VERSION GREATER 99 
-  OR MINOR_VERSION GREATER 12 
-  OR MINOR_VERSION EQUAL 0)
-  message(FATAL_ERROR "Invalid version string: ${PROJECT_VERSION}")
-endif()
-
-# Add version-specific preprocessor definitions
-add_definitions(-DBEME_VERSION=${BEME_VERSION})
-add_definitions(-DBEME_MAJOR_VERSION=${PROJECT_VERSION_MAJOR})
-add_definitions(-DBEME_MINOR_VERSION=${PROJECT_VERSION_MINOR})
-add_definitions(-DBEME_PATCH_VERSION=${PROJECT_VERSION_PATCH})
+include(cmake/ValidVersionConfig.cmake)
 
 message(STATUS "BèvarMéjo version: ${PROJECT_VERSION}")
 

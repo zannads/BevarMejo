@@ -15,9 +15,9 @@ namespace detail
 {
 
 constexpr unsigned int version = BEME_VERSION;
-constexpr unsigned int version_year = BEME_MAJOR_VERSION;
-constexpr unsigned int version_month = BEME_MINOR_VERSION;
-constexpr unsigned int version_release = BEME_PATCH_VERSION;
+constexpr unsigned int version_year = version/10000;
+constexpr unsigned int version_month = (version % 10000) / 100;
+constexpr unsigned int version_release = version % 100;
 
 constexpr std::array<char, 10> version_arr = {
         'v',
@@ -32,30 +32,22 @@ constexpr std::array<char, 10> version_arr = {
         '\0'
     };
 
-#if BEME_VERSION < 240401
-constexpr unsigned int min_version = 230600;
-#elif BEME_VERSION < 240601
-constexpr unsigned int min_version = 240401;
-#elif BEME_VERSION < 241100
-constexpr unsigned int min_version = 240601;
-#elif BEME_VERSION < 241200
-constexpr unsigned int min_version = 241100;
-#elif BEME_VERSION < 250200
-constexpr unsigned int min_version = 241200;
-#else // BEME_VERSION >= 250200
-constexpr unsigned int min_version = 250200;
-#endif
+
+constexpr unsigned int min_version = BEME_MIN_VERSION;
+constexpr unsigned int min_version_year = min_version/10000;
+constexpr unsigned int min_version_month = (min_version % 10000) / 100;
+constexpr unsigned int min_version_release = min_version % 100;
 
 constexpr std::array<char, 10> min_version_arr = {
         'v',
-        static_cast<char>('0' + (min_version%1000000)/100000),
-        static_cast<char>('0' + (min_version%100000)/10000),
+        static_cast<char>('0' + min_version_year/10),
+        static_cast<char>('0' + min_version_year%10),
         '.',
-        static_cast<char>('0' + (min_version%10000)/1000),
-        static_cast<char>('0' + (min_version%1000)/100),
+        static_cast<char>('0' + min_version_month/10),
+        static_cast<char>('0' + min_version_month%10),
         '.',
-        static_cast<char>('0' + (min_version%100)/10),
-        static_cast<char>('0' + (min_version%10)/1),
+        static_cast<char>('0' + min_version_release/10),
+        static_cast<char>('0' + min_version_release%10),
         '\0'
     };
 

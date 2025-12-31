@@ -1,32 +1,6 @@
 # ==============================================================================
 # EPANET Configuration
 # ==============================================================================
-#
-# Unlike externally managed libraries (vcpkg, JSON, Pagmo), EPANET lacks frequent
-# releases and patch versioning.
-# To ensure traceability, we maintain a fork of the OWA-EPANET repository.
-# We track the library version using the commit date from its dev (or master) branch.
-# The fork's branch (`fork_repo/beme/EN_vYY.mm.dd`) branches off at a given commit. 
-# That commit is tagged like this: `beme-EN_vYY.mm.dd`. 
-# The same branch also offers another variation with the suffix `-quiet`.
-# This indicates the same commit with one additional commit turning off printing
-# during simulation and is helpful to include in optimisations.
-# ==============================================================================
-
-set(EPANET_VERSION 250930) # DEFAULT: Commit at 2025-09-30 on Master (EPANET v2.3.3)
-
-if(BEME_VERSION LESS 250200)
-  # Before February 2025, we were using EPANET with the commit at 18th June 2024
-  set(EPANET_VERSION 240618)
-  message(WARNING "Using EPANET previous version (24-06-18). Results differ from latest.")
-elseif(BEME_VERSION LESS 251200)
-  # Before December 2025 we were using EPANET with the commit at 21st December 2024
-  set(EPANET_VERSION 241221)
-  message(WARNING "Using EPANET previous version (24-12-21). Results differ from latest.")
-endif()
-
-# Some code changes based on EPANET version so let's define the preprocessor definition
-add_definitions(-DEPANET_VERSION=${EPANET_VERSION})
 
 # ------------------------------------------------------------------------------
 # Determine EPANET version tag and directory
@@ -35,9 +9,9 @@ option(REPRODUCIBILITY_MODE "Use reproducibility mode for EPANET" OFF)
 
 if(NOT DEFINED EPANET_DIR)
   if(REPRODUCIBILITY_MODE)
-    math(EXPR EN_YY "${EPANET_VERSION} / 10000")
-    math(EXPR EN_MM "(${EPANET_VERSION} % 10000) / 100")
-    math(EXPR EN_DD "${EPANET_VERSION} % 100")
+    math(EXPR EN_YY "${BEME_EN_VERSION_INT} / 10000")
+    math(EXPR EN_MM "(${BEME_EN_VERSION_INT} % 10000) / 100")
+    math(EXPR EN_DD "${BEME_EN_VERSION_INT} % 100")
     set(EPANET_VERSION_TAG "${EN_YY}.${EN_MM}.${EN_DD}")
     # Default: worktree in extern/EPANET.beme/
     # Override with: -DEPANET_DIR=/custom/path
@@ -84,7 +58,7 @@ set(EPANET_SRC
   )
 
 # Add leakage support for versions after 240712 (PR #808)
-if(EPANET_VERSION GREATER 240712)
+if(BEME_EN_VERSION_INT GREATER 240712)
     list(APPEND EPANET_SRC
         "${EPANET_DIR}/src/leakage.c"
         "${EPANET_DIR}/src/flowbalance.c"
@@ -100,7 +74,7 @@ add_library(epanet ${EPANET_SRC})
 # we need to empty-define it to prevent export declarations on Windows.
 target_compile_definitions(epanet PUBLIC 
     "DLLEXPORT=" 
-    "EPANET_VERSION=${EPANET_VERSION}"
+    "EPANET_VERSION=${BEME_EN_VERSION_INT}"
 )
 
 target_include_directories(epanet PUBLIC 
