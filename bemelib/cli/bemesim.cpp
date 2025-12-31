@@ -27,7 +27,9 @@ int main(int argc, char* argv[])
     }
 
     try {
-        simulator.run();
+        if (simulator.decision_variables().size() > 0) {
+            simulator.run();
+        }
     }
     catch (const std::exception& e) {
         bevarmejo::io::stream_out(std::cerr, "An error happend while running the simulation:\n", e.what(), "\n" );
