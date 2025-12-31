@@ -19,7 +19,7 @@ except ImportError:
     epyt_available = False
 
 from .utility import formulations_conversions as fc
-from .utility.versions import get_bemelib_installed_releases, get_working_bemelib_release
+from .utility.bemelib_versions import get_bemelib_installed_releases, get_working_bemelib_release
 from ._config import get_beme_project_path
 
 class Simulator:
