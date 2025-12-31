@@ -40,7 +40,7 @@ namespace anytown {
 
 namespace io::key
 {
-#if BEME_VERSION < 240601
+#if BEME_VERSION_INT < 240601
 static constexpr bemeio::AliasedKey at_inp {"WDS inp", "AT inp"}; // "WDS inp", "AT inp"
 static constexpr bemeio::AliasedKey at_subnets {"WDS UDEGs", "AT subnets"}; // "WDS UDEGs", "AT subnets"
 static constexpr bemeio::AliasedKey exi_pipe_opts {"Existing pipe options"}; // "Existing pipe options"
@@ -1614,7 +1614,7 @@ auto fnt1::apply_dv__tanks(
 		// The riser has a well defined length, diameter could be a dv, but I fix it to 16 inches for now
 		auto riser_id = std::string("Ris_")+std::to_string(i);
 
-#if BEME_VERSION < 241200
+#if BEME_VERSION_INT < 241200
 		auto& riser = anytown.install_pipe(riser_id, new_tank_id, junction_id);
 #else
 		// We changed the direction because the riser RISES from the junction to the tank.
@@ -1627,7 +1627,7 @@ auto fnt1::apply_dv__tanks(
 
 		// do it again in EPANET
 		int riser_idx = 0;
-#if BEME_VERSION < 241200
+#if BEME_VERSION_INT < 241200
 		errco = EN_addlink(anytown.ph(), riser_id.c_str(), EN_PIPE, new_tank_id.c_str(), junction_id.c_str(), &riser_idx);
 #else
 		errco = EN_addlink(anytown.ph(), riser_id.c_str(), EN_PIPE, junction_id.c_str(), new_tank_id.c_str(), &riser_idx);

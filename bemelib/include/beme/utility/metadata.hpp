@@ -14,7 +14,7 @@ namespace bevarmejo
 namespace detail
 {
 
-constexpr unsigned int version = BEME_VERSION;
+constexpr unsigned int version = BEME_VERSION_INT;
 constexpr unsigned int version_year = version/10000;
 constexpr unsigned int version_month = (version % 10000) / 100;
 constexpr unsigned int version_release = version % 100;
@@ -33,7 +33,7 @@ constexpr std::array<char, 10> version_arr = {
     };
 
 
-constexpr unsigned int min_version = BEME_MIN_VERSION;
+constexpr unsigned int min_version = BEME_MIN_VERSION_INT;
 constexpr unsigned int min_version_year = min_version/10000;
 constexpr unsigned int min_version_month = (min_version % 10000) / 100;
 constexpr unsigned int min_version_release = min_version % 100;

@@ -89,7 +89,7 @@ struct adl_serializer<pagmo::nsga2>
 
     static void from_json(const Json &j, pagmo::nsga2 &algo)
     {
-#if BEME_VERSION < 240601
+#if BEME_VERSION_INT < 240601
 // Before version 24.6.1, the default parameters were according to the optimal values
 // for the Hanoi network as found in the literature (https://doi.org/10.3390/w11050971).
         unsigned int gen = j.value(bevarmejo::io::key::generations.as_in(j), 1u);

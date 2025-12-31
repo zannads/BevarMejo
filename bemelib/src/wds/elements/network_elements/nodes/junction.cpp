@@ -199,7 +199,7 @@ void Junction::__retrieve_EN_results()
         "Junction ID: ", m__name);
     emitter_flow = epanet::convert_flow_to_L_per_s(ph, emitter_flow);
 
-#if BEME_VERSION >= 250200
+#if BEME_VERSION_INT >= 250200
     // After v25.02.00 we started using a new EPANET version (Commit at 2024/07/12).
     // This new version allows to retireve a couple more info from the API.
     // Mainly the leakage and the ...
@@ -216,7 +216,7 @@ void Junction::__retrieve_EN_results()
     // the demand was not satisfied and it should go as a demand undelivered.
     // This is equivalent to check if the warning flag of EPANET is set to 6.
     double outflow = m__outflow.when_t(t);
-#if BEME_VERSION <241100
+#if BEME_VERSION_INT <241100
     // HOTFIX, a junction must not experience negative pressure, head could be
     // slighlty above zero, but below the elevation and water would not flow out.
     // A simple oversight in the code, that may have caused wrong calculations in the past.
@@ -231,7 +231,7 @@ void Junction::__retrieve_EN_results()
     }
     else
     {
-#if BEME_VERSION >= 250200
+#if BEME_VERSION_INT >= 250200
         m__consumption.commit(t, outflow - emitter_flow - leakage_flow);
 #else
         m__consumption.commit(t, outflow - emitter_flow);

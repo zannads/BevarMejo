@@ -165,7 +165,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
     {
         int errorcode = EN_runH(ph, &t);
 
-#if BEME_VERSION < 240401
+#if BEME_VERSION_INT < 240401
         // If you save only the reporting time steps (as EPANET and wntr do) instead of all hydraulic steps,
         // you may get an incorrect estimate of the energy leaving the system. This happens because EPANET
         // can insert extra time steps in the simulation. When energy is calculated as Flow x Head x TimeStep,
@@ -188,7 +188,7 @@ auto solve_hydraulics(bevarmejo::WaterDistributionSystem& a_wds, const HydSimSet
             break;
         }
 
-#if BEME_VERSION < 240401
+#if BEME_VERSION_INT < 240401
         }
 #endif
       

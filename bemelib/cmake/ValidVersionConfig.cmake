@@ -55,7 +55,7 @@ endif()
 
 # Add version-specific preprocessor definitions
 add_compile_definitions(
-    BEME_VERSION=${BEME_VERSION_INT}
-    BEME_MIN_VERSION=${BEME_MIN_VERSION_INT}
-    # BEME_EN_VERSION=${BEME_EN_VERSION_INT} this is defined as public in target epanet only
+    BEME_VERSION_INT=${BEME_VERSION_INT}
+    BEME_MIN_VERSION_INT=${BEME_MIN_VERSION_INT}
+    BEME_EN_VERSION_INT=${BEME_EN_VERSION_INT}
 )
