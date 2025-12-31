@@ -59,7 +59,7 @@ def get_bemelib_installed_releases():
     installed_releases: dict[str, tuple[V, V]] = {}
     for release in releases:
         try:
-            installed_releases[str(release)] = get_bemelib_release_compat_versions(
+            installed_releases[release.name] = get_bemelib_release_compat_versions(
                 release
             )
         except Exception as e:

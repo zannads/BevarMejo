@@ -73,7 +73,7 @@ class Simulator:
         release_version = get_working_bemelib_release(self.data["bemelib_version"])
         beme_dir = get_beme_project_path()
 
-        release_dir = os.path.join(beme_dir, release_version)
+        release_dir = os.path.join(beme_dir, 'releases', release_version)
         command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
         # Run the command
@@ -153,7 +153,7 @@ class Simulator:
             networks = []
             for inp_file in inp_files:
                 enet = epanet(inp_file, version=2.3, ph=True, loadfile=True,
-                              customlib=os.path.join(get_beme_project_path(), "bemelib", "extern", "EPANET.beme", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}-quiet", "build", "lib", "libepanet2.dylib"),
+                              customlib=os.path.join(get_beme_project_path(), "bemelib", "extern", "EPANET.beme", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}", "build", "lib", "libepanet2.dylib"),
                               display_msg=True, display_warnings=True)
                 networks.append(enet)
                 if remove_files:
