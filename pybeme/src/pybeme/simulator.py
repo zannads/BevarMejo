@@ -2,6 +2,7 @@ import os
 import json
 import subprocess
 import sys
+from typing import Optional
 
 import numpy as np
 
@@ -18,7 +19,7 @@ except ImportError:
     epyt_available = False
 
 from .utility import formulations_conversions as fc
-from .utility.versions import get_working_bemelib_release, get_beme_required_exact_en_version
+from .utility.versions import get_bemelib_installed_releases, get_working_bemelib_release, get_beme_required_exact_en_version
 from ._config import get_beme_project_path
 
 class Simulator:
@@ -30,18 +31,25 @@ class Simulator:
     # - print message (optional)
     # - version of bemelib used (optional)
     # - lookup paths (optional)
-    def __init__(self,
-                 # Mandatory positional arguments
-                 decision_vector: list,
-                 problem: dict,
+    def __init__(
+        self,
+        # Mandatory positional arguments
+        decision_vector: list,
+        problem: dict,
 
-                # Optional keyword arguments
-                    fitness_vector: list = None,
-                    id: int = 0,
-                    print_message: str = "",
-                    bemelib_version: str = "v25.07.0",
-                    lookup_paths: list = None):
+        # Optional keyword arguments
+        fitness_vector: Optional[list] = None,
+        id: int = 0,
+        print_message: str = "",
+        bemelib_version: Optional[str] = None,
+        lookup_paths: Optional[list] = None
+    ):
         
+        # default bemelib version is the max of the latest
+        print(get_bemelib_installed_releases().keys())
+        if bemelib_version is None:
+            bemelib_version = str(get_bemelib_installed_releases()["latest"][1])
+
         self.data = {
             "decision_vector": decision_vector,
             "problem": problem,
