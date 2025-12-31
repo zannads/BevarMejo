@@ -26,8 +26,10 @@ elseif(BEME_VERSION_INT LESS 241200)
     set(BEME_MIN_VERSION_INT 241100)
 elseif(BEME_VERSION_INT LESS 250200)
     set(BEME_MIN_VERSION_INT 241200)
-else() # BEME_VERSION_INT >= 250200
+elseif(BEME_VERSION_INT LESS 251200)
     set(BEME_MIN_VERSION_INT 250200)
+else() # BEME_VERSION_INT >= 251200
+    set(BEME_MIN_VERSION_INT 251200)
 endif()
 
 # ==============================================================================

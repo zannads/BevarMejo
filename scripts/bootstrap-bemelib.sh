@@ -115,7 +115,7 @@ build_beme_cmake "latest"
 
 # If reproducibility mode on, build also the other versions
 if [ "$REPRODUCIBILITY" = true ]; then
-    versions=("24.4.0" "24.6.0" "24.10.0" "24.11.0" "24.12.0" "25.2.0" "25.4.1" "25.6.1" "25.6.2")
+    versions=("24.4.0" "24.6.0" "24.10.99" "24.11.99" "25.1.99" "25.11.99")
     for ver in "${versions[@]}"; do
         build_beme_cmake "$ver"
     done
