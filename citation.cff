@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+title: "BevarMejo"
+version: "latest"
+authors:
+  - family-names: "Zanutto"
+    given-names: "Dennis"
+    orcid: "https://orcid.org/0000-0002-1997-3350"
+    affiliation: "KWR Water Research Institute; Politecnico di Milano"
+date-released: "2025-07-01"
+license: "GPL-3.0-or-later"
+repository-code: "https://github.com/zannads/BevarMejo"
+doi: "10.5281/zenodo.10912756"
+url: "https://zenodo.org/records/10912756"
+publisher: "Zenodo"
+message: "If you use this software, please cite it as below."

@@ -1,0 +1,44 @@
+{
+  "creators": [
+    {
+      "affiliation": "KWR Water Research Institute; Politecnico di Milano",
+      "name": "Zanutto, Dennis",
+      "orcid": "0000-0002-1997-3350",
+      "type": "ContactPerson"
+    }
+  ],
+  "contributors": [
+    {
+      "affiliation": "Politecnico di Milano; Centro Euro-Mediterraneo sui Cambiamenti Climatici",
+      "name": "Castelletti, Andrea",
+      "orcid": "0000-0002-7923-1498",
+      "type": "Supervisor"
+    },
+    {
+      "affiliation": "KWR Water Research Institute; Centre for Water Systems at University of Exeter",
+      "name": "Savić, Dragan",
+      "orcid": "0000-0001-9567-9041",
+      "type": "Supervisor"
+    }
+  ],
+  
+  "access_right": "open",
+  "license": {
+    "id": "GPL-3.0-or-later"
+  },
+  "keywords": [
+    "python",
+    "open-source",
+    "multi-objective-optimization",
+    "smart-cities",
+    "water-management",
+    "decision-making-under-uncertainty",
+    "water-distribution-networks",
+    "deep-uncertainty",
+    "urban-water",
+    "erc-synergy-grant"
+  ],
+  "communities": [{"identifier": "waterfutureserc"}],
+  "grants": [{"id": "951424"}],
+  "language": "eng"
+}
