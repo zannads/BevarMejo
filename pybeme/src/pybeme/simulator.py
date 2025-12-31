@@ -19,7 +19,7 @@ except ImportError:
     epyt_available = False
 
 from .utility import formulations_conversions as fc
-from .utility.versions import get_bemelib_installed_releases, get_working_bemelib_release, get_beme_required_exact_en_version
+from .utility.versions import get_bemelib_installed_releases, get_working_bemelib_release
 from ._config import get_beme_project_path
 
 class Simulator:
@@ -46,9 +46,9 @@ class Simulator:
     ):
         
         # default bemelib version is the max of the latest
-        print(get_bemelib_installed_releases().keys())
         if bemelib_version is None:
-            bemelib_version = str(get_bemelib_installed_releases()["latest"][1])
+            all_releases = get_bemelib_installed_releases()
+            bemelib_version =  str(max(all_releases, key=lambda rel: rel.version).version)
 
         self.data = {
             "decision_vector": decision_vector,
@@ -78,11 +78,9 @@ class Simulator:
         simu_filepath = self.save()
 
         # Get the release version to run the correct executable
-        release_version = get_working_bemelib_release(self.data["bemelib_version"])
-        beme_dir = get_beme_project_path()
+        release_info = get_working_bemelib_release(self.data["bemelib_version"])
 
-        release_dir = os.path.join(beme_dir, 'releases', release_version)
-        command = f'{release_dir}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
+        command = f'{release_info.full_path}/cli/beme-sim {simu_filepath} {cli_flags} --savefv --savemetrics'
 
         # Run the command
         simre = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
@@ -156,12 +154,13 @@ class Simulator:
 
             inp_files = self.save_inps()
 
-            beme_en_version=get_beme_required_exact_en_version(self.data["bemelib_version"])
+            # Get the release version to run the correct executable
+            release_info = get_working_bemelib_release(self.data["bemelib_version"])
 
             networks = []
             for inp_file in inp_files:
                 enet = epanet(inp_file, version=2.3, ph=True, loadfile=True,
-                              customlib=os.path.join(get_beme_project_path(), "bemelib", "extern", "EPANET.beme", f"{beme_en_version[0]}.{beme_en_version[1]}.{beme_en_version[2]}", "build", "lib", "libepanet2.dylib"),
+                              customlib=os.path.join(get_beme_project_path(), "bemelib", "extern", "EPANET.beme", str(release_info.epanet_version)[1:], "build", "lib", "libepanet2.dylib"),
                               display_msg=True, display_warnings=True)
                 networks.append(enet)
                 if remove_files:

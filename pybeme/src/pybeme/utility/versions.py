@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import pathlib
 import subprocess
 
@@ -16,7 +17,7 @@ def get_bemelib_release_compat_versions(version_dir: pathlib.Path):
             check=True    # Raises an error if the C++ code crashes
         )
         
-        # We expect the output to be "25.1.0-25.4.3", we parse it:
+        # We expect the output to be "v25.1.0-v25.4.3", we parse it:
         output = result.stdout.strip()
         if "-" not in output:
             raise RuntimeError(
@@ -39,6 +40,37 @@ def get_bemelib_release_compat_versions(version_dir: pathlib.Path):
             f"Stderr: {e.stderr}"
         ) from e
     
+def get_bemelib_release_epanet_versions(version_dir: pathlib.Path):
+    try:
+        # Run the command: beme-sim --epanet-version
+        result = subprocess.run(
+            [str(version_dir)+"/cli/beme-sim", "--epanet-version"],
+            capture_output=True,
+            text=True,    # Automatically decodes bytes to string
+            check=True    # Raises an error if the C++ code crashes
+        )
+        
+        # We expect the output to be "v25.1.0", we simply parse it.
+        output = result.stdout.strip()
+        return version.parse(output)
+        
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Impossible to get the epanet versions for this beme executable: {version_dir}. "
+            "An error was raised while calling the beme executable.",
+            f"Exit code: {e.returncode}\n"
+            f"Stdout: {e.stdout}\n"
+            f"Stderr: {e.stderr}"
+        ) from e
+    
+
+@dataclass(frozen=True)
+class BeMelibReleaseInfo:
+    name: str
+    version: V
+    full_path: pathlib.Path
+    epanet_version: V
+    compat_range: tuple[V, V]
 
 def get_bemelib_installed_releases():
     """
@@ -56,11 +88,21 @@ def get_bemelib_installed_releases():
     
     releases = [item for item in releases_dir.iterdir() if item.is_dir()]
 
-    installed_releases: dict[str, tuple[V, V]] = {}
+    installed_releases: set[BeMelibReleaseInfo] = set()
     for release in releases:
         try:
-            installed_releases[release.name] = get_bemelib_release_compat_versions(
-                release
+            compat_range = get_bemelib_release_compat_versions( release )
+            effective_ver = compat_range[1] # max compatible version is this executable version
+            epanet_ver = get_bemelib_release_epanet_versions( release )
+
+            installed_releases.add(
+                BeMelibReleaseInfo(
+                    name=release.name,
+                    version=effective_ver,
+                    full_path=release,
+                    epanet_version=epanet_ver,
+                    compat_range=compat_range
+                )
             )
         except Exception as e:
             print(
@@ -90,29 +132,11 @@ def get_working_bemelib_release(problem_version: str):
         
     releases = get_bemelib_installed_releases()
 
-    for release, (min_v, max_v) in releases.items():
+    for release in releases:
+        min_v, max_v = release.compat_range
         if min_v <= ver <= max_v:
             return release
         
     raise RuntimeError(
         "Impossible to find a working release of bemelib in the set project path."
     )
-
-def get_beme_required_exact_en_version(problem_version:str) -> tuple:
-    # Convert string version to integer if needed
-    if isinstance(problem_version, str) and problem_version.startswith('v'):
-        # Remove 'v' prefix and split by dots
-        version_parts = problem_version[1:].split('.')
-        
-        # Convert to integer format (YYMMDD)
-        major = int(version_parts[0]) * 10000
-        minor = int(version_parts[1]) * 100
-        patch = int(version_parts[2])
-        int_version = major + minor + patch
-    else:
-        int_version = problem_version
-
-    if int_version < 250200:
-        return (24,6,18)
-    else:
-        return (24,12,21)
