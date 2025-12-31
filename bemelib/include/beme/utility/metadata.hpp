@@ -51,6 +51,24 @@ constexpr std::array<char, 10> min_version_arr = {
         '\0'
     };
 
+constexpr unsigned int epanet_version = BEME_EN_VERSION_INT;
+constexpr unsigned int epanet_version_year = epanet_version/10000;
+constexpr unsigned int epanet_version_month = (epanet_version % 10000) / 100;
+constexpr unsigned int epanet_version_release = epanet_version % 100;
+
+constexpr std::array<char, 10> epanet_version_arr = {
+        'v',
+        static_cast<char>('0' + epanet_version_year/10),
+        static_cast<char>('0' + epanet_version_year%10),
+        '.',
+        static_cast<char>('0' + epanet_version_month/10),
+        static_cast<char>('0' + epanet_version_month%10),
+        '.',
+        static_cast<char>('0' + epanet_version_release/10),
+        static_cast<char>('0' + epanet_version_release%10),
+        '\0'
+    };
+
 // From a string, parse major, minor and patch versions
 inline std::tuple<unsigned int, unsigned int, unsigned int> parse(const std::string& v_str)
 {
@@ -114,5 +132,7 @@ inline bool is_valid_version(const std::string& version_str)
 constexpr const char* version_str = detail::version_arr.data();
 
 constexpr const char* min_version_str = detail::min_version_arr.data();
+
+constexpr const char* epanet_version_str = detail::epanet_version_arr.data();
 
 } // namespace bevarmejo

@@ -199,6 +199,8 @@ void print_version_msg(Simulator& simr);
 
 void print_compat_range_msg(Simulator& simr);
 
+void print_epanet_version_msg(Simulator& simr);
+
 void check_correctness(Simulator& simr);
 
 void save_results(Simulator& simr);
@@ -296,6 +298,19 @@ Simulator Simulator::parse(int argc, char *argv[])
         simulator.m__pre_run_tasks.emplace_back(
             "Print compatibility range message",
             print_compat_range_msg,
+            ""
+        );
+
+        return std::move(simulator);
+    }
+
+    if (first_arg == "--epanet-version")
+    {
+        auto simulator = Simulator();
+
+        simulator.m__pre_run_tasks.emplace_back(
+            "Print EPANET version message",
+            print_epanet_version_msg,
             ""
         );
 
@@ -471,14 +486,22 @@ void print_version_msg(Simulator& simr)
     bevarmejo::io::stream_out(std::cout,
         "Bevarmejo Simulator ", bevarmejo::version_str,
         "\n\n",
-        "Compatible with versions ", bevarmejo::min_version_str, "-", bevarmejo::version_str
+        "Compatible with results generated from ", bevarmejo::min_version_str, " to ", bevarmejo::version_str, ".\n",
+        "Built with EPANET ", bevarmejo::epanet_version_str, " (OWA-EPANET dev branch at that day).\n"
     );
 }
 
 void print_compat_range_msg(Simulator& simr)
 {
     bevarmejo::io::stream_out(std::cout,
-        bevarmejo::min_version_str, "-", bevarmejo::version_str
+        bevarmejo::min_version_str, "-", bevarmejo::version_str, "\n"
+    );
+}
+
+void print_epanet_version_msg(Simulator& simr)
+{
+    bevarmejo::io::stream_out(std::cout,
+        bevarmejo::epanet_version_str, "\n"
     );
 }
 
