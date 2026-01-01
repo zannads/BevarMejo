@@ -1,6 +1,6 @@
 [project]
 name = "pybeme"
-version = "25.12.0"
+version = "26.1.0"
 description = "Python interface for bemelib: water distribution system optimization with visualization and analysis tools"
 readme = "README.md"
 license = "GPL-3.0-or-later"

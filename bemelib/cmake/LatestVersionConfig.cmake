@@ -1,5 +1,5 @@
 # Allow manually specifying an older version during configuration, if not, default to current.
-set(BEME_LATEST_VERSION_INT 251200)
+set(BEME_LATEST_VERSION_INT 260100)
 
 if(NOT PROJECT_VERSION OR PROJECT_VERSION STREQUAL "latest")
   math(EXPR BEME_LATEST_MAJOR "${BEME_LATEST_VERSION_INT} / 10000")
